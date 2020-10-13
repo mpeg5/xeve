@@ -10,7 +10,6 @@ The EVC defines two profiles, including "**Baseline Profile**" and "**Main Profi
 ![MPEG-5 EVC](./doc/image/tos_1300kbps_1920x1080_evc.jpg)
 
 ## How to build
-
 ### Linux (64-bit)
 - Build Requirements
   - CMake 3.5 or later (download from [https://cmake.org/](https://cmake.org/))
