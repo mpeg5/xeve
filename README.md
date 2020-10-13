@@ -10,6 +10,7 @@ The EVC defines two profiles, including "**Baseline Profile**" and "**Main Profi
 ![MPEG-5 EVC](./doc/image/tos_1300kbps_1920x1080_evc.jpg)
 
 ## How to build
+
 ### Linux (64-bit)
 - Build Requirements
   - CMake 3.5 or later (download from [https://cmake.org/](https://cmake.org/))
@@ -26,10 +27,23 @@ The EVC defines two profiles, including "**Baseline Profile**" and "**Main Profi
     - Executable application (xeveb_app) can be found under build/bin/.
     - Library files (libxeveb.so and libxexeb.a) can be found under build/lib/.
 
+- Build Instructions for **Main Profile**
+  ```
+  $mkdir build
+  $cd build
+  $cmake ..
+  $make
+  ```
+  - Output Location
+    - Executable application (xeve_app) can be found under build/bin/.
+    - Library files (libxeve.so and libxexe.a) can be found under build/lib/.
+  - Application and libraries built with Main Profile can also support Baseline Profile operation. 
+
+
 ### Windows (64-bit)
 - Build Requirements
   - CMake 3.5 or later (download from [https://cmake.org/](https://cmake.org/))
-  - MinGW-64 or Visual Studio
+  - MinGW-64 or Microsoft Visual Studio
 
 - Build Instructions for **Baseline Profile**
   - MinGW-64
@@ -48,6 +62,24 @@ The EVC defines two profiles, including "**Baseline Profile**" and "**Main Profi
     ```
     You can change '-G' option with proper version of Visual Studio.
 
+- Build Instructions for **Main Profile**
+  - MinGW-64
+    ```
+    $mkdir build
+    $cd build
+    $cmake .. -G "MinGW Makefiles"
+    $make
+    ```
+  - Microsoft Visual Studio 
+    ```
+    $mkdir build
+    $cd build
+    $cmake .. -G "Visual Studio 15 2017 Win64"
+    $make
+    ```
+    You can change '-G' option with proper version of Visual Studio.
+  - Application and libraries built with Main Profile can also support Baseline Profile operation.
+    
 ## How to use
 XEVE supports all profiles of EVC. Default configure files of coding structures with profiles are provided in **cfg** folder.
 
