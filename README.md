@@ -5,9 +5,17 @@ The **eXtra-fast Essential Video Encoder** (XEVE) is an opensource and fast MPEG
 The EVC defines two profiles, including "**Baseline Profile**" and "**Main Profile**". The "Baseline profile" contains only technologies that are older than 20 years or otherwise freely available for use in the standard. In addition, the "Main profile" adds a small number of additional tools, each of which can be either cleanly disabled or switched to the corresponding baseline tool on an individual basis.
 
 ## Quality comparison
-**MPEG-5 Baseline Profile** and **Main Profile** of MPEG-5 EVC shows 2-times better coding gain over H.264/AVC and H.265/HEVC codec, respectively.
-![MPEG-4 AVC/H.264](./doc/image/tos_1300kbps_1920x1080_avc.jpg)
-![MPEG-5 EVC](./doc/image/tos_1300kbps_1920x1080_evc.jpg)
+
+### MPEG-5 Baseline Profile vs. MPEG-4 AVC/H.264
+MPEG-5 EVC Baseline Profile can show 2-times better coding gain over MPEG-4 AVC/H.264 codec and superior quality on the same bitrate
+
+![MPEG-5 Baseline Profile vs. MPEG-4 AVC/H.264](./doc/image/tos_evc_bp_vs_avc_1350kbps.jpg)
+
+
+### MPEG-5 Main Profile vs. HEVC/H.265
+MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 codec and superior quality on the same bitrate
+
+![MPEG-5 Main Profile vs. HEVC/H.265](./doc/image/tos_evc_mp_vs_hevc_900kbps.jpg)
 
 ## How to build
 
