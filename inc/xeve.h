@@ -178,6 +178,7 @@
 #define XEVE_CFG_GET_WIDTH              (701)
 #define XEVE_CFG_GET_HEIGHT             (702)
 #define XEVE_CFG_GET_RECON              (703)
+#define XEVE_CFG_GET_SUPPORT_PROF       (704)
 
 /*****************************************************************************
  * NALU types
@@ -193,10 +194,10 @@
 /*****************************************************************************
  * slice type
  *****************************************************************************/
-#define XEVE_ST_UNKNOWN                  (0)
-#define XEVE_ST_I                        (1)
-#define XEVE_ST_P                        (2)
-#define XEVE_ST_B                        (3)
+#define XEVE_ST_UNKNOWN                  (-1)
+#define XEVE_ST_B                        (0)
+#define XEVE_ST_P                        (1)
+#define XEVE_ST_I                        (2)
 
 /*****************************************************************************
  * type and macro for media time
@@ -372,23 +373,13 @@ typedef struct _XEVE_CDSC
     XEVE_CHROMA_TABLE chroma_qp_table_struct;
     /* color space of input image */
     int            cs;
-    /* The maximum number of consecutive B frames (up to 7)
-       - Default: Off(0)                                                      */
     int            max_b_frames;
-    /* Has meaning only when max_b_frames is more than 0
-       - enable(0) means use hierarchy GOP structure for B frmeas
-               is valid only when max_b_frames is equal to 1, 3 and 7
-       - disable (1) means frame type will be decided automatically
-       - Default: enable(0)                                                       */
     int            disable_hgop;
-
     int            ref_pic_gap_length;
-
     /* use closed GOP sturcture
        - 0 : use open GOP (default)
        - 1 : use closed GOP */
     int            closed_gop;
-
     /* bit depth of input video */
     int            in_bit_depth;
     /* bit depth of output video */
@@ -475,6 +466,7 @@ struct _XEVE_CDSC_EXT
     double         dra_cr_qp_scale;
     double         dra_chroma_qp_scale;
     double         dra_chroma_qp_offset;
+    int            rpl_extern;
     XEVE_RPL       rpls_l0[MAX_NUM_RPLS];
     XEVE_RPL       rpls_l1[MAX_NUM_RPLS];
     int            rpls_l0_cfg_num;

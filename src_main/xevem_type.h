@@ -83,8 +83,7 @@ typedef struct _XEVEM_CTX
     SIG_PARAM_DRA    * dra_array;
 
     /* ibc prediction analysis */
-    XEVE_PIBC          pibc;
-    XEVE_PIBC          pibc_mt[XEVE_MAX_TASK_CNT];
+    XEVE_PIBC          pibc[XEVE_MAX_TASK_CNT];
     XEVE_IBC_HASH    * ibc_hash;
 
     int   (*fn_pibc_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
@@ -106,9 +105,9 @@ typedef struct _XEVEM_CTX
     u8               * map_ats_mode_v;
     u8               * map_ats_inter;
 
-    u32              * ats_inter_pred_dist_mt[XEVE_MAX_TASK_CNT];
-    u8               * ats_inter_info_pred_mt[XEVE_MAX_TASK_CNT];   //best-mode ats_inter info
-    u8               * ats_inter_num_pred_mt[XEVE_MAX_TASK_CNT];
+    u32              * ats_inter_pred_dist[XEVE_MAX_TASK_CNT];
+    u8               * ats_inter_info_pred[XEVE_MAX_TASK_CNT];   //best-mode ats_inter info
+    u8               * ats_inter_num_pred[XEVE_MAX_TASK_CNT];
 
 }XEVEM_CTX;
 

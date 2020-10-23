@@ -44,7 +44,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
                                  , int log2_cuh, s16 coef[N_C][MAX_CU_DIM], s32 *dist, int mode, int x, int y)
 {
     XEVEM_CORE  *mcore = (XEVEM_CORE*)core;
-    XEVE_PINTRA *pi = &ctx->pintra_mt[core->thread_cnt];
+    XEVE_PINTRA *pi = &ctx->pintra[core->thread_cnt];
 
     int cuw, cuh, bit_cnt;
     double cost = 0;
@@ -179,7 +179,7 @@ static void pintra_ipred(XEVE_CTX * ctx, XEVE_CORE * core, pel * pred_buf, int i
 /* For Main profile */
 static int make_ipred_list(XEVE_CTX * ctx, XEVE_CORE * core, int log2_cuw, int log2_cuh, pel * org, int s_org, int * ipred_list)
 {
-    XEVE_PINTRA *pi = &ctx->pintra_mt[core->thread_cnt];
+    XEVE_PINTRA *pi = &ctx->pintra[core->thread_cnt];
 
     int cuw, cuh, pred_cnt, i, j;
     double cost, cand_cost[IPD_RDO_CNT];
@@ -271,7 +271,7 @@ static void pintra_get_mpm(XEVE_CTX *ctx, XEVE_CORE * core, int cuw, int cuh)
 /* For Main profile */
 static void pintra_get_nbr(XEVE_CTX *ctx, XEVE_CORE * core, int x, int y, int cuw, int cuh)
 {
-    XEVE_PINTRA *pi = &ctx->pintra_mt[core->thread_cnt];
+    XEVE_PINTRA *pi = &ctx->pintra[core->thread_cnt];
 
     pel *mod;
     pel *mod_cb, *mod_cr;
@@ -309,7 +309,7 @@ static void pintra_get_nbr(XEVE_CTX *ctx, XEVE_CORE * core, int x, int y, int cu
 static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE* mi, s16 coef[N_C][MAX_CU_DIM], pel* rec[N_C], int s_rec[N_C])
 {
     XEVEM_CORE  *mcore = (XEVEM_CORE*)core;
-    XEVE_PINTRA *pi = &ctx->pintra_mt[core->thread_cnt];
+    XEVE_PINTRA *pi = &ctx->pintra[core->thread_cnt];
 
     int i, j, s_org, s_org_c, s_mod, s_mod_c, cuw, cuh;
     int best_ipd = IPD_INVALID;

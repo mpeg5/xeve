@@ -1815,7 +1815,8 @@ int xevem_eco_suco_flag(XEVE_BSW *bs, XEVE_CTX *c, XEVE_CORE *core, int cud, int
     int ret = XEVE_OK;
     s8 suco_flag;
     int ctx;
-    u8 allow_suco = c->sps.sps_suco_flag ? xeve_check_suco_cond(cuw, cuh, split_mode, boundary, log2_max_cuwh, c->sps.log2_diff_ctu_size_max_suco_cb_size, c->sps.log2_diff_max_suco_min_suco_cb_size) : 0;
+    u8 allow_suco = c->sps.sps_suco_flag ? xeve_check_suco_cond(cuw, cuh, split_mode, boundary, log2_max_cuwh, c->log2_min_cuwh
+                                                              , c->sps.log2_diff_ctu_size_max_suco_cb_size, c->sps.log2_diff_max_suco_min_suco_cb_size) : 0;
 
     if(!allow_suco)
     {
@@ -2046,70 +2047,6 @@ int xeve_eco_udata_hdr(XEVE_CTX * ctx, XEVE_BSW * bs, u8 pic_sign[N_C][16])
     return XEVE_OK;
 }
 
-int xevem_length_golomb(int coeffVal, int k)
-{
-    int m = k == 0 ? 1 : (2 << (k - 1));
-    int q = coeffVal / m;
-    if (coeffVal != 0)
-    {
-        return q + 2 + k;
-    }
-    else
-    {
-        return q + 1 + k;
-    }
-};
-
-int xevem_get_golomb_kmin(ALF_FILTER_SHAPE *  alf_shape, int num_filters, int *k_min_tab, int bits_coef_scan[MAX_SCAN_VAL][MAX_EXP_GOLOMB])
-{
-    int kStart;
-    const int maxGolombIdx = alf_shape->filter_type == 0 ? 2 : 3;
-
-    int minBitsKStart = INT_MAX;
-    int minKStart = -1;
-
-    for(int k = 1; k < 8; k++)
-    {
-        int bitsKStart = 0; kStart = k;
-        for(int scanPos = 0; scanPos < maxGolombIdx; scanPos++)
-        {
-            int kMin = kStart;
-            int minBits = bits_coef_scan[scanPos][kMin];
-
-            if(bits_coef_scan[scanPos][kStart + 1] < minBits)
-            {
-                kMin = kStart + 1;
-                minBits = bits_coef_scan[scanPos][kMin];
-            }
-            kStart = kMin;
-            bitsKStart += minBits;
-        }
-        if(bitsKStart < minBitsKStart)
-        {
-            minBitsKStart = bitsKStart;
-            minKStart = k;
-        }
-    }
-
-    kStart = minKStart;
-    for(int scanPos = 0; scanPos < maxGolombIdx; scanPos++)
-    {
-        int kMin = kStart;
-        int minBits = bits_coef_scan[scanPos][kMin];
-
-        if(bits_coef_scan[scanPos][kStart + 1] < minBits)
-        {
-            kMin = kStart + 1;
-            minBits = bits_coef_scan[scanPos][kMin];
-        }
-
-        k_min_tab[scanPos] = kMin;
-        kStart = kMin;
-    }
-
-    return minKStart;
-};
-
 int xeve_eco_pic_signature_main(XEVE_CTX * ctx, XEVE_BSW * bs, u8 pic_sign[N_C][16])
 {
     int ret;
@@ -2128,48 +2065,43 @@ int xeve_eco_pic_signature_main(XEVE_CTX * ctx, XEVE_BSW * bs, u8 pic_sign[N_C][
     return ret;
 }
 
-void xevem_eco_alf_golomb(XEVE_BSW * bs, int coeff, int k)
+void xevem_eco_alf_golomb(XEVE_BSW * bs, int coeff, int k, const BOOL signed_coeff)
 {
-    int symbol = abs(coeff);
-
-    int m = (int)pow(2.0, k);
-    int q = symbol / m;
-
-    for(int i = 0; i < q; i++)
+    unsigned int symbol = abs(coeff);
+    while (symbol >= (unsigned int)(1 << k))
     {
+        symbol -= 1 << k;
+        k++;
 #if TRACE_HLS
-        xeve_bsw_write1_trace(bs, 1, 0);
+        xeve_bsw_write1_trace(bs, 0, 0);
 #else
-        xeve_bsw_write1(bs, 1);
+        xeve_bsw_write1(bs, 0);
 #endif
     }
 #if TRACE_HLS
-    xeve_bsw_write1_trace(bs, 0, 0);
+    xeve_bsw_write1_trace(bs, 1, 0);
 #else
-    xeve_bsw_write1(bs, 0);
+    xeve_bsw_write1(bs, 1);
 #endif
-    // write one zero
 
-    for(int i = 0; i < k; i++)
+    if (k > 0)
     {
 #if TRACE_HLS
-        xeve_bsw_write1_trace(bs, symbol & 0x01, 0);
+        xeve_bsw_write_trace(bs, symbol & 0x01, "bins", k);
 #else
-        xeve_bsw_write1(bs, symbol & 0x01);
+        xeve_bsw_write(bs, symbol, k);
 #endif
-        symbol >>= 1;
     }
 
-    if(coeff != 0)
+    if (signed_coeff && coeff != 0)
     {
-        int sign = (coeff > 0) ? 1 : 0;
 #if TRACE_HLS
-        xeve_bsw_write1_trace(bs, sign, 0);
+        xeve_bsw_write1_trace(bs, (coeff < 0) ? 0 : 1, 0);
 #else
-        xeve_bsw_write1(bs, sign);
+        xeve_bsw_write1(bs, (coeff < 0) ? 0 : 1);
 #endif
     }
-};
+}
 
 void xeve_eco_alf_filter(XEVE_BSW * bs, XEVE_ALF_SLICE_PARAM asp, const BOOL is_chroma)
 {
@@ -2204,28 +2136,28 @@ void xeve_eco_alf_filter(XEVE_BSW * bs, XEVE_ALF_SLICE_PARAM asp, const BOOL is_
         {
             for (int i = 0; i < alf_shape.num_coef - 1; i++)
             {
-                int coeffVal = abs(coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i]);
+                int coef_val = abs(coeff[ind * MAX_NUM_ALF_LUMA_COEFF + i]);
 
                 for (int k = 1; k < 15; k++)
                 {
-                    bits_coef_scan[alf_shape.golombIdx[i]][k] += xevem_length_golomb(coeffVal, k);
+                    bits_coef_scan[alf_shape.golombIdx[i]][k] += xeve_alf_length_golomb(coef_val, k, TRUE);
                 }
             }
         }
     }
 
     int k_min_tab[MAX_NUM_ALF_COEFF];
-    int kMin = xevem_get_golomb_kmin(&alf_shape, num_filters, k_min_tab, bits_coef_scan);
+    int k_min = xeve_alf_get_golomb_k_min(&alf_shape, num_filters, k_min_tab, bits_coef_scan);
 
     // Golomb parameters
-    u32 alf_luma_min_eg_order_minus1 = kMin - 1;
+    u32 alf_luma_min_eg_order_minus1 = k_min - 1;
     xeve_bsw_write_ue(bs, alf_luma_min_eg_order_minus1);
 
     for (int idx = 0; idx < maxGolombIdx; idx++)
     {
-        BOOL alf_eg_order_increase_flag = (k_min_tab[idx] != kMin) ? TRUE : FALSE;
+        BOOL alf_eg_order_increase_flag = (k_min_tab[idx] != k_min) ? TRUE : FALSE;
         xeve_bsw_write1(bs, alf_eg_order_increase_flag);
-        kMin = k_min_tab[idx];
+        k_min = k_min_tab[idx];
     }
 
     if (!is_chroma)
@@ -2249,7 +2181,7 @@ void xeve_eco_alf_filter(XEVE_BSW * bs, XEVE_ALF_SLICE_PARAM asp, const BOOL is_
 
         for (int i = 0; i < alf_shape.num_coef - 1; i++)
         {
-            xevem_eco_alf_golomb(bs, coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], k_min_tab[alf_shape.golombIdx[i]]);
+            xevem_eco_alf_golomb(bs, coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], k_min_tab[alf_shape.golombIdx[i]], TRUE);
         }
     }
 }
@@ -2314,9 +2246,9 @@ int xevem_eco_alf_aps_param(XEVE_BSW * bs, XEVE_APS_GEN * aps)
                 xeve_bsw_write(bs, alf_luma_coeff_delta_idx[i], xeve_tbl_log2[alf_slice_param.num_luma_filters - 1] + 1);
             }
         }
-        const int iNumFixedFilterPerClass = 16;
+        const int num_fixed_filter_per_class = 16;
         {
-            xevem_eco_alf_golomb(bs, alf_slice_param.fixed_filter_pattern, 0);
+            xevem_eco_alf_golomb(bs, alf_slice_param.fixed_filter_pattern, 0, FALSE);
 
             if (alf_slice_param.fixed_filter_pattern == 2)
             {
@@ -2333,7 +2265,7 @@ int xevem_eco_alf_aps_param(XEVE_BSW * bs, XEVE_APS_GEN * aps)
                 {
                     if (alf_slice_param.fixed_filter_usage_flag[class_idx] > 0)
                     {
-                        xeve_bsw_write(bs, alf_luma_fixed_filter_set_idx[class_idx], xeve_tbl_log2[iNumFixedFilterPerClass - 1] + 1);
+                        xeve_bsw_write(bs, alf_luma_fixed_filter_set_idx[class_idx], xeve_tbl_log2[num_fixed_filter_per_class - 1] + 1);
                     }
                 }
             }

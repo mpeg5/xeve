@@ -199,7 +199,7 @@ void xeve_rdo_bit_cnt_cu_inter(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_type,
 {
     int refi0, refi1;
     int vertex = 0;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     int b_no_cbf = 0;
     b_no_cbf |= pidx == AFF_DIR;
@@ -699,7 +699,7 @@ int mode_cu_init(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int log2_cuw, i
     core->qp_u = xeve_tbl_qp_chroma_dynamic[0][qp_i_cb] + 6 * ctx->sps.bit_depth_chroma_minus8;
     core->qp_v = xeve_tbl_qp_chroma_dynamic[1][qp_i_cr] + 6 * ctx->sps.bit_depth_chroma_minus8;
 
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     pi->qp_y = core->qp_y;
     pi->qp_u = core->qp_u;
@@ -1170,7 +1170,7 @@ double mode_check_intra(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_c
 
         if(core->cu_mode != MODE_IBC && core->cost_best != MAX_COST)
         {
-            XEVE_PINTRA *pi = &ctx->pintra_mt[core->thread_cnt];
+            XEVE_PINTRA *pi = &ctx->pintra[core->thread_cnt];
             core->inter_satd = xeve_satd_16b(log2_cuw, log2_cuh, pi->o[Y_C] + (y * pi->s_o[Y_C]) + x, mi->pred_y_best, pi->s_o[Y_C], 1 << log2_cuw, ctx->sps.bit_depth_luma_minus8+8);
         }
         else
@@ -1765,7 +1765,7 @@ void calc_delta_dist_filter_boundary(XEVE_CTX* ctx, XEVE_PIC *pic_rec, XEVE_PIC 
                 if(ctx->pps.cu_qp_delta_enabled_flag)
                 {
                     MCU_CLR_QP(ctx->map_scu[k]);
-                    MCU_SET_QP(ctx->map_scu[k], ctx->core->qp);
+                    MCU_SET_QP(ctx->map_scu[k], ctx->core[0]->qp);
                 }
                 else
                 {
@@ -2210,7 +2210,7 @@ int mode_init_frame(XEVE_CTX *ctx)
     XEVE_MODE *mi;
     int ret;
 
-    mi = &ctx->mode;
+    mi = &ctx->mode[0];
 
     /* set default values to mode information */
     mi->log2_culine = ctx->log2_max_cuwh - MIN_CU_LOG2;
@@ -2356,7 +2356,7 @@ static int mode_analyze_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
     u32 *map_scu;
     int  w, h;
 
-    mi = &ctx->mode_mt[core->thread_cnt];
+    mi = &ctx->mode[core->thread_cnt];
 
     xeve_mset(mi->mvp_idx, 0, sizeof(u8) * REFP_NUM);
     xeve_mset(mi->mvd, 0, sizeof(s16) * REFP_NUM * MV_D);
@@ -2430,7 +2430,7 @@ static int mode_set_complexity(XEVE_CTX *ctx, int complexity)
 {
     XEVE_MODE  *mi;
 
-    mi = &ctx->mode;
+    mi = &ctx->mode[0];
     xeve_assert_rv(mi != NULL, XEVE_ERR_UNEXPECTED);
 
     return XEVE_OK;
@@ -2440,7 +2440,7 @@ int xeve_mode_create(XEVE_CTX *ctx, int complexity)
 {
     XEVE_MODE *mi;
 
-    mi = &ctx->mode;
+    mi = &ctx->mode[0];
 
     /* create mode information structure */
     xeve_assert_rv(mi, XEVE_ERR_OUT_OF_MEMORY);

@@ -1522,10 +1522,10 @@ void xeve_set_suco_flag(s8  suco_flag, int cud, int cup, int cuw, int cuh, int l
     suco_flag_buf[cud][shape][pos] = suco_flag;
 }
 
-u8 xeve_check_suco_cond(int cuw, int cuh, s8 split_mode, int boundary, u8 log2_max_cuwh, u8 suco_max_depth, u8 suco_depth)
+u8 xeve_check_suco_cond(int cuw, int cuh, s8 split_mode, int boundary, u8 log2_max_cuwh, u8 log2_min_cuwh, u8 suco_max_depth, u8 suco_depth)
 {
     int suco_log2_maxsize = min((log2_max_cuwh - suco_max_depth), 6);
-    int suco_log2_minsize = max((suco_log2_maxsize - suco_depth), max(4, MIN_CU_LOG2));
+    int suco_log2_minsize = max((suco_log2_maxsize - suco_depth), max(4, log2_min_cuwh));
     if (XEVE_MIN(cuw, cuh) < (1 << suco_log2_minsize) || XEVE_MAX(cuw, cuh) > (1 << suco_log2_maxsize))
     {
         return 0;

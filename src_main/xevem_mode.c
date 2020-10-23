@@ -263,7 +263,7 @@ void xeve_rdo_bit_cnt_cu_inter_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
     int refi0, refi1;
     int vertex = 0;
     int vertex_num = mcore->affine_flag + 1;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     int b_no_cbf = 0;
     b_no_cbf |= pidx == AFF_DIR;
@@ -501,7 +501,7 @@ static int mode_cu_init_main(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int
 {
     XEVEM_CTX  * mctx = (XEVEM_CTX *)ctx;
     XEVEM_CORE * mcore = (XEVEM_CORE *)core;
-    XEVE_PIBC *pibc = &mctx->pibc_mt[core->thread_cnt];
+    XEVE_PIBC *pibc = &mctx->pibc[core->thread_cnt];
 
     mode_cu_init(ctx, core, x, y, log2_cuw, log2_cuh, cud);
 
@@ -1064,7 +1064,7 @@ static double mode_check_ibc(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int l
                 SBAC_STORE(core->s_next_best[log2_cuw - 2][log2_cuh - 2], core->s_temp_best);
                 DQP_STORE(core->dqp_next_best[log2_cuw - 2][log2_cuh - 2], core->dqp_temp_best);
 
-                XEVE_PIBC *pibc = &mctx->pibc_mt[core->thread_cnt];
+                XEVE_PIBC *pibc = &mctx->pibc[core->thread_cnt];
                 mi->pred_y_best = pibc->pred[0][Y_C];
                 mi->mvp_idx[0] = pibc->mvp_idx;
 
@@ -1679,7 +1679,8 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                 int suco_flag = 0;
                 SPLIT_DIR split_dir = xeve_split_get_direction(split_mode);
                 int is_mode_BT = xeve_split_is_BT(split_mode);
-                u8  allow_suco = ctx->sps.sps_suco_flag ? xeve_check_suco_cond(cuw, cuh, split_mode, boundary, ctx->log2_max_cuwh, ctx->sps.log2_diff_ctu_size_max_suco_cb_size, ctx->sps.log2_diff_max_suco_min_suco_cb_size) : 0;
+                u8  allow_suco = ctx->sps.sps_suco_flag ? xeve_check_suco_cond(cuw, cuh, split_mode, boundary, ctx->log2_max_cuwh, ctx->log2_min_cuwh
+                                                                             , ctx->sps.log2_diff_ctu_size_max_suco_cb_size, ctx->sps.log2_diff_max_suco_min_suco_cb_size) : 0;
                 int num_suco = (split_dir == SPLIT_VER) ? 2 : 1;
                 XEVE_SPLIT_STRUCT split_struct;
                 double cost_suco[2] = {MAX_COST, MAX_COST};
@@ -2126,7 +2127,7 @@ static int mode_init_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
 
     mode_init_lcu(ctx, core);
 
-    xeve_mset(mctx->ats_inter_num_pred_mt[core->thread_cnt], 0, sizeof(u8) * num_size_idx * num_size_idx * (ctx->max_cuwh >> MIN_CU_LOG2) * (ctx->max_cuwh >> MIN_CU_LOG2));
+    xeve_mset(mctx->ats_inter_num_pred[core->thread_cnt], 0, sizeof(u8) * num_size_idx * num_size_idx * (ctx->max_cuwh >> MIN_CU_LOG2) * (ctx->max_cuwh >> MIN_CU_LOG2));
 
     if (ctx->param.use_ibc_flag)
     {
@@ -2140,7 +2141,7 @@ static int mode_init_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
 
     if (ctx->sps.tool_hmvp)
     {
-        if (core->x_lcu == 0)
+        if (core->x_lcu == (ctx->tile[core->tile_num].ctba_rs_first) % ctx->w_lcu)
         {
             ret = xeve_hmvp_init(&(mcore->history_buffer));
             xeve_assert_rv(ret == XEVE_OK, ret);
@@ -2244,7 +2245,7 @@ static int mode_analyze_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
     u32 *map_scu;
     int  w, h;
 
-    mi = &ctx->mode_mt[core->thread_cnt];
+    mi = &ctx->mode[core->thread_cnt];
 
     xeve_mset(mi->mvp_idx, 0, sizeof(u8) * REFP_NUM);
     xeve_mset(mi->mvd, 0, sizeof(s16) * REFP_NUM * MV_D);

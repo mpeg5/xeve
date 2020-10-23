@@ -328,7 +328,7 @@ extern int fp_trace_started;
 /********* Conditional tools definition ********/
 
 /* number of picture order count lsb bit */
-#define POC_LSB_BIT                       (11)
+#define POC_LSB_BIT                        (8)
 #define PEL2BYTE(pel,cs)                  ((pel)*(((BD_FROM_CS(cs)) + 7)>>3))
 #define STRIDE_IMGB2PIC(s_imgb)           ((s_imgb)>>1)
 

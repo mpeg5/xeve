@@ -2729,7 +2729,7 @@ int xeve_alf_get_coef_rate(XEVE_ALF * enc_alf, ALF_SLICE_PARAM* alf_slice_param,
 
                 for (int k = 1; k < 15; k++)
                 {
-                    enc_alf->bits_coef_scan[alf_shape.golombIdx[i]][k] += xeve_alf_lenght_golomb(coef_val, k);
+                    enc_alf->bits_coef_scan[alf_shape.golombIdx[i]][k] += xeve_alf_length_golomb(coef_val, k, TRUE);
                 }
             }
         }
@@ -2767,7 +2767,7 @@ int xeve_alf_get_coef_rate(XEVE_ALF * enc_alf, ALF_SLICE_PARAM* alf_slice_param,
 
         for (int i = 0; i < alf_shape.num_coef - 1; i++)
         {
-            bits += xeve_alf_lenght_golomb(coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], enc_alf->k_min_tab[alf_shape.golombIdx[i]]);  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
+            bits += xeve_alf_length_golomb(coeff[ind* MAX_NUM_ALF_LUMA_COEFF + i], enc_alf->k_min_tab[alf_shape.golombIdx[i]], TRUE);  // alf_coeff_chroma[i], alf_coeff_luma_delta[i][j]
         }
     }
     return bits;
@@ -3022,7 +3022,7 @@ int xeve_alf_get_non_filter_coef_rate(ALF_SLICE_PARAM* alf_slice_param)
     const int num_fixed_filter_per_class = ALF_FIXED_FILTER_NUM;
     if (num_fixed_filter_per_class > 0)
     {
-        len += xeve_alf_lenght_golomb(alf_slice_param->fixed_filter_pattern, 0);
+        len += xeve_alf_length_golomb(alf_slice_param->fixed_filter_pattern, 0, FALSE);
         if (alf_slice_param->fixed_filter_pattern == 2)
         {
             len += MAX_NUM_ALF_CLASSES;  //"fixed_filter_flag" for each class
@@ -3091,7 +3091,7 @@ int xeve_alf_get_cost_filter_coef_force0(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* a
             int coef_val = abs(diff_q_filter_coef[ind][i]);
             for (int k = 1; k < 15; k++)
             {
-                enc_alf->bits_coef_scan[alf_shape->golombIdx[i]][k] += xeve_alf_lenght_golomb(coef_val, k);
+                enc_alf->bits_coef_scan[alf_shape->golombIdx[i]][k] += xeve_alf_length_golomb(coef_val, k, TRUE);
             }
         }
     }
@@ -3099,17 +3099,17 @@ int xeve_alf_get_cost_filter_coef_force0(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* a
     int k_min = xeve_alf_get_golomb_k_min(alf_shape, num_filters, enc_alf->k_min_tab, enc_alf->bits_coef_scan);
 
     // Coding parameters
-    int len = k_min           //min_golomb_order
-        + max_golomb_idx   //golomb_order_increase_flag
-        + num_filters;    //filter_coefficient_flag[i]
-                         // Filter coefficients
+    int len = k_min           // min_golomb_order
+            + max_golomb_idx  // golomb_order_increase_flag
+            + num_filters;    // filter_coefficient_flag[i]
+                              // Filter coefficients
     for (int ind = 0; ind < num_filters; ++ind)
     {
         if (coded_var_bins[ind])
         {
             for (int i = 0; i < alf_shape->num_coef - 1; i++)
             {
-                len += xeve_alf_lenght_golomb(abs(diff_q_filter_coef[ind][i]), enc_alf->k_min_tab[alf_shape->golombIdx[i]]); // alf_coeff_luma_delta[i][j]
+                len += xeve_alf_length_golomb(abs(diff_q_filter_coef[ind][i]), enc_alf->k_min_tab[alf_shape->golombIdx[i]], TRUE); // alf_coeff_luma_delta[i][j]
             }
         }
     }
@@ -3157,7 +3157,7 @@ int xeve_alf_get_cost_filter_coef(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* alf_shap
             int coef_val = abs(diff_q_filter_coef[ind][i]);
             for (int k = 1; k < 15; k++)
             {
-                enc_alf->bits_coef_scan[alf_shape->golombIdx[i]][k] += xeve_alf_lenght_golomb(coef_val, k);
+                enc_alf->bits_coef_scan[alf_shape->golombIdx[i]][k] += xeve_alf_length_golomb(coef_val, k, TRUE);
             }
         }
     }
@@ -3180,7 +3180,7 @@ int xeve_alf_length_filter_coef(ALF_FILTER_SHAPE* alf_shape, const int num_filte
   {
     for (int i = 0; i < alf_shape->num_coef - 1; i++)
     {
-      bit_cnt += xeve_alf_lenght_golomb(abs(filter_coef[ind][i]), k_min_tab[alf_shape->golombIdx[i]]);
+      bit_cnt += xeve_alf_length_golomb(abs(filter_coef[ind][i]), k_min_tab[alf_shape->golombIdx[i]], TRUE);
     }
   }
   return bit_cnt;
@@ -3198,7 +3198,7 @@ double xeve_alf_get_dist_force0(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* alf_shape,
             int coef_val = abs(enc_alf->filter_coef_set[ind][i]);
             for (int k = 1; k < 15; k++)
             {
-                enc_alf->bits_coef_scan[alf_shape->golombIdx[i]][k] += xeve_alf_lenght_golomb(coef_val, k);
+                enc_alf->bits_coef_scan[alf_shape->golombIdx[i]][k] += xeve_alf_length_golomb(coef_val, k, TRUE);
             }
         }
     }
@@ -3210,7 +3210,7 @@ double xeve_alf_get_dist_force0(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* alf_shape,
         bits_var_bin[ind] = 0;
         for (int i = 0; i < alf_shape->num_coef - 1; i++)
         {
-            bits_var_bin[ind] += xeve_alf_lenght_golomb(abs(enc_alf->filter_coef_set[ind][i]), enc_alf->k_min_tab[alf_shape->golombIdx[i]]);
+            bits_var_bin[ind] += xeve_alf_length_golomb(abs(enc_alf->filter_coef_set[ind][i]), enc_alf->k_min_tab[alf_shape->golombIdx[i]], TRUE);
         }
     }
 
@@ -3298,18 +3298,22 @@ int xeve_alf_lenght_uvlc(int code)
     return (length >> 1) + ((length + 1) >> 1);
 }
 
-int xeve_alf_lenght_golomb(int coef_val, int k)
+int xeve_alf_length_golomb(int coef_val, int k, BOOL signed_coeff)
 {
-    int m = k == 0 ? 1 : (2 << (k - 1));
-    int q = coef_val / m;
-    if (coef_val != 0)
+    int num_bins = 0;
+    unsigned int symbol = abs(coef_val);
+    while (symbol >= (unsigned int)(1 << k))
     {
-        return q + 2 + k;
+        num_bins++;
+        symbol -= 1 << k;
+        k++;
     }
-    else
+    num_bins += (k + 1);
+    if (signed_coeff && coef_val != 0)
     {
-        return q + 1 + k;
+        num_bins++;
     }
+    return num_bins;
 }
 
 double xeve_alf_derive_filter_coef(XEVE_ALF * enc_alf, ALF_COVARIANCE* cov, ALF_COVARIANCE* cov_merged, ALF_FILTER_SHAPE* alf_shape, short* filter_indices, int num_filters, double err_tab_force0_coef[MAX_NUM_ALF_CLASSES][2])

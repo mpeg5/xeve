@@ -361,7 +361,7 @@ double     xeve_alf_get_dist_force0(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* alf_sh
 double     xeve_alf_get_dist_coef_force0(XEVE_ALF * enc_alf, BOOL* coded_var_bins, double err_force0_coef_tab[MAX_NUM_ALF_CLASSES][2], int* bits_var_bin, const int num_filters);
 int        xeve_alf_lenght_uvlc(int code);
 int        xeve_alf_get_golomb_k_min(ALF_FILTER_SHAPE* alf_shape, const int num_filters, int k_min_tab[MAX_NUM_ALF_LUMA_COEFF], int bits_coef_scan[MAX_SCAN_VAL][MAX_EXP_GOLOMB]);
-int        xeve_alf_lenght_golomb(int coeffVal, int k);
+int        xeve_alf_length_golomb(int coef_val, int k, BOOL signed_coeff);
 double     xeve_alf_derive_filter_coef(XEVE_ALF * enc_alf, ALF_COVARIANCE* cov, ALF_COVARIANCE* cov_merged, ALF_FILTER_SHAPE* alf_shape, short* filter_indices, int num_filters, double err_tab_force0_coef[MAX_NUM_ALF_CLASSES][2]);
 double     xeve_alf_derive_coef_quant(int *filter_coef_quant, double **E, double *y, const int num_coef, int* weights, const int bit_depth, const BOOL is_chroma /*= FALSE*/);
 double     xeve_alf_calc_err_coef(double **E, double *y, const int *coeff, const int num_coef, const int bit_depth);

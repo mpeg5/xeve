@@ -89,7 +89,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   - Application and libraries built with Main Profile can also support Baseline Profile operation.
     
 ## How to use
-XEVE supports all profiles of EVC. Default configure files of coding structures with profiles are provided in **cfg** folder.
+XEVE supports all profiles of EVC. Examples of configure file of coding structures are provided in **cfg** folder.
 
 | OPTION                | DEFAULT | DESCRIPTION                                    |
 |-----------------------|---------|------------------------------------------------|
@@ -99,15 +99,15 @@ XEVE supports all profiles of EVC. Default configure files of coding structures 
 | -h, --height          | -       | pixel height of input video                    |
 | -z, --hz              | -       | frame rate (Hz)                                |
 | -f, --frames          | -       | maximum number of frames to be encoded         |
-| -q, --op_qp           | 0       | QP value (0~51)                                |
+| -q, --op_qp           | 32      | QP value (0~51)                                |
 | -d, --input_bit_depth | 8       | input bitdepth (8, 10)                         |
-| -m, --parallel_task   | 0       | mumber of threads to be created                |
-| -\- config            | -       | file name of configuration                     |   
-
+| -m, --parallel_task   | 0       | mumber of threads to be created                |  
+| -\-profile            | 0(base) | index of profile(0:baseline, 1:main)           |
+| -\- config            | -       | file name of configuration                     | 
 >More optins can be found when type **xeve_app** only.   
  
 ### Example
-	$xeve_app -i RaceHorses_416x240_30.yuv -w 416 -h 240 -z 30 -q 37 -f 300 --config encoder_randomaccess.cfg -o xeve.bin 
+	$xeve_app -i RaceHorses_416x240_30.yuv -w 416 -h 240 -z 30 -o xeve.bin
 
 
 ## License

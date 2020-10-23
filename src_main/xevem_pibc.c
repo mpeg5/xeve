@@ -60,7 +60,7 @@ int is_bv_valid(XEVE_CTX *ctx, int x, int y, int width, int height, int log2_cuw
     scuw = 1 << log2_scuw;
     scuh = 1 << log2_scuh;
 
-    const int ctu_size_log2 = mctx->pibc_mt[core->thread_cnt].ctu_log2_tbl[ctu_size];
+    const int ctu_size_log2 = mctx->pibc[core->thread_cnt].ctu_log2_tbl[ctu_size];
 
     int ref_right_x = x + x_bv + width - 1;
     int ref_bottom_y = y + y_bv + height - 1;
@@ -293,7 +293,7 @@ static double pibc_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int
 {
     XEVEM_CTX  *mctx = (XEVEM_CTX *)ctx;
     XEVEM_CORE *mcore = (XEVEM_CORE *)core;
-    XEVE_PIBC  *pi = &mctx->pibc_mt[core->thread_cnt];
+    XEVE_PIBC  *pi = &mctx->pibc[core->thread_cnt];
 
     int   *nnz, tnnz, w[N_C], h[N_C], log2_w[N_C], log2_h[N_C];
     int    cuw;
@@ -676,7 +676,7 @@ static int pibc_search_estimation(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_PIBC *pi,
     int bestX = 0;
     int bestY = 0;
     int mv_bits = 0, best_mv_bits = 0;
-    XEVE_PIC *ref_pic = mctx->pibc_mt[core->thread_cnt].pic_m;
+    XEVE_PIC *ref_pic = mctx->pibc[core->thread_cnt].pic_m;
     pel *org = pi->o[Y_C] + cu_y * pi->s_o[Y_C] + cu_x;
     pel *rec = ref_pic->y + cu_y * ref_pic->s_l + cu_x;
     pel *ref = rec;
@@ -684,8 +684,8 @@ static int pibc_search_estimation(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_PIBC *pi,
     u32 sad_best_cand[CHROMA_REFINEMENT_CANDIDATES];
     s16 mv_cand[CHROMA_REFINEMENT_CANDIDATES][MV_D];
 
-    ibc_set_search_range(ctx, core, cu_x, cu_y, log2_cuw, log2_cuh, mctx->pibc_mt[core->thread_cnt].search_range_x,
-        mctx->pibc_mt[core->thread_cnt].search_range_y, mv_search_range_left, mv_search_range_right);
+    ibc_set_search_range(ctx, core, cu_x, cu_y, log2_cuw, log2_cuh, mctx->pibc[core->thread_cnt].search_range_x,
+        mctx->pibc[core->thread_cnt].search_range_y, mv_search_range_left, mv_search_range_right);
 
     srch_rng_hor_left = mv_search_range_left[0];
     srch_rng_hor_right = mv_search_range_right[0];
@@ -1034,7 +1034,7 @@ static double pibc_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int 
     int start_c = xeve_check_luma(core->tree_cons) ? Y_C : U_C;
     int end_c = xeve_check_chroma(core->tree_cons) ? N_C : U_C;
 
-    pi = &mctx->pibc_mt[core->thread_cnt];
+    pi = &mctx->pibc[core->thread_cnt];
 
     cuw = (1 << log2_cuw);
     cuh = (1 << log2_cuh);
@@ -1118,7 +1118,7 @@ static int pibc_init_frame(XEVE_CTX *ctx)
 
     int size;
 
-    pi = &mctx->pibc;
+    pi = &mctx->pibc[0];
 
     pic = pi->pic_o = PIC_ORIG(ctx);
     pi->o[Y_C] = pic->y;
@@ -1170,14 +1170,14 @@ void reset_ibc_search_range(XEVE_CTX *ctx, int cu_x, int cu_y, int log2_cuw, int
 {
     XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
     int hashHitRatio = 0;
-    mctx->pibc_mt[core->thread_cnt].search_range_x = ctx->param.ibc_search_range_x;
-    mctx->pibc_mt[core->thread_cnt].search_range_y = ctx->param.ibc_search_range_y;
+    mctx->pibc[core->thread_cnt].search_range_x = ctx->param.ibc_search_range_x;
+    mctx->pibc[core->thread_cnt].search_range_y = ctx->param.ibc_search_range_y;
     hashHitRatio = xeve_ibc_hash_hit_ratio(ctx, mctx->ibc_hash, cu_x, cu_y, log2_cuw, log2_cuh); // in percent
     
     if (hashHitRatio < 5) // 5%
     {
-        mctx->pibc_mt[core->thread_cnt].search_range_x >>= 1;
-        mctx->pibc_mt[core->thread_cnt].search_range_y >>= 1;
+        mctx->pibc[core->thread_cnt].search_range_x >>= 1;
+        mctx->pibc[core->thread_cnt].search_range_y >>= 1;
     }
 }
 
@@ -1185,7 +1185,7 @@ static int pibc_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
 {
     XEVE_PIBC *pi;
     XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
-    pi = &mctx->pibc_mt[core->thread_cnt];
+    pi = &mctx->pibc[core->thread_cnt];
 
     pi->lambda_mv = (u32)floor(65536.0 * ctx->sqrt_lambda[0]);
     pi->qp_y = core->qp_y;
@@ -1202,7 +1202,7 @@ static int pibc_set_complexity(XEVE_CTX *ctx, int complexity)
 
     for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
     {
-        pi = &mctx->pibc_mt[i];
+        pi = &mctx->pibc[i];
         pi->search_range_x = ctx->param.ibc_search_range_x;
         pi->search_range_y = ctx->param.ibc_search_range_y;
         mctx->fn_pibc_analyze_cu = pibc_analyze_cu;
@@ -1224,7 +1224,7 @@ int xeve_pibc_create(XEVE_CTX *ctx, int complexity)
     
     for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
     {
-        pi = &mctx->pibc_mt[i];
+        pi = &mctx->pibc[i];
         pi->min_clip[MV_X] = -MAX_CU_SIZE + 1;
         pi->min_clip[MV_Y] = -MAX_CU_SIZE + 1;
         pi->max_clip[MV_X] = ctx->param.w - 1;

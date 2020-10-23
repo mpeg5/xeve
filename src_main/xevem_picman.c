@@ -36,25 +36,229 @@
 #include "xevem_picman.h"
 
 
+XEVE_RPL pre_define_rpls[2][3][2][MAX_NUM_RPLS] = 
+{
+    /* Disable redordering (LD) */
+    {
+        /* GOP 4 */
+        {
+            /* L0 */
+            {
+                { 1, 0, 4, 4, {1, 5, 9, 13}, 'B' },
+                { 2, 0, 4, 4, {1, 2, 6, 10}, 'B' },
+                { 3, 0, 4, 4, {1, 3, 7, 11}, 'B' },
+                { 4, 0, 4, 4, {1, 4, 8, 12}, 'B' },
+                { 1, 0, 1, 1, {1,}, 'B' },
+                { 2, 0, 2, 2, {1, 2,}, 'B' },
+                { 3, 0, 3, 3, {1, 2, 3,}, 'B' },
+                { 4, 0, 4, 4, {1, 2, 3, 4}, 'B' },
+                { 1, 0, 4, 4, {1, 2, 3, 5}, 'B' },
+                { 2, 0, 4, 4, {1, 2, 3, 6}, 'B' },
+                { 3, 0, 4, 4, {1, 2, 3, 7}, 'B' },
+                { 4, 0, 4, 4, {1, 2, 4, 8}, 'B' },
+                { 1, 0, 4, 4, {1, 2, 5, 9}, 'B' },
+            },
+            /* L0 */
+            {
+                { 1, 0, 4, 4, {1, 5, 9, 13}, 'B' },
+                { 2, 0, 4, 4, {1, 2, 6, 10}, 'B' },
+                { 3, 0, 4, 4, {1, 3, 7, 11}, 'B' },
+                { 4, 0, 4, 4, {1, 4, 8, 12}, 'B' },
+                { 1, 0, 1, 1, {1,}, 'B' },
+                { 2, 0, 2, 2, {1, 2,}, 'B' },
+                { 3, 0, 3, 3, {1, 2, 3, }, 'B' },
+                { 4, 0, 4, 4, {1, 2, 3, 4}, 'B' },
+                { 1, 0, 4, 4, {1, 2, 3, 5}, 'B' },
+                { 2, 0, 4, 4, {1, 2, 3, 6}, 'B' },
+                { 3, 0, 4, 4, {1, 2, 3, 7}, 'B' },
+                { 4, 0, 4, 4, {1, 2, 4, 8}, 'B' },
+                { 1, 0, 4, 4, {1, 2, 5, 9}, 'B' },
+            },
+        },
+        /* GOP 8 */
+        {
+            /* L0 */
+            {
+                { 1, 0, 4, 4, {1, 9, 17, 25}, 'B' },
+                { 2, 0, 4, 4, {1, 2, 10, 18}, 'B' },
+                { 3, 0, 4, 4, {1, 3, 11, 19}, 'B' },
+                { 4, 0, 4, 4, {1, 4, 12, 20}, 'B' },
+                { 5, 0, 4, 4, {1, 5, 13, 21}, 'B' },
+                { 6, 0, 4, 4, {1, 6, 14, 22}, 'B' },
+                { 7, 0, 4, 4, {1, 7, 15, 23}, 'B' },
+                { 8, 0, 4, 4, {1, 8, 16, 24}, 'B' },
+                { 1, 0, 1, 1, {1}, 'B' },
+                { 2, 0, 2, 2, {1, 2}, 'B' },
+                { 3, 0, 3, 3, {1, 2, 3, }, 'B' },
+                { 4, 0, 4, 4, {1, 2, 3, 4}, 'B' },
+                { 5, 0, 4, 4, {1, 2, 3, 5}, 'B' },
+                { 6, 0, 4, 4, {1, 2, 3, 6}, 'B' },
+                { 7, 0, 4, 4, {1, 2, 3, 7}, 'B' },
+                { 8, 0, 4, 4, {1, 2, 3, 8}, 'B' },
+                { 1, 0, 4, 4, {1, 2, 3, 9}, 'B' },
+                { 2, 0, 4, 4, {1, 2, 3, 10}, 'B' },
+                { 3, 0, 4, 4, {1, 2, 3, 11}, 'B' },
+                { 4, 0, 4, 4, {1, 2, 4, 12}, 'B' },
+                { 5, 0, 4, 4, {1, 2, 5, 13}, 'B' },
+                { 6, 0, 4, 4, {1, 2, 6, 14}, 'B' },
+                { 7, 0, 4, 4, {1, 2, 7, 15}, 'B' },
+                { 8, 0, 4, 4, {1, 2, 8, 16}, 'B' },
+                { 1, 0, 4, 4, {1, 2, 9, 17}, 'B' },
+            },
+            /* L1 */
+            {
+                { 1, 0, 4, 4, {1, 9, 17, 25}, 'B' },
+                { 2, 0, 4, 4, {1, 2, 10, 18}, 'B' },
+                { 3, 0, 4, 4, {1, 3, 11, 19}, 'B' },
+                { 4, 0, 4, 4, {1, 4, 12, 20}, 'B' },
+                { 5, 0, 4, 4, {1, 5, 13, 21}, 'B' },
+                { 6, 0, 4, 4, {1, 6, 14, 22}, 'B' },
+                { 7, 0, 4, 4, {1, 7, 15, 23}, 'B' },
+                { 8, 0, 4, 4, {1, 8, 16, 24}, 'B' },
+                { 1, 0, 1, 1, {1}, 'B' },
+                { 2, 0, 2, 2, {1, 2}, 'B' },
+                { 3, 0, 3, 3, {1, 2, 3}, 'B' },
+                { 4, 0, 4, 4, {1, 2, 3, 4}, 'B' },
+                { 5, 0, 4, 4, {1, 2, 3, 5}, 'B' },
+                { 6, 0, 4, 4, {1, 2, 3, 6}, 'B' },
+                { 7, 0, 4, 4, {1, 2, 3, 7}, 'B' },
+                { 8, 0, 4, 4, {1, 2, 3, 8}, 'B' },
+                { 1, 0, 4, 4, {1, 2, 3, 9}, 'B' },
+                { 2, 0, 4, 4, {1, 2, 3, 10}, 'B' },
+                { 3, 0, 4, 4, {1, 2, 3, 11}, 'B' },
+                { 4, 0, 4, 4, {1, 2, 4, 12}, 'B' },
+                { 5, 0, 4, 4, {1, 2, 5, 13}, 'B' },
+                { 6, 0, 4, 4, {1, 2, 6, 14}, 'B' },
+                { 7, 0, 4, 4, {1, 2, 7, 15}, 'B' },
+                { 8, 0, 4, 4, {1, 2, 8, 16}, 'B' },
+                { 1, 0, 4, 4, {1, 2, 9, 17}, 'B' },
+            },
+        }, 
+    },
+    /* Enable redordering (RA) */
+    {
+        /* GOP 4 */
+        {
+            /* L0 */
+            {
+                { 4, 0, 3, 2, {4, 8, 6, }, 'B' },
+                { 2, 1, 2, 2, {2, 4,}, 'B' },
+                { 1, 2, 2, 2, {1, -1,}, 'B' },
+                { 3, 3, 2, 2, {1, 3,}, 'B' },
+                { 4, 0, 1, 1, {4,}, 'B' },
+                { 2, 1, 2, 2, {2, -2,}, 'B' },
+            },
+            /* L1 */
+            {
+                { 4, 0, 2, 2, {4, 8,}, 'B' },
+                { 2, 1, 2, 2, {-2, 2,}, 'B' },
+                { 1, 2, 2, 2, {-1, -3,}, 'B' },
+                { 3, 3, 2, 2, {-1, 1,}, 'B' },
+                { 4, 0, 1, 1, {4,}, 'B' },
+                { 2, 1, 2, 2, {-2, 2,}, 'B' },
+            },
+        },
+        /* GOP 8 */
+        {
+            /* L0 */
+            {
+                { 8, 0, 3, 2, {8, 16, 12, }, 'B' },
+                { 4, 1, 2, 2, {4, 8,}, 'B' },
+                { 2, 2, 2, 2, {2, 6,}, 'B' },
+                { 1, 3, 2, 2, {1, -1,}, 'B' },
+                { 3, 3, 2, 2, {1, -3,}, 'B' },
+                { 6, 2, 2, 2, {2, 4,}, 'B' },
+                { 5, 3, 2, 2, {1, 5,}, 'B' },
+                { 7, 3, 3, 2, {1, 3, 7,}, 'B' },
+                { 8, 0, 1, 1, {8,}, 'B' },
+                { 4, 1, 2, 2, {4, -4,}, 'B' },
+            },
+            {
+                { 8, 0, 2, 2, {8, 16,}, 'B' },
+                { 4, 1, 2, 2, {-4, 4,}, 'B' },
+                { 2, 2, 2, 2, {-2, -6,}, 'B' },
+                { 1, 3, 3, 2, {-1, -3, -7,}, 'B' },
+                { 3, 3, 2, 2, {-1, -5,}, 'B' },
+                { 6, 2, 2, 2, {-2, 4,}, 'B' },
+                { 5, 3, 2, 2, {-1, -3,}, 'B' },
+                { 7, 3, 2, 2, {-1, 1,}, 'B' },
+                { 8, 0, 2, 1, {8,}, 'B' },
+                { 4, 1, 2, 2, {-4, 4,}, 'B' },
+            },
+        },
+        /* GOP 16 */
+        {
+            /* L0 */
+            {
+                { 16, 0, 3, 2, {16, 32, 24,}, 'B' },
+                { 8,  1, 2, 2, {8, 16,}, 'B' },
+                { 4,  2, 2, 2, {4, 12,}, 'B' },
+                { 2,  3, 2, 2, {2, 10,}, 'B' },
+                { 1,  4, 2, 2, {1, -1,}, 'B' },
+                { 3,  4, 2, 2, {1, 3,}, 'B' },
+                { 6,  3, 2, 2, {2, 6,}, 'B' },
+                { 5,  4, 2, 2, {1, 5,}, 'B' },
+                { 7,  4, 3, 2, {1, 3, 7,}, 'B' },
+                { 12, 2, 2, 2, {4, 12,}, 'B' },
+                { 10, 3, 2, 2, {2, 10,}, 'B' },
+                { 9,  4, 2, 2, {1, 9,}, 'B' },
+                { 11, 4, 3, 2, {1, 3, 11,}, 'B' },
+                { 13, 4, 3, 2, {1, 5, 13,}, 'B' },
+                { 14, 3, 3, 2, {2, 6, 14,}, 'B' },
+                { 15, 4, 4, 2, {1, 3, 7, 15}, 'B' },
+                { 16, 0, 1, 1, {16,}, 'B' },
+                { 8,  1, 2, 2, {8, -8,}, 'B' },
+                { 4,  2, 2, 2, {4, -4,}, 'B' },
+                { 2,  3, 2, 2, {2, -2,}, 'B' },
+            },
+            /* L1 */
+            {
+                { 16, 0, 2, 2, {16, 32,}, 'B' },
+                { 8,  1, 2, 2, {-8, 8,}, 'B' },
+                { 4,  2, 2, 2, {-4, -12,}, 'B' },
+                { 2,  3, 3, 2, {-2, -6, -14,}, 'B' },
+                { 1,  4, 4, 2, {-1, -3, -7, -15}, 'B' },
+                { 3,  4, 3, 2, {-1, -5, -13,}, 'B' },
+                { 6,  3, 2, 2, {-2, -10,}, 'B' },
+                { 5,  4, 3, 2, {-1, -3, -11,}, 'B' },
+                { 7,  4, 2, 2, {-1, -9,}, 'B' },
+                { 12, 2, 2, 2, {-4, 4,}, 'B' },
+                { 10, 3, 2, 2, {-2, -6,}, 'B' },
+                { 9,  4, 3, 2, {-1, -3, -7, }, 'B' },
+                { 11, 4, 2, 2, {-1, -5,}, 'B' },
+                { 13, 3, 2, 2, {-1, -3,}, 'B' },
+                { 14, 4, 2, 2, {-2, 2,}, 'B' },
+                { 15, 4, 2, 2, {-1, 1,}, 'B' },
+                { 16, 0, 1, 1, {16,}, 'B' },
+                { 8,  1, 2, 2, {-8, 8,}, 'B' },
+                { 4,  2, 2, 2, {-4, -12,}, 'B' },
+                { 2,  3, 3, 2, {-2, -6, -14,}, 'B' },
+            },
+        },
+    },
+
+};
+
+
 //Implementation for selecting and assigning RPL0 & RPL1 candidates in the SPS to SH
 void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
 {
     //TBD: when NALU types are implemented; if the current picture is an IDR, simply return without doing the rest of the codes for this function
 
 
-    /* introduce this variable for LD reason. The predefined RPL in the cfg file is made assuming GOP size is 4 for LD configuration*/
-    int gopSize = (ctx->param.gop_size == 1) ? GOP_P : ctx->param.gop_size;
+    /* introduce this variable for LD reason. The predefined RPL in the cfg file is made assuming GOP size is 8 for LD configuration*/
+    int gopSize = (ctx->param.gop_size == 1) ? ctx->param.ref_pic_gap_length : ctx->param.gop_size;
 
 
     //Assume it the pic is in the normal GOP first. Normal GOP here means it is not the first (few) GOP in the beginning of the bitstream
     sh->rpl_l0_idx = sh->rpl_l1_idx = -1;
     sh->ref_pic_list_sps_flag[0] = sh->ref_pic_list_sps_flag[1] = 0;
 
-    int availableRPLs = (ctx->cdsc.ext->rpls_l0_cfg_num < gopSize) ? ctx->cdsc.ext->rpls_l0_cfg_num : gopSize;
+    int availableRPLs = (ctx->sps.num_ref_pic_lists_in_sps0 < gopSize) ? ctx->sps.num_ref_pic_lists_in_sps0 : gopSize;
     for (int i = 0; i < availableRPLs; i++)
     {
         int pocIdx = (ctx->poc.poc_val % gopSize == 0) ? gopSize : ctx->poc.poc_val % gopSize;
-        if (pocIdx == ctx->cdsc.ext->rpls_l0[i].poc)
+        if (pocIdx == ctx->sps.rpls_l0[i].poc)
         {
             sh->rpl_l0_idx = i;
             sh->rpl_l1_idx = sh->rpl_l0_idx;
@@ -65,7 +269,7 @@ void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     //For special case when the pic is in the first (few) GOP in the beginning of the bitstream.
     if (ctx->param.gop_size == 1)                          //For low delay configuration
     {
-        if (ctx->poc.poc_val <= (ctx->cdsc.ext->rpls_l0_cfg_num - gopSize))
+        if (ctx->poc.poc_val <= (ctx->sps.num_ref_pic_lists_in_sps0 - gopSize))
         {
             sh->rpl_l0_idx = ctx->poc.poc_val + gopSize - 1;
             sh->rpl_l1_idx = sh->rpl_l0_idx;
@@ -73,10 +277,10 @@ void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     }
     else                                                 //For random access configuration
     {
-        for (int i = gopSize; i < ctx->cdsc.ext->rpls_l0_cfg_num; i++)
+        for (int i = gopSize; i < ctx->sps.num_ref_pic_lists_in_sps0; i++)
         {
             int pocIdx = ctx->param.i_period == 0 ? ctx->poc.poc_val : (ctx->poc.poc_val % ctx->param.i_period == 0) ? ctx->param.i_period : ctx->poc.poc_val % ctx->param.i_period;
-            if (pocIdx == ctx->cdsc.ext->rpls_l0[i].poc)
+            if (pocIdx == ctx->sps.rpls_l0[i].poc)
             {
                 sh->rpl_l0_idx = i;
                 sh->rpl_l1_idx = i;
@@ -86,23 +290,23 @@ void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     }
     if (ctx->slice_type != SLICE_I)
     {
-        ctx->slice_type = ctx->cdsc.ext->rpls_l0[sh->rpl_l0_idx].pic_type == 'P' ? SLICE_P : SLICE_B;
+        ctx->slice_type = ctx->sps.rpls_l0[sh->rpl_l0_idx].pic_type == 'P' ? SLICE_P : SLICE_B;
     }
     //Copy RPL0 from the candidate in SPS to this SH
     sh->rpl_l0.poc = ctx->poc.poc_val;
-    sh->rpl_l0.tid = ctx->cdsc.ext->rpls_l0[sh->rpl_l0_idx].tid;
-    sh->rpl_l0.ref_pic_num = ctx->cdsc.ext->rpls_l0[sh->rpl_l0_idx].ref_pic_num;
-    sh->rpl_l0.ref_pic_active_num = ctx->cdsc.ext->rpls_l0[sh->rpl_l0_idx].ref_pic_active_num;
+    sh->rpl_l0.tid = ctx->sps.rpls_l0[sh->rpl_l0_idx].tid;
+    sh->rpl_l0.ref_pic_num = ctx->sps.rpls_l0[sh->rpl_l0_idx].ref_pic_num;
+    sh->rpl_l0.ref_pic_active_num = ctx->sps.rpls_l0[sh->rpl_l0_idx].ref_pic_active_num;
     for (int i = 0; i < sh->rpl_l0.ref_pic_num; i++)
-        sh->rpl_l0.ref_pics[i] = ctx->cdsc.ext->rpls_l0[sh->rpl_l0_idx].ref_pics[i];
+        sh->rpl_l0.ref_pics[i] = ctx->sps.rpls_l0[sh->rpl_l0_idx].ref_pics[i];
 
     //Copy RPL0 from the candidate in SPS to this SH
     sh->rpl_l1.poc = ctx->poc.poc_val;
-    sh->rpl_l1.tid = ctx->cdsc.ext->rpls_l1[sh->rpl_l1_idx].tid;
-    sh->rpl_l1.ref_pic_num = ctx->cdsc.ext->rpls_l1[sh->rpl_l1_idx].ref_pic_num;
-    sh->rpl_l1.ref_pic_active_num = ctx->cdsc.ext->rpls_l1[sh->rpl_l1_idx].ref_pic_active_num;
+    sh->rpl_l1.tid = ctx->sps.rpls_l1[sh->rpl_l1_idx].tid;
+    sh->rpl_l1.ref_pic_num = ctx->sps.rpls_l1[sh->rpl_l1_idx].ref_pic_num;
+    sh->rpl_l1.ref_pic_active_num = ctx->sps.rpls_l1[sh->rpl_l1_idx].ref_pic_active_num;
     for (int i = 0; i < sh->rpl_l1.ref_pic_num; i++)
-        sh->rpl_l1.ref_pics[i] = ctx->cdsc.ext->rpls_l1[sh->rpl_l1_idx].ref_pics[i];
+        sh->rpl_l1.ref_pics[i] = ctx->sps.rpls_l1[sh->rpl_l1_idx].ref_pics[i];
 
     if (sh->rpl_l0_idx != -1)
     {

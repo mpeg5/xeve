@@ -397,10 +397,10 @@ static int  op_max_frm_num        = 0;
 static int  op_use_pic_signature  = 0;
 static int  op_w                  = 0;
 static int  op_h                  = 0;
-static int  op_qp                 = 0;
+static int  op_qp                 = 32;
 static int  op_fps                = 0;
 static int  op_iperiod            = 0;
-static int  op_max_b_frames       = 0;
+static int  op_max_b_frames       = 15;
 static int  op_ref_pic_gap_length = 0;
 static int  op_closed_gop         = 0;
 static int  op_enable_ibc         = 0;
@@ -416,7 +416,7 @@ static int  op_skip_frames        = 0;
 static int  op_out_bit_depth      = 0; /* same as input bit depth */
 static int  op_codec_bit_depth    = 10;
 static int  op_rdo_dbk_switch     = 1;
-static int  op_profile            = 1;
+static int  op_profile            = 0;
 static int  op_level              = 0;
 static int  op_btt                = 1;
 static int  op_suco               = 1;
@@ -480,6 +480,7 @@ static char op_dra_chroma_cb_scale[256]  = "1.0";
 static char op_dra_chroma_cr_scale[256]  = "1.0";
 static char op_dra_hist_norm[256]        = "1.0";
 
+static int  op_rpl_extern = 0;
 static char op_rpl0[MAX_NUM_RPLS][256];
 static char op_rpl1[MAX_NUM_RPLS][256];
 
@@ -584,6 +585,7 @@ typedef enum _OP_FLAGS
     OP_DRA_CHROMA_CB_SCALE,
     OP_DRA_CHROMA_CR_SCALE,
     OP_DRA_HIST_NORM,
+    OP_FLAG_RPL_EXTERN,
     OP_FLAG_RPL0_0,
     OP_FLAG_RPL0_1,
     OP_FLAG_RPL0_2,
@@ -1113,6 +1115,11 @@ static ARGS_OPTION options[] = \
         ARGS_NO_KEY,  "dra_hist_norm", ARGS_VAL_TYPE_STRING,
         &op_flag[OP_DRA_HIST_NORM], &op_dra_hist_norm,
         "op_dra_hist_norm"
+    },
+    {
+        ARGS_NO_KEY,  "rpl_extern", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_FLAG_RPL_EXTERN], &op_rpl_extern,
+        "Whether to input external RPL"
     },
     {
         ARGS_NO_KEY,  "RPL0_0", ARGS_VAL_TYPE_STRING,

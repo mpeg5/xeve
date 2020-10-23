@@ -79,7 +79,7 @@ static int pinter_init_frame(XEVE_CTX *ctx)
     XEVE_PIC     *pic;
     int size;
 
-    pi = &ctx->pinter;
+    pi = &ctx->pinter[0];
 
     pic = pi->pic_o = PIC_ORIG(ctx);
     pi->o[Y_C] = pic->y;
@@ -214,7 +214,7 @@ static int pinter_init_frame(XEVE_CTX *ctx)
 /* For Main profile */
 static int pinter_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
 {
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     pi->lambda_mv = (u32)floor(65536.0 * ctx->sqrt_lambda[0]);
     pi->qp_y = core->qp_y;
@@ -1240,7 +1240,7 @@ __inline static int mmvd_info_bit_cost(int mvp_idx, int type)
 
 static double pinter_residue_rdo_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, pel pred[2][N_C][MAX_CU_DIM], int pidx)
 {
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     int             w, h, log2_w, log2_h;
     int             bit_cnt;
@@ -1523,9 +1523,9 @@ void search_ats_inter_info_saved(XEVE_CTX *ctx, XEVE_CORE *core, u32 dist_pu, in
     int i;
     *ats_inter_info_match = 255;
 
-    u8  *ats_inter_num_pred = mctx->ats_inter_num_pred_mt[core->thread_cnt];
-    u32 *ats_inter_pred_dist = mctx->ats_inter_pred_dist_mt[core->thread_cnt];
-    u8  *ats_inter_info_pred = mctx->ats_inter_info_pred_mt[core->thread_cnt];
+    u8  *ats_inter_num_pred = mctx->ats_inter_num_pred[core->thread_cnt];
+    u32 *ats_inter_pred_dist = mctx->ats_inter_pred_dist[core->thread_cnt];
+    u8  *ats_inter_info_pred = mctx->ats_inter_info_pred[core->thread_cnt];
     for(i = 0; i < ats_inter_num_pred[offset1]; i++)
     {
         if(ats_inter_pred_dist[offset2 + i] == dist_pu)
@@ -1551,9 +1551,9 @@ void save_ats_inter_info_pred(XEVE_CTX *ctx, XEVE_CORE *core, u32 dist_pu, u8 at
     int stridex = stride2;
     int offset1 = widx * stridew + hidx * strideh + posx * stridex + posy;
     int offset2 = offset1 * num_route;
-    u8  *ats_inter_num_pred = mctx->ats_inter_num_pred_mt[core->thread_cnt];
-    u32 *ats_inter_pred_dist = mctx->ats_inter_pred_dist_mt[core->thread_cnt];
-    u8  *ats_inter_info_pred = mctx->ats_inter_info_pred_mt[core->thread_cnt];
+    u8  *ats_inter_num_pred = mctx->ats_inter_num_pred[core->thread_cnt];
+    u32 *ats_inter_pred_dist = mctx->ats_inter_pred_dist[core->thread_cnt];
+    u8  *ats_inter_info_pred = mctx->ats_inter_info_pred[core->thread_cnt];
     int num_data = ats_inter_num_pred[offset1];
     if(num_data < num_route)
     {
@@ -1567,7 +1567,7 @@ void save_ats_inter_info_pred(XEVE_CTX *ctx, XEVE_CORE *core, u32 dist_pu, u8 at
 static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, pel pred[2][N_C][MAX_CU_DIM], s16 coef[N_C][MAX_CU_DIM], int pidx, u8 *mvp_idx, BOOL apply_dmvr)
 {
     XEVEM_CORE  *mcore = (XEVEM_CORE*)core;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     s16    coef_t[N_C][MAX_CU_DIM];
     int   *nnz, tnnz, w[N_C], h[N_C], log2_w[N_C], log2_h[N_C];
@@ -2365,7 +2365,7 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
 static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh)
 {
     XEVEM_CORE      * mcore = (XEVEM_CORE *)core;
-    XEVE_PINTER     * pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER     * pi = &ctx->pinter[core->thread_cnt];
     pel             * y_org, *u_org, *v_org;
     s16               mvp[REFP_NUM][MV_D];
     s16               dmvr_mv[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D];
@@ -2571,7 +2571,7 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
 static double analyze_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh)
 {
     XEVEM_CORE     * mcore = (XEVEM_CORE *)core;
-    XEVE_PINTER    * pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER    * pi = &ctx->pinter[core->thread_cnt];
     s16              mvp[REFP_NUM][MV_D];
     s8               refi[REFP_NUM];
     double           cost, cost_best = MAX_COST;
@@ -2713,7 +2713,7 @@ static double analyze_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int lo
 static double analyze_skip_mmvd(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int log2_cuw, int log2_cuh, int real_mv[][2][3])
 {
     XEVEM_CORE      *mcore = (XEVEM_CORE*)core;
-    XEVE_PINTER     *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER     *pi = &ctx->pinter[core->thread_cnt];
     pel             *y_org, *u_org, *v_org;
     s16              mvp[REFP_NUM][MV_D];
     s8               refi[REFP_NUM];
@@ -2852,7 +2852,7 @@ static double analyze_skip_mmvd(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, 
 static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, int real_mv[][2][3])
 {
     XEVEM_CORE  *mcore = (XEVEM_CORE*)core;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     s8  refi[REFP_NUM];
     int pidx, i;
@@ -3064,7 +3064,7 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 s8 pinter_get_first_refi_main(XEVE_CTX *ctx, XEVE_CORE *core, int ref_idx, int pidx, int cuw, int cuh)
 {
     XEVEM_CORE *mcore = (XEVEM_CORE*)core;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     return xeve_get_first_refi_main(core->scup, ref_idx, ctx->map_refi, ctx->map_mv, cuw, cuh, ctx->w_scu, ctx->h_scu, ctx->map_scu, pi->mvr_idx[pidx], core->avail_lr
                                     , ctx->map_unrefined_mv, mcore->history_buffer, ctx->sps.tool_hmvp, ctx->map_tidx);
@@ -3072,7 +3072,7 @@ s8 pinter_get_first_refi_main(XEVE_CTX *ctx, XEVE_CORE *core, int ref_idx, int p
 
 static double analyze_bi(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, double * cost_inter)
 {
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     s8         refi[REFP_NUM] = {REFI_INVALID, REFI_INVALID};
     int        t1;
@@ -3835,7 +3835,7 @@ static double analyze_affine_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y,
 {
     XEVEM_CTX   *mctx = (XEVEM_CTX *)ctx;
     XEVEM_CORE  *mcore = (XEVEM_CORE *)core;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
     pel          *y_org, *u_org, *v_org;
     s16          mrg_list_cp_mv[AFF_MAX_CAND][REFP_NUM][VER_NUM][MV_D];
     s8           mrg_list_refi[AFF_MAX_CAND][REFP_NUM];
@@ -4040,7 +4040,7 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
         num_amvr = 1; /* only allow 1/4 pel of resolution */
     }
 
-    pi = &ctx->pinter_mt[core->thread_cnt];
+    pi = &ctx->pinter[core->thread_cnt];
 
     cuw = (1 << log2_cuw);
     cuh = (1 << log2_cuh);
@@ -4956,7 +4956,7 @@ void pinter_mc_main(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int w, int h, 
                     , pel pred[REFP_NUM][N_C][MAX_CU_DIM], int poc_c, int apply_dmvr, s16 dmvr_mv[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D])
 {
     XEVEM_CORE *mcore = (XEVEM_CORE *)core;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     xeve_mc_main(x, y, ctx->w, ctx->h, w, h, refi, mv, refp, pred, poc_c, pi->dmvr_template, pi->dmvr_ref_pred_interpolated
                , pi->dmvr_half_pred_interpolated, apply_dmvr && ctx->sps.tool_dmvr, pi->dmvr_padding_buf, &(mcore->dmvr_flag)
@@ -4966,7 +4966,7 @@ void pinter_mc_main(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int w, int h, 
 static void pinter_save_best_info_main(XEVE_CTX *ctx, XEVE_CORE *core, int pidx)
 {
     XEVEM_CORE *mcore = (XEVEM_CORE *)core;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     pi->ats_inter_info_mode[pidx] = mcore->ats_inter_info;
 }
@@ -4974,7 +4974,7 @@ static void pinter_save_best_info_main(XEVE_CTX *ctx, XEVE_CORE *core, int pidx)
 static void pinter_load_best_info_main(XEVE_CTX *ctx, XEVE_CORE *core, int best_idx)
 {
     XEVEM_CORE *mcore = (XEVEM_CORE *)core;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     mcore->ats_inter_info = pi->ats_inter_info_mode[best_idx];
 }
@@ -4986,7 +4986,7 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
 
     for(int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
     {
-        pi = &ctx->pinter_mt[i];
+        pi = &ctx->pinter[i];
         pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : SEARCH_RANGE_IPEL_RA;
         pi->search_range_ipel[MV_X] = pi->max_search_range;
         pi->search_range_ipel[MV_Y] = pi->max_search_range;
@@ -5014,41 +5014,6 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
         pi->fn_load_best_info = pinter_load_best_info_main;
         pi->fn_mc = pinter_mc_main;
     }
-    pi = &ctx->pinter;
-
-    /* default values *************************************************/
-    pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : SEARCH_RANGE_IPEL_RA;
-    pi->search_range_ipel[MV_X] = pi->max_search_range;
-    pi->search_range_ipel[MV_Y] = pi->max_search_range;
-
-    pi->search_range_spel[MV_X] = SEARCH_RANGE_SPEL;
-    pi->search_range_spel[MV_Y] = SEARCH_RANGE_SPEL;
-
-    pi->search_pattern_hpel = tbl_search_pattern_hpel_partial;
-    pi->search_pattern_hpel_cnt = 8;
-
-    pi->search_pattern_qpel = tbl_search_pattern_qpel_8point;
-    pi->search_pattern_qpel_cnt = 8;
-
-    if(ctx->cdsc.ext->tool_admvp == 0)
-    {
-        ctx->fn_pinter_analyze_cu = xeve_pinter_analyze_cu_baseline;
-    }
-    else
-    {
-        ctx->fn_pinter_analyze_cu = pinter_analyze_cu;
-    }
-
-    pi->me_level = ME_LEV_QPEL;
-    pi->fn_me = pinter_me_epzs; /* [To be done] for baseline, pinter_me_epzs should be used */
-    pi->fn_affine_me = pinter_affine_me_gradient;
-    pi->complexity = complexity;
-    pi->sps_amvr_flag = ctx->cdsc.ext->tool_amvr;
-    pi->fn_get_first_refi = pinter_get_first_refi_main;
-    pi->fn_save_best_info = pinter_save_best_info_main;
-    pi->fn_load_best_info = pinter_load_best_info_main;
-    pi->fn_mc = pinter_mc_main;
-
     return XEVE_OK;
 }
 
@@ -5073,18 +5038,13 @@ int xeve_pinter_create_main(XEVE_CTX *ctx, int complexity)
     XEVE_PINTER * pi;
     for(int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
     {
-        pi = &ctx->pinter_mt[i];
+        pi = &ctx->pinter[i];
         /* set maximum/minimum value of search range */
         pi->min_clip[MV_X] = -MAX_CU_SIZE + 1;
         pi->min_clip[MV_Y] = -MAX_CU_SIZE + 1;
         pi->max_clip[MV_X] = ctx->param.w - 1;
         pi->max_clip[MV_Y] = ctx->param.h - 1;
     }
-    /* set maximum/minimum value of search range */
-    ctx->pinter.min_clip[MV_X] = -MAX_CU_SIZE + 1;
-    ctx->pinter.min_clip[MV_Y] = -MAX_CU_SIZE + 1;
-    ctx->pinter.max_clip[MV_X] = ctx->param.w - 1;
-    ctx->pinter.max_clip[MV_Y] = ctx->param.h - 1;
-
+   
     return ctx->fn_pinter_set_complexity(ctx, complexity);
 }

@@ -304,7 +304,7 @@ u32 xeve_ibc_hash_search(XEVE_CTX *ctx, XEVE_IBC_HASH* p, int cu_x, int cu_y, in
     u32 min_cost = XEVE_UINT32_MAX;
 
     XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
-    XEVE_PIBC *pi = &mctx->pibc_mt[core->thread_cnt];
+    XEVE_PIBC *pi = &mctx->pibc[core->thread_cnt];
     XEVE_IBC_HASH* ibc_hash = (XEVE_IBC_HASH*)p;
 
     mvp[MV_X] = 0;

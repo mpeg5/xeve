@@ -45,7 +45,6 @@
 /* Max. and min. Quantization parameter */
 #define MAX_QUANT                51
 #define MIN_QUANT                0
-#define GOP_P                    8
 
 /* count of picture including encoding and reference pictures
 0: encoding picture buffer
@@ -679,7 +678,6 @@ struct _XEVE_CTX
     /* XEVE identifier */
     XEVE               id;
     /* address of core structure */
-    XEVE_CORE        * core;
     /* current input (original) image */
     XEVE_PIC           pic_o;
     /* address indicating current encoding, list0, list1 and original pictures */
@@ -691,9 +689,7 @@ struct _XEVE_CTX
     /* encoding parameter */
     XEVE_PARAM         param;
     /* bitstream structure */
-    XEVE_BSW           bs;
     /* bitstream structure for RDO */
-    XEVE_BSW           bs_temp;
     /* sequnce parameter set */
     XEVE_SPS           sps;
     /* picture parameter set */
@@ -761,7 +757,7 @@ struct _XEVE_CTX
     int                ref_pic_gap_length;
     /* maximum CU depth */
     u8                 max_cud;
-    XEVE_SBAC          sbac_enc;
+  //  XEVE_SBAC          sbac_enc;  //Chirag removed this
     /* address of inbufs */
     XEVE_IMGB        * inbuf[XEVE_MAX_INBUF_CNT];
     /* last coded intra picture's picture order count */
@@ -793,12 +789,6 @@ struct _XEVE_CTX
     u8                 log2_culine;
     /* log2 of SCU count in a LCU (== log2_culine * 2) */
     u8                 log2_cudim;
-    /* mode decision structure */
-    XEVE_MODE          mode;
-    /* intra prediction analysis */
-    XEVE_PINTRA        pintra;
-    /* inter prediction analysis */
-    XEVE_PINTER        pinter;
     /* picture buffer allocator */
     PICBUF_ALLOCATOR   pa;
     /* MAPS *******************************************************************/
@@ -830,12 +820,12 @@ struct _XEVE_CTX
     volatile s32     * sync_flag;
     SYNC_OBJ           sync_block;
     /* address of core structure */
-    XEVE_CORE        * core_mt[XEVE_MAX_TASK_CNT];
-    XEVE_BSW           bs_mt[XEVE_MAX_TASK_CNT];
-    XEVE_SBAC          sbac_enc_mt[XEVE_MAX_TASK_CNT];
-    XEVE_MODE          mode_mt[XEVE_MAX_TASK_CNT];
-    XEVE_PINTRA        pintra_mt[XEVE_MAX_TASK_CNT];
-    XEVE_PINTER        pinter_mt[XEVE_MAX_TASK_CNT];
+    XEVE_CORE        * core[XEVE_MAX_TASK_CNT];
+    XEVE_BSW           bs[XEVE_MAX_TASK_CNT];
+    XEVE_SBAC          sbac_enc[XEVE_MAX_TASK_CNT];
+    XEVE_MODE          mode[XEVE_MAX_TASK_CNT];
+    XEVE_PINTRA        pintra[XEVE_MAX_TASK_CNT];
+    XEVE_PINTER        pinter[XEVE_MAX_TASK_CNT];
 
 
     int   (*fn_ready)(XEVE_CTX * ctx);

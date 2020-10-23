@@ -816,7 +816,7 @@ static void copy_tu_from_cu(s16 tu_resi[N_C][MAX_CU_DIM], s16 cu_resi[N_C][MAX_C
 
 static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, pel pred[2][N_C][MAX_CU_DIM], s16 coef[N_C][MAX_CU_DIM], int pidx, u8 *mvp_idx)
 {
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
     s16    coef_t[N_C][MAX_CU_DIM];
     int   *nnz, tnnz, w[N_C], h[N_C], log2_w[N_C], log2_h[N_C];
     int    cuw;
@@ -1154,7 +1154,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 
 static double analyze_skip_baseline(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh)
 {
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
     pel          *y_org, *u_org, *v_org;
     s16          mvp[REFP_NUM][MV_D];
     s8           refi[REFP_NUM];
@@ -1267,7 +1267,7 @@ static double analyze_skip_baseline(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y
 
 static double analyze_t_direct(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh)
 {
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
     double           cost;
     int              pidx;
     s8               refidx = 0;
@@ -1292,7 +1292,7 @@ static double analyze_t_direct(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int
 
 static double analyze_bi(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, double * cost_inter)
 {
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
     s8         refi[REFP_NUM] = {REFI_INVALID, REFI_INVALID};
     int        t1;
     u32        best_mecost = XEVE_UINT32_MAX;
@@ -1405,7 +1405,7 @@ static int pinter_init_frame(XEVE_CTX *ctx)
     XEVE_PIC    *pic;
     int size;
 
-    pi             = &ctx->pinter;
+    pi             = &ctx->pinter[0];
 
     pic            = pi->pic_o = PIC_ORIG(ctx);
     pi->o[Y_C]     = pic->y;
@@ -1477,7 +1477,7 @@ static int pinter_init_frame(XEVE_CTX *ctx)
 
 static int pinter_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
 {
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     pi->lambda_mv = (u32)floor(65536.0 * ctx->sqrt_lambda[0]);
     pi->qp_y      = core->qp_y;
@@ -1554,7 +1554,7 @@ double xeve_pinter_analyze_cu_baseline(XEVE_CTX *ctx, XEVE_CORE *core, int x, in
     double cost, cost_best = MAX_COST;
     double cost_inter[PRED_NUM];
     int lidx, pidx;
-    XEVE_PINTER *pi = &ctx->pinter_mt[core->thread_cnt];
+    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     cuw = (1 << log2_cuw);
     cuh = (1 << log2_cuh);
@@ -1732,7 +1732,7 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
 
     for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
     {
-        pi = &ctx->pinter_mt[i];
+        pi = &ctx->pinter[i];
         pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : SEARCH_RANGE_IPEL_RA;
         pi->search_range_ipel[MV_X] = pi->max_search_range;
         pi->search_range_ipel[MV_Y] = pi->max_search_range;
@@ -1748,29 +1748,6 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
         pi->complexity = complexity;
         pi->fn_mc = pinter_mc;
     }
-    pi = &ctx->pinter;
-
-    /* default values *************************************************/
-    pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : SEARCH_RANGE_IPEL_RA;
-    pi->search_range_ipel[MV_X] = pi->max_search_range;
-    pi->search_range_ipel[MV_Y] = pi->max_search_range;
-
-    pi->search_range_spel[MV_X] = SEARCH_RANGE_SPEL;
-    pi->search_range_spel[MV_Y] = SEARCH_RANGE_SPEL;
-
-    pi->search_pattern_hpel = tbl_search_pattern_hpel_partial;
-    pi->search_pattern_hpel_cnt = 8;
-
-    pi->search_pattern_qpel = tbl_search_pattern_qpel_8point;
-    pi->search_pattern_qpel_cnt = 8;
-
-    ctx->fn_pinter_analyze_cu = xeve_pinter_analyze_cu_baseline;
-
-    pi->me_level = ME_LEV_QPEL;
-    pi->fn_me = pinter_me_epzs;
-    pi->complexity = complexity;
-    pi->fn_mc = pinter_mc;
-
     return XEVE_OK;
 }
 
@@ -1786,18 +1763,13 @@ int xeve_pinter_create(XEVE_CTX *ctx, int complexity)
     XEVE_PINTER * pi;
     for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
     {
-        pi = &ctx->pinter_mt[i];
+        pi = &ctx->pinter[i];
         /* set maximum/minimum value of search range */
         pi->min_clip[MV_X] = -MAX_CU_SIZE + 1;
         pi->min_clip[MV_Y] = -MAX_CU_SIZE + 1;
         pi->max_clip[MV_X] = ctx->param.w - 1;
         pi->max_clip[MV_Y] = ctx->param.h - 1;
     }
-    /* set maximum/minimum value of search range */
-    ctx->pinter.min_clip[MV_X] = -MAX_CU_SIZE + 1;
-    ctx->pinter.min_clip[MV_Y] = -MAX_CU_SIZE + 1;
-    ctx->pinter.max_clip[MV_X] = ctx->param.w - 1;
-    ctx->pinter.max_clip[MV_Y] = ctx->param.h - 1;
-
+   
     return ctx->fn_pinter_set_complexity(ctx, complexity);
 }

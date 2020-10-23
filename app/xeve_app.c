@@ -45,7 +45,6 @@
 
 #define MAX_BUMP_FRM_CNT           (8 <<1)
 #define MAX_BS_BUF                 (16*1024*1024)
-#define PART_BS_BUF                (16*1024*1024)
 
 typedef enum _STATES {
     STATE_ENCODING,
@@ -131,7 +130,7 @@ static int get_conf(XEVE_CDSC * cdsc)
 
     cdsc->parallel_task_cnt = (op_parallel_task > XEVE_MAX_TASK_CNT) ? XEVE_MAX_TASK_CNT : op_parallel_task;
     cdsc->rdo_dbk_switch = op_rdo_dbk_switch;
-    cdsc->inter_slice_type = op_inter_slice_type == 0 ? 3/*SLICE_B*/ : 2/*SLICE_P*/;
+    cdsc->inter_slice_type = op_inter_slice_type == 0 ? 0/*SLICE_B*/ : 1/*SLICE_P*/;
     cdsc->add_qp_frame = op_add_qp_frames;
     cdsc->picture_cropping_flag = op_picture_cropping_flag;
     cdsc->picture_crop_left_offset = op_picture_crop_left_offset;
@@ -323,44 +322,49 @@ static int get_conf(XEVE_CDSC * cdsc)
 
             memcpy(&(cdsc->chroma_qp_table_struct), &l_chroma_qp_table, sizeof(XEVE_CHROMA_TABLE));
         }
-        for (int i = 0; i < MAX_NUM_RPLS && op_rpl0[i][0] != 0; ++i)
+
+        cdsc_ext->rpl_extern = op_rpl_extern;
+        if(cdsc_ext->rpl_extern)
         {
-            cdsc_ext->rpls_l0[i].pic_type = get_pic_type(strtok(op_rpl0[i], " "));
-            cdsc_ext->rpls_l0[i].poc = atoi(strtok(NULL, " "));
-            cdsc_ext->rpls_l0[i].tid = atoi(strtok(NULL, " "));
-            cdsc_ext->rpls_l0[i].ref_pic_active_num = atoi(strtok(NULL, " "));
-
-            int j = 0;
-            do
+            for (int i = 0; i < MAX_NUM_RPLS && op_rpl0[i][0] != 0; ++i)
             {
-                char* val = strtok(NULL, " \r");
-                if (!val)
-                    break;
-                cdsc_ext->rpls_l0[i].ref_pics[j++] = atoi(val);
-            } while (1);
+                cdsc_ext->rpls_l0[i].pic_type = get_pic_type(strtok(op_rpl0[i], " "));
+                cdsc_ext->rpls_l0[i].poc = atoi(strtok(NULL, " "));
+                cdsc_ext->rpls_l0[i].tid = atoi(strtok(NULL, " "));
+                cdsc_ext->rpls_l0[i].ref_pic_active_num = atoi(strtok(NULL, " "));
 
-            cdsc_ext->rpls_l0[i].ref_pic_num = j;
-            ++cdsc_ext->rpls_l0_cfg_num;
-        }
+                int j = 0;
+                do
+                {
+                    char* val = strtok(NULL, " \r");
+                    if (!val)
+                        break;
+                    cdsc_ext->rpls_l0[i].ref_pics[j++] = atoi(val);
+                } while (1);
 
-        for (int i = 0; i < MAX_NUM_RPLS && op_rpl1[i][0] != 0; ++i)
-        {
-            cdsc_ext->rpls_l0[i].pic_type = get_pic_type(strtok(op_rpl1[i], " "));
-            cdsc_ext->rpls_l1[i].poc = atoi(strtok(NULL, " "));
-            cdsc_ext->rpls_l1[i].tid = atoi(strtok(NULL, " "));
-            cdsc_ext->rpls_l1[i].ref_pic_active_num = atoi(strtok(NULL, " "));
+                cdsc_ext->rpls_l0[i].ref_pic_num = j;
+                ++cdsc_ext->rpls_l0_cfg_num;
+            }
 
-            int j = 0;
-            do
+            for (int i = 0; i < MAX_NUM_RPLS && op_rpl1[i][0] != 0; ++i)
             {
-                char* val = strtok(NULL, " ");
-                if (!val)
-                    break;
-                cdsc_ext->rpls_l1[i].ref_pics[j++] = atoi(val);
-            } while (1);
+                cdsc_ext->rpls_l0[i].pic_type = get_pic_type(strtok(op_rpl1[i], " "));
+                cdsc_ext->rpls_l1[i].poc = atoi(strtok(NULL, " "));
+                cdsc_ext->rpls_l1[i].tid = atoi(strtok(NULL, " "));
+                cdsc_ext->rpls_l1[i].ref_pic_active_num = atoi(strtok(NULL, " "));
 
-            cdsc_ext->rpls_l1[i].ref_pic_num = j;
-            ++cdsc_ext->rpls_l1_cfg_num;
+                int j = 0;
+                do
+                {
+                    char* val = strtok(NULL, " ");
+                    if (!val)
+                        break;
+                    cdsc_ext->rpls_l1[i].ref_pics[j++] = atoi(val);
+                } while (1);
+
+                cdsc_ext->rpls_l1[i].ref_pic_num = j;
+                ++cdsc_ext->rpls_l1_cfg_num;
+            }
         }
 
         if (op_dra_enable_flag)
@@ -517,6 +521,7 @@ static int set_extra_config(XEVE id)
             return -1;
         }
     }
+
     return 0;
 }
 
@@ -1064,7 +1069,7 @@ int main(int argc, const char **argv)
             }
 
             /* read original image */
-            if (pic_icnt >= op_max_frm_num ||imgb_read(fp_inp, ilist_t->imgb))
+            if ((op_max_frm_num && pic_icnt >= op_max_frm_num) || imgb_read(fp_inp, ilist_t->imgb))
             {
                 logv2("reached end of original file (or reading error)\n");
                 state = STATE_BUMPING;
@@ -1248,6 +1253,7 @@ ERR:
 
     imgb_list_free(ilist_org);
     imgb_list_free(ilist_rec);
+
     if(fp_inp) fclose(fp_inp);
     if(bs_buf) free(bs_buf); /* release bitstream buffer */
     return 0;

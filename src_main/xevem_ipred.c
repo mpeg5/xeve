@@ -468,209 +468,407 @@ static void ipred_bi(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *d
 #define ADI_4T_FILTER_BITS                 7
 #define ADI_4T_FILTER_OFFSET              (1<<(ADI_4T_FILTER_BITS-1))
 
-__inline
-static pel ipred_ang_val(pel * src_up, pel * src_le, pel * src_ri, u16 avail_lr, int ipm, int i, int j, int w, int pos_min, int pos_max, int h, int bit_depth)
+void ipred_ang_less_ver_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int w, int h, int ipm, int bit_depth)
 {
     int offset;
-    int t_dx, t_dy;
-    int x, y, xn, yn, xn_n1, yn_n1, xn_p2, yn_p2;
-    const int dxy = (ipm > IPD_HOR || ipm < IPD_VER) ? -1 : 1;
+    int t_dx;
+    int x;
+    const int dxy =  -1;
     const int * filter;
     const int(*tbl_filt)[4];
     int filter_offset, filter_bits;
     const int * mt = xeve_tbl_ipred_dxdy[ipm];
     pel * src_ch = NULL;
     int num_selections = 0;
-    int use_x;
     int p, pn, pn_n1, pn_p2;
     pel temp_pel = 0;
 
-    x = INT_MAX;
-    y = INT_MAX;
+    int i, j;
+    const int pos_max = w + h - 1;
+    const int pos_min = -1;
 
     tbl_filt = xeve_tbl_ipred_adi;
     filter_offset = ADI_4T_FILTER_OFFSET;
     filter_bits = ADI_4T_FILTER_BITS;
 
-    xeve_assert(ipm < IPD_CNT);
+    src_ch = src_up;
 
-    if(ipm < IPD_VER)
+    for (j = 0; j < h; j++)
     {
-        /* case x-line */
-        GET_REF_POS(mt[0], j + 1, t_dx, offset);
+        t_dx = ((j + 1) * (mt[0])) >> 10;
+        offset = (((j + 1) * (mt[0])) >> 5) - ((t_dx) << 5);
+        filter = (tbl_filt + offset)[0];
 
-        if((avail_lr == LR_01 || avail_lr == LR_11) && i >= (w - t_dx))
+        for (i = 0; i < w; i++)
         {
-            GET_REF_POS(mt[1], w - i, t_dy, offset);
-            x = w;
-            y = j - t_dy;
-        }
-        else
-        {
-            x = i + t_dx;
-            y = -1;
-        }
-    }
-    else if(ipm > IPD_HOR)
-    {
-        if (avail_lr == LR_01 || avail_lr == LR_11)
-        {
-            GET_REF_POS(mt[1], w - i, t_dy, offset);            
+            x = i + t_dx;    
 
-            if(j < t_dy)
-            {
-                GET_REF_POS(mt[0], w - i, t_dx, offset);
-                x = i + t_dx;
-                y = -1;
-            }
-            else
-            {
-                x = w;
-                y = j - t_dy;
-            }
-        }
-        else
-        {
-            GET_REF_POS(mt[1], i + 1, t_dy, offset);
-            x = -1;
-            y = j + t_dy;
-        }
-    }
-    else
-    {
-        GET_REF_POS(mt[1], i + 1, t_dy, offset);
+            pn_n1 = x - 1;
+            p     = x;
+            pn    = x + 1;
+            pn_p2 = x + 2;
 
-        if(j < t_dy)
-        {
-            GET_REF_POS(mt[0], j + 1, t_dx, offset);
-            x = i - t_dx;
-            y = -1;
-        }
-        else
-        {
-            if (avail_lr == LR_01)
-            {
-                GET_REF_POS(mt[1], w - i, t_dy, offset);
-                x = w;
-                y = j + t_dy;
-            }
-            else
-            {
-                x = -1;
-                y = j - t_dy;
-            }
-        }
-    }
+            pn_n1 = XEVE_CLIP3(pos_min, pos_max, pn_n1);
+            p     = XEVE_CLIP3(pos_min, pos_max, p);
+            pn    = XEVE_CLIP3(pos_min, pos_max, pn);
+            pn_p2 = XEVE_CLIP3(pos_min, pos_max, pn_p2);
 
-    xeve_assert(x != INT_MAX);
-    xeve_assert(y != INT_MAX);
+            temp_pel = (src_ch[pn_n1] * filter[0] + src_ch[p] * filter[1] + src_ch[pn] * filter[2] + src_ch[pn_p2] * filter[3] + filter_offset) >> filter_bits;
+            dst[i] = XEVE_CLIP3(0, (1 << bit_depth) - 1, temp_pel);
 
-    if(y == -1)
-    {
-        if(dxy < 0)
-        {
-            xn_n1 = x - 1;
-            xn = x + 1;
-            xn_p2 = x + 2;
-        }
-        else
-        {
-            xn_n1 = x + 1;
-            xn = x - 1;
-            xn_p2 = x - 2;
-        }
-
-        use_x = 1;
-        ++num_selections;
-        src_ch = src_up;
-    }
-    else if(x == -1)
-    {
-        if(dxy < 0)
-        {
-            yn_n1 = y - 1;
-            yn = y + 1;
-            yn_p2 = y + 2;
-        }
-        else
-        {
-            yn_n1 = y + 1;
-            yn = y - 1;
-            yn_p2 = y - 2;
-        }
-
-        use_x = 0;
-        ++num_selections;
-        src_ch = src_le;
-    }
-    else if(x == w)
-    {
-        if(dxy > 0)
-        {
-            yn_n1 = y - 1;
-            yn = y + 1;
-            yn_p2 = y + 2;
-        }
-        else
-        {
-            yn_n1 = y + 1;
-            yn = y - 1;
-            yn_p2 = y - 2;
-        }
-
-        use_x = 0;
-        ++num_selections;
-        src_ch = src_ri;
-    }
-
-    xeve_assert(num_selections == 1);
-    xeve_assert(src_ch != NULL);
-
-    if(use_x)
-    {
-        pn_n1 = xn_n1;
-        p = x;
-        pn = xn;
-        pn_p2 = xn_p2;
-    }
-    else
-    {
-        pn_n1 = yn_n1;
-        p = y;
-        pn = yn;
-        pn_p2 = yn_p2;
-    }
-
-    pn_n1 = XEVE_MAX(XEVE_MIN(pn_n1, pos_max), pos_min);
-    p = XEVE_MAX(XEVE_MIN(p, pos_max), pos_min);
-    pn = XEVE_MAX(XEVE_MIN(pn, pos_max), pos_min);
-    pn_p2 = XEVE_MAX(XEVE_MIN(pn_p2, pos_max), pos_min);
-    filter = (tbl_filt + offset)[0];
-
-    temp_pel = (src_ch[pn_n1] * filter[0] + src_ch[p] * filter[1] + src_ch[pn] * filter[2] + src_ch[pn_p2] * filter[3] + filter_offset) >> filter_bits;
-
-    return XEVE_CLIP3(0, (1 << bit_depth) - 1, temp_pel);
-}
-
-static void ipred_ang(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int w, int h, int ipm, int bit_depth)
-{
-    int i, j;
-    const int pos_max = w + h - 1;
-    const int pos_min = - 1;
-
-    for(j = 0; j < h; j++)
-    {
-        for(i = 0; i < w; i++)
-        {
-            dst[i] = ipred_ang_val(src_up, src_le, src_ri, avail_lr, ipm, i, j, w, pos_min, pos_max, h, bit_depth
-            );
         }
         dst += w;
     }
 }
 
+void ipred_ang_less_ver_on_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int w, int h, int ipm, int bit_depth)
+{
+    int offset;
+    int t_dx, t_dy;
+    int x, y;
+    const int dxy = -1;
+    const int * filter;
+    const int(*tbl_filt)[4];
+    int filter_offset, filter_bits;
+    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    pel * src_ch = NULL;
+    int num_selections = 0;
+    int p, pn, pn_n1, pn_p2;
+    pel temp_pel = 0;
+
+    int i, j;
+    const int pos_max = w + h - 1;
+    const int pos_min = -1;
+
+    tbl_filt = xeve_tbl_ipred_adi;
+    filter_offset = ADI_4T_FILTER_OFFSET;
+    filter_bits = ADI_4T_FILTER_BITS;
+
+    for (j = 0; j < h; j++)
+    {
+        t_dx = ((j + 1) * (mt[0])) >> 10;
+        offset = (((j + 1) * (mt[0])) >> 5) - ((t_dx) << 5);
+        filter = (tbl_filt + offset)[0];
+
+        src_ch = src_up;
+        for (i = 0; i < w - t_dx; i++)
+        {
+            x = i + t_dx;
+                       
+            pn_n1 = x - 1;
+            p     = x;
+            pn    = x + 1;
+            pn_p2 = x + 2;
+
+            pn_n1 = XEVE_CLIP3(pos_min, pos_max, pn_n1);
+            p     = XEVE_CLIP3(pos_min, pos_max, p);
+            pn    = XEVE_CLIP3(pos_min, pos_max, pn);
+            pn_p2 = XEVE_CLIP3(pos_min, pos_max, pn_p2);
+
+            temp_pel = (src_ch[pn_n1] * filter[0] + src_ch[p] * filter[1] + src_ch[pn] * filter[2] + src_ch[pn_p2] * filter[3] + filter_offset) >> filter_bits;
+            dst[i] = XEVE_CLIP3(0, (1 << bit_depth) - 1, temp_pel);
+        }
+
+        src_ch = src_ri;
+        for (i = XEVE_MAX(w - t_dx, 0) ; i < w; i++)
+        {
+            t_dy = ((w - i) * (mt[1])) >> 10;
+            offset = (((w - i) * (mt[1])) >> 5) - ((t_dy) << 5);
+
+            y = j - t_dy;
+
+            pn_n1 = y + 1;
+            p     = y;
+            pn    = y - 1;
+            pn_p2 = y - 2;
+
+            pn_n1 = XEVE_CLIP3(pos_min, pos_max, pn_n1);
+            p = XEVE_CLIP3(pos_min, pos_max, p);
+            pn = XEVE_CLIP3(pos_min, pos_max, pn);
+            pn_p2 = XEVE_CLIP3(pos_min, pos_max, pn_p2);
+
+            filter = (tbl_filt + offset)[0];
+            temp_pel = (src_ch[pn_n1] * filter[0] + src_ch[p] * filter[1] + src_ch[pn] * filter[2] + src_ch[pn_p2] * filter[3] + filter_offset) >> filter_bits;
+            dst[i] = XEVE_CLIP3(0, (1 << bit_depth) - 1, temp_pel);
+        }
+
+        dst += w;
+    }
+}
+
+void ipred_ang_gt_hor_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int w, int h, int ipm, int bit_depth)
+{
+    int offset;
+    int t_dy;
+    int y;
+    const int dxy = -1;
+    const int * filter;
+    const int(*tbl_filt)[4];
+    int filter_offset, filter_bits;
+    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    pel * src_ch = NULL;
+    int num_selections = 0;
+    int p, pn, pn_n1, pn_p2;
+    pel temp_pel = 0;
+
+    int i, j;
+    const int pos_max = w + h - 1;
+    const int pos_min = -1;
+
+    tbl_filt = xeve_tbl_ipred_adi;
+    filter_offset = ADI_4T_FILTER_OFFSET;
+    filter_bits = ADI_4T_FILTER_BITS;
+
+    src_ch = src_le;
+
+    for (j = 0; j < h; j++)
+    {
+        for (i = 0; i < w; i++)
+        {
+            t_dy = ((i + 1) * (mt[1])) >> 10;
+            offset = (((i + 1) * (mt[1])) >> 5) - ((t_dy) << 5);
+
+            y = j + t_dy;
+
+            pn_n1 = y - 1;
+            p     = y;
+            pn    = y + 1;
+            pn_p2 = y + 2;
+
+            pn_n1 = XEVE_CLIP3(pos_min, pos_max, pn_n1);
+            p     = XEVE_CLIP3(pos_min, pos_max, p);
+            pn    = XEVE_CLIP3(pos_min, pos_max, pn);
+            pn_p2 = XEVE_CLIP3(pos_min, pos_max, pn_p2);
+
+            filter = (tbl_filt + offset)[0];
+            temp_pel = (src_ch[pn_n1] * filter[0] + src_ch[p] * filter[1] + src_ch[pn] * filter[2] + src_ch[pn_p2] * filter[3] + filter_offset) >> filter_bits;
+            dst[i] = XEVE_CLIP3(0, (1 << bit_depth) - 1, temp_pel);
+        }
+        dst += w;
+    }
+}
+
+void ipred_ang_gt_hor_on_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int w, int h, int ipm, int bit_depth)
+{
+    int offset;
+    int t_dx, t_dy;
+    int x, y;
+    const int dxy = -1;
+    const int * filter;
+    const int(*tbl_filt)[4];
+    int filter_offset, filter_bits;
+    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    pel * src_ch = NULL;
+    int num_selections = 0;
+    int p, pn, pn_n1, pn_p2;
+    pel temp_pel = 0;
+
+    int i, j;
+    const int pos_max = w + h - 1;
+    const int pos_min = -1;
+
+    tbl_filt = xeve_tbl_ipred_adi;
+    filter_offset = ADI_4T_FILTER_OFFSET;
+    filter_bits = ADI_4T_FILTER_BITS;
+
+    for (j = 0; j < h; j++)
+    {
+        for (i = 0; i < w; i++)
+        {
+            t_dy = ((w - i) * (mt[1])) >> 10;
+            offset = (((w - i) * (mt[1])) >> 5) - ((t_dy) << 5);
+
+            if (j < t_dy)
+            {
+                t_dx = ((w - i) * (mt[0])) >> 10;
+                offset = (((w - i) * (mt[0])) >> 5) - ((t_dx) << 5);
+
+                x = i + t_dx;
+
+                src_ch = src_up;
+
+                pn_n1 = x - 1;
+                p     = x;
+                pn    = x + 1;
+                pn_p2 = x + 2;
+            }
+            else
+            {
+                y = j - t_dy;
+
+                src_ch = src_ri;
+
+                pn_n1 = y + 1;
+                p     = y;
+                pn    = y - 1;
+                pn_p2 = y - 2;
+            }
+
+            pn_n1 = XEVE_CLIP3(pos_min, pos_max, pn_n1);
+            p     = XEVE_CLIP3(pos_min, pos_max, p);
+            pn    = XEVE_CLIP3(pos_min, pos_max, pn);
+            pn_p2 = XEVE_CLIP3(pos_min, pos_max, pn_p2);
+
+            filter = (tbl_filt + offset)[0];
+            temp_pel = (src_ch[pn_n1] * filter[0] + src_ch[p] * filter[1] + src_ch[pn] * filter[2] + src_ch[pn_p2] * filter[3] + filter_offset) >> filter_bits;
+            dst[i] = XEVE_CLIP3(0, (1 << bit_depth) - 1, temp_pel);
+        }
+        dst += w;
+    }
+}
+
+void ipred_ang_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int w, int h, int ipm, int bit_depth)
+{
+    int offset;
+    int t_dx, t_dy;
+    int x, y;
+    const int dxy = -1;
+    const int * filter;
+    const int(*tbl_filt)[4];
+    int filter_offset, filter_bits;
+    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    pel * src_ch = NULL;
+    int num_selections = 0;
+    int p, pn, pn_n1, pn_p2;
+    pel temp_pel = 0;
+
+    int i, j;
+    const int pos_max = w + h - 1;
+    const int pos_min = -1;
+
+    tbl_filt = xeve_tbl_ipred_adi;
+    filter_offset = ADI_4T_FILTER_OFFSET;
+    filter_bits = ADI_4T_FILTER_BITS;
+
+    for (j = 0; j < h; j++)
+    {
+        for (i = 0; i < w; i++)
+        {
+            t_dy = ((i + 1) * (mt[1])) >> 10;
+            offset = (((i + 1) * (mt[1])) >> 5) - ((t_dy) << 5);
+
+            if (j < t_dy)
+            {
+                t_dx = ((j + 1) * (mt[0])) >> 10;
+                offset = (((j + 1) * (mt[0])) >> 5) - ((t_dx) << 5);
+
+                x = i - t_dx;
+
+                pn_n1 = x + 1;
+                p     = x;
+                pn    = x - 1;
+                pn_p2 = x - 2;
+
+                src_ch = src_up;
+            }
+            else
+            {
+                y = j - t_dy;
+
+                pn_n1 = y + 1;
+                p     = y;
+                pn    = y - 1;
+                pn_p2 = y - 2;
+
+                src_ch = src_le;
+            }
+
+            pn_n1 = XEVE_CLIP3(pos_min, pos_max, pn_n1);
+            p     = XEVE_CLIP3(pos_min, pos_max, p);
+            pn    = XEVE_CLIP3(pos_min, pos_max, pn);
+            pn_p2 = XEVE_CLIP3(pos_min, pos_max, pn_p2);
+
+            filter = (tbl_filt + offset)[0];
+            temp_pel = (src_ch[pn_n1] * filter[0] + src_ch[p] * filter[1] + src_ch[pn] * filter[2] + src_ch[pn_p2] * filter[3] + filter_offset) >> filter_bits;
+            dst[i] = XEVE_CLIP3(0, (1 << bit_depth) - 1, temp_pel);
+        }
+        dst += w;
+    }
+}
+
+void ipred_ang_only_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int w, int h, int ipm, int bit_depth)
+{
+    int offset;
+    int t_dx, t_dy;
+    int x, y;
+    const int dxy = -1;
+    const int * filter;
+    const int(*tbl_filt)[4];
+    int filter_offset, filter_bits;
+    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    pel * src_ch = NULL;
+    int num_selections = 0;
+    int p, pn, pn_n1, pn_p2;
+    pel temp_pel = 0;
+
+    int i, j;
+    const int pos_max = w + h - 1;
+    const int pos_min = -1;
+
+    tbl_filt = xeve_tbl_ipred_adi;
+    filter_offset = ADI_4T_FILTER_OFFSET;
+    filter_bits = ADI_4T_FILTER_BITS;
+
+    for (j = 0; j < h; j++)
+    {
+        for (i = 0; i < w; i++)
+        {
+            t_dy = ((i + 1) * (mt[1])) >> 10;
+            offset = (((i + 1) * (mt[1])) >> 5) - ((t_dy) << 5);
+
+            if (j < t_dy)
+            {
+                t_dx = ((j + 1) * (mt[0])) >> 10;
+                offset = (((j + 1) * (mt[0])) >> 5) - ((t_dx) << 5);
+
+                x = i - t_dx;
+
+                pn_n1 = x + 1;
+                p     = x;
+                pn    = x - 1;
+                pn_p2 = x - 2;
+
+                src_ch = src_up;
+            }
+            else
+            {
+                t_dy = ((w - i) * (mt[1])) >> 10;
+                offset = (((w - i) * (mt[1])) >> 5) - ((t_dy) << 5);
+
+                y = j + t_dy;
+
+                pn_n1 = y - 1;
+                p     = y;
+                pn    = y + 1;
+                pn_p2 = y + 2;
+
+                src_ch = src_ri;
+            }
+
+            pn_n1 = XEVE_CLIP3(pos_min, pos_max, pn_n1);
+            p     = XEVE_CLIP3(pos_min, pos_max, p);
+            pn    = XEVE_CLIP3(pos_min, pos_max, pn);
+            pn_p2 = XEVE_CLIP3(pos_min, pos_max, pn_p2);
+
+            filter = (tbl_filt + offset)[0];
+            temp_pel = (src_ch[pn_n1] * filter[0] + src_ch[p] * filter[1] + src_ch[pn] * filter[2] + src_ch[pn_p2] * filter[3] + filter_offset) >> filter_bits;
+            dst[i] = XEVE_CLIP3(0, (1 << bit_depth) - 1, temp_pel);
+        }
+        dst += w;
+    }
+}
+
+XEVE_INTRA_PRED_ANG xeve_tbl_intra_pred_ang[3][2] = 
+{
+    {ipred_ang_less_ver_no_right, ipred_ang_less_ver_on_right},
+    {ipred_ang_gt_hor_no_right, ipred_ang_gt_hor_on_right},
+    {ipred_ang_no_right, ipred_ang_only_right},
+};
+
 void xevem_ipred(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int ipm, int w, int h, int bit_depth)
 {
+    int func_ipm, func_lr;
+
     switch(ipm)
     {
         case IPD_VER:
@@ -689,13 +887,17 @@ void xevem_ipred(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, 
             ipred_bi(src_le, src_up, src_ri, avail_lr, dst, w, h, bit_depth);
             break;
         default:
-            ipred_ang(src_le, src_up, src_ri, avail_lr, dst, w, h, ipm, bit_depth);
+            func_ipm = (ipm < IPD_VER ? 0 : (ipm > IPD_HOR ? 1 : 2));
+            func_lr = func_ipm < 2 ? (((avail_lr >> 1) & 1)) : (avail_lr == LR_01);
+            (*xeve_func_intra_pred_ang)[func_ipm][func_lr](src_le, src_up, src_ri, avail_lr, dst, w, h, ipm, bit_depth);
             break;
     }
 }
 
 void xevem_ipred_uv(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int ipm_c, int ipm, int w, int h, int bit_depth)
 {
+    int func_ipm, func_lr;
+
     if(ipm_c == IPD_DM_C && XEVE_IPRED_CHK_CONV(ipm))
     {
         ipm_c = XEVE_IPRED_CONV_L2C(ipm);
@@ -710,7 +912,9 @@ void xevem_ipred_uv(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *ds
                     ipred_plane(src_le, src_up, src_ri, avail_lr, dst, w, h, bit_depth);
                     break;
                 default:
-                    ipred_ang(src_le, src_up, src_ri, avail_lr, dst, w, h, ipm, bit_depth);
+                    func_ipm = (ipm < IPD_VER ? 0 : (ipm > IPD_HOR ? 1 : 2));
+                    func_lr = func_ipm < 2 ? (((avail_lr >> 1) & 1)) : (avail_lr == LR_01);
+                    (*xeve_func_intra_pred_ang)[func_ipm][func_lr](src_le, src_up, src_ri, avail_lr, dst, w, h, ipm, bit_depth);
                     break;
             }
             break;

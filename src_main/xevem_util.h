@@ -83,7 +83,7 @@ int  xeve_split_is_BT(SPLIT_MODE mode);
 
 int  xeve_get_suco_flag(s8* suco_flag, int cud, int cup, int cuw, int cuh, int lcu_s, s8(*suco_flag_buf)[NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU]);
 void xeve_set_suco_flag(s8  suco_flag, int cud, int cup, int cuw, int cuh, int lcu_s, s8(*suco_flag_buf)[NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU]);
-u8   xeve_check_suco_cond(int cuw, int cuh, s8 split_mode, int boundary, u8 log2_max_cuwh, u8 suco_max_depth, u8 suco_depth);
+u8   xeve_check_suco_cond(int cuw, int cuh, s8 split_mode, int boundary, u8 log2_max_cuwh, u8 log2_min_cuwh, u8 suco_max_depth, u8 suco_depth);
 void xeve_mv_rounding_s32( s32 hor, int ver, s32 * rounded_hor, s32 * rounded_ver, s32 right_shift, int left_shift );
 void xeve_get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int c_scu, u16 w_scu, u16 h_scu, s16 mvp[REFP_NUM][MV_D], s8 *available_pred_idx, XEVE_SH* sh);
 void xeve_rounding_s32(s32 comp, s32 *rounded_comp, int right_shift, int left_shift);
