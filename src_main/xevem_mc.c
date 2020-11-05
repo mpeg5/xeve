@@ -601,7 +601,7 @@ void xeve_dmvr_refine(int w, int h, pel *ref_l0, int s_ref_l0, pel *ref_l1, int 
     ref_l1 = ref_l1_Orig;
 }
 
-__inline s32 div_for_maxq7(s64 N, s64 D)
+__inline static s32 div_for_maxq7(s64 N, s64 D)
 {
     s32 sign, q;
 

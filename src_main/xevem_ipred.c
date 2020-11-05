@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -210,7 +210,7 @@ static int xeve_get_dc(const int numerator, const int w, const int h)
     const int log2_w = xeve_tbl_log2[w];
     const int log2_h = xeve_tbl_log2[h];
     const int shift_w = 12;
-    
+
     int basic_shift = log2_w, log2_asp_ratio = 0;
 
     if (log2_w > log2_h)
@@ -501,7 +501,7 @@ void ipred_ang_less_ver_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avai
 
         for (i = 0; i < w; i++)
         {
-            x = i + t_dx;    
+            x = i + t_dx;
 
             pn_n1 = x - 1;
             p     = x;
@@ -554,7 +554,7 @@ void ipred_ang_less_ver_on_right(pel *src_le, pel *src_up, pel *src_ri, u16 avai
         for (i = 0; i < w - t_dx; i++)
         {
             x = i + t_dx;
-                       
+
             pn_n1 = x - 1;
             p     = x;
             pn    = x + 1;
@@ -858,7 +858,7 @@ void ipred_ang_only_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, p
     }
 }
 
-XEVE_INTRA_PRED_ANG xeve_tbl_intra_pred_ang[3][2] = 
+XEVE_INTRA_PRED_ANG xeve_tbl_intra_pred_ang[3][2] =
 {
     {ipred_ang_less_ver_no_right, ipred_ang_less_ver_on_right},
     {ipred_ang_gt_hor_no_right, ipred_ang_gt_hor_on_right},
@@ -933,7 +933,7 @@ void xevem_ipred_uv(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *ds
             ipred_bi(src_le, src_up, src_ri, avail_lr, dst, w, h, bit_depth);
             break;
         default:
-            printf("\n illegal chroma intra prediction mode\n");
+            xeve_trace("\n illegal chroma intra prediction mode\n");
             break;
     }
 }
@@ -1263,7 +1263,7 @@ void xevem_get_mpm(int x_scu, int y_scu, int cuw, int cuh, u32 *map_scu, s8 *map
         if(mpm[0] < 3 && mpm[1] < 3)
         {
             int cnt_cand = 4;
-            
+
             if(mpm[0] == IPD_DC)
             {
                 mpm_ext[0] = ((mpm[1] == IPD_BI) ? IPD_PLN : IPD_BI);

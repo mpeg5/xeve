@@ -374,8 +374,8 @@ void xeve_it_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, const int
     const int TRANSFORM_MATRIX_SHIFT = 6;
     const int shift_1st = TRANSFORM_MATRIX_SHIFT + 1;
     const int shift_2nd = (TRANSFORM_MATRIX_SHIFT + max_log2_tr_dynamic_range - 1) - bit_depth;
-    const u8 log2_minus1_w = CONV_LOG2(tuw) - 1;
-    const u8 log2_minus1_h = CONV_LOG2(tuh) - 1;
+    const u8 log2_minus1_w = XEVE_LOG2(tuw) - 1;
+    const u8 log2_minus1_h = XEVE_LOG2(tuh) - 1;
     s16 t[MAX_TR_DIM]; /* temp buffer */
     u8  t_idx_h = 0, t_idx_v = 0;
 

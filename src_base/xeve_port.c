@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -28,14 +28,32 @@
    POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _XEVE_IMG_H_
-#define _XEVE_IMG_H_
+#include <stdarg.h>
+#include "xeve_port.h"
 
-#include "xeve_def.h"
+void xeve_trace0(char * filename, int line, const char *fmt, ...)
+{
+    char str[1024]={'\0',};
+    if(filename != NULL && line >= 0) sprintf(str, "[%s:%d] ", filename, line);
+    va_list args;
+    va_start(args, fmt);
+    vsprintf(str + strlen(str), fmt, args);
+    va_end(args);
+    printf("%s", str);
+}
 
-#define XEVE_IMGB_OPT_NONE                 (0)
+void xeve_trace_line(char * pre)
+{
+    char str[128]={'\0',};
+    const int chars = 80;
+    int len = (pre == NULL)? 0: strlen(pre);
+    if(len > 0)
+    {
+        sprintf(str, "%s ", pre);
+        len = strlen(str);
+    }
+    for(int i = len ; i< chars; i++) {str[i] = '=';}
+    str[chars] = '\0';
+    printf("%s\n", str);
+}
 
-/* create image buffer */
-XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt, int pad[XEVE_IMGB_MAX_PLANE], int align[XEVE_IMGB_MAX_PLANE]);
-void xeve_imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src);
-#endif /* _XEVE_IMG_H_ */

@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -28,18 +28,18 @@
    POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _XEVE_H_
-#define _XEVE_H_
+#ifndef __XEVE_H_324908432432894378294893208493284939437289432432__
+#define __XEVE_H_324908432432894378294893208493284939437289432432__
 
 #define XEVE_MAX_TASK_CNT               8
 #define MAX_NUM_TILES_ROW               22
 #define MAX_NUM_TILES_COL               20
 
-#define MAX_QP_TABLE_SIZE               58   
+#define MAX_QP_TABLE_SIZE               58
 #define MAX_QP_TABLE_SIZE_EXT           94
 
 /*****************************************************************************
- * return values and error code
+ * generic return and error code
  *****************************************************************************/
 /* no more frames, but it is OK */
 #define XEVE_OK_NO_MORE_FRM              (205)
@@ -50,12 +50,10 @@
 /* decoding success, but output frame has been delayed */
 #define XEVE_OK_FRM_DELAYED              (202)
 /* not matched CRC value */
-#define XEVE_ERR_BAD_CRC                 (201) 
+#define XEVE_ERR_BAD_CRC                 (201)
 /* CRC value presented but ignored at decoder*/
-#define XEVE_WARN_CRC_IGNORED            (200) 
-
+#define XEVE_WARN_CRC_IGNORED            (200)
 #define XEVE_OK                          (0)
-
 #define XEVE_ERR                         (-1) /* generic error */
 #define XEVE_ERR_INVALID_ARGUMENT        (-101)
 #define XEVE_ERR_OUT_OF_MEMORY           (-102)
@@ -64,89 +62,57 @@
 #define XEVE_ERR_UNEXPECTED              (-105)
 #define XEVE_ERR_UNSUPPORTED_COLORSPACE  (-201)
 #define XEVE_ERR_MALFORMED_BITSTREAM     (-202)
-
 #define XEVE_ERR_UNKNOWN                 (-32767) /* unknown error */
 
-/* return value checking *****************************************************/
+/* return value checking */
 #define XEVE_SUCCEEDED(ret)              ((ret) >= XEVE_OK)
 #define XEVE_FAILED(ret)                 ((ret) < XEVE_OK)
 
 /*****************************************************************************
  * color spaces
+ * - value format = (endian << 14) | (bit-depth << 8) | (color format)
+ * - endian (1bit): little endian = 0, big endian = 1
+ * - bit-depth (6bit): 0~63
+ * - color format (8bit): 0~255
  *****************************************************************************/
-#define XEVE_COLORSPACE_UNKNOWN          0 /* unknown color space */
+/* color formats */
+#define XEVE_CF_UNKNOWN                 0 /* unknown color format */
+#define XEVE_CF_YCBCR400                10 /* Y only */
+#define XEVE_CF_YCBCR420                11 /* YCbCr 420 */
+#define XEVE_CF_YCBCR422                12 /* YCBCR 422 narrow chroma*/
+#define XEVE_CF_YCBCR444                13 /* YCBCR 444*/
+#define XEVE_CF_YCBCR422N               XEVE_CF_YCBCR422
+#define XEVE_CF_YCBCR422W               18 /* YCBCR422 wide chroma */
 
-/* YUV planar ****************************************************************/
-#define XEVE_COLORSPACE_YUV_PLANAR_START 100
+/* macro for color space */
+#define XEVE_CS_GET_FORMAT(cs)           (((cs) >> 0) & 0xFF)
+#define XEVE_CS_GET_BIT_DEPTH(cs)        (((cs) >> 8) & 0x3F)
+#define XEVE_CS_GET_BYTE_DEPTH(cs)       ((XEVE_CS_GET_BIT_DEPTH(cs)+7)>>3)
+#define XEVE_CS_GET_ENDIAN(cs)           (((cs) >> 14) & 0x1)
+#define XEVE_CS_SET(f, bit, e)           (((e) << 14) | ((bit) << 8) | (f))
+#define XEVE_CS_SET_FORMAT(cs, v)        (((cs) & ~0xFF) | ((v) << 0))
+#define XEVE_CS_SET_BIT_DEPTH(cs, v)     (((cs) & ~(0x3F<<8)) | ((v) << 8))
+#define XEVE_CS_SET_ENDIAN(cs, v)        (((cs) & ~(0x1<<14)) | ((v) << 14))
 
-/* YUV planar 8bit */
-#define XEVE_COLORSPACE_YUV400          300 /* Y 8bit */
-#define XEVE_COLORSPACE_YUV420          301 /* YUV420 8bit */
-#define XEVE_COLORSPACE_YUV422          302 /* YUV422 8bit narrow chroma*/
-#define XEVE_COLORSPACE_YUV444          303 /* YUV444 8bit */
-#define XEVE_COLORSPACE_YUV422N         XEVE_COLORSPACE_YUV422
-#define XEVE_COLORSPACE_YUV422W         310 /* YUV422 8bit wide chroma */
-
-#define XEVE_COLORSPACE_YUV400A8        400 /* Y+alpha 8bit */
-#define XEVE_COLORSPACE_YUV420A8        401 /* YUV420+alpha 8bit */
-#define XEVE_COLORSPACE_YUV422A8        402 /* YUV422+alpha 8bit narrow chroma*/
-#define XEVE_COLORSPACE_YUV444A8        403 /* YUV444+alpha 8bit */
-#define XEVE_COLORSPACE_YUV422NA8       XEVE_COLORSPACE_YUV422A8
-#define XEVE_COLORSPACE_YUV422WA8       414 /* YUV422+alpha 8bit wide chroma*/
-
-/* YUV planar 10bit */
-#define XEVE_COLORSPACE_YUV400_10LE     500 /* Y 10bit little-endian */
-#define XEVE_COLORSPACE_YUV400_10BE     501 /* Y 10bit big-endian */
-#define XEVE_COLORSPACE_YUV420_10LE     502 /* YUV420 10bit little-endian */
-#define XEVE_COLORSPACE_YUV420_10BE     503 /* YUV420 10bit big-endian */
-#define XEVE_COLORSPACE_YUV422_10LE     504 /* YUV422 10bit little-endian */
-#define XEVE_COLORSPACE_YUV422_10BE     505 /* YUV422 10bit big-endian */
-#define XEVE_COLORSPACE_YUV444_10LE     506 /* YUV444 10bit little-endian */
-#define XEVE_COLORSPACE_YUV444_10BE     507 /* YUV444 10bit big-endian */
-#define XEVE_COLORSPACE_YUV400_12LE     600 /* Y 10bit little-endian */
-#define XEVE_COLORSPACE_YUV420_12LE     602 /* YUV420 12bit little-endian */
-#define XEVE_COLORSPACE_YUV420_12BE     603 /* YUV420 12bit big-endian */
-#define XEVE_COLORSPACE_YUV400_14LE     700 /* Y 10bit little-endian */
-#define XEVE_COLORSPACE_YUV420_14LE     702 /* YUV420 14bit little-endian */
-#define XEVE_COLORSPACE_YUV420_14BE     703 /* YUV420 14bit big-endian */
-#define XEVE_COLORSPACE_YUV400_16LE     800 /* Y 10bit little-endian */
-#define XEVE_COLORSPACE_YUV420_16LE     802 /* YUV420 16bit little-endian */
-#define XEVE_COLORSPACE_YUV420_16BE     803 /* YUV420 16bit big-endian */
-#define XEVE_COLORSPACE_YUV_PLANAR_END  999
-
-/* RGB pack ******************************************************************/
-#define XEVE_COLORSPACE_RGB_PACK_START  2000
-
-/* RGB pack 8bit */
-#define XEVE_COLORSPACE_RGB888          2200
-#define XEVE_COLORSPACE_BGR888          2201
-
-#define XEVE_COLORSPACE_RGBA8888        2220
-#define XEVE_COLORSPACE_BGRA8888        2221
-#define XEVE_COLORSPACE_ARGB8888        2222
-#define XEVE_COLORSPACE_ABGR8888        2223
-
-#define XEVE_COLORSPACE_RGB_PACK_END    2999
-
-/* macro for colorspace checking *********************************************/
-#define XEVE_COLORSPACE_IS_YUV_PLANAR(cs)   \
-    ((cs)>=XEVE_COLORSPACE_YUV_PLANAR_START && (cs)<=XEVE_COLORSPACE_YUV_PLANAR_END)
-
-#define XEVE_COLORSPACE_IS_RGB_PACK(cs)   \
-    ((cs)>=XEVE_COLORSPACE_RGB_PACK_START &&  (cs)<=XEVE_COLORSPACE_RGB_PACK_END)
-
-#define BD_FROM_CS(cs)    \
-    ((cs)<XEVE_COLORSPACE_YUV400_10LE) ? 8 : ((cs)<XEVE_COLORSPACE_YUV400_12LE ? 10 : ((cs)<XEVE_COLORSPACE_YUV400_14LE ? 12 : 14))
-#define CS_FROM_BD_420(bd)    \
-    ((bd)==8) ? XEVE_COLORSPACE_YUV420 : ((bd)==10 ? XEVE_COLORSPACE_YUV420_10LE : ((bd)==12 ? XEVE_COLORSPACE_YUV420_12LE : XEVE_COLORSPACE_YUV420_14LE))
+/* pre-defined color spaces */
+#define XEVE_CS_UNKNOWN                  XEVE_CS_SET(0,0,0)
+#define XEVE_CS_YCBCR400                 XEVE_CS_SET(XEVE_CF_YCBCR400, 8, 0)
+#define XEVE_CS_YCBCR420                 XEVE_CS_SET(XEVE_CF_YCBCR420, 8, 0)
+#define XEVE_CS_YCBCR422                 XEVE_CS_SET(XEVE_CF_YCBCR422, 8, 0)
+#define XEVE_CS_YCBCR444                 XEVE_CS_SET(XEVE_CF_YCBCR444, 8, 0)
+#define XEVE_CS_YCBCR400_10LE            XEVE_CS_SET(XEVE_CF_YCBCR400, 10, 0)
+#define XEVE_CS_YCBCR420_10LE            XEVE_CS_SET(XEVE_CF_YCBCR420, 10, 0)
+#define XEVE_CS_YCBCR422_10LE            XEVE_CS_SET(XEVE_CF_YCBCR422, 10, 0)
+#define XEVE_CS_YCBCR444_10LE            XEVE_CS_SET(XEVE_CF_YCBCR444, 10, 0)
+#define XEVE_CS_YCBCR400_12LE            XEVE_CS_SET(XEVE_CF_YCBCR400, 12, 0)
+#define XEVE_CS_YCBCR420_12LE            XEVE_CS_SET(XEVE_CF_YCBCR420, 12, 0)
+#define XEVE_CS_YCBCR400_14LE            XEVE_CS_SET(XEVE_CF_YCBCR400, 14, 0)
+#define XEVE_CS_YCBCR420_14LE            XEVE_CS_SET(XEVE_CF_YCBCR420, 14, 0)
 
 /*****************************************************************************
  * config types
  *****************************************************************************/
-#define XEVE_CFG_SET_COMPLEXITY         (100)
-#define XEVE_CFG_SET_SPEED              (101)
 #define XEVE_CFG_SET_FORCE_OUT          (102)
-
 #define XEVE_CFG_SET_FINTRA             (200)
 #define XEVE_CFG_SET_QP                 (201)
 #define XEVE_CFG_SET_BPS                (202)
@@ -160,8 +126,6 @@
 #define XEVE_CFG_SET_DEBLOCK_A_OFFSET   (212)
 #define XEVE_CFG_SET_DEBLOCK_B_OFFSET   (213)
 #define XEVE_CFG_SET_USE_PIC_SIGNATURE  (301)
-#define XEVE_CFG_GET_COMPLEXITY         (500)
-#define XEVE_CFG_GET_SPEED              (501)
 #define XEVE_CFG_GET_QP_MIN             (600)
 #define XEVE_CFG_GET_QP_MAX             (601)
 #define XEVE_CFG_GET_QP                 (602)
@@ -202,40 +166,41 @@
 /*****************************************************************************
  * type and macro for media time
  *****************************************************************************/
-/* media time in 100-nanosec unit */
-typedef long long                    XEVE_MTIME;
+typedef long long                        XEVE_MTIME; /* in 100-nanosec unit */
 
 /*****************************************************************************
  * image buffer format
- *****************************************************************************
- baddr
-    +---------------------------------------------------+ ---
-    |                                                   |  ^
-    |                                              |    |  |
-    |    a                                         v    |  |
-    |   --- +-----------------------------------+ ---   |  |
-    |    ^  |  (x, y)                           |  y    |  |
-    |    |  |   +---------------------------+   + ---   |  |
-    |    |  |   |                           |   |  ^    |  |
-    |    |  |   |                           |   |  |    |  |
-    |    |  |   |                           |   |  |    |  |
-    |    |  |   |                           |   |  |    |  |
-    |       |   |                           |   |       |
-    |    ah |   |                           |   |  h    |  e
-    |       |   |                           |   |       |
-    |    |  |   |                           |   |  |    |  |
-    |    |  |   |                           |   |  |    |  |
-    |    |  |   |                           |   |  v    |  |
-    |    |  |   +---------------------------+   | ---   |  |
-    |    v  |                                   |       |  |
-    |   --- +---+-------------------------------+       |  |
-    |     ->| x |<----------- w ----------->|           |  |
-    |       |<--------------- aw -------------->|       |  |
-    |                                                   |  v
-    +---------------------------------------------------+ ---
-
-    |<---------------------- s ------------------------>|
-
+ *
+ *    baddr
+ *     +---------------------------------------------------+ ---
+ *     |                                                   |  ^
+ *     |                                              |    |  |
+ *     |    a                                         v    |  |
+ *     |   --- +-----------------------------------+ ---   |  |
+ *     |    ^  |  (x, y)                           |  y    |  |
+ *     |    |  |   +---------------------------+   + ---   |  |
+ *     |    |  |   |                           |   |  ^    |  |
+ *     |    |  |   |            /\             |   |  |    |  |
+ *     |    |  |   |           /  \            |   |  |    |  |
+ *     |    |  |   |          /    \           |   |  |    |  |
+ *     |       |   |  +--------------------+   |   |       |
+ *     |    ah |   |   \                  /    |   |  h    |  e
+ *     |       |   |    +----------------+     |   |       |
+ *     |    |  |   |       |          |        |   |  |    |  |
+ *     |    |  |   |      @    O   O   @       |   |  |    |  |
+ *     |    |  |   |        \    ~   /         |   |  v    |  |
+ *     |    |  |   +---------------------------+   | ---   |  |
+ *     |    v  |                                   |       |  |
+ *     |   --- +---+-------------------------------+       |  |
+ *     |     ->| x |<----------- w ----------->|           |  |
+ *     |       |<--------------- aw -------------->|       |  |
+ *     |                                                   |  v
+ *     +---------------------------------------------------+ ---
+ *
+ *     |<---------------------- s ------------------------>|
+ *
+ * - x, y, w, aw, h, ah : unit of pixel
+ * - s, e : unit of byte
  *****************************************************************************/
 
 #define XEVE_IMGB_MAX_PLANE              (4)
@@ -381,7 +346,7 @@ typedef struct _XEVE_CDSC
        - 1 : use closed GOP */
     int            closed_gop;
     /* bit depth of input video */
-    int            in_bit_depth;
+    int            inp_bit_depth;
     /* bit depth of output video */
     int            out_bit_depth;
     int            codec_bit_depth;
@@ -517,4 +482,5 @@ int  xeve_encode_pps(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  xeve_encode_aps(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat, int aps_type_id);
 int  xeve_config(XEVE id, int cfg, void * buf, int * size);
 
-#endif /* _XEVE_H_ */
+#endif /* __XEVE_H_324908432432894378294893208493284939437289432432__ */
+

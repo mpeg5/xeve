@@ -18,14 +18,20 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Set compiler flags and options. 
 if( MSVC )
 elseif( UNIX OR MINGW )
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fomit-frame-pointer -Wall -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -Wno-attributes -Werror -Wno-strict-overflow -Wno-unknown-pragmas -Wno-stringop-overflow -std=c99")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pointer-sign -pthread -Wno-pointer-to-int-cast -Wno-maybe-uninitialized")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
-
     if(NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE "Release")
     endif()
     message("CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")	
+
+    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(OPT_LV "O0")
+    else()
+        set(OPT_LV "O3")
+    endif()
+
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -${OPT_LV} -fomit-frame-pointer -Wall -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -Wno-attributes -Werror -Wno-strict-overflow -Wno-unknown-pragmas -Wno-stringop-overflow -std=c99")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pointer-sign -pthread -Wno-pointer-to-int-cast -Wno-maybe-uninitialized")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
 endif()
 
 # Command to output information to the console

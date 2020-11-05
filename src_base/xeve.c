@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -312,7 +312,7 @@ static int set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param)
     param->tile_rows        = 1;
     param->tile_columns     = 1;
     param->num_slice_in_pic = 1;
-    param->uniform_spacing_tiles = 0;;    
+    param->uniform_spacing_tiles = 0;;
     param->arbitrary_slice_flag  = 0;
 
     for (int i = 0; i < (2 * param->num_slice_in_pic); i++)
@@ -340,14 +340,14 @@ static void set_nalu(XEVE_NALU * nalu, int nalu_type, int nuh_temporal_id)
     nalu->nuh_extension_flag = 0;
 }
 
-// Dummy VUI initialization 
-static void set_vui(XEVE_CTX * ctx, XEVE_VUI * vui) 
+// Dummy VUI initialization
+static void set_vui(XEVE_CTX * ctx, XEVE_VUI * vui)
 {
     vui->aspect_ratio_info_present_flag = 1;
     vui->aspect_ratio_idc = 1;
     vui->sar_width = 1;
     vui->sar_height = 1;
-    vui->overscan_info_present_flag = 1; 
+    vui->overscan_info_present_flag = 1;
     vui->overscan_appropriate_flag = 1;
     vui->video_signal_type_present_flag = 1;
     vui->video_format = 1;
@@ -470,7 +470,7 @@ static void set_pps(XEVE_CTX * ctx, XEVE_PPS * pps)
     pps->single_tile_in_pic_flag = 1;
     pps->constrained_intra_pred_flag = ctx->cdsc.constrained_intra_pred;
     pps->cu_qp_delta_enabled_flag = XEVE_ABS(ctx->cdsc.use_dqp);
-    
+
     pps->num_ref_idx_default_active_minus1[REFP_0] = 0;
     pps->num_ref_idx_default_active_minus1[REFP_1] = 0;
 
@@ -485,7 +485,7 @@ typedef struct _QP_ADAPT_PARAM
     double qp_offset_model_scale;
 } QP_ADAPT_PARAM;
 
-QP_ADAPT_PARAM qp_adapt_param_ra[8] = 
+QP_ADAPT_PARAM qp_adapt_param_ra[8] =
 {
     {-3,  0.0000, 0.0000},
     { 1,  0.0000, 0.0000},
@@ -610,7 +610,7 @@ static int set_tile_info(XEVE_CTX * ctx)
     h_lcu = ctx->h_lcu;
     num_slice_in_pic = ctx->param.num_slice_in_pic;
 
-   
+
     tile_to_slice_map[0] = 0;
     tile_order[0] = 0;
     /* alloc tile information */
@@ -665,7 +665,7 @@ static int set_tile_info(XEVE_CTX * ctx)
             for (i = 0; i<w; i++)
             {
                 map_tidx[i] = tidx;
-                MCU_SET_SN(map_scu[i], slice_num);  //Mapping CUs to the slices                    
+                MCU_SET_SN(map_scu[i], slice_num);  //Mapping CUs to the slices
             }
             map_tidx += ctx->w_scu;
             map_scu += ctx->w_scu;
@@ -762,7 +762,7 @@ int xeve_ready(XEVE_CTX * ctx)
         ctx->min_cuwh = 1 << 2;
         ctx->log2_min_cuwh = 2;
 
-        ctx->log2_max_cuwh = CONV_LOG2(ctx->max_cuwh);
+        ctx->log2_max_cuwh = XEVE_LOG2(ctx->max_cuwh);
         ctx->max_cud = ctx->log2_max_cuwh - MIN_CU_LOG2;
         ctx->w_lcu = (w + ctx->max_cuwh - 1) >> ctx->log2_max_cuwh;
         ctx->h_lcu = (h + ctx->max_cuwh - 1) >> ctx->log2_max_cuwh;
@@ -783,7 +783,7 @@ int xeve_ready(XEVE_CTX * ctx)
     //get the context synchronization handle
     ctx->sync_block = get_synchronized_object();
     xeve_assert_gv(ctx->sync_block != NULL, ret, XEVE_ERR_UNKNOWN, ERR);
-    
+
     if (ctx->cdsc.parallel_task_cnt >= 1)
     {
         ctx->tc = xeve_malloc(sizeof(THREAD_CONTROLLER));
@@ -884,14 +884,11 @@ int xeve_ready(XEVE_CTX * ctx)
         }
     }
 
-    if (ctx->cdsc.parallel_task_cnt > 1)
+    size = ctx->f_lcu * sizeof(int);
+    ctx->sync_flag = (volatile s32 *)xeve_malloc(size);
+    for (int i = 0; i < (int)ctx->f_lcu; i++)
     {
-        size = ctx->f_lcu * sizeof(int);
-        ctx->sync_flag = (volatile s32 *)xeve_malloc(size);
-        for (int i = 0; i < (int)ctx->f_lcu; i++)
-        {
-            ctx->sync_flag[i] = 0;
-        }
+        ctx->sync_flag[i] = 0;
     }
 
     return XEVE_OK;
@@ -933,10 +930,7 @@ ERR:
         }
     }
 
-    if (ctx->cdsc.parallel_task_cnt > 1)
-    {
-        xeve_mfree_fast((void*) ctx->sync_flag);
-    }
+    xeve_mfree_fast((void*) ctx->sync_flag);
 
     for(i = 0; i < ctx->pico_max_cnt; i++)
     {
@@ -993,11 +987,7 @@ void xeve_flush(XEVE_CTX * ctx)
         }
     }
 
-    if (ctx->cdsc.parallel_task_cnt > 1)
-    {
-        xeve_mfree_fast((void*) ctx->sync_flag);
-    }
-
+    xeve_mfree_fast((void*) ctx->sync_flag);
     xeve_mfree_fast(ctx->map_cu_mode);
     xeve_picbuf_free(ctx->pic_dbk);
     xeve_picman_deinit(&ctx->rpm);
@@ -1102,7 +1092,7 @@ int xeve_deblock(XEVE_CTX * ctx, XEVE_PIC * pic, int tile_idx, int filter_across
     r_scu = XEVE_CLIP3(0, ctx->w_scu, x_r*scu_in_lcu_wh);
     t_scu = y_l * scu_in_lcu_wh;
     b_scu = XEVE_CLIP3(0, ctx->h_scu, y_r*scu_in_lcu_wh);
-    
+
     /* Filtering tile boundaries in case of loop filter is enabled across tiles*/
     if (filter_across_boundary)
     {
@@ -1143,11 +1133,11 @@ int xeve_deblock(XEVE_CTX * ctx, XEVE_PIC * pic, int tile_idx, int filter_across
                        , xeve_get_default_tree_cons(), core, boundary_filtering);
         }
     }
-    
+
     else
     /* Applying deblocking on the image except tile boundaries*/
     {
-        
+
         for (j = t_scu; j < b_scu; j++)
         {
             for (i = l_scu; i < r_scu; i++)
@@ -1222,7 +1212,7 @@ int xeve_picbuf_get_inbuf(XEVE_CTX * ctx, XEVE_IMGB ** imgb)
             pad[1] = 0;
             pad[2] = 0;
 
-            *imgb = xeve_imgb_create(ctx->param.w, ctx->param.h, XEVE_COLORSPACE_YUV420_10LE, opt, pad, align);
+            *imgb = xeve_imgb_create(ctx->param.w, ctx->param.h, XEVE_CS_YCBCR420_10LE, opt, pad, align);
             xeve_assert_rv(*imgb != NULL, XEVE_ERR_OUT_OF_MEMORY);
 
             ctx->inbuf[i] = *imgb;
@@ -1382,7 +1372,7 @@ static void decide_slice_type(XEVE_CTX * ctx)
     ctx->pico = ctx->pico_buf[ctx->pico_idx];
     PIC_ORIG(ctx) = &ctx->pico->pic;
 
-    if(gop_size == 1) 
+    if(gop_size == 1)
     {
         if (i_period == 1) /* IIII... */
         {
@@ -1607,8 +1597,8 @@ static void update_core_loc_param(XEVE_CTX * ctx, XEVE_CORE * core)
 {
     core->x_pel = core->x_lcu << ctx->log2_max_cuwh;  // entry point's x location in pixel
     core->y_pel = core->y_lcu << ctx->log2_max_cuwh;  // entry point's y location in pixel
-    core->x_scu = core->x_lcu << (MAX_CU_LOG2 - MIN_CU_LOG2); // set x_scu location 
-    core->y_scu = core->y_lcu << (MAX_CU_LOG2 - MIN_CU_LOG2); // set y_scu location 
+    core->x_scu = core->x_lcu << (MAX_CU_LOG2 - MIN_CU_LOG2); // set x_scu location
+    core->y_scu = core->y_lcu << (MAX_CU_LOG2 - MIN_CU_LOG2); // set y_scu location
     core->lcu_num = core->x_lcu + core->y_lcu*ctx->w_lcu; // Init the first lcu_num in tile
 }
 
@@ -1617,8 +1607,8 @@ static void update_core_loc_param1(XEVE_CTX * ctx, XEVE_CORE * core)
 {
     core->x_pel = core->x_lcu << ctx->log2_max_cuwh;  // entry point's x location in pixel
     core->y_pel = core->y_lcu << ctx->log2_max_cuwh;  // entry point's y location in pixel
-    core->x_scu = core->x_lcu << (MAX_CU_LOG2 - MIN_CU_LOG2); // set x_scu location 
-    core->y_scu = core->y_lcu << (MAX_CU_LOG2 - MIN_CU_LOG2); // set y_scu location 
+    core->x_scu = core->x_lcu << (MAX_CU_LOG2 - MIN_CU_LOG2); // set x_scu location
+    core->y_scu = core->y_lcu << (MAX_CU_LOG2 - MIN_CU_LOG2); // set y_scu location
 }
 
 static int mt_get_next_ctu_num(XEVE_CTX * ctx, XEVE_CORE * core, int skip_ctb_line_cnt)
@@ -1668,12 +1658,12 @@ static int ctu_mt_core(void * arg)
     core->y_lcu = (core->lcu_num) / ctx->w_lcu; // entry point lcu's y location
     ctb_cnt_in_row = ctx->tile[i].w_ctb; //Total LCUs in the current row
     update_core_loc_param1(ctx, core);
-    
+
     int bef_cu_qp = ctx->tile[i].qp_prev_eco;
 
     /* LCU encoding loop */
     while (ctx->tile[i].f_ctb > 0)
-    {        
+    {
         if (core->y_lcu != 0 && core->x_lcu < (ctb_cnt_in_row - 1))
         {
             idx = core->lcu_num - ctx->w_lcu + 1; /* up-right CTB */
@@ -1698,11 +1688,11 @@ static int ctu_mt_core(void * arg)
         ctx->tile[i].qp_prev_eco = bef_cu_qp;
 
         /* entropy coding ************************************************/
-        ret = xeve_eco_tree(ctx, core, core->x_pel, core->y_pel, 0, ctx->max_cuwh, ctx->max_cuwh, 0, 0, xeve_get_default_tree_cons(), bs); 
+        ret = xeve_eco_tree(ctx, core, core->x_pel, core->y_pel, 0, ctx->max_cuwh, ctx->max_cuwh, 0, 0, xeve_get_default_tree_cons(), bs);
         bef_cu_qp = ctx->tile[i].qp_prev_eco;
 
         xeve_assert_rv(ret == XEVE_OK, ret);
-        
+
         threadsafe_assign(&ctx->sync_flag[core->lcu_num], THREAD_TERMINATED);
         threadsafe_decrement(ctx->sync_block, (volatile s32 *)&ctx->tile[i].f_ctb);
 
@@ -1782,7 +1772,7 @@ static int tile_mt_core(void * arg)
 
         xeve_assert_rv(ret == XEVE_OK, ret);
         /* prepare next step *********************************************/
-        
+
         core->x_lcu++;
         if (core->x_lcu >= ctx->tile[i].w_ctb + col_bd)
         {
@@ -2107,7 +2097,7 @@ int xeve_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core)
     return ret;
 }
 
-int xeve_pic_ctu_parallel(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
+int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 {
     XEVE_CORE     * core;
     XEVE_BSW      * bs;
@@ -2260,7 +2250,7 @@ int xeve_pic_ctu_parallel(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 
         /* Set nalu header */
         set_nalu(&ctx->nalu, ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.use_closed_gop) ? XEVE_IDR_NUT : XEVE_NONIDR_NUT, ctx->nalu.nuh_temporal_id);
-        
+
         core->qp_y = ctx->sh.qp + 6 * ctx->sps.bit_depth_luma_minus8;
         core->qp_u = xeve_tbl_qp_chroma_dynamic[0][sh->qp_u] + 6 * ctx->sps.bit_depth_chroma_minus8;
         core->qp_v = xeve_tbl_qp_chroma_dynamic[1][sh->qp_v] + 6 * ctx->sps.bit_depth_chroma_minus8;
@@ -2305,8 +2295,8 @@ int xeve_pic_ctu_parallel(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         int thread_cnt = 0, thread_cnt1 = 0;;
         int task_completed = 0;
         int tile_cnt = 0;
-        
-        //Code for CTU parallel encoding 
+
+        //Code for CTU parallel encoding
         while (total_tiles_in_slice)
         {
             //Limiting parallel task to the number of LCU rows
@@ -2326,7 +2316,7 @@ int xeve_pic_ctu_parallel(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
                 ctx->core[thread_cnt]->thread_cnt = thread_cnt;
                 tc->run(ctx->thread_pool[thread_cnt], ctu_mt_core, (void*)ctx->core[thread_cnt]);
             }
-        
+
 
             ctx->tile[i].qp = ctx->sh.qp;
             ctx->tile[i].qp_prev_eco = ctx->sh.qp;
@@ -2381,7 +2371,7 @@ int xeve_pic_ctu_parallel(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             total_tiles_in_slice -= 1;
         }
         total_tiles_in_slice = total_tiles_in_slice_copy;
-        
+
         ctx->fn_loop_filter(ctx, core);
 
         core->x_lcu = core->y_lcu = 0;
@@ -2462,7 +2452,7 @@ int xeve_pic_ctu_parallel(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             xeve_bsw_init_slice(&ctx->bs[0], (u8*)curr_temp, bitb->bsize, NULL);
             tmp_ptr1 = curr_temp;
         }
-    
+
 #if TRACE_START_POC
         if (fp_trace_started == 1)
         {
@@ -2540,7 +2530,7 @@ int xeve_pic_ctu_parallel(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             core->y_lcu = (ctx->tile[i].ctba_rs_first) / ctx->w_lcu; // entry point lcu's y location
             ctb_cnt_in_tile = ctx->tile[i].f_ctb; //Total LCUs in the current tile
             update_core_loc_param(ctx, core);
-        
+
             XEVE_BSW bs_beg;
             bs_beg.cur = bs->cur;
             bs_beg.leftbits = bs->leftbits;
@@ -2627,496 +2617,7 @@ int xeve_pic_ctu_parallel(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 #endif
         ret = ctx->fn_eco_sh(&bs_sh, &ctx->sps, &ctx->pps, sh, ctx->nalu.nal_unit_type_plus1 - 1);
         xeve_assert_rv(ret == XEVE_OK, ret);
-#if TRACE_HLS    
-        fseek(fp_trace, tmp_fp_point2, SEEK_SET);
-#endif
-        xeve_bsw_deinit(bs);
-        *size_field = (int)(bs->cur - cur_tmp) - 4;
-        curr_temp = bs->cur;
-
-    }  // End of slice loop
-    return XEVE_OK;
-}
-
-int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
-{
-    XEVE_CORE    * core;
-    XEVE_BSW     * bs;
-    XEVE_SH      * sh;
-    XEVE_APS     * aps;
-
-    int         ret;
-    u32         i;
-    int         ctb_cnt_in_tile = 0;
-    int         col_bd = 0;
-    int num_slice_in_pic = ctx->param.num_slice_in_pic;
-    u8  * tiles_in_slice, total_tiles_in_slice, total_tiles_in_slice_copy;
-    u8* curr_temp = NULL;
-    int tile_cnt = 0;
-
-    for (ctx->slice_num = 0; ctx->slice_num < num_slice_in_pic; ctx->slice_num++)
-    {
-        if (num_slice_in_pic > 1)
-        {
-            if (!ctx->param.arbitrary_slice_flag)
-            {
-                int first_tile_in_slice, last_tile_in_slice, first_tile_col_idx, last_tile_col_idx, delta_tile_idx;
-                int w_tile, w_tile_slice, h_tile_slice;
-
-                w_tile = ctx->param.tile_columns;
-                first_tile_in_slice = ctx->param.slice_boundary_array[ctx->slice_num * 2];
-                last_tile_in_slice = ctx->param.slice_boundary_array[ctx->slice_num * 2 + 1];
-
-                first_tile_col_idx = first_tile_in_slice % w_tile;
-                last_tile_col_idx = last_tile_in_slice % w_tile;
-                delta_tile_idx = last_tile_in_slice - first_tile_in_slice;
-
-                if (last_tile_in_slice < first_tile_in_slice)
-                {
-                    if (first_tile_col_idx > last_tile_col_idx)
-                    {
-                        delta_tile_idx += ctx->tile_cnt + w_tile;
-                    }
-                    else
-                    {
-                        delta_tile_idx += ctx->tile_cnt;
-                    }
-                }
-                else if (first_tile_col_idx > last_tile_col_idx)
-                {
-                    delta_tile_idx += w_tile;
-                }
-
-                w_tile_slice = (delta_tile_idx % w_tile) + 1; //Number of tiles in slice width
-                h_tile_slice = (delta_tile_idx / w_tile) + 1;
-                total_tiles_in_slice = w_tile_slice * h_tile_slice;
-                total_tiles_in_slice_copy = total_tiles_in_slice;
-                for (u32 k = 0; k < total_tiles_in_slice; k++)
-                {
-                    ctx->tiles_in_slice[k] = ctx->tile_order[tile_cnt++];
-                }
-            }
-            else
-            {
-                total_tiles_in_slice = ctx->param.num_remaining_tiles_in_slice_minus1[ctx->slice_num] + 2;
-                int bef_tile_num = 0;
-                for (int i = 0; i < ctx->slice_num; ++i)
-                {
-                    bef_tile_num += ctx->param.num_remaining_tiles_in_slice_minus1[i] + 2;
-                }
-                for (u32 k = 0; k < total_tiles_in_slice; k++)
-                {
-                    ctx->tiles_in_slice[k] = ctx->param.tile_array_in_slice[bef_tile_num + k];
-                }
-                total_tiles_in_slice_copy = total_tiles_in_slice;
-            }
-        }
-        else
-        {
-            if (ctx->param.arbitrary_slice_flag)
-            {
-                total_tiles_in_slice = ctx->param.num_remaining_tiles_in_slice_minus1[ctx->slice_num] + 2;
-                int bef_tile_num = 0;
-                for (int i = 0; i < ctx->slice_num; ++i)
-                {
-                    bef_tile_num += ctx->param.num_remaining_tiles_in_slice_minus1[i] + 2;
-                }
-                for (u32 k = 0; k < total_tiles_in_slice; k++)
-                {
-                    ctx->tiles_in_slice[k] = ctx->param.tile_array_in_slice[bef_tile_num + k];
-                }
-                total_tiles_in_slice_copy = total_tiles_in_slice;
-            }
-            else
-            {
-                total_tiles_in_slice = 0;
-                for (u32 k = 0; k < ctx->tile_cnt; k++)
-                {
-                    ctx->tiles_in_slice[total_tiles_in_slice] = k;
-                    total_tiles_in_slice++;
-                }
-                total_tiles_in_slice_copy = total_tiles_in_slice;
-            }
-        }
-        tiles_in_slice = ctx->tiles_in_slice;
-
-        bs = &ctx->bs[0];
-        core = ctx->core[0];
-        sh = &ctx->sh;
-        core->ctx = ctx;
-  
-        sh->num_tiles_in_slice = total_tiles_in_slice;
-        aps = &ctx->aps;
-        aps_counter_reset = FALSE;
-
-        if ((int)ctx->poc.poc_val > last_intra_poc)
-        {
-            last_intra_poc = INT_MAX;
-            aps_counter_reset = TRUE;
-        }
-
-        if (ctx->slice_type == SLICE_I)
-        {
-            last_intra_poc = ctx->poc.poc_val;
-            ctx->aps_counter = -1;
-            aps->aps_id = -1;
-            ctx->sh.aps_signaled = -1; // reset stored aps id in tile group header
-            ctx->aps_temp = 0;
-        }
-
-        if (aps_counter_reset)
-        {
-            ctx->aps_counter = 0;
-        }
-
-        set_sh(ctx, sh);
-
-        /* initialize reference pictures */
-        ret = xeve_picman_refp_init(&ctx->rpm, ctx->sps.max_num_ref_pics, ctx->slice_type, ctx->poc.poc_val, ctx->nalu.nuh_temporal_id, ctx->last_intra_poc, ctx->refp);
-
-        xeve_assert_rv(ret == XEVE_OK, ret);
-
-        /* initialize mode decision for frame encoding */
-        ret = ctx->fn_mode_init_frame(ctx);
-        xeve_assert_rv(ret == XEVE_OK, ret);
-
-        ctx->fn_mode_analyze_frame(ctx);
-
-        /* slice layer encoding loop */
-        core->x_lcu = core->y_lcu = 0;
-        core->x_pel = core->y_pel = 0;
-        core->lcu_num = 0;
-        ctx->lcu_cnt = ctx->f_lcu;
-
-        /* Set nalu header */
-        set_nalu(&ctx->nalu, ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.use_closed_gop) ? XEVE_IDR_NUT : XEVE_NONIDR_NUT, ctx->nalu.nuh_temporal_id);
-        
-        core->qp_y = ctx->sh.qp + 6 * ctx->sps.bit_depth_luma_minus8;
-        core->qp_u = xeve_tbl_qp_chroma_dynamic[0][sh->qp_u] + 6 * ctx->sps.bit_depth_chroma_minus8;
-        core->qp_v = xeve_tbl_qp_chroma_dynamic[1][sh->qp_v] + 6 * ctx->sps.bit_depth_chroma_minus8;
-        core->bs_temp.pdata[1] = &core->s_temp_run;
-
-        /* LCU encoding */
-#if TRACE_RDO_EXCLUDE_I
-        if(ctx->slice_type != SLICE_I)
-        {
-#endif
-        XEVE_TRACE_SET(0);
-#if TRACE_RDO_EXCLUDE_I
-        }
-#endif
-        if (ctx->sps.tool_mmvd && (ctx->slice_type == SLICE_B))
-        {
-            sh->mmvd_group_enable_flag = !(ctx->refp[0][0].poc == ctx->refp[0][1].poc);
-        }
-        else if (ctx->sps.tool_mmvd && (ctx->slice_type == SLICE_P))
-        {
-            sh->mmvd_group_enable_flag = 0;
-        }
-        else
-        {
-            sh->mmvd_group_enable_flag = 0;
-        }
-        ctx->sh.qp_prev_eco = ctx->sh.qp;
-        ctx->sh.qp_prev_mode = ctx->sh.qp;
-        core->dqp_data[ctx->log2_max_cuwh - 2][ctx->log2_max_cuwh - 2].prev_qp = ctx->sh.qp_prev_mode;
-        core->dqp_curr_best[ctx->log2_max_cuwh - 2][ctx->log2_max_cuwh - 2].curr_qp = ctx->sh.qp;
-        core->dqp_curr_best[ctx->log2_max_cuwh - 2][ctx->log2_max_cuwh - 2].prev_qp = ctx->sh.qp;
-
-        /* Tile wise encoding with in a slice */
-        u32 k = 0;
-        total_tiles_in_slice = total_tiles_in_slice_copy;
-
-        THREAD_CONTROLLER * tc;
-        int res;
-        i = 0;
-        tc = ctx->tc;
-        int parallel_task = 1;
-        int thread_cnt = 0, thread_cnt1 = 0;;
-        int task_completed = 0;
-
-        while (total_tiles_in_slice)
-        {
-            parallel_task = (ctx->cdsc.parallel_task_cnt > total_tiles_in_slice) ? total_tiles_in_slice : ctx->cdsc.parallel_task_cnt;
-            for (thread_cnt = 0; (thread_cnt < parallel_task - 1); thread_cnt++)
-            {
-                i = tiles_in_slice[thread_cnt + task_completed];
-
-                ctx->tile[i].qp = ctx->sh.qp;
-                ctx->tile[i].qp_prev_eco = ctx->sh.qp;
-                ctx->core[thread_cnt]->tile_idx = i;
-
-                initialize_tile(ctx, i, core, thread_cnt);
-                ctx->core[thread_cnt]->thread_cnt = thread_cnt;
-                tc->run(ctx->thread_pool[thread_cnt], tile_mt_core, (void*)ctx->core[thread_cnt]);
-            }
-            i = tiles_in_slice[thread_cnt + task_completed];
-
-            ctx->tile[i].qp = ctx->sh.qp;
-            ctx->tile[i].qp_prev_eco = ctx->sh.qp;
-            ctx->core[thread_cnt]->tile_idx = i;
-
-            initialize_tile(ctx, i, core, thread_cnt);
-            ctx->core[thread_cnt]->thread_cnt = thread_cnt;
-            tile_mt_core((void*)ctx->core[thread_cnt]);
-            for (thread_cnt1 = 0; thread_cnt1 < parallel_task - 1; thread_cnt1++)
-            {
-                tc->join(ctx->thread_pool[thread_cnt1], &res);
-                if (XEVE_FAILED(res))
-                {
-                    ret = res;
-                }
-            }
-            total_tiles_in_slice -= parallel_task;
-            task_completed += parallel_task;
-        }
-        total_tiles_in_slice = total_tiles_in_slice_copy;
-
-        ctx->fn_loop_filter(ctx, core);
-
-        core->x_lcu = core->y_lcu = 0;
-        core->x_pel = core->y_pel = 0;
-        core->lcu_num = 0;
-        ctx->lcu_cnt = ctx->f_lcu;
-        for (i = 0; i < ctx->f_scu; i++)
-        {
-            MCU_CLR_COD(ctx->map_scu[i]);
-        }
-        ctx->sh.qp_prev_eco = ctx->sh.qp;
-
-        k = 0;
-        total_tiles_in_slice = total_tiles_in_slice_copy;
-        while (total_tiles_in_slice)
-        {
-            int i = tiles_in_slice[k++];
-            ctx->tile[i].qp = ctx->sh.qp;
-            ctx->tile[i].qp_prev_eco = ctx->sh.qp;
-            core->tile_idx = i;
-            ctx->fn_eco_sbac_reset(GET_SBAC_ENC(bs), ctx->sh.slice_type, ctx->sh.qp, ctx->sps.tool_cm_init);
-            core->x_lcu = (ctx->tile[i].ctba_rs_first) % ctx->w_lcu; //entry point lcu's x location
-            core->y_lcu = (ctx->tile[i].ctba_rs_first) / ctx->w_lcu; // entry point lcu's y location
-            ctb_cnt_in_tile = ctx->tile[i].f_ctb; //Total LCUs in the current tile
-            update_core_loc_param(ctx, core);
-            XEVE_BSW bs_beg;
-            bs_beg.cur = bs->cur;
-            bs_beg.leftbits = bs->leftbits;
-            col_bd = 0;
-            if (i% ctx->param.tile_columns)
-            {
-                int temp = i - 1;
-                while (temp >= 0)
-                {
-                    col_bd += ctx->tile[temp].w_ctb;
-                    if (!(temp%ctx->param.tile_columns)) break;
-                    temp--;
-                }
-            }
-            else
-            {
-                col_bd = 0;
-            }
-            while (1) // LCU level CABAC loop
-            {
-                ret = xeve_eco_tree(ctx, core, core->x_pel, core->y_pel, 0, ctx->max_cuwh, ctx->max_cuwh, 0, 0, xeve_get_default_tree_cons(), bs);
-
-                xeve_assert_rv(ret == XEVE_OK, ret);
-                core->x_lcu++;
-                if (core->x_lcu >= ctx->tile[i].w_ctb + col_bd)
-                {
-                    core->x_lcu = (ctx->tile[i].ctba_rs_first) % ctx->w_lcu;
-                    core->y_lcu++;
-                }
-                update_core_loc_param(ctx, core);
-                ctb_cnt_in_tile--;
-                ctx->lcu_cnt--;
-                if (ctb_cnt_in_tile == 0)
-                {
-                    xeve_eco_tile_end_flag(bs, 1);
-                    xeve_sbac_finish(bs);
-                    break;
-                }
-            } //End of LCU encoding loop in a tile
-            total_tiles_in_slice--;
-            sh->entry_point_offset_minus1[k - 1] = (u32)((bs)->cur - bs_beg.cur - 4 + (4 - (bs->leftbits >> 3)) + (bs_beg.leftbits >> 3) - 1);
-        } // End to tile encoding loop in a slice
-
-        /* Bit-stream re-writing (START) */
-        u8* tmp_ptr1;
-        if (ctx->slice_num == 0)
-        {
-            xeve_bsw_init(&ctx->bs[0], (u8*)bitb->addr, bitb->bsize, NULL);
-            tmp_ptr1 = bs->beg;
-        }
-        else
-        {
-            xeve_bsw_init_slice(&ctx->bs[0], (u8*)curr_temp, bitb->bsize, NULL);
-            tmp_ptr1 = curr_temp;
-        }
-    
-#if TRACE_START_POC
-        if (fp_trace_started == 1)
-        {
-            XEVE_TRACE_SET(1);
-        }
-        else
-        {
-            XEVE_TRACE_SET(0);
-        }
-#else
-#if TRACE_RDO_EXCLUDE_I
-        if(ctx->slice_type != SLICE_I)
-        {
-#endif
-#if !TRACE_DBF
-            XEVE_TRACE_SET(1);
-#endif
-#if TRACE_RDO_EXCLUDE_I
-        }
-#endif
-#endif
-
-        XEVE_SBAC* t_sbac;
-        t_sbac = GET_SBAC_ENC(bs);
-        t_sbac->bin_counter = 0;
-
-        unsigned int bin_counts_in_units = 0;
-        unsigned int num_bytes_in_units = 0;
-
-        /* Send available APSs */
-        int aps_nalu_size = 0; 
-        int* size_field = (int*)(*(&bs->cur));
-        u8* cur_tmp = bs->cur;
-
-        /* Encode nalu header */
-        ret = xeve_eco_nalu(bs, &ctx->nalu);
-        xeve_assert_rv(ret == XEVE_OK, ret);
-
-        /* Encode slice header */
-        sh->num_ctb = ctx->f_lcu;
-        XEVE_BSW bs_sh;
-        xeve_mcpy(&bs_sh, bs, sizeof(XEVE_BSW));
 #if TRACE_HLS
-        s32 tmp_fp_point = ftell(fp_trace);
-#endif
-        ret = ctx->fn_eco_sh(bs, &ctx->sps, &ctx->pps, sh, ctx->nalu.nal_unit_type_plus1 - 1);
-        xeve_assert_rv(ret == XEVE_OK, ret);
-
-        core->x_lcu = core->y_lcu = 0;
-        core->x_pel = core->y_pel = 0;
-        core->lcu_num = 0;
-        ctx->lcu_cnt = ctx->f_lcu;
-        for(i = 0; i < ctx->f_scu; i++)
-        {
-            MCU_CLR_COD(ctx->map_scu[i]);
-        }
-        ctx->sh.qp_prev_eco = ctx->sh.qp;
-
-        /* Tile level encoding for a slice */
-        /* Tile wise encoding with in a slice */
-        k = 0;
-        total_tiles_in_slice = total_tiles_in_slice_copy;
-        while (total_tiles_in_slice)
-        {
-            int i = tiles_in_slice[k++];
-            ctx->tile[i].qp = ctx->sh.qp;
-            ctx->tile[i].qp_prev_eco = ctx->sh.qp;
-            core->tile_idx = i;
-
-            /* CABAC Initialize for each Tile */
-            ctx->fn_eco_sbac_reset(GET_SBAC_ENC(bs), ctx->sh.slice_type, ctx->sh.qp, ctx->sps.tool_cm_init);
-
-            /*Set entry point for each Tile in the tile Slice*/
-            core->x_lcu = (ctx->tile[i].ctba_rs_first) % ctx->w_lcu; //entry point lcu's x location
-            core->y_lcu = (ctx->tile[i].ctba_rs_first) / ctx->w_lcu; // entry point lcu's y location
-            ctb_cnt_in_tile = ctx->tile[i].f_ctb; //Total LCUs in the current tile
-            update_core_loc_param(ctx, core);
-        
-            XEVE_BSW bs_beg;
-            bs_beg.cur = bs->cur;
-            bs_beg.leftbits = bs->leftbits;
-
-            col_bd = 0;
-            if (i% ctx->param.tile_columns)
-            {
-                int temp = i - 1;
-                while (temp >= 0)
-                {
-                    col_bd += ctx->tile[temp].w_ctb;
-                    if (!(temp%ctx->param.tile_columns)) break;
-                    temp--;
-                }
-            }
-            else
-            {
-                col_bd = 0;
-            }
-
-            while (1) // LCU level CABAC loop
-            {
-                ret = xeve_eco_tree(ctx, core, core->x_pel, core->y_pel, 0, ctx->max_cuwh, ctx->max_cuwh, 0, 0, xeve_get_default_tree_cons(), bs);
-                xeve_assert_rv(ret == XEVE_OK, ret);
-                /* prepare next step *********************************************/
-                core->x_lcu++;
-                if (core->x_lcu >= ctx->tile[i].w_ctb + col_bd)
-                {
-                    core->x_lcu = (ctx->tile[i].ctba_rs_first) % ctx->w_lcu;
-                    core->y_lcu++;
-                }
-
-                update_core_loc_param(ctx, core);
-                ctb_cnt_in_tile--;
-                ctx->lcu_cnt--;
-
-                /* end_of_picture_flag */
-                if (ctb_cnt_in_tile == 0)
-                {
-                    xeve_eco_tile_end_flag(bs, 1);
-                    xeve_sbac_finish(bs);
-                    break;
-                }
-            } //End of LCU encoding loop in a tile
-
-            XEVE_SBAC* tmp_sbac;
-            tmp_sbac = GET_SBAC_ENC(bs);
-            bin_counts_in_units += tmp_sbac->bin_counter;
-            total_tiles_in_slice--;
-
-            sh->entry_point_offset_minus1[k - 1] = (u32)((bs)->cur - bs_beg.cur - 4 + (4 - (bs->leftbits >> 3)) + (bs_beg.leftbits >> 3) - 1);
-        } // End to tile encoding loop in a slice
-
-        num_bytes_in_units = (int)(bs->cur - cur_tmp) - 4;
-
-        int log2_sub_wh_c = 2;
-        int min_cu_w = ctx->min_cuwh;
-        int min_cu_h = ctx->min_cuwh;
-        int padded_w = ((ctx->w + min_cu_w - 1) / min_cu_w) * min_cu_w;
-        int padded_h = ((ctx->h + min_cu_h - 1) / min_cu_h) * min_cu_h;
-        int raw_bits = padded_w * padded_h * ((ctx->sps.bit_depth_luma_minus8 + 8) + 2 * ((ctx->sps.bit_depth_chroma_minus8 + 8) >> log2_sub_wh_c));
-        unsigned int threshold = (CABAC_ZERO_PARAM / 3) * num_bytes_in_units + (raw_bits / 32);
-
-        if (bin_counts_in_units >= threshold)
-        {
-            unsigned int target_num_bytes_in_units = ((bin_counts_in_units - (raw_bits / 32)) * 3 + (CABAC_ZERO_PARAM - 1)) / CABAC_ZERO_PARAM;
-            if (target_num_bytes_in_units > num_bytes_in_units)
-            {
-                unsigned int num_add_bytes_needed = target_num_bytes_in_units - num_bytes_in_units;
-                unsigned int num_add_cabac_zero_words = (num_add_bytes_needed + 2) / 3;
-                unsigned int num_add_cabac_zero_bytes = num_add_cabac_zero_words * 3;
-                for (unsigned int i = 0; i < num_add_cabac_zero_words; i++)
-                {
-                    xeve_bsw_write(bs, 0, 16); //2 bytes (=00 00))
-                }
-            }
-        }
-
-        /* Bit-stream re-writing (END) */
-#if TRACE_HLS
-        s32 tmp_fp_point2 = ftell(fp_trace);
-        fseek(fp_trace, tmp_fp_point, SEEK_SET);
-#endif
-        ret = ctx->fn_eco_sh(&bs_sh, &ctx->sps, &ctx->pps, sh, ctx->nalu.nal_unit_type_plus1 - 1);
-        xeve_assert_rv(ret == XEVE_OK, ret);
-#if TRACE_HLS    
         fseek(fp_trace, tmp_fp_point2, SEEK_SET);
 #endif
         xeve_bsw_deinit(bs);
@@ -3173,7 +2674,7 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
     ret = ctx->fn_get_inbuf(ctx, &imgb);
     xeve_assert_rv(XEVE_OK == ret, ret);
 
-    imgb->cs = CS_FROM_BD_420(ctx->cdsc.codec_bit_depth);
+    imgb->cs = XEVE_CS_SET(XEVE_CF_YCBCR420, ctx->cdsc.codec_bit_depth, 0);
     xeve_imgb_cpy(imgb, img);
 
     ctx->pic_icnt++;
@@ -3220,7 +2721,7 @@ void xeve_platform_init_func()
 
     if (support_avx)
     {
-      
+
     }
     else if (support_sse)
     {
@@ -3271,17 +2772,7 @@ int xeve_platform_init(XEVE_CTX * ctx)
     ctx->fn_flush = xeve_flush;
     ctx->fn_enc = xeve_enc;
     ctx->fn_enc_header = xeve_header;
-
-    if(ctx->cdsc.parallel_task_cnt > 1)
-    {
-        //CTU row level parallelism in case there is a single tile and more than one threads
-        ctx->fn_enc_pic = xeve_pic_ctu_parallel;
-    }
-    else
-    {
-        ctx->fn_enc_pic = xeve_pic;
-    }
-
+    ctx->fn_enc_pic = xeve_pic;
     ctx->fn_enc_pic_prepare = xeve_pic_prepare;
     ctx->fn_enc_pic_finish = xeve_pic_finish;
     ctx->fn_push = xeve_push_frm;
@@ -3360,7 +2851,7 @@ XEVE xeve_create(XEVE_CDSC * cdsc, int * err)
 {
     XEVE_CTX  * ctx;
     int          ret;
-    
+
 #if ENC_DEC_TRACE
 #if TRACE_DBF
     fp_trace = fopen("enc_trace_dbf.txt", "w+");

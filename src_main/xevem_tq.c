@@ -679,10 +679,10 @@ void xeve_trans_DCT8_B32(s16 *block, s16 *coef, s32 shift, s32 line, int skip_li
 
 void xeve_t_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, u8 ats_intra_mode, u8 ats_intra_tridx)
 {
-    const int shift_1st = CONV_LOG2(tuw) - 1 + bit_depth - 8;
-    const int shift_2nd = CONV_LOG2(tuh) + 6;
-    const u8 log2_minus1_w = CONV_LOG2(tuw) - 1;
-    const u8 log2_minus1_h = CONV_LOG2(tuh) - 1;
+    const int shift_1st = XEVE_LOG2(tuw) - 1 + bit_depth - 8;
+    const int shift_2nd = XEVE_LOG2(tuh) + 6;
+    const u8 log2_minus1_w = XEVE_LOG2(tuw) - 1;
+    const u8 log2_minus1_h = XEVE_LOG2(tuh) - 1;
     s16 t[MAX_TR_DIM]; /* temp buffer */
     u8  t_idx_h = 0, t_idx_v = 0;
     int skip_w = 0;
@@ -935,7 +935,7 @@ __inline static int get_ctx_sig_coeff_inc_rdoq(s16 *pcoeff, int blkpos, int widt
     const s16 *pdata = pcoeff + blkpos;
     const int width_m1 = width - 1;
     const int height_m1 = height - 1;
-    const int log2_w = CONV_LOG2(width);
+    const int log2_w = XEVE_LOG2(width);
     const int pos_y = blkpos >> log2_w;
     const int pos_x = blkpos - (pos_y << log2_w);
     const int diag = pos_x + pos_y;

@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -385,7 +385,7 @@ static int args_parse_int_x_int(char * str, int * num0, int * num1)
     return 0;
 }
 
-/* 
+/*
  * Define various command line options for application
  */
 
@@ -411,8 +411,8 @@ static int  op_ibc_hash_search_max_cand = 64;
 static int  op_ibc_hash_search_range_4smallblk = 64;
 static int  op_ibc_fast_method    = 0X02;
 static int  op_disable_hgop       = 0;
-static int  op_in_bit_depth       = 8;
 static int  op_skip_frames        = 0;
+static int  op_inp_bit_depth      = 8;
 static int  op_out_bit_depth      = 0; /* same as input bit depth */
 static int  op_codec_bit_depth    = 10;
 static int  op_rdo_dbk_switch     = 1;
@@ -456,7 +456,7 @@ static int  op_num_tile_columns     = 1;          /* default 1 */
 static int  op_num_tile_rows        = 1;          /* default 1 */
 static char op_tile_column_width_array[MAX_NUM_TILES_COL];
 static char op_tile_row_height_array[MAX_NUM_TILES_ROW];
-static int  op_num_slice_in_pic     = 1;                      // default 1 
+static int  op_num_slice_in_pic     = 1;                      // default 1
 static char op_tile_array_in_slice[2 * 600];                  // Max. slices can be 600 for the highest level 6.2
 static int  op_arbitrary_slice_flag                  = 0;     // default  0
 static char op_num_remaining_tiles_in_slice[600]     = { 0 }; // only in case of arbitrary slices
@@ -744,7 +744,7 @@ static ARGS_OPTION options[] = \
     },
     {
         'd',  "input_bit_depth", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_IN_BIT_DEPTH], &op_in_bit_depth,
+        &op_flag[OP_FLAG_IN_BIT_DEPTH], &op_inp_bit_depth,
         "input bitdepth (8(default), 10) "
     },
     {

@@ -690,8 +690,8 @@ void xeve_set_affine_mv(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi)
     int   vertex_num = mcore->affine_flag + 1;
     int   aff_scup[VER_NUM];
 
-    log2_cuw = CONV_LOG2(core->cuw);
-    log2_cuh = CONV_LOG2(core->cuh);
+    log2_cuw = XEVE_LOG2(core->cuw);
+    log2_cuh = XEVE_LOG2(core->cuh);
     cu_data = &core->cu_data_temp[log2_cuw - 2][log2_cuh - 2];
 
     w_cu = core->cuw >> MIN_CU_LOG2;
@@ -804,8 +804,8 @@ void copy_to_cu_data_main(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi, s16 coe
     int i, j, idx, size;
     int log2_cuw, log2_cuh;
 
-    log2_cuw = CONV_LOG2(core->cuw);
-    log2_cuh = CONV_LOG2(core->cuh);
+    log2_cuw = XEVE_LOG2(core->cuw);
+    log2_cuh = XEVE_LOG2(core->cuh);
 
     cu_data = &core->cu_data_temp[log2_cuw - 2][log2_cuh - 2];
 
@@ -958,8 +958,8 @@ static void update_map_scu_main(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
 
     scu_x = x >> MIN_CU_LOG2;
     scu_y = y >> MIN_CU_LOG2;
-    log2_src_cuw = CONV_LOG2(src_cuw);
-    log2_src_cuh = CONV_LOG2(src_cuh);
+    log2_src_cuw = XEVE_LOG2(src_cuw);
+    log2_src_cuh = XEVE_LOG2(src_cuh);
 
     map_affine = mctx->map_affine + scu_y * ctx->w_scu + scu_x;
     src_map_affine = core->cu_data_best[log2_src_cuw - 2][log2_src_cuh - 2].map_affine;
@@ -2326,8 +2326,8 @@ void xeve_set_affine_mvf(XEVE_CTX * ctx, XEVE_CORE * core, int w, int h, s8 refi
     int i, j;
     int lidx;
     int aff_scup[VER_NUM];
-    int log2_cuw = CONV_LOG2(w);
-    int log2_cuh = CONV_LOG2(h);
+    int log2_cuw = XEVE_LOG2(w);
+    int log2_cuh = XEVE_LOG2(h);
 
     scup = core->scup;
     w_cu = w >> MIN_CU_LOG2;

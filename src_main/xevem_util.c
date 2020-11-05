@@ -1370,8 +1370,8 @@ void xeve_split_get_part_structure_main(int split_mode, int x0, int y0, int cuw,
     int cup_w, cup_h;
 
     split_struct->part_count = xeve_split_part_count(split_mode);
-    log_cuw = CONV_LOG2(cuw);
-    log_cuh = CONV_LOG2(cuh);
+    log_cuw = XEVE_LOG2(cuw);
+    log_cuh = XEVE_LOG2(cuh);
     split_struct->x_pos[0] = x0;
     split_struct->y_pos[0] = y0;
     split_struct->cup[0] = cup;
@@ -1510,7 +1510,7 @@ int xeve_get_suco_flag(s8* suco_flag, int cud, int cup, int cuw, int cuh, int lc
 {
     int ret = XEVE_OK;
     int pos = cup + (((cuh >> 1) >> MIN_CU_LOG2) * (lcu_s >> MIN_CU_LOG2) + ((cuw >> 1) >> MIN_CU_LOG2));
-    int shape = SQUARE + (CONV_LOG2(cuw) - CONV_LOG2(cuh));
+    int shape = SQUARE + (XEVE_LOG2(cuw) - XEVE_LOG2(cuh));
     *suco_flag = suco_flag_buf[cud][shape][pos];
     return ret;
 }
@@ -1518,7 +1518,7 @@ int xeve_get_suco_flag(s8* suco_flag, int cud, int cup, int cuw, int cuh, int lc
 void xeve_set_suco_flag(s8  suco_flag, int cud, int cup, int cuw, int cuh, int lcu_s, s8(*suco_flag_buf)[NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU])
 {
     int pos = cup + (((cuh >> 1) >> MIN_CU_LOG2) * (lcu_s >> MIN_CU_LOG2) + ((cuw >> 1) >> MIN_CU_LOG2));
-    int shape = SQUARE + (CONV_LOG2(cuw) - CONV_LOG2(cuh));
+    int shape = SQUARE + (XEVE_LOG2(cuw) - XEVE_LOG2(cuh));
     suco_flag_buf[cud][shape][pos] = suco_flag;
 }
 
@@ -2867,15 +2867,15 @@ int xeve_get_affine_merge_candidate(int poc, int slice_type, int scup, s8(*map_r
 
 void xeve_get_ctx_last_pos_xy_para(int ch_type, int width, int height, int *result_offset_x, int *result_offset_y, int *result_shift_x, int *result_shift_y)
 {
-    int convertedWidth = CONV_LOG2(width) - 2;
-    int convertedHeight = CONV_LOG2(height) - 2;
+    int convertedWidth = XEVE_LOG2(width) - 2;
+    int convertedHeight = XEVE_LOG2(height) - 2;
     convertedWidth = (convertedWidth < 0) ? 0 : convertedWidth;
     convertedHeight = (convertedHeight < 0) ? 0 : convertedHeight;
 
     *result_offset_x = (ch_type != Y_C) ? 0 : ((convertedWidth * 3) + ((convertedWidth + 1) >> 2));
     *result_offset_y = (ch_type != Y_C) ? 0 : ((convertedHeight * 3) + ((convertedHeight + 1) >> 2));
-    *result_shift_x = (ch_type != Y_C) ? convertedWidth - CONV_LOG2(width >> 4) : ((convertedWidth + 3) >> 2);
-    *result_shift_y = (ch_type != Y_C) ? convertedHeight - CONV_LOG2(height >> 4) : ((convertedHeight + 3) >> 2);
+    *result_shift_x = (ch_type != Y_C) ? convertedWidth - XEVE_LOG2(width >> 4) : ((convertedWidth + 3) >> 2);
+    *result_shift_y = (ch_type != Y_C) ? convertedHeight - XEVE_LOG2(height >> 4) : ((convertedHeight + 3) >> 2);
 
     if (ch_type == Y_C)
     {
@@ -2897,7 +2897,7 @@ int xeve_get_ctx_sig_coeff_inc(s16 *pcoeff, int blkpos, int width, int height, i
     const s16 *pdata = pcoeff + blkpos;
     const int width_m1 = width - 1;
     const int height_m1 = height - 1;
-    const int log2_w = CONV_LOG2(width);
+    const int log2_w = XEVE_LOG2(width);
     const int pos_y = blkpos >> log2_w;
     const int pos_x = blkpos - (pos_y << log2_w);
     int diag = pos_x + pos_y;
@@ -2951,7 +2951,7 @@ int xeve_get_ctx_gtA_inc(s16 *pcoeff, int blkpos, int width, int height, int ch_
     const s16 *pdata = pcoeff + blkpos;
     const int width_m1 = width - 1;
     const int height_m1 = height - 1;
-    const int log2_w = CONV_LOG2(width);
+    const int log2_w = XEVE_LOG2(width);
     const int pos_y = blkpos >> log2_w;
     const int pos_x = blkpos - (pos_y << log2_w);
     int num_gtA = 0;
@@ -2992,7 +2992,7 @@ int xeve_get_ctx_gtB_inc(s16 *pcoeff, int blkpos, int width, int height, int ch_
     const s16 *pdata = pcoeff + blkpos;
     const int width_m1 = width - 1;
     const int height_m1 = height - 1;
-    const int log2_w = CONV_LOG2(width);
+    const int log2_w = XEVE_LOG2(width);
     const int pos_y = blkpos >> log2_w;
     const int pos_x = blkpos - (pos_y << log2_w);
     int diag = pos_x + pos_y;
@@ -3033,7 +3033,7 @@ int get_rice_para(s16 *pcoeff, int blkpos, int width, int height, int base_level
     const s16 *pdata = pcoeff + blkpos;
     const int width_m1 = width - 1;
     const int height_m1 = height - 1;
-    const int log2_w = CONV_LOG2(width);
+    const int log2_w = XEVE_LOG2(width);
     const int pos_y = blkpos >> log2_w;
     const int pos_x = blkpos - (pos_y << log2_w);
     int sum_abs = 0;

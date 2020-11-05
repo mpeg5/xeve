@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -33,47 +33,28 @@
 
 #include "xeve_def.h"
 
-/* macro to determine maximum */
 #define XEVE_MAX(a,b)               (((a) > (b)) ? (a) : (b))
-
-/* macro to determine minimum */
 #define XEVE_MIN(a,b)               (((a) < (b)) ? (a) : (b))
-
-/* macro to absolute a value */
 #define XEVE_ABS(a)                 (((a) > (0)) ? (a) : (-(a)))
-
-/* macro to absolute a 64-bit value */
+/* absolute a 64-bit value */
 #define XEVE_ABS64(a)               (((a)^((a)>>63)) - ((a)>>63))
-
-/* macro to absolute a 32-bit value */
+/* absolute a 32-bit value */
 #define XEVE_ABS32(a)               (((a)^((a)>>31)) - ((a)>>31))
-
-/* macro to absolute a 16-bit value */
+/* absolute a 16-bit value */
 #define XEVE_ABS16(a)               (((a)^((a)>>15)) - ((a)>>15))
-
-/* macro to clipping within min and max */
 #define XEVE_CLIP3(min, max, val)   XEVE_MAX((min), XEVE_MIN((max), (val)))
-
-/* macro to get a sign from a 16-bit value.
-operation: if(val < 0) return 1, else return 0 */
+/* get a sign flag from value: if(val < 0) return 1, else return 0 */
 #define XEVE_SIGN_GET(val)         ((val < 0) ? 1 : 0)
-
-/* macro to set sign into a value.
-operation: if(sign == 0) return val, else if(sign == 1) return -val */
+/* set sign to value: if(sign==0) return val, if(sign==1) return -val*/
 #define XEVE_SIGN_SET(val, sign)   ((sign)? -val : val)
-
-/* macro to get a sign from a 16-bit value.
-operation: if(val < 0) return 1, else return 0 */
+/* get a sign flag from 16-bit value: if(val < 0) return 1, else return 0 */
 #define XEVE_SIGN_GET16(val)       (((val)>>15) & 1)
-
-/* macro to set sign into a 16-bit value.
-operation: if(sign == 0) return val, else if(sign == 1) return -val */
+/* set sign to 16-bit value: if(sign==0) return val, if(sign==1) return -val */
 #define XEVE_SIGN_SET16(val, sign) (((val) ^ ((s16)((sign)<<15)>>15)) + (sign))
-
 /* change to log value */
-#define CONV_LOG2(v)                (xeve_tbl_log2[v])
-
-BOOL is_ptr_aligned(void* ptr, int num_bytes);
+#define XEVE_LOG2(v)                (xeve_tbl_log2[v])
+/* align value */
+#define XEVE_ALIGN_VAL(val, align)  ((((val)+(align)-1)/(align))*(align))
 
 u16  xeve_get_avail_inter(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int cuw, int cuh, u32 *map_scu, u8* map_tidx);
 u16  xeve_get_avail_intra(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int log2_cuw, int log2_cuh, u32 *map_scu, u8* map_tidx);
@@ -158,7 +139,14 @@ void xeve_set_tree_mode(TREE_CONS* dest, MODE_CONS mode);
 MODE_CONS xeve_get_mode_cons_by_split(SPLIT_MODE split_mode, int cuw, int cuh);
 BOOL xeve_signal_mode_cons(TREE_CONS* parent, TREE_CONS* cur_split);
 
-#define GET_CPU_INFO(A,B) ((B[((A >> 5) & 0x03)] >> (A & 0x1f)) & 1)
+
+#define XEVE_IMGB_OPT_NONE                 (0)
+
+XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt,
+    int pad[XEVE_IMGB_MAX_PLANE], int align[XEVE_IMGB_MAX_PLANE]);
+void xeve_imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src);
+void xeve_imgb_garbage_free(XEVE_IMGB * imgb);
+
 
 #define XEVE_CPU_INFO_SSE2     0x7A // ((3 << 5) | 26)
 #define XEVE_CPU_INFO_SSE3     0x40 // ((2 << 5) |  0)
@@ -168,6 +156,7 @@ BOOL xeve_signal_mode_cons(TREE_CONS* parent, TREE_CONS* cur_split);
 #define XEVE_CPU_INFO_AVX      0x5C // ((2 << 5) | 28)
 
 int  xeve_check_cpu_info();
+
 
 #endif /* __XEVE_UTIL_H__ */
 

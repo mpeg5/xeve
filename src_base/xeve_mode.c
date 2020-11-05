@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -183,7 +183,7 @@ void xeve_rdo_bit_cnt_cu_inter_comp(XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM],
     {
         ctx->fn_eco_coef(ctx, core, &core->bs_temp, coef, MODE_INTER, 0, b_no_cbf, RUN_L);
     }
-       
+
     if(ch_type == U_C)
     {
         ctx->fn_eco_coef(ctx, core, &core->bs_temp, coef, MODE_INTER, 0, b_no_cbf, RUN_CB);
@@ -224,7 +224,7 @@ void xeve_rdo_bit_cnt_cu_inter(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_type,
         int dir_flag = (pidx == PRED_DIR);
         xeve_eco_direct_mode_flag(&core->bs_temp, dir_flag);
 
-        
+
 
         if((((pidx % ORG_PRED_NUM) != PRED_DIR) && ((pidx % ORG_PRED_NUM) != PRED_DIR_MMVD)) || ((pidx >= AFF_L0) && (pidx <= AFF_6_BI) && (pidx != AFF_DIR)) )
         {
@@ -642,13 +642,13 @@ void get_min_max_qp(XEVE_CTX * ctx, XEVE_CORE *core, s8 * min_qp, s8 * max_qp, i
         {
             *min_qp = qp;
             *max_qp = qp;
-            if (split_mode == NO_SPLIT && (CONV_LOG2(cuw) + CONV_LOG2(cuh) >= ctx->pps.cu_qp_delta_area) && core->cu_qp_delta_code_mode != 2)
+            if (split_mode == NO_SPLIT && (XEVE_LOG2(cuw) + XEVE_LOG2(cuh) >= ctx->pps.cu_qp_delta_area) && core->cu_qp_delta_code_mode != 2)
             {
                 core->cu_qp_delta_code_mode = 1;
                 *min_qp = ctx->tile[core->tile_idx].qp;
                 *max_qp = ctx->tile[core->tile_idx].qp + ctx->sh.dqp;
 
-                if (CONV_LOG2(cuw) == 7 || CONV_LOG2(cuh) == 7)
+                if (XEVE_LOG2(cuw) == 7 || XEVE_LOG2(cuh) == 7)
                 {
                     *is_dqp_set = 1;
                     core->cu_qp_delta_code_mode = 2;
@@ -658,8 +658,8 @@ void get_min_max_qp(XEVE_CTX * ctx, XEVE_CORE *core, s8 * min_qp, s8 * max_qp, i
                     *is_dqp_set = 0;
                 }
             }
-            else if ((((CONV_LOG2(cuw) + CONV_LOG2(cuh) == ctx->pps.cu_qp_delta_area + 1) && (split_mode == SPLIT_TRI_VER || split_mode == SPLIT_TRI_HOR)) ||
-                (CONV_LOG2(cuh) + CONV_LOG2(cuw) == ctx->pps.cu_qp_delta_area && core->cu_qp_delta_code_mode != 2)))
+            else if ((((XEVE_LOG2(cuw) + XEVE_LOG2(cuh) == ctx->pps.cu_qp_delta_area + 1) && (split_mode == SPLIT_TRI_VER || split_mode == SPLIT_TRI_HOR)) ||
+                (XEVE_LOG2(cuh) + XEVE_LOG2(cuw) == ctx->pps.cu_qp_delta_area && core->cu_qp_delta_code_mode != 2)))
             {
                 core->cu_qp_delta_code_mode = 2;
                 *is_dqp_set = 1;
@@ -718,8 +718,8 @@ void mode_cpy_rec_to_ref(XEVE_CORE *core, int x, int y, int w, int h, XEVE_PIC *
     int            log2_w, log2_h;
     int            stride;
 
-    log2_w = CONV_LOG2(w);
-    log2_h = CONV_LOG2(h);
+    log2_w = XEVE_LOG2(w);
+    log2_h = XEVE_LOG2(h);
 
     cu_data = &core->cu_data_best[log2_w - 2][log2_h - 2];
 
@@ -786,8 +786,8 @@ void copy_to_cu_data(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi, s16 coef_src
     int i, j, idx, size;
     int log2_cuw, log2_cuh;
 
-    log2_cuw = CONV_LOG2(core->cuw);
-    log2_cuh = CONV_LOG2(core->cuh);
+    log2_cuw = XEVE_LOG2(core->cuw);
+    log2_cuh = XEVE_LOG2(core->cuh);
 
     cu_data = &core->cu_data_temp[log2_cuw - 2][log2_cuh - 2];
 
@@ -842,7 +842,7 @@ void copy_to_cu_data(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi, s16 coef_src
             }
 
             cu_data->depth[idx + i] = core->cud;
-            
+
             MCU_SET_LOGW(cu_data->map_cu_mode[idx + i], log2_cuw);
             MCU_SET_LOGH(cu_data->map_cu_mode[idx + i], log2_cuh);
 
@@ -980,8 +980,8 @@ void update_map_scu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int src_cuw, i
 
     scu_x = x >> MIN_CU_LOG2;
     scu_y = y >> MIN_CU_LOG2;
-    log2_src_cuw = CONV_LOG2(src_cuw);
-    log2_src_cuh = CONV_LOG2(src_cuh);
+    log2_src_cuw = XEVE_LOG2(src_cuw);
+    log2_src_cuh = XEVE_LOG2(src_cuh);
 
     map_scu = ctx->map_scu + scu_y * ctx->w_scu + scu_x;
     src_map_scu = core->cu_data_best[log2_src_cuw - 2][log2_src_cuh - 2].map_scu;
@@ -1212,7 +1212,7 @@ double mode_check_intra(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_c
             {
                 ctx->fn_mode_reset_intra(core);
             }
-            
+
             ctx->fn_mode_copy_to_cu_data(ctx, core, mi, coef);
         }
     }
@@ -1557,14 +1557,14 @@ void calc_delta_dist_filter_boundary(XEVE_CTX* ctx, XEVE_PIC *pic_rec, XEVE_PIC 
                                      u8 cbf_l, s8 *refi, s16(*mv)[MV_D], u8 is_mv_from_mvf, XEVE_CORE * core)
 {
     int i, j;
-    int log2_cuw = CONV_LOG2(cuw);
-    int log2_cuh = CONV_LOG2(cuh);
+    int log2_cuw = XEVE_LOG2(cuw);
+    int log2_cuh = XEVE_LOG2(cuh);
     int x_offset = 8; //for preparing deblocking filter taps
     int y_offset = 8;
     int x_tm = 4; //for calculating template dist
     int y_tm = 4; //must be the same as x_tm
-    int log2_x_tm = CONV_LOG2(x_tm);
-    int log2_y_tm = CONV_LOG2(y_tm);
+    int log2_x_tm = XEVE_LOG2(x_tm);
+    int log2_y_tm = XEVE_LOG2(y_tm);
     XEVE_PIC *pic_dbk = ctx->pic_dbk;
     int s_l_dbk = pic_dbk->s_l;
     int s_c_dbk = pic_dbk->s_c;
@@ -1726,7 +1726,7 @@ void calc_delta_dist_filter_boundary(XEVE_CTX* ctx, XEVE_PIC *pic_rec, XEVE_PIC 
         int ind, k;
         //save current best cu info
         intra_flag_save       = MCU_GET_IF(ctx->map_scu[t]);
-        cbf_l_save            = MCU_GET_CBFL(ctx->map_scu[t]);        
+        cbf_l_save            = MCU_GET_CBFL(ctx->map_scu[t]);
         //set map info of current cu to current mode
         for(j = 0; j < h_scu; j++)
         {
@@ -1769,7 +1769,7 @@ void calc_delta_dist_filter_boundary(XEVE_CTX* ctx, XEVE_PIC *pic_rec, XEVE_PIC 
                 }
                 else
                 {
-                    MCU_SET_QP(ctx->map_scu[k], ctx->tile[core->tile_idx].qp); 
+                    MCU_SET_QP(ctx->map_scu[k], ctx->tile[core->tile_idx].qp);
                 }
 
                 //clear coded (necessary)
@@ -1936,7 +1936,7 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
     {
         split_allow[NO_SPLIT] = 1;
     }
-    
+
     if(!boundary)
     {
         cost_temp = 0.0;
@@ -2464,14 +2464,170 @@ int xeve_mode_create(XEVE_CTX *ctx, int complexity)
 /******************************************************************************
  * picture buffer alloc/free/expand
  ******************************************************************************/
+
+static void picbuf_expand(pel *a, int s, int w, int h, int exp)
+{
+    int i, j;
+    pel pixel;
+    pel *src, *dst;
+
+    /* left */
+    src = a;
+    dst = a - exp;
+
+    for(i = 0; i < h; i++)
+    {
+        pixel = *src; /* get boundary pixel */
+        for(j = 0; j < exp; j++)
+        {
+            dst[j] = pixel;
+        }
+        dst += s;
+        src += s;
+    }
+
+    /* right */
+    src = a + (w - 1);
+    dst = a + w;
+
+    for(i = 0; i < h; i++)
+    {
+        pixel = *src; /* get boundary pixel */
+        for(j = 0; j < exp; j++)
+        {
+            dst[j] = pixel;
+        }
+        dst += s;
+        src += s;
+    }
+
+    /* upper */
+    src = a - exp;
+    dst = a - exp - (exp * s);
+
+    for(i = 0; i < exp; i++)
+    {
+        xeve_mcpy(dst, src, s*sizeof(pel));
+        dst += s;
+    }
+
+    /* below */
+    src = a + ((h - 1)*s) - exp;
+    dst = a + ((h - 1)*s) - exp + s;
+
+    for(i = 0; i < exp; i++)
+    {
+        xeve_mcpy(dst, src, s*sizeof(pel));
+        dst += s;
+    }
+}
+
 void xeve_pic_expand(XEVE_CTX *ctx, XEVE_PIC *pic)
 {
+#if 0
+    picbuf_expand(pic->y, pic->s_l, pic->w_l, pic->h_l, pic->pad_l);
+    picbuf_expand(pic->u, pic->s_c, pic->w_c, pic->h_c, pic->pad_c);
+    picbuf_expand(pic->v, pic->s_c, pic->w_c, pic->h_c, pic->pad_c);
+#else
     xeve_picbuf_expand(pic, pic->pad_l, pic->pad_c);
+#endif
+
 }
 
 XEVE_PIC * xeve_pic_alloc(PICBUF_ALLOCATOR * pa, int * ret)
 {
+#if 0
+    int w = pa->w;
+    int h = pa->h;
+    int bit_depth = pa->bit_depth;
+
+    XEVE_PIC *pic = NULL;
+    XEVE_IMGB *imgb = NULL;
+    int err, opt, align[XEVE_IMGB_MAX_PLANE], pad[XEVE_IMGB_MAX_PLANE];
+    int w_scu, h_scu, f_scu, size;
+
+    /* allocate PIC structure */
+    pic = xeve_malloc(sizeof(XEVE_PIC));
+    xeve_assert_gv(pic != NULL, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
+    xeve_mset(pic, 0, sizeof(XEVE_PIC));
+
+    opt = XEVE_IMGB_OPT_NONE;
+
+    /* set align value*/
+    align[0] = MIN_CU_SIZE;
+    align[1] = MIN_CU_SIZE >> 1;
+    align[2] = MIN_CU_SIZE >> 1;
+
+    /* set padding value*/
+    pad[0] = pa->pad_l;
+    pad[1] = pa->pad_c;
+    pad[2] = pa->pad_c;
+
+    imgb = xeve_imgb_create(w, h, XEVE_CS_YCBCR420_10LE, opt, pad, align);
+    imgb->cs = XEVE_CS_SET(XEVE_CF_YCBCR420, bit_depth, 0);
+
+    xeve_assert_gv(imgb != NULL, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+    /* set XEVE_PIC */
+    pic->buf_y = imgb->baddr[0];
+    pic->buf_u = imgb->baddr[1];
+    pic->buf_v = imgb->baddr[2];
+    pic->y     = imgb->a[0];
+    pic->u     = imgb->a[1];
+    pic->v     = imgb->a[2];
+
+    pic->w_l   = imgb->w[0];
+    pic->h_l   = imgb->h[0];
+    pic->w_c   = imgb->w[1];
+    pic->h_c   = imgb->h[1];
+
+    pic->s_l   = STRIDE_IMGB2PIC(imgb->s[0]);
+    pic->s_c   = STRIDE_IMGB2PIC(imgb->s[1]);
+
+    pic->pad_l = pa->pad_l;
+    pic->pad_c = pa->pad_c;
+
+    pic->imgb  = imgb;
+
+    /* allocate maps */
+    w_scu = (pic->w_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
+    h_scu = (pic->h_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
+    f_scu = w_scu * h_scu;
+
+    size = sizeof(s8) * f_scu * REFP_NUM;
+    pic->map_refi = xeve_malloc_fast(size);
+    xeve_assert_gv(pic->map_refi, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
+    xeve_mset_x64a(pic->map_refi, -1, size);
+
+    size = sizeof(s16) * f_scu * REFP_NUM * MV_D;
+    pic->map_mv = xeve_malloc_fast(size);
+    xeve_assert_gv(pic->map_mv, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
+    xeve_mset_x64a(pic->map_mv, 0, size);
+
+    size = sizeof(s16) * f_scu * REFP_NUM * MV_D;
+    pic->map_unrefined_mv = xeve_malloc_fast(size);
+    xeve_assert_gv(pic->map_unrefined_mv, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
+    xeve_mset_x64a(pic->map_unrefined_mv, 0, size);
+
+    if(ret)
+    {
+        *ret = XEVE_OK;
+    }
+    return pic;
+
+ERR:
+    if(pic)
+    {
+        xeve_mfree(pic->map_mv);
+        xeve_mfree(pic->map_unrefined_mv);
+        xeve_mfree(pic->map_refi);
+        xeve_mfree(pic);
+    }
+    if(ret) *ret = err;
+    return NULL;
+#else
     return xeve_picbuf_alloc(pa->w, pa->h, pa->pad_l, pa->pad_c, pa->bit_depth, ret);
+#endif
 }
 
 void xeve_pic_free(PICBUF_ALLOCATOR *pa, XEVE_PIC *pic)
@@ -2493,7 +2649,7 @@ int xeve_bsw_write_nalu_size(XEVE_BSW *bs)
 
     size = XEVE_BSW_GET_WRITE_BYTE(bs) - 4;
 
-    bs->beg[0] = size & 0x000000ff; 
+    bs->beg[0] = size & 0x000000ff;
     bs->beg[1] = (size & 0x0000ff00) >> 8;
     bs->beg[2] = (size & 0x00ff0000) >> 16;
     bs->beg[3] = (size & 0xff000000) >> 24;

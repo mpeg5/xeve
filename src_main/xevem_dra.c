@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -182,7 +182,7 @@ void set_frac_bits(QUANT_PARAM_DRA *value_this, int const nBits)
     }
 }
 
-// Common functions 
+// Common functions
 int xeve_get_scaled_chroma_qp2(int comp_id, int unscaledChromaQP, int bit_depth)
 {
     int qp_bd_offset_c = 6 * (bit_depth - 8);
@@ -483,7 +483,7 @@ void xeve_normalize_histogram_lut(DRA_CONTROL *dra_mapping, int sdr_flag, int bi
 
     return;
 }
-void xeve_construct_dra(DRA_CONTROL *dra_mapping, int sdr_flag, BOOL use_fixed_pt, int bit_depth) 
+void xeve_construct_dra(DRA_CONTROL *dra_mapping, int sdr_flag, BOOL use_fixed_pt, int bit_depth)
 {
     if (sdr_flag == 1)
     {
@@ -566,7 +566,7 @@ void xeve_check_equal_range_flag(DRA_CONTROL *dra_mapping)
     for (int i = 1; i < dra_mapping->num_ranges; i++)
     {
         if (dra_mapping->in_ranges[i + 1] - dra_mapping->in_ranges[i] != dra_mapping->in_ranges[i] - dra_mapping->in_ranges[i - 1])
-        { // If one 
+        { // If one
             ret_val_falg = FALSE;
             break;
         }
@@ -615,7 +615,7 @@ void xeve_set_signalled_params_dra(DRA_CONTROL *dra_mapping)
     {
         dra_mapping->signalled_dra.dra_scale_value[i] = dra_mapping->dra_scales_s32[i];
     }
-    assert(DRA_SCALE_NUMFBITS >= dra_mapping->dra_descriptor2); 
+    assert(DRA_SCALE_NUMFBITS >= dra_mapping->dra_descriptor2);
     dra_mapping->signalled_dra.dra_cb_scale_value = dra_mapping->dra_cb_scale_value >> (DRA_SCALE_NUMFBITS - dra_mapping->dra_descriptor2);
     dra_mapping->signalled_dra.dra_cr_scale_value = dra_mapping->dra_cr_scale_value >> (DRA_SCALE_NUMFBITS - dra_mapping->dra_descriptor2);
 
@@ -811,7 +811,7 @@ void xeve_init_dra(DRA_CONTROL *dra_mapping, int total_change_points, int *luma_
 }
 void xeve_update_dra(DRA_CONTROL *dra_mapping, int sdr_flag, int bit_depth)
 {
-    xeve_construct_dra(dra_mapping, sdr_flag, TRUE,  bit_depth); 
+    xeve_construct_dra(dra_mapping, sdr_flag, TRUE,  bit_depth);
     xeve_zoom_in_range_lut(dra_mapping, FALSE);
     xeve_normalize_histogram_lut(dra_mapping, 0,  bit_depth);
     xeve_quatnize_params_dra(dra_mapping);
@@ -915,9 +915,9 @@ void xeve_dra_ready(DRA_CONTROL *dra_mapping, int bit_depth)
 {
     xeve_get_signalled_params_dra(dra_mapping);
     xeve_construct_dra_ready(dra_mapping);
-    xeve_compensate_chroma_shift_table(dra_mapping, bit_depth); 
-    xeve_build_dra_luma_lut(dra_mapping); 
-    xeve_build_dra_chroma_lut(dra_mapping,  bit_depth); 
+    xeve_compensate_chroma_shift_table(dra_mapping, bit_depth);
+    xeve_build_dra_luma_lut(dra_mapping);
+    xeve_build_dra_chroma_lut(dra_mapping,  bit_depth);
 }
 
 /* DRA applicaton (sample processing) functions are listed below: */
@@ -1031,7 +1031,7 @@ void xeve_add_dra_aps_to_buffer(SIG_PARAM_DRA* tmp_dra_control_array, XEVE_APS_G
         }
         else
         {
-            printf("New DRA APS information ignored. APS ID was used earlier, new APS entity must contain identical content.\n");
+            xeve_trace("New DRA APS information ignored. APS ID was used earlier, new APS entity must contain identical content.\n");
         }
     }
 }
@@ -1040,7 +1040,7 @@ void xeve_apply_dra_from_array(XEVE_IMGB * dst, XEVE_IMGB * src, SIG_PARAM_DRA *
 {
     DRA_CONTROL dra_mapping;
     DRA_CONTROL *tmp_dra_mapping = &dra_mapping;
-    int bit_depth = (src->cs / 100) * 2;
+    int bit_depth = XEVE_CS_GET_BIT_DEPTH(src->cs);
     xeve_construct_dra_from_array(dra_control_array, tmp_dra_mapping, dra_id, bit_depth);
 
     xeve_apply_dra_chroma_plane(dst, src, tmp_dra_mapping, 1, backward_map);

@@ -143,7 +143,7 @@ u8 HTDF_table[HTDF_LUT_QP_NUM][1 << HTDF_LUT_SIZE_LOG2] = {
 { 0, 0, 0,  2,  6, 11, 18, 27, 38, 51,  64,  96, 128, 160, 192, 224, },
 };
 
-__inline int read_table(const int z, const u8 *tbl, const int thr, const int table_shift, const int table_round)
+__inline static int read_table(const int z, const u8 *tbl, const int thr, const int table_shift, const int table_round)
 {
 #if HTDF_FAST_TBL
     const unsigned Shift = sizeof(int) * 8 - 1;

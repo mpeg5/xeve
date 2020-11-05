@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -71,13 +71,6 @@ int xeve_atomic_dec(volatile int *pcnt)
     return ret;
 }
 
-BOOL is_ptr_aligned(void* ptr, int num_bytes)
-{
-  int mask = num_bytes - 1;
-
-  return ((uintptr_t)ptr & mask) == 0;
-}
-
 XEVE_PIC * xeve_picbuf_alloc(int w, int h, int pad_l, int pad_c, int bit_depth, int *err)
 {
     XEVE_PIC *pic = NULL;
@@ -102,8 +95,8 @@ XEVE_PIC * xeve_picbuf_alloc(int w, int h, int pad_l, int pad_c, int bit_depth, 
     pad[1] = pad_c;
     pad[2] = pad_c;
 
-    imgb = xeve_imgb_create(w, h, XEVE_COLORSPACE_YUV420_10LE, opt, pad, align);
-    imgb->cs = CS_FROM_BD_420(bit_depth);
+    imgb = xeve_imgb_create(w, h, XEVE_CS_YCBCR420_10LE, opt, pad, align);
+    imgb->cs = XEVE_CS_SET(XEVE_CF_YCBCR420, bit_depth, 0);
 
     xeve_assert_gv(imgb != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
 
@@ -252,6 +245,7 @@ static void picbuf_expand(pel *a, int s, int w, int h, int exp)
     }
 }
 
+
 void xeve_picbuf_expand(XEVE_PIC *pic, int exp_l, int exp_c)
 {
     picbuf_expand(pic->y, pic->s_l, pic->w_l, pic->h_l, exp_l);
@@ -264,7 +258,7 @@ void xeve_poc_derivation(XEVE_SPS sps, int tid, XEVE_POC *poc)
     int sub_gop_length = (int)pow(2.0, sps.log2_sub_gop_length);
     int expected_tid = 0;
     int doc_offset, poc_offset;
-    
+
     if (tid == 0)
     {
         poc->poc_val = poc->prev_poc_val + sub_gop_length;
@@ -320,7 +314,7 @@ void xeve_check_motion_availability(int scup, int cuw, int cuh, int w_scu, int h
     int scuw = cuw >> MIN_CU_LOG2;
     int scuh = cuh >> MIN_CU_LOG2;
     memset(valid_flag, 0, 5 * sizeof(int));
-    
+
     if (avail_lr == LR_11)
     {
         neb_addr[0] = scup + (scuh - 1) * w_scu - 1; // H
@@ -742,7 +736,7 @@ u16 xeve_get_avail_inter(int x_scu, int y_scu, int w_scu, int h_scu, int scup, i
             SET_AVAIL(avail, AVAIL_UP);
         }
 
-        if(!MCU_GET_IF(map_scu[scup - w_scu + scuw - 1]) && (map_tidx[curr_scup] == map_tidx[scup - w_scu + scuw - 1]) && 
+        if(!MCU_GET_IF(map_scu[scup - w_scu + scuw - 1]) && (map_tidx[curr_scup] == map_tidx[scup - w_scu + scuw - 1]) &&
            !MCU_GET_IBC(map_scu[scup - w_scu + scuw - 1]))
         {
             SET_AVAIL(avail, AVAIL_RI_UP);
@@ -824,7 +818,7 @@ u16 xeve_get_avail_intra(int x_scu, int y_scu, int w_scu, int h_scu, int scup, i
     {
         SET_AVAIL(avail, AVAIL_RI);
 
-        if(y_scu + scuh + scuw - 1 < h_scu  && MCU_GET_COD(map_scu[scup + (w_scu * (scuw + scuh - 1)) + scuw]) && 
+        if(y_scu + scuh + scuw - 1 < h_scu  && MCU_GET_COD(map_scu[scup + (w_scu * (scuw + scuh - 1)) + scuw]) &&
            (map_tidx[curr_scup] == map_tidx[scup + (w_scu * (scuw + scuh - 1)) + scuw]))
         {
             SET_AVAIL(avail, AVAIL_LO_RI);
@@ -1077,12 +1071,10 @@ int xeve_md5_imgb(XEVE_IMGB *imgb, u8 digest[N_C][16])
     XEVE_MD5 md5[N_C];
     int i, j;
 
-    assert(XEVE_COLORSPACE_IS_YUV_PLANAR(imgb->cs));
-
     for(i = 0; i < imgb->np; i++)
     {
         xeve_md5_init(&md5[i]);
-        
+
         for(j = imgb->y[i]; j < imgb->h[i]; j++)
         {
             xeve_md5_update(&md5[i], ((u8 *)imgb->a[i]) + j*imgb->s[i] + imgb->x[i] , imgb->w[i] * 2);
@@ -1193,7 +1185,7 @@ int xeve_get_split_mode(s8 *split_mode, int cud, int cup, int cuw, int cuh, int 
 {
     int ret = XEVE_OK;
     int pos = cup + (((cuh >> 1) >> MIN_CU_LOG2) * (lcu_s >> MIN_CU_LOG2) + ((cuw >> 1) >> MIN_CU_LOG2));
-    int shape = SQUARE + (CONV_LOG2(cuw) - CONV_LOG2(cuh));
+    int shape = SQUARE + (XEVE_LOG2(cuw) - XEVE_LOG2(cuh));
 
     if(cuw < 8 && cuh < 8)
     {
@@ -1209,7 +1201,7 @@ int xeve_get_split_mode(s8 *split_mode, int cud, int cup, int cuw, int cuh, int 
 void xeve_set_split_mode(s8 split_mode, int cud, int cup, int cuw, int cuh, int lcu_s, s8 (*split_mode_buf)[NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU])
 {
     int pos = cup + (((cuh >> 1) >> MIN_CU_LOG2) * (lcu_s >> MIN_CU_LOG2) + ((cuw >> 1) >> MIN_CU_LOG2));
-    int shape = SQUARE + (CONV_LOG2(cuw) - CONV_LOG2(cuh));
+    int shape = SQUARE + (XEVE_LOG2(cuw) - XEVE_LOG2(cuh));
 
     if(cuw >= 8 || cuh >= 8)
         split_mode_buf[cud][shape][pos] = split_mode;
@@ -1416,7 +1408,8 @@ void xeve_init_inverse_scan_sr(u16 *scan_inv, u16 *scan_orig, int width, int hei
     }
     else
     {
-        printf("Not supported scan_type\n");
+        xeve_assert(0);
+        xeve_trace("Not supported scan_type\n");
     }
 }
 
@@ -1430,9 +1423,9 @@ void xeve_split_get_part_structure(int split_mode, int x0, int y0, int cuw, int 
     int i;
     int log_cuw, log_cuh;
     int cup_w, cup_h;
-        
-    log_cuw = CONV_LOG2(cuw);
-    log_cuh = CONV_LOG2(cuh);
+
+    log_cuw = XEVE_LOG2(cuw);
+    log_cuh = XEVE_LOG2(cuh);
     split_struct->x_pos[0] = x0;
     split_struct->y_pos[0] = y0;
     split_struct->cup[0] = cup;
@@ -1586,6 +1579,286 @@ BOOL xeve_signal_mode_cons(TREE_CONS* parent, TREE_CONS* cur_split)
     return parent->mode_cons == eAll && cur_split->changed;
 }
 
+static void imgb_delete(XEVE_IMGB * imgb)
+{
+    int i;
+    xeve_assert_r(imgb);
+
+    for(i=0; i<XEVE_IMGB_MAX_PLANE; i++)
+    {
+        if (imgb->baddr[i]) xeve_mfree(imgb->baddr[i]);
+    }
+    xeve_mfree(imgb);
+}
+
+static int imgb_addref(XEVE_IMGB * imgb)
+{
+    xeve_assert_rv(imgb, XEVE_ERR_INVALID_ARGUMENT);
+    return xeve_atomic_inc(&imgb->refcnt);
+}
+
+static int imgb_getref(XEVE_IMGB * imgb)
+{
+    xeve_assert_rv(imgb, XEVE_ERR_INVALID_ARGUMENT);
+    return imgb->refcnt;
+}
+
+static int imgb_release(XEVE_IMGB * imgb)
+{
+    int refcnt;
+    xeve_assert_rv(imgb, XEVE_ERR_INVALID_ARGUMENT);
+    refcnt = xeve_atomic_dec(&imgb->refcnt);
+    if(refcnt == 0)
+    {
+        imgb_delete(imgb);
+    }
+    return refcnt;
+}
+
+static void imgb_cpy_shift_left_8b(XEVE_IMGB * imgb_dst, XEVE_IMGB * imgb_src, int shift)
+{
+    int i, j, k;
+
+    unsigned char * s;
+    short         * d;
+
+    for (i = 0; i < 3; i++)
+    {
+        s = imgb_src->a[i];
+        d = imgb_dst->a[i];
+
+        for (j = 0; j < imgb_src->h[i]; j++)
+        {
+            for (k = 0; k < imgb_src->w[i]; k++)
+            {
+                d[k] = (short)(s[k] << shift);
+            }
+            s = s + imgb_src->s[i];
+            d = (short*)(((unsigned char *)d) + imgb_dst->s[i]);
+        }
+    }
+}
+
+static void imgb_cpy_shift_right_8b(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
+{
+    int i, j, k, t0, add;
+
+    short         *s;
+    unsigned char *d;
+
+    if(shift)
+    add = 1 << (shift - 1);
+    else
+        add = 0;
+
+    for(i = 0; i < 3; i++)
+    {
+        s = src->a[i];
+        d = dst->a[i];
+
+        for(j = 0; j < src->ah[i]; j++)
+        {
+            for(k = 0; k < src->aw[i]; k++)
+            {
+                t0 = ((s[k] + add) >> shift);
+                d[k] = (unsigned char)(XEVE_CLIP3(0, 255, t0));
+            }
+            s = (short*)(((unsigned char *)s) + src->s[i]);
+            d = d + dst->s[i];
+        }
+    }
+}
+
+static void imgb_cpy_plane(XEVE_IMGB * dst, XEVE_IMGB * src)
+{
+    int i, j;
+    unsigned char *s, *d;
+    int numbyte = XEVE_CS_GET_BYTE_DEPTH(src->cs);
+
+    for(i = 0; i < src->np; i++)
+    {
+        s = (unsigned char*)src->a[i];
+        d = (unsigned char*)dst->a[i];
+
+        for(j = 0; j < src->ah[i]; j++)
+        {
+            memcpy(d, s, numbyte * src->aw[i]);
+            s += src->s[i];
+            d += dst->s[i];
+        }
+    }
+}
+
+static void imgb_cpy_shift_left(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
+{
+    int i, j, k;
+
+    unsigned short * s;
+    unsigned short * d;
+
+    for (i = 0; i < 3; i++)
+    {
+        s = src->a[i];
+        d = dst->a[i];
+
+        for (j = 0; j < src->h[i]; j++)
+        {
+            for (k = 0; k < src->w[i]; k++)
+            {
+                d[k] = (unsigned short)(s[k] << shift);
+            }
+            s = (short*)(((unsigned char *)s) + src->s[i]);
+            d = (short*)(((unsigned char *)d) + dst->s[i]);
+        }
+    }
+}
+
+static void imgb_cpy_shift_right(XEVE_IMGB * dst, XEVE_IMGB * src, int shift)
+{
+
+    int i, j, k, t0, add;
+
+    int clip_min = 0;
+    int clip_max = 0;
+
+    unsigned short         * s;
+    unsigned short         * d;
+    if (shift)
+        add = 1 << (shift - 1);
+    else
+        add = 0;
+
+    clip_max = (1 << (XEVE_CS_GET_BIT_DEPTH(dst->cs))) - 1;
+
+    for (i = 0; i < 3; i++)
+    {
+        s = src->a[i];
+        d = dst->a[i];
+
+        for (j = 0; j < src->h[i]; j++)
+        {
+            for (k = 0; k < src->w[i]; k++)
+            {
+                t0 = ((s[k] + add) >> shift);
+                d[k] = (XEVE_CLIP3(clip_min, clip_max, t0));
+
+            }
+            s = (short*)(((unsigned char *)s) + src->s[i]);
+            d = (short*)(((unsigned char *)d) + dst->s[i]);
+        }
+    }
+}
+
+void xeve_imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src)
+{
+    int i, bd_src, bd_dst;
+    bd_src = XEVE_CS_GET_BIT_DEPTH(src->cs);
+    bd_dst = XEVE_CS_GET_BIT_DEPTH(dst->cs);
+
+    if(src->cs == dst->cs)
+    {
+        imgb_cpy_plane(dst, src);
+    }
+    else if(bd_src == 8 && bd_dst > 8)
+    {
+        imgb_cpy_shift_left_8b(dst, src, bd_dst - bd_src);
+    }
+    else if(bd_src > 8 && bd_dst == 8)
+    {
+        imgb_cpy_shift_right_8b(dst, src, bd_src - bd_dst);
+    }
+    else if(bd_src < bd_dst)
+    {
+        imgb_cpy_shift_left(dst, src, bd_dst - bd_src);
+    }
+    else if(bd_src > bd_dst)
+    {
+        imgb_cpy_shift_right(dst, src, bd_src - bd_dst);
+    }
+    else
+    {
+        xeve_trace("ERROR: unsupported image copy\n");
+        return;
+    }
+    for(i = 0; i < XEVE_IMGB_MAX_PLANE; i++)
+    {
+        dst->x[i] = src->x[i];
+        dst->y[i] = src->y[i];
+        dst->w[i] = src->w[i];
+        dst->h[i] = src->h[i];
+        dst->ts[i] = src->ts[i];
+    }
+}
+
+XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt,
+    int pad[XEVE_IMGB_MAX_PLANE], int align[XEVE_IMGB_MAX_PLANE])
+{
+    int i, p_size, a_size, bd;
+    XEVE_IMGB * imgb;
+
+    imgb = (XEVE_IMGB *)xeve_malloc(sizeof(XEVE_IMGB));
+    xeve_assert_rv(imgb, NULL);
+    xeve_mset(imgb, 0, sizeof(XEVE_IMGB));
+
+    if(XEVE_CS_GET_FORMAT(cs) == XEVE_CF_YCBCR420)
+    {
+        bd = XEVE_CS_GET_BYTE_DEPTH(cs); /* byteunit */
+
+        for(i=0; i<3; i++)
+        {
+            imgb->w[i] = w;
+            imgb->h[i] = h;
+            imgb->x[i] = 0;
+            imgb->y[i] = 0;
+
+            a_size = (align != NULL)? align[i] : 0;
+            p_size = (pad != NULL)? pad[i] : 0;
+
+            imgb->aw[i] = XEVE_ALIGN_VAL(w, a_size);
+            imgb->ah[i] = XEVE_ALIGN_VAL(h, a_size);
+
+            imgb->padl[i] = imgb->padr[i]=imgb->padu[i]=imgb->padb[i]=p_size;
+
+            imgb->s[i] = (imgb->aw[i] + imgb->padl[i] + imgb->padr[i]) * bd;
+            imgb->e[i] = imgb->ah[i] + imgb->padu[i] + imgb->padb[i];
+
+            imgb->bsize[i] = imgb->s[i]*imgb->e[i];
+            imgb->baddr[i] = xeve_malloc(imgb->bsize[i]);
+
+            imgb->a[i] = ((u8*)imgb->baddr[i]) + imgb->padu[i]*imgb->s[i] +
+                imgb->padl[i]*bd;
+
+            if(i == 0) { w = (w+1)>>1; h = (h+1)>>1; }
+        }
+        imgb->np = 3;
+    }
+    else
+    {
+        xeve_trace("unsupported color space\n");
+        xeve_mfree(imgb);
+        return NULL;
+    }
+    imgb->addref = imgb_addref;
+    imgb->getref = imgb_getref;
+    imgb->release = imgb_release;
+    imgb->cs = cs;
+    imgb->addref(imgb);
+
+    return imgb;
+}
+
+
+void xeve_imgb_garbage_free(XEVE_IMGB * imgb)
+{
+    int i;
+    if (imgb == NULL) return;
+    for(i=0; i<XEVE_IMGB_MAX_PLANE; i++)
+    {
+        if(imgb->a[i]) xeve_mfree(imgb->a[i]);
+    }
+    xeve_mfree(imgb);
+}
+
 #if X86_SSE
 #if (defined(_WIN64) || defined(_WIN32)) && !defined(__GNUC__)
 #include <intrin.h >
@@ -1593,10 +1866,10 @@ BOOL xeve_signal_mode_cons(TREE_CONS* parent, TREE_CONS* cur_split)
 #ifndef _XCR_XFEATURE_ENABLED_MASK
 #define _XCR_XFEATURE_ENABLED_MASK 0
 #endif
-void __cpuid(int* cpu_info, int i)
+void __cpuid(int* info, int i)
 {
     __asm__ __volatile__(
-        "cpuid" : "=a" (cpu_info[0]), "=b" (cpu_info[1]), "=c" (cpu_info[2]), "=d" (cpu_info[3])
+        "cpuid" : "=a" (info[0]), "=b" (info[1]), "=c" (info[2]), "=d" (info[3])
                 : "a" (i), "c" (0));
 }
 
@@ -1610,6 +1883,8 @@ unsigned long long __xgetbv(unsigned int i)
 }
 #endif
 
+#define GET_CPU_INFO(A,B) ((B[((A >> 5) & 0x03)] >> (A & 0x1f)) & 1)
+
 int xeve_check_cpu_info()
 {
     int support_sse = 0;
@@ -1621,7 +1896,7 @@ int xeve_check_cpu_info()
     if (cpu_info[0] >= 1)
     {
         __cpuid(cpu_info, 1);
-        
+
         support_sse |= GET_CPU_INFO(XEVE_CPU_INFO_SSE41, cpu_info);
 
         int os_use_xsave = GET_CPU_INFO(XEVE_CPU_INFO_OSXSAVE, cpu_info);
@@ -1637,3 +1912,4 @@ int xeve_check_cpu_info()
     return (support_sse << 1) | support_avx;
 }
 #endif
+

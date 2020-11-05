@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -194,7 +194,7 @@ enum SAD_POINT_INDEX
 #define MAX_NUM_ALF_COEFF                 (MAX_ALF_FILTER_LENGTH * MAX_ALF_FILTER_LENGTH / 2 + 1)
 
 #define APS_MAX_NUM                        32
-#define APS_MAX_NUM_IN_BITS                5 
+#define APS_MAX_NUM_IN_BITS                5
 #define APS_TYPE_ID_BITS                   3
 /* ALF (END) */
 
@@ -219,10 +219,10 @@ enum SAD_POINT_INDEX
 #define LOG2_RATIO_GTB                     4
 #define LOG2_CG_SIZE                       4
 #define MLS_GRP_NUM                        1024
-#define CAFLAG_NUMBER                      8 
-#define CBFLAG_NUMBER                      1 
+#define CAFLAG_NUMBER                      8
+#define CBFLAG_NUMBER                      1
 
-#define SBH_THRESHOLD                      4  
+#define SBH_THRESHOLD                      4
 #define MAX_GR_ORDER_RESIDUAL              10
 #define COEF_REMAIN_BIN_REDUCTION          3
 #define LAST_SIGNIFICANT_GROUPS            14
@@ -236,7 +236,7 @@ enum SAD_POINT_INDEX
 #define NUM_CTX_SIG_COEFF_LUMA_TU          13  /* number of context models for luma sig coeff flag per TU */
 #define NUM_CTX_SIG_COEFF_FLAG             (NUM_CTX_SIG_COEFF_LUMA + NUM_CTX_SIG_COEFF_CHROMA)  /* number of context models for sig coeff flag */
 #define NUM_CTX_GTX_LUMA                   13
-#define NUM_CTX_GTX_CHROMA                 5     
+#define NUM_CTX_GTX_CHROMA                 5
 #define NUM_CTX_GTX                        (NUM_CTX_GTX_LUMA + NUM_CTX_GTX_CHROMA)  /* number of context models for gtA/B flag */
 
 #define COEF_SCAN_ZIGZAG                   0
@@ -279,7 +279,7 @@ typedef int BOOL;
 #define TRACE_COEFFS                       0 ///< Trace coefficients
 #define TRACE_RDO                          0 //!< Trace only encode stream (0), only RDO (1) or all of them (2)
 #define TRACE_BIN                          0 //!< trace each bin
-#define TRACE_START_POC                    0 //!< POC of frame from which we start to write output tracing information 
+#define TRACE_START_POC                    0 //!< POC of frame from which we start to write output tracing information
 #define TRACE_COSTS                        0 //!< Trace cost information
 #define TRACE_REMOVE_COUNTER               0 //!< Remove trace counter
 #define TRACE_ADDITIONAL_FLAGS             0
@@ -306,7 +306,7 @@ extern int fp_trace_started;
 #define XEVE_TRACE_INT(INT) if(fp_trace_print) { fprintf(fp_trace, "%d ", INT); fflush(fp_trace); }
 #define XEVE_TRACE_INT_HEX(INT) if(fp_trace_print) { fprintf(fp_trace, "0x%x ", INT); fflush(fp_trace); }
 #if TRACE_REMOVE_COUNTER
-#define XEVE_TRACE_COUNTER 
+#define XEVE_TRACE_COUNTER
 #else
 #define XEVE_TRACE_COUNTER  XEVE_TRACE_INT(fp_trace_counter++); XEVE_TRACE_STR("\t")
 #endif
@@ -318,7 +318,7 @@ extern int fp_trace_started;
 #define XEVE_TRACE_DOUBLE(DOU)
 #define XEVE_TRACE_INT(INT)
 #define XEVE_TRACE_INT_HEX(INT)
-#define XEVE_TRACE_COUNTER 
+#define XEVE_TRACE_COUNTER
 #define XEVE_TRACE_MV(X, Y)
 #define XEVE_TRACE_FLUSH
 #endif
@@ -329,7 +329,7 @@ extern int fp_trace_started;
 
 /* number of picture order count lsb bit */
 #define POC_LSB_BIT                        (8)
-#define PEL2BYTE(pel,cs)                  ((pel)*(((BD_FROM_CS(cs)) + 7)>>3))
+#define PEL2BYTE(pel,cs)                  ((pel)*(((XEVE_CS_GET_BIT_DEPTH(cs)) + 7)>>3))
 #define STRIDE_IMGB2PIC(s_imgb)           ((s_imgb)>>1)
 
 #define Y_C                                0  /* Y luma */
@@ -534,8 +534,8 @@ extern int fp_trace_started;
 #define IPD_DC_C_B                         0  /* Chroma, DC */
 #define IPD_HOR_C_B                        1  /* Chroma, Horizontal*/
 #define IPD_VER_C_B                        2  /* Chroma, Vertical */
-#define IPD_UL_C_B                         3 
-#define IPD_UR_C_B                         4 
+#define IPD_UL_C_B                         3
+#define IPD_UR_C_B                         4
 
 #define IPD_CNT_B                          5
 #define IPD_CNT                            33
@@ -789,7 +789,7 @@ typedef struct _XEVE_SBAC_CTX
     SBAC_CTX_MODEL   ats_cu_inter_hor_flag         [NUM_CTX_ATS_INTER_HOR_FLAG];
     SBAC_CTX_MODEL   ats_cu_inter_pos_flag         [NUM_CTX_ATS_INTER_POS_FLAG];
     int              sps_cm_init_flag;
-    
+
 } XEVE_SBAC_CTX;
 
 /* Maximum transform dynamic range (excluding sign bit) */
@@ -819,8 +819,8 @@ typedef struct _XEVE_SBAC_CTX
 #define NEB_F                              5  /* co-located of low-right */
 #define NEB_G                              6  /* co-located of X */
 #define NEB_X                              7  /* center (current block) */
-#define NEB_H                              8  /* right */  
-#define NEB_I                              9  /* low-right */  
+#define NEB_H                              8  /* right */
+#define NEB_I                              9  /* low-right */
 #define MAX_NEB2                           10
 
 /* picture store structure */
@@ -1028,8 +1028,8 @@ typedef struct _XEVE_SPS
     int              toolset_idc_h;
     int              toolset_idc_l;
     int              chroma_format_idc;
-    u32              pic_width_in_luma_samples;  
-    u32              pic_height_in_luma_samples; 
+    u32              pic_width_in_luma_samples;
+    u32              pic_height_in_luma_samples;
     int              bit_depth_luma_minus8;
     int              bit_depth_chroma_minus8;
     int              sps_btt_flag;
@@ -1193,7 +1193,7 @@ typedef struct _XEVE_SH
     int              temporal_mvp_asigned_flag;
     int              collocated_from_list_idx;        // Specifies source (List ID) of the collocated picture, equialent of the collocated_from_l0_flag
     int              collocated_from_ref_idx;         // Specifies source (RefID_ of the collocated picture, equialent of the collocated_ref_idx
-    int              collocated_mvp_source_list_idx;  // Specifies source (List ID) in collocated pic that provides MV information 
+    int              collocated_mvp_source_list_idx;  // Specifies source (List ID) in collocated pic that provides MV information
     s32              poc_lsb;
     /*   HLS_RPL */
     u32              ref_pic_list_sps_flag[2];
@@ -1395,7 +1395,7 @@ static const int NTAPS_CHROMA = 4; ///< Number of taps for chroma
 #error "EIF_MV_PRECISION_BILINEAR should be less than EIF_MV_PRECISION_INTERNAL"
 #endif
 
-#if EIF_MV_PRECISION_BILINEAR < 3 
+#if EIF_MV_PRECISION_BILINEAR < 3
 #error "EIF_MV_PRECISION_BILINEAR is to small"
 #endif
 
@@ -1414,7 +1414,6 @@ enum TQC_RUN {
 #include "xeve_picman.h"
 #include "xeve_mc.h"
 #include "xeve_mc_sse.h"
-#include "xeve_img.h"
 #include "xeve_thread_pool.h"
 #include "xeve_util.h"
 

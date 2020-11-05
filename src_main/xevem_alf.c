@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -978,13 +978,13 @@ int  alf_get_protect_idx_from_list(ADAPTIVE_LOOP_FILTER * alf, int idx)
         protect_entry = 0;
     }
 
-    if ((alf->curr_poc > alf->last_idr_poc) // current POC is after 2nd IDR 
+    if ((alf->curr_poc > alf->last_idr_poc) // current POC is after 2nd IDR
         && (alf->ac_alf_line_buf[idx].filter_poc < alf->last_idr_poc)) // POC of checked ALF is before 2nd IDR
     {
         protect_entry = 0;
     }
 
-    if ((alf->curr_poc > alf->ac_alf_line_buf[idx].max_idr_poc) // current POC is after 2nd IDR 
+    if ((alf->curr_poc > alf->ac_alf_line_buf[idx].max_idr_poc) // current POC is after 2nd IDR
         && (alf->ac_alf_line_buf[idx].filter_poc < alf->ac_alf_line_buf[idx].max_idr_poc)) // POC of checked ALF is before 2nd IDR
     {
         protect_entry = 0;
@@ -1029,7 +1029,7 @@ void alf_store_enc_alf_param_line_aps(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PARA
     alf_copy_param(&(alf->ac_alf_line_buf[idx]), pAlfParam);
 
     alf->ac_alf_line_buf_curr_size = alf->ac_alf_line_buf_curr_size > APS_MAX_NUM ? APS_MAX_NUM : alf->ac_alf_line_buf_curr_size;  // Increment size of the circular buffer  (there are 2 buffers - ALF and indexes)
-    alf->alf_idx_in_scan_order[alf->ac_alf_line_buf_curr_size - 1] = alf->next_free_alf_idx_in_buf;                                       // store new alf idx in the indexes circular buffer 
+    alf->alf_idx_in_scan_order[alf->ac_alf_line_buf_curr_size - 1] = alf->next_free_alf_idx_in_buf;                                       // store new alf idx in the indexes circular buffer
     alf->next_free_alf_idx_in_buf = (alf->next_free_alf_idx_in_buf + 1) % APS_MAX_NUM;  // Compute next availble ALF circular buffer index
 }
 
@@ -1038,7 +1038,7 @@ void alf_store_paramline_from_aps(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PARAM* p
     assert(idx < APS_MAX_NUM);
     alf_copy_param(&(alf->ac_alf_line_buf[idx]), pAlfParam);
     alf->ac_alf_line_buf_curr_size++;
-    alf->ac_alf_line_buf_curr_size = alf->ac_alf_line_buf_curr_size > APS_MAX_NUM ? APS_MAX_NUM : alf->ac_alf_line_buf_curr_size;  // Increment used ALF circular buffer size 
+    alf->ac_alf_line_buf_curr_size = alf->ac_alf_line_buf_curr_size > APS_MAX_NUM ? APS_MAX_NUM : alf->ac_alf_line_buf_curr_size;  // Increment used ALF circular buffer size
 }
 
 void alf_load_paramline_from_aps_buffer2(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PARAM* pAlfParam, u8 idxY, u8 idxUV, u8 alf_chroma_idc)
@@ -1410,7 +1410,7 @@ void xeve_alf_create(XEVE_ALF * enc_alf, const int pic_widht, const int pic_heig
     xeve_mset(enc_alf->filter_coef_quant, 0, sizeof(int) * MAX_NUM_ALF_LUMA_COEFF);
 
     enc_alf->filter_coef_set  = (int**)xeve_malloc(sizeof(int*) * MAX_NUM_ALF_CLASSES);
-    enc_alf->dif_filter_coef = (int**)xeve_malloc(sizeof(int*) * MAX_NUM_ALF_CLASSES);    
+    enc_alf->dif_filter_coef = (int**)xeve_malloc(sizeof(int*) * MAX_NUM_ALF_CLASSES);
 
     for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
     {
@@ -1679,7 +1679,7 @@ void xeve_alf_process(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, const double *l
         y_r = y_l + ((int)(ctx->tile[tile_idx].h_ctb) << ctx->log2_max_cuwh);
         w_tile = x_r > ((int)ctx->w_scu << MIN_CU_LOG2) ? ((int)ctx->w_scu << MIN_CU_LOG2) - x_l : x_r - x_l;
         h_tile = y_r > ((int)ctx->h_scu << MIN_CU_LOG2) ? ((int)ctx->h_scu << MIN_CU_LOG2) - y_l : y_r - y_l;
-        //This is for YUV420 only 
+        //This is for YUV420 only
         pel * rec_temp_y_tile = rec_tmp_y + x_l + y_l * s;
         pel * rec_temp_u_tile = rec_tmp_u + (x_l >> 1) + (y_l >> 1) * (s1);
         pel * rec_temp_v_tile = ref_tmp_v + (x_l >> 1) + (y_l >> 1) * (s1);
@@ -1691,7 +1691,7 @@ void xeve_alf_process(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, const double *l
         alf_copy_and_extend_tile(rec_temp_u_tile, s1, rec_u_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
         alf_copy_and_extend_tile(rec_temp_v_tile, s1, rec_v_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
 
-        // reconstruct 
+        // reconstruct
         if (alf_slice_param->enable_flag[Y_C])
         {
             xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[0], org_yuv.s[0], rec_temp.yuv[0], rec_temp.s[0], Y_C, tile_idx, col_bd);
@@ -2309,7 +2309,7 @@ void xeve_alf_temporal_enc_aps_comp(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, A
                 channel = ch > Y_C ? CHROMA_CH : LUMA_CH;
                 is_luma = channel == LUMA_CH ? 1 : 0;
                 {
-                    int filter_avail = (ch == Y_C) ? enc_alf->alf_slice_param_temp.enable_flag[Y_C] : 
+                    int filter_avail = (ch == Y_C) ? enc_alf->alf_slice_param_temp.enable_flag[Y_C] :
                                             (ch == U_C ? enc_alf->alf_slice_param_temp.enable_flag[U_C] : enc_alf->alf_slice_param_temp.enable_flag[V_C]);
                     if (filter_avail)
                     {
@@ -2382,7 +2382,7 @@ void xeve_alf_temporal_enc_aps_comp(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, A
                                 xeve_alf_get_frame_stats(enc_alf, U_C, 0);
                                 alf_cov_reset(&enc_alf->alf_cov_frame[N_C][0][0]);
                                 alf_cov_add(&enc_alf->alf_cov_frame[N_C][0][0], &enc_alf->alf_cov_frame[U_C][0][0]);
-                                alf_cov_add(&enc_alf->alf_cov_frame[N_C][0][0], &enc_alf->alf_cov_frame[V_C][0][0]);      
+                                alf_cov_add(&enc_alf->alf_cov_frame[N_C][0][0], &enc_alf->alf_cov_frame[V_C][0][0]);
                                 cost_ctb_enable = xeve_alf_get_unfiltered_dist_ch(enc_alf->alf_cov_frame[N_C][0], channel);
                                 unfilterd_cost_joint = cost_ctb_enable;
                                 alf_recon_coef(alf, &enc_alf->alf_slice_param_temp, channel, TRUE, is_luma);
@@ -2420,7 +2420,7 @@ void xeve_alf_temporal_enc_aps_comp(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, A
                         }
                         else
                         {
-                            printf("Error: temporal ALF checked, but enableFlag for luma is OFF\n");
+                            xeve_trace("Error: temporal ALF checked, but enableFlag for luma is OFF\n");
                         }
                     }
                 }
@@ -3733,7 +3733,7 @@ void xeve_alf_get_blk_stats(int ch, ALF_COVARIANCE* alf_cov, const ALF_FILTER_SH
         for (int j = 0; j < width; j++)
         {
             memset(E_local, 0, shape->num_coef * sizeof(int));
-            if (classifier ) 
+            if (classifier )
             {
                 int x2 = ch ? (x << 1) : x;
                 int y2 = ch ? (y << 1) : y;

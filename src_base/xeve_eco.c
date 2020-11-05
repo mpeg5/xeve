@@ -1274,8 +1274,8 @@ int cu_init(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int cup, int cuw, int 
 
     core->cuw = cuw;
     core->cuh = cuh;
-    core->log2_cuw = CONV_LOG2(cuw);
-    core->log2_cuh = CONV_LOG2(cuh);
+    core->log2_cuw = XEVE_LOG2(cuw);
+    core->log2_cuh = XEVE_LOG2(cuh);
     core->x_scu = PEL2SCU(x);
     core->y_scu = PEL2SCU(y);
     core->scup = ((u32)core->y_scu * ctx->w_scu) + core->x_scu;
@@ -1361,7 +1361,7 @@ int xeve_eco_split_mode(XEVE_BSW *bs, XEVE_CTX *c, XEVE_CORE *core, int cud, int
 
     if(sbac->is_bitcount)
     {
-        xeve_get_split_mode(&split_mode, cud, cup, cuw, cuh, lcu_s, core->cu_data_temp[CONV_LOG2(cuw) - 2][CONV_LOG2(cuh) - 2].split_mode);
+        xeve_get_split_mode(&split_mode, cud, cup, cuw, cuh, lcu_s, core->cu_data_temp[XEVE_LOG2(cuw) - 2][XEVE_LOG2(cuh) - 2].split_mode);
     }
     else
     {
