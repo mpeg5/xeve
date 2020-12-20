@@ -44,7 +44,7 @@ void xeve_init_multi_tbl();
 void xeve_init_multi_inv_tbl();
 
 typedef void (*INV_TRANS)(s16 *, s16 *, int, int, int, int);
-INV_TRANS (*xeve_func_itrans)[16][5];
+static INV_TRANS (*xeve_func_itrans)[16][5];
 extern INV_TRANS xeve_itrans_map_tbl[16][5];
 
 void xeve_itrans_ats_intra(s16 *coef, int log2_cuw, int log2_cuh, u8 ats_mode, int skip_w, int skip_h, int bit_depth);
