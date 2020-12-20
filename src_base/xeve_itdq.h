@@ -47,7 +47,7 @@
 void xeve_sub_block_itdq(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, u8 qp_y, u8 qp_u, u8 qp_v, int flag[N_C], int nnz_sub[N_C][MAX_SUB_TB_NUM], int bit_depth);
 
 typedef void (*INV_TRANS)(s16 *, s16 *, int, int, int, int);
-INV_TRANS (*xeve_func_itrans)[16][5];
+static INV_TRANS (*xeve_func_itrans)[16][5];
 
 typedef void(*XEVE_ITXB)(void *coef, void *t, int shift, int line, int step);
 extern XEVE_ITXB tbl_itxb[MAX_TR_LOG2];
