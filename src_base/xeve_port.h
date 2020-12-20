@@ -141,9 +141,9 @@ void xeve_trace_line(char * pre);
 #define xeve_assert_gv(x,r,v,g) \
     {if(!(x)){assert(x); (r)=(v); goto g;}}
 
-
-
+#ifdef __SSE4.1__
 #define X86_SSE                 1
+#endif
 
 #if X86_SSE
 #ifdef _WIN32
