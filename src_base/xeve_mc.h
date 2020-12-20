@@ -90,9 +90,9 @@ typedef void (*XEVE_AVG_NO_CLIP)(s16 *src, s16 *ref, s16 *dst, int s_src, int s_
 extern XEVE_MC_L xeve_tbl_mc_l[2][2];
 extern XEVE_MC_C xeve_tbl_mc_c[2][2];
 
-XEVE_MC_L (*xeve_func_mc_l)[2][2];
-XEVE_MC_C (*xeve_func_mc_c)[2][2];
-XEVE_AVG_NO_CLIP xeve_func_average_no_clip;
+static XEVE_MC_L (*xeve_func_mc_l)[2][2];
+static XEVE_MC_C (*xeve_func_mc_c)[2][2];
+static XEVE_AVG_NO_CLIP xeve_func_average_no_clip;
 
 #define xeve_mc_l(ori_mv_x, ori_mv_y, ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth) \
     ((*xeve_func_mc_l)[((ori_mv_x) | ((ori_mv_x)>>1) | ((ori_mv_x)>>2) | ((ori_mv_x)>>3)) & 0x1])\
