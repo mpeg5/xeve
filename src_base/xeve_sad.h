@@ -48,10 +48,10 @@ extern XEVE_FN_SSD xeve_tbl_ssd_16b[8][8];
 extern XEVE_FN_DIFF xeve_tbl_diff_16b[8][8];
 extern XEVE_FN_SATD xeve_tbl_satd_16b[1];
 
-XEVE_FN_SAD (* xeve_func_sad)[8][8];
-XEVE_FN_SSD (* xeve_func_ssd)[8][8];
-XEVE_FN_DIFF (* xeve_func_diff)[8][8];
-XEVE_FN_SATD (* xeve_func_satd)[1];
+static XEVE_FN_SAD (* xeve_func_sad)[8][8];
+static XEVE_FN_SSD (* xeve_func_ssd)[8][8];
+static XEVE_FN_DIFF (* xeve_func_diff)[8][8];
+static XEVE_FN_SATD (* xeve_func_satd)[1];
 
 #define xeve_sad_16b(log2w, log2h, src1, src2, s_src1, s_src2, bit_depth)\
     (*xeve_func_sad)[log2w][log2h](1<<(log2w), 1<<(log2h), src1, src2, s_src1, s_src2, bit_depth)
