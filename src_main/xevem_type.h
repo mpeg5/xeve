@@ -36,7 +36,7 @@
 #ifndef _XEVEM_TYPE_H_
 #define _XEVEM_TYPE_H_
 
-#include <xeve_type.h>
+#include "xeve_type.h"
 #include "xevem_dra.h"
 
 /*****************************************************************************
