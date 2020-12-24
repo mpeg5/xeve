@@ -38,8 +38,8 @@
 
 typedef void(*XEVE_TXB)(void * coef, void * t, int shift, int line, int step);
 extern XEVE_TXB xeve_tbl_txb[MAX_TR_LOG2];
-extern const int quant_scale[6];
-s64 err_scale_tbl[6][NUM_CU_LOG2 + 1];
+extern const int xeve_quant_scale[6];
+extern s64 err_scale_tbl[6][NUM_CU_LOG2 + 1];
 
 int xeve_rdoq_set_ctx_cc(XEVE_CORE * core, int ch_type, int prev_level);
 int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, int slice_type, int nnz[N_C], int is_intra, int run_stats);

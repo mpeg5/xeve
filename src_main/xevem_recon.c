@@ -235,8 +235,8 @@ void filter_block_luma(pel *block, const u8 HTDF_table[HTDF_LUT_QP_NUM][1 << HTD
     memset(acc_block, 0, stride*height * sizeof(*acc_block));
 
     int idx = (qp - HTDF_LUT_MIN_QP + (1 << (HTDF_LUT_STEP_QP_LOG2 - 1))) >> HTDF_LUT_STEP_QP_LOG2;
-    idx = max(idx, 0);
-    idx = min(idx, HTDF_LUT_QP_NUM - 1);
+    idx = XEVE_MAX(idx, 0);
+    idx = XEVE_MIN(idx, HTDF_LUT_QP_NUM - 1);
 
     xeve_htdf_filter_block(block, acc_block, HTDF_table[idx], stride, width, width, height, HTDF_table_thr_log2[idx],  bit_depth);
 }
@@ -249,8 +249,8 @@ BOOL xeve_htdf_skip_condition(int width, int height, int IntraBlockFlag, int *qp
     if (width*height < 64)
         return TRUE;
 
-    int min_size = min(width, height);
-    int max_size = max(width, height);
+    int min_size = XEVE_MIN(width, height);
+    int max_size = XEVE_MAX(width, height);
 
     if(max_size >= 128)
         return TRUE;

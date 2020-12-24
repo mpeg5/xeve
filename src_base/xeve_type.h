@@ -35,10 +35,12 @@
 #include "xeve_bsw.h"
 #include "xeve_sad.h"
 #include "xeve_sad_sse.h"
+#include "xeve_sad_avx.h"
 
 /* support RDOQ */
 #define SCALE_BITS               15    /* Inherited from TMuC, pressumably for fractional bit estimates in RDOQ */
 #define ERR_SCALE_PRECISION_BITS 20
+
 /* XEVE encoder magic code */
 #define XEVE_MAGIC_CODE      0x45565945 /* EVYE */
 
@@ -142,6 +144,7 @@ typedef struct _XEVE_CTX XEVE_CTX;
 typedef struct _XEVE_ALF XEVE_ALF;
 typedef struct _XEVE_CORE XEVE_CORE;
 typedef struct _XEVE_IBC_HASH XEVE_IBC_HASH;
+typedef struct _XEVE_RC_PARAM XEVE_RC_PARAM;
 
 /*****************************************************************************
  * original picture buffer structure
@@ -154,9 +157,33 @@ typedef struct _XEVE_PICO
     u32                 pic_icnt;
     /* be used for encoding input */
     u8                  is_used;
-
     /* address of sub-picture */
     XEVE_PIC          * spic;
+    s32                 slice_type;
+    s32                 slice_depth;
+    s32                 scene_type;
+    /* adaptive quantization qp offset */
+    s32               * map_qp_offset;
+    /*[0] intra [1]: Uni_1 / [2]: Uni_2 / [3]: Uni_3 */
+    s32                 uni_est_cost[4];
+    s32                 bi_fcost;
+    /* number of intra unit ([0]: ICNT_P1 /[1]: ICNT_P2 / [2]: ICNT_PGA) */
+    u16                 icnt[3];
+    /* pred direction map (PRED_L0, PRED_L1, PRED_BI) */
+    u8                * map_pdir;
+    /* lcu-tree transfer cost */
+    u16               * transfer_cost;
+    /* sub-picture motion vector map for every 32x32 unit */
+    s16              (* map_mv)[REFP_NUM][MV_D];
+    s16              (* map_mv_pga)[REFP_NUM][MV_D];
+    /* uni direction lcu cost
+    [0] : intra lcu cost
+    [1] : inter lcu cost with -1 picture
+    [2] : inter lcu cost with -2 picture
+    [3] : inter lcu cost with the previous gop anchor */
+    s32              (* map_lcu_cost_uni)[4];
+    /* bi-inter lcu cost */
+    s32               * map_lcu_cost_bi;
 } XEVE_PICO;
 
 /*****************************************************************************
@@ -210,6 +237,24 @@ typedef struct _XEVE_PINTRA
 #define MV_RANGE_MIN           0
 #define MV_RANGE_MAX           1
 #define MV_RANGE_DIM           2
+
+typedef struct _XEVE_PRED_INTER_COMP
+{
+    u8 raster_search_step_opt;
+    u8 search_step_max;
+    u8 search_step_min;
+    u8 raster_new_center_th;
+    u8 max_first_search_step_th;
+    u8 max_refine_search_step_th;
+    u8 opt_me_diamond_mvr012_step;
+    u8 mvr_012_bi_step;
+    u8 mvr_012_non_bi_step;
+    u8 bi_normal_step_c;
+    u8 bi_normal_mask;
+    u8 mvr_02_step_nxt;
+    u8 mvr_012_step_th;
+
+} XEVE_PRED_INTER_COMP;
 
 typedef struct _XEVE_PINTER XEVE_PINTER;
 struct _XEVE_PINTER
@@ -314,6 +359,10 @@ struct _XEVE_PINTER
     /* gop size */
     int                 gop_size;
     int                 sps_amvr_flag;
+    int                 skip_merge_cand_num;
+    int                 me_complexity;
+    s64                 best_ssd;
+    XEVE_PRED_INTER_COMP * me_opt;
     /* ME function (Full-ME or Fast-ME) */
     u32 (*fn_me)(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2_cuh, s8 *refi, int lidx, s16 mvp[MV_D], s16 mv[MV_D], int bi, int bit_depth_luma);
     /* AFFINE ME function (Gradient-ME) */
@@ -445,7 +494,124 @@ typedef struct _XEVE_PARAM
     int                 tile_array_in_slice[2 * 600];
     int                 arbitrary_slice_flag;
     u32                 num_remaining_tiles_in_slice_minus1[600];
+    u8                  rdo_dbk_switch;
+    const XEVE_PRESET * preset;
+    int                 rc_type;
+    int                 bps;
+    int                 vbv_msec;
+    int                 use_filler_flag;
+    int                 num_pre_analysis_frames;
+    /* Rate control type (Off CBR ABR) */
+    int                 vbv_enabled;
+    /* vbv parameters */
+    int                 vbv_buffer_size;
+    /* vbv buffer size */
+
 } XEVE_PARAM;
+
+/*****************************************************************************
+* rate control structure for bits estimating
+*****************************************************************************/
+#define RC_NUM_SLICE_TYPE  8
+typedef struct _XEVE_RCBE
+{
+    double       bits;
+    double       cnt;
+    double       coef;
+    double       offset;
+    double       decayed;
+} XEVE_RCBE;
+
+/*****************************************************************************
+* rate control structure for encoding
+*****************************************************************************/
+typedef struct _XEVE_RCORE
+{
+    u16        * pred;
+
+    /* qf value limitation parameter */
+    double       qf_limit;
+    /* offset btw I and P frame */
+    double       offset_ip;
+    /* minimum qfactor by frame type */
+    double       qf_min[RC_NUM_SLICE_TYPE];
+    /* maximum qfactor by frame type */
+    double       qf_max[RC_NUM_SLICE_TYPE];
+    /* current frame scene_type which is inherited from frame analysis */
+    int          scene_type;
+    /* current frame qp */
+    double       qp;
+    /* complexity for current frame (mad) */
+    s32          cpx_frm;
+    /* complexity for rc model update */
+    double       cpx_pow;
+    /* estimated bits (restore for update) */
+    double       est_bits;
+    /* real bits (restore for update) */
+    double       real_bits;
+    /* slice type    (restore for update) */
+    int          stype;
+    /* slice dpeth   (restore for update) */
+    int          sdepth;
+    int          avg_dqp;
+    /* use filler for write extra byte */
+    int          filler_byte;
+} XEVE_RCORE;
+
+/*****************************************************************************
+* rate control structure
+*****************************************************************************/
+typedef struct _XEVE_RC
+{
+    /* frame per second */
+    double       fps;
+    /* bit per second */
+    double       bitrate;
+    /* allocated bits per frame (bitrate/fps)*/
+    double       bpf;
+    /* maximum bit size for one frame encoding */
+    double       max_frm_bits;
+    /* vbv enabled flag */
+    int          vbv_enabled;
+    /* total vbv buffer size (bitrate * vbv_msec /1000) (constant) */
+    double       vbv_buf_size;
+    double       lambda[4];
+
+    /* sum of k_param (bits*qfactor/rc_avg_cpx) */
+    double       k_param;
+    /* accumulated target bitrate * window */
+    double       target_bits;
+    /* accumulated frame size for each slice type */
+    s64          frame_bits;
+    /* sum of qp to get I frame qfactor */
+    double       qp_sum;
+    /* count of qp to get I frame qfactor */
+    double       qp_cnt;
+    /* sum of complexity */
+    double       cpx_sum;
+    /* count of complexity */
+    double       cpx_cnt;
+    /* bpf decayed weight factor */
+    double       bpf_decayed;
+    /* Rate Control Bits Predictor structure */
+    XEVE_RCBE    bit_estimator[RC_NUM_SLICE_TYPE];
+    /* amount of vbv buffer fullness */
+    double       vbv_buf_fullness;
+    /* store slice type of last and previous of last picture I, P slice type
+    0 : last picture
+    1 : previous of last picture                                           */
+    int          prev_st[2];
+    /* store qf of last and previous of last picture forI, P slice type
+    0 : last picture
+    1 : previous of last picture                                           */
+    double       prev_qf[2][RC_NUM_SLICE_TYPE];
+    /* store poc of last and previous of last picture for I, P slice type
+    0 : last picture
+    1 : previous of last picture                                           */
+    int          prev_picnt[2][RC_NUM_SLICE_TYPE];
+
+    XEVE_RC_PARAM * param;
+} XEVE_RC;
 
 typedef struct _XEVE_SBAC
 {
@@ -514,24 +680,6 @@ typedef struct _XEVE_CU_DATA
 #endif
 } XEVE_CU_DATA;
 
-typedef struct _XEVE_BEF_DATA
-{
-    int                visit;
-    int                nosplit;
-    int                split;
-    int                ipm[2];
-    int                split_visit;
-    double             split_cost[MAX_SPLIT_NUM];
-    /* splits which are not tried in the first visit (each bit corresponds to one split mode)*/
-    u8                 remaining_split;
-    int                suco[3];
-    int                mvr_idx;
-    int                bi_idx;
-    s16                mmvd_idx;
-    int                affine_flag;
-    int                ats_intra_cu_idx_intra;
-    int                ats_intra_cu_idx_inter;
-} XEVE_BEF_DATA;
 /*****************************************************************************
  * CORE information used for encoding process.
  *
@@ -623,7 +771,6 @@ struct _XEVE_CORE
     XEVE_SBAC          s_temp_prev_comp_best;
     XEVE_SBAC          s_temp_prev_comp_run;
     XEVE_SBAC          s_curr_before_split[NUM_CU_LOG2][NUM_CU_LOG2];
-    XEVE_BEF_DATA      bef_data[NUM_CU_LOG2][NUM_CU_LOG2][MAX_CU_CNT_IN_LCU][MAX_BEF_DATA_NUM];
     double             cost_best;
     u32                inter_satd;
     s32                dist_cu;
@@ -757,7 +904,6 @@ struct _XEVE_CTX
     int                ref_pic_gap_length;
     /* maximum CU depth */
     u8                 max_cud;
-  //  XEVE_SBAC          sbac_enc;  //Chirag removed this
     /* address of inbufs */
     XEVE_IMGB        * inbuf[XEVE_MAX_INBUF_CNT];
     /* last coded intra picture's picture order count */
@@ -810,10 +956,14 @@ struct _XEVE_CTX
     double             lambda[3];
     double             sqrt_lambda[3];
     double             dist_chroma_weight[2];
+    /* rate control structure for one frame */
+    XEVE_RCORE         * rcore;
+    /* rate control for sequence */
+    XEVE_RC          * rc;
     /* temporary tile bitstream store buffer if needed */
     u8               * bs_tbuf[MAX_NUM_TILES_ROW * MAX_NUM_TILES_COL];
     /* bs_tbuf byte size for one tile */
-    int                bs_tbuf_size;   
+    int                bs_tbuf_size;
     THREAD_CONTROLLER * tc;
     POOL_THREAD        thread_pool[XEVE_MAX_TASK_CNT];
     int                parallel_rows;
@@ -827,11 +977,10 @@ struct _XEVE_CTX
     XEVE_PINTRA        pintra[XEVE_MAX_TASK_CNT];
     XEVE_PINTER        pinter[XEVE_MAX_TASK_CNT];
 
-
     int   (*fn_ready)(XEVE_CTX * ctx);
     void  (*fn_flush)(XEVE_CTX * ctx);
     int   (*fn_enc)(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-    int   (*fn_enc_header)(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
+    int   (*fn_enc_header)(XEVE_CTX * ctx);
     int   (*fn_enc_pic_prepare)(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
     int   (*fn_enc_pic)(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
     int   (*fn_enc_pic_finish)(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
@@ -840,7 +989,7 @@ struct _XEVE_CTX
     void  (*fn_picbuf_expand)(XEVE_CTX * ctx, XEVE_PIC * pic);
     int   (*fn_get_inbuf)(XEVE_CTX * ctx, XEVE_IMGB ** img);
     /* mode decision functions */
-    int   (*fn_mode_init_frame)(XEVE_CTX * ctx);
+    int   (*fn_mode_init_tile)(XEVE_CTX * ctx, int tile_idx);
     int   (*fn_mode_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
     int   (*fn_mode_analyze_frame)(XEVE_CTX * ctx);
     int   (*fn_mode_analyze_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
@@ -851,12 +1000,12 @@ struct _XEVE_CTX
     void  (*fn_mode_rdo_dbk_map_set)(XEVE_CTX * ctx, XEVE_CORE *core, int log2_cuw, int log2_cuh, int cbf_l, int scup);
     void  (*fn_mode_rdo_bit_cnt_intra_dir)(XEVE_CTX * ctx, XEVE_CORE * core, int ipm);
     /* intra prediction functions */
-    int   (*fn_pintra_init_frame)(XEVE_CTX * ctx);
+    int   (*fn_pintra_init_tile)(XEVE_CTX * ctx, int tile_idx);
     int   (*fn_pintra_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
     double(*fn_pintra_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
     int   (*fn_pintra_set_complexity)(XEVE_CTX * ctx, int complexity);
     /* inter prediction functions */
-    int   (*fn_pinter_init_frame)(XEVE_CTX * ctx);
+    int   (*fn_pinter_init_tile)(XEVE_CTX * ctx, int tile_idx);
     int   (*fn_pinter_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
     double(*fn_pinter_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
     int   (*fn_pinter_set_complexity)(XEVE_CTX * ctx, int complexity);
@@ -902,7 +1051,6 @@ void xeve_platform_deinit(XEVE_CTX * ctx);
 int  xeve_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  xeve_pic_finish(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_pic_ctu_parallel(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  xeve_deblock(XEVE_CTX * ctx, XEVE_PIC * pic, int tile_idx, int filter_across_boundary, XEVE_CORE * core);
 int  xeve_enc(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img);

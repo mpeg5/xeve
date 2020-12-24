@@ -28,8 +28,8 @@
    POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef __XEVE_H_324908432432894378294893208493284939437289432432__
-#define __XEVE_H_324908432432894378294893208493284939437289432432__
+#ifndef _XEVE_H_
+#define _XEVE_H_
 
 #define XEVE_MAX_TASK_CNT               8
 #define MAX_NUM_TILES_ROW               22
@@ -39,7 +39,7 @@
 #define MAX_QP_TABLE_SIZE_EXT           94
 
 /*****************************************************************************
- * generic return and error code
+ * return values and error code
  *****************************************************************************/
 /* no more frames, but it is OK */
 #define XEVE_OK_NO_MORE_FRM              (205)
@@ -126,6 +126,8 @@
 #define XEVE_CFG_SET_DEBLOCK_A_OFFSET   (212)
 #define XEVE_CFG_SET_DEBLOCK_B_OFFSET   (213)
 #define XEVE_CFG_SET_USE_PIC_SIGNATURE  (301)
+#define XEVE_CFG_GET_COMPLEXITY         (500)
+#define XEVE_CFG_GET_SPEED              (501)
 #define XEVE_CFG_GET_QP_MIN             (600)
 #define XEVE_CFG_GET_QP_MAX             (601)
 #define XEVE_CFG_GET_QP                 (602)
@@ -162,6 +164,18 @@
 #define XEVE_ST_B                        (0)
 #define XEVE_ST_P                        (1)
 #define XEVE_ST_I                        (2)
+
+/*****************************************************************************
+ * Encoder optimization level control
+ *****************************************************************************/
+enum ENC_PRESET
+{
+    FAST,
+    MEDIUM,
+    SLOW,
+    REFERENCE,
+};
+#define ENC_PRESET_NUM 4
 
 /*****************************************************************************
  * type and macro for media time
@@ -335,6 +349,11 @@ typedef struct _XEVE_CDSC
     int            qp;
     int            cb_qp_offset;
     int            cr_qp_offset;
+    int            rc_type;
+    int            bps;
+    int            vbv_msec;
+    int            use_filler_flag;
+    int            num_pre_analysis_frames;
     XEVE_CHROMA_TABLE chroma_qp_table_struct;
     /* color space of input image */
     int            cs;
@@ -365,6 +384,7 @@ typedef struct _XEVE_CDSC
     int            rdo_dbk_switch;
     int            add_qp_frame;
     int            bitstream_buf_size;
+    int            preset;
 
     XEVE_CDSC_EXT * ext;
 } XEVE_CDSC;
@@ -477,10 +497,7 @@ XEVE xeve_create(XEVE_CDSC * cdsc, int * err);
 void xeve_delete(XEVE id);
 int  xeve_push(XEVE id, XEVE_IMGB * imgb);
 int  xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_encode_sps(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_encode_pps(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_encode_aps(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat, int aps_type_id);
 int  xeve_config(XEVE id, int cfg, void * buf, int * size);
 
-#endif /* __XEVE_H_324908432432894378294893208493284939437289432432__ */
+#endif /* _XEVE_H_ */
 

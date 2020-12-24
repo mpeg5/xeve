@@ -31,12 +31,12 @@
 #include "xeve_type.h"
 #include <math.h>
 
-int xeve_pintra_init_frame(XEVE_CTX * ctx)
+int xeve_pintra_init_tile(XEVE_CTX * ctx, int tile_idx)
 {
     XEVE_PINTRA * pi;
-    XEVE_PIC     * pic;
+    XEVE_PIC    * pic;
 
-    pi     = &ctx->pintra[0];
+    pi = &ctx->pintra[tile_idx];
 
     pic          = pi->pic_o = PIC_ORIG(ctx);
     pi->o[Y_C]   = pic->y;
@@ -102,7 +102,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
 
         cost += xeve_ssd_16b(log2_cuw, log2_cuh, pi->rec[Y_C], org_luma, cuw, s_org, ctx->sps.bit_depth_luma_minus8+8);
 
-        if(ctx->cdsc.rdo_dbk_switch)
+        if(ctx->param.rdo_dbk_switch)
         {
             calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->rec, cuw, x, y, core->avail_lr, 1, core->nnz[Y_C] != 0, NULL, NULL, 0, core);
             cost += core->delta_dist[Y_C];
@@ -138,7 +138,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
         cost += ctx->dist_chroma_weight[0] * xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->rec[U_C], org_cb, cuw >> 1, s_org_c, ctx->sps.bit_depth_chroma_minus8+8);
         cost += ctx->dist_chroma_weight[1] * xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->rec[V_C], org_cr, cuw >> 1, s_org_c, ctx->sps.bit_depth_chroma_minus8+8);
 
-        if(ctx->cdsc.rdo_dbk_switch)
+        if(ctx->param.rdo_dbk_switch)
         {
             calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->rec, cuw, x, y, core->avail_lr, 1, 
                                             core->nnz[Y_C] != 0, NULL, NULL, 0, core);
@@ -361,9 +361,6 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
         xeve_mcpy(pi->nnz_sub_best[j], core->nnz_sub[j], sizeof(int) * MAX_SUB_TB_NUM);
     }
 
-    core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ipm[0] = best_ipd;
-    core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ipm[1] = sec_best_ipd;
-
     for (j = Y_C; j < N_C; j++)
     {
         int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : 2);
@@ -419,7 +416,7 @@ int xeve_pintra_create(XEVE_CTX * ctx, int complexity)
 {
     /* set function addresses */
     ctx->fn_pintra_set_complexity = xeve_pintra_set_complexity;
-    ctx->fn_pintra_init_frame = xeve_pintra_init_frame;
+    ctx->fn_pintra_init_tile = xeve_pintra_init_tile;
     ctx->fn_pintra_init_lcu = xeve_pintra_analyze_lcu;
     ctx->fn_pintra_analyze_cu = pintra_analyze_cu;
 

@@ -31,6 +31,6 @@
 #ifndef _XEVE_RECON_H_
 #define _XEVE_RECON_H_
 
-void xeve_recon(s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
+void xeve_recon_blk(s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
 
 #endif /* _XEVE_RECON_H_ */

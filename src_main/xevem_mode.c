@@ -1128,11 +1128,18 @@ static double mode_coding_unit_main(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y
     return cost_best;
 }
 
+void xeve_init_bef_data(XEVE_CORE* core, XEVE_CTX* ctx)
+{
+    XEVEM_CORE * mcore = (XEVEM_CORE * )core;
+    xeve_mset(&mcore->bef_data, 0, sizeof(XEVE_BEF_DATA) * NUM_CU_LOG2 * NUM_CU_LOG2 * MAX_CU_CNT_IN_LCU * MAX_BEF_DATA_NUM);
+}
+
 static void check_run_split(XEVE_CORE *core, int log2_cuw, int log2_cuh, int cup, int next_split, int do_curr, int do_split, u16 bef_data_idx, int* split_allow, int boundary, TREE_CONS tree_cons)
 {
     int i;
     double min_cost = MAX_COST;
     int run_list[MAX_SPLIT_NUM]; //a smaller set of allowed split modes based on a save & load technique
+    XEVEM_CORE * mcore = (XEVEM_CORE *)core;
 
     if(!next_split)
     {
@@ -1145,18 +1152,18 @@ static void check_run_split(XEVE_CORE *core, int log2_cuw, int log2_cuh, int cup
 
         return;
     }
-    if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit)
+    if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit)
     {
-        if((core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].nosplit < 1
-            && core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split >= 1))
+        if((mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].nosplit < 1
+            && mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split >= 1))
         {
             run_list[0] = 0;
 
             for(i = 1; i < MAX_SPLIT_NUM; i++)
             {
-                if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i] < min_cost && split_allow[i])
+                if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i] < min_cost && split_allow[i])
                 {
-                    min_cost = core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i];
+                    min_cost = mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i];
                 }
             }
 
@@ -1165,7 +1172,7 @@ static void check_run_split(XEVE_CORE *core, int log2_cuw, int log2_cuh, int cup
                 run_list[0] = 1;
                 for(i = 1; i < MAX_SPLIT_NUM; i++)
                 {
-                    if((core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> i) & 0x01)
+                    if((mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> i) & 0x01)
                     {
                         run_list[i] = 1;
                     }
@@ -1180,16 +1187,16 @@ static void check_run_split(XEVE_CORE *core, int log2_cuw, int log2_cuh, int cup
                 for(i = 1; i < MAX_SPLIT_NUM; i++)
                 {
                     double th = 1.01;
-                    if (core->ctx->cdsc.rdo_dbk_switch)
+                    if (core->ctx->param.rdo_dbk_switch)
                     {
                         th = (min_cost < 0) ? 0.99 : 1.02;
                     }
 
-                    if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i] <= th * min_cost)
+                    if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i] <= th * min_cost)
                     {
                         run_list[i] = 1;
                     }
-                    else if((core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> i) & 0x01)
+                    else if((mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> i) & 0x01)
                     {
                         run_list[i] = 1;
                     }
@@ -1200,13 +1207,13 @@ static void check_run_split(XEVE_CORE *core, int log2_cuw, int log2_cuh, int cup
                 }
             }
         }
-        else if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].nosplit == 0
-                && core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split == 0)
+        else if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].nosplit == 0
+                && mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split == 0)
         {
             run_list[0] = 1;
             for(i = 1; i < MAX_SPLIT_NUM; i++)
             {
-                if((core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> i) & 0x01)
+                if((mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> i) & 0x01)
                 {
                     run_list[i] = 1;
             }
@@ -1231,7 +1238,7 @@ static void check_run_split(XEVE_CORE *core, int log2_cuw, int log2_cuh, int cup
         for(i = 0; i < MAX_SPLIT_NUM; i++)
         {
             run_list[i] = 1;
-            core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i] = MAX_COST;
+            mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i] = MAX_COST;
         }
 
         run_list[0] &= do_curr;
@@ -1442,7 +1449,17 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
     int dist_cu_best_dqp = 0;
     int ibc_flag_dqp = 0;
     core->tree_cons = tree_cons;
-
+    int check_max_cu, check_min_cu;
+    if (ctx->slice_type == SLICE_I)
+    {
+        check_max_cu = ctx->param.preset->max_cu_intra;
+        check_min_cu = ctx->param.preset->min_cu_intra;
+    }
+    else
+    {
+        check_max_cu = ctx->param.preset->max_cu_inter;
+        check_min_cu = ctx->param.preset->min_cu_inter;
+    }
     if ( ctx->sps.sps_btt_flag && log2_cuw == 2 && log2_cuh == 2 &&
         (xeve_check_luma(core->tree_cons) || xeve_check_all(core->tree_cons)) && ctx->sps.tool_admvp)
     {
@@ -1517,7 +1534,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
         ctx->sh.qp_prev_mode = core->dqp_data[log2_cuw - 2][log2_cuh - 2].prev_qp;
         best_dqp = ctx->sh.qp_prev_mode;
         split_mode = NO_SPLIT;
-        if(split_allow[split_mode])
+        if(split_allow[split_mode] && (cuw <= check_max_cu && cuh <= check_max_cu))
         {
             if ((cuw > ctx->min_cuwh || cuh > ctx->min_cuwh) && xeve_check_luma(core->tree_cons))
             {
@@ -1618,9 +1635,9 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
             cost_temp = MAX_COST;
         }
 
-        if(!core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit)
+        if(!mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit)
         {
-            core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[split_mode] = cost_temp;
+            mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[split_mode] = cost_temp;
             best_curr_cost = cost_temp;
         }
 #if ET_BY_RDC_CHILD_SPLIT
@@ -1628,7 +1645,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
 #endif
         if(split_allow[split_mode] != 0)
         {
-            core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].visit = 1;
+            mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].visit = 1;
         }
     }
 
@@ -1659,7 +1676,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
         }
     }
 
-    if((cuw > MIN_CU_SIZE || cuh > MIN_CU_SIZE) && next_split)
+    if((cuw > MIN_CU_SIZE || cuh > MIN_CU_SIZE) && next_split && (cuw > check_min_cu || cuh > check_min_cu))
     {
         SPLIT_MODE split_mode_order[MAX_SPLIT_NUM];
         int split_mode_num = 0;
@@ -1685,7 +1702,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                 XEVE_SPLIT_STRUCT split_struct;
                 double cost_suco[2] = {MAX_COST, MAX_COST};
                 int prev_suco_num = is_mode_TT ? 1 : (is_mode_BT ? 0 : 2);
-                int prev_suco = core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[prev_suco_num];
+                int prev_suco = mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[prev_suco_num];
                 
                 if(lossy_es[split_mode] && lossy_es[split_mode](&(core->cu_data_best[log2_cuw - 2][log2_cuh - 2])
                     , eval_parent_node_first, cost_best, log2_cuw, log2_cuh, cuw, cuh, cud, nev_max_depth))
@@ -1700,9 +1717,9 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
 
                 if(is_mode_TT)
                 {
-                    if(prev_suco == 0 && core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0] > 0)
+                    if(prev_suco == 0 && mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0] > 0)
                     {
-                        prev_suco = core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0];
+                        prev_suco = mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0];
                     }
                 }
                 else
@@ -1710,9 +1727,9 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                     if(!is_mode_BT)
                     {
                         // QT case
-                        if(prev_suco == 0 && (core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0] > 0 || core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[1] > 0))
+                        if(prev_suco == 0 && (mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0] > 0 || mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[1] > 0))
                         {
-                            prev_suco = core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0] > 0 ? core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0] : core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[1];
+                            prev_suco = mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0] > 0 ? mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[0] : mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[1];
                         }
                     }
                 }
@@ -1979,25 +1996,25 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                 split_cost[split_mode] = cost_temp;
                 memcpy(split_mode_child_rdo[split_mode], split_mode_child, sizeof(int) * 4);
 #endif
-                if(!core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit)
+                if(!mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit)
                 {
                     cost_temp = cost_suco[0] < cost_suco[1] ? cost_suco[0] : cost_suco[1];
-                    core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[split_mode] = cost_temp;
+                    mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[split_mode] = cost_temp;
                 }
-                else if((core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> split_mode) & 0x01)
+                else if((mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> split_mode) & 0x01)
                 {
                     cost_temp = cost_suco[0] < cost_suco[1] ? cost_suco[0] : cost_suco[1];
-                    core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[split_mode] = cost_temp;
-                    core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split &= ~(1 << split_mode);
+                    mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[split_mode] = cost_temp;
+                    mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split &= ~(1 << split_mode);
                 }
                 
-                if(num_suco == 2 && core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[prev_suco_num] == 0 && allow_suco)
+                if(num_suco == 2 && mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[prev_suco_num] == 0 && allow_suco)
                 {
-                    core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[prev_suco_num] = cost_suco[0] < cost_suco[1] ? 1 : 2;
+                    mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[prev_suco_num] = cost_suco[0] < cost_suco[1] ? 1 : 2;
                 }
             }
 
-            if(!core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit && num_split_tried > 0)
+            if(!mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit && num_split_tried > 0)
             {
                 if((best_curr_cost * (1.10)) < best_split_cost)
                 {
@@ -2048,26 +2065,26 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
     SBAC_LOAD(core->s_next_best[log2_cuw - 2][log2_cuh - 2], s_temp_depth);
     DQP_LOAD(core->dqp_next_best[log2_cuw - 2][log2_cuh - 2], dqp_temp_depth);
     
-    if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit != 1)
+    if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit != 1)
     {
-        core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split = remaining_split;
+        mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split = remaining_split;
     }
 
     if(num_split_to_try > 0)
     {
         if(best_split_mode == NO_SPLIT)
         {
-            if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split == 0)
+            if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split == 0)
             {
-                core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].nosplit += 1;
+                mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].nosplit += 1;
             }
         }
         else
         {
-            core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split += 1;
+            mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split += 1;
         }
 
-        core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit = 1;
+        mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit = 1;
     }
 
     xeve_assert(cost_best != MAX_COST);
@@ -2093,20 +2110,20 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
     return (cost_best > MAX_COST) ? MAX_COST : cost_best;
 }
 
-static int mode_init_frame_main(XEVE_CTX *ctx)
+static int mode_init_tile_main(XEVE_CTX *ctx, int tile_idx)
 {
     XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
     int ret;
 
-    ret = mode_init_frame(ctx);
+    ret = mode_init_tile(ctx, tile_idx);
     xeve_assert_rv(ret == XEVE_OK, ret);
 
     if (ctx->param.use_ibc_flag)
     {
         /* initialize pibc */
-        if (mctx->fn_pibc_init_frame)
+        if (mctx->fn_pibc_init_tile)
         {
-            ret = mctx->fn_pibc_init_frame(ctx);
+            ret = mctx->fn_pibc_init_tile(ctx, tile_idx);
             xeve_assert_rv(ret == XEVE_OK, ret);
         }
         if (ctx->param.ibc_hash_search_flag)
@@ -2152,6 +2169,24 @@ static int mode_init_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
 
         copy_history_buffer(&mcore->tmp_mot_lut[ctx->log2_max_cuwh - 2][ctx->log2_max_cuwh - 2], &mcore->history_buffer);
         copy_history_buffer(&mcore->best_mot_lut[ctx->log2_max_cuwh - 2][ctx->log2_max_cuwh - 2], &mcore->history_buffer);
+    }
+
+    if (ctx->sps.tool_mmvd)
+    {
+        for (int i = 0; i < PRED_MAX_REF_FRAMES; i++)
+        {
+            mcore->mmvd_opt.ref_ctu[i] = 0;
+            mcore->mmvd_opt.ref_buf_idx[i] = 0;
+        }
+        for (int i = 0; i < PRED_MAX_I_PERIOD; i++)
+        {
+            mcore->mmvd_opt.poc_to_idx[i] = -1;
+        }
+        mcore->mmvd_opt.enabled = 1;
+        if (ctx->param.i_period <= 0 || ctx->param.i_period >= PRED_MAX_REF_FRAMES)
+        {
+            mcore->mmvd_opt.enabled = 0;
+        }
     }
 
     return XEVE_OK;
@@ -2252,7 +2287,7 @@ static int mode_analyze_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
 
     /* decide mode */
     mode_coding_tree_main(ctx, core, core->x_pel, core->y_pel, 0, ctx->log2_max_cuwh, ctx->log2_max_cuwh, 0, mi, 1
-                   , 0, ctx->tile[core->tile_idx].qp, xeve_get_default_tree_cons() );
+                        , 0, ctx->tile[core->tile_idx].qp, xeve_get_default_tree_cons() );
 
 #if TRACE_ENC_CU_DATA_CHECK
     h = w = 1 << (ctx->log2_max_cuwh - MIN_CU_LOG2);
@@ -2302,17 +2337,18 @@ static int mode_analyze_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
     map_scu = ctx->map_scu + ((u32)core->y_scu * ctx->w_scu) + core->x_scu;
     w = XEVE_MIN(1 << (ctx->log2_max_cuwh - MIN_CU_LOG2), ctx->w_scu - core->x_scu);
     h = XEVE_MIN(1 << (ctx->log2_max_cuwh - MIN_CU_LOG2), ctx->h_scu - core->y_scu);
-
-    int i, j;
-    for(i = 0; i < h; i++)
+    if (ctx->param.preset->cabac_refine)
     {
-        for(j = 0; j < w; j++)
+        int i, j;
+        for (i = 0; i < h; i++)
         {
-            MCU_CLR_COD(map_scu[j]);
+            for (j = 0; j < w; j++)
+            {
+                MCU_CLR_COD(map_scu[j]);
+            }
+            map_scu += ctx->w_scu;
         }
-        map_scu += ctx->w_scu;
     }
-
     return XEVE_OK;
 }
 
@@ -2448,20 +2484,59 @@ void xeve_mode_rdo_dbk_map_set(XEVE_CTX * ctx, XEVE_CORE *core, int log2_cuw, in
 
 void xeve_split_tbl_init(XEVE_CTX *ctx)
 {
-    xeve_tbl_split[BLOCK_11][IDX_MAX] = ctx->cdsc.ext->framework_cb_max;
-    xeve_tbl_split[BLOCK_11][IDX_MIN] = ctx->cdsc.ext->framework_cb_min;
-    xeve_tbl_split[BLOCK_12][IDX_MAX] = ctx->cdsc.ext->framework_cb_max;
+    if (ctx->cdsc.ext->framework_cb_max)
+    {
+        xeve_tbl_split[BLOCK_11][IDX_MAX] = ctx->cdsc.ext->framework_cb_max;
+    }
+    else
+    {
+        xeve_tbl_split[BLOCK_11][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cb_max;
+
+    }
+    if (ctx->cdsc.ext->framework_cb_min)
+    {
+        xeve_tbl_split[BLOCK_11][IDX_MIN] = ctx->cdsc.ext->framework_cb_min;
+    }
+    else
+    {
+        xeve_tbl_split[BLOCK_11][IDX_MIN] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cb_min;
+    }
+    
+    xeve_tbl_split[BLOCK_12][IDX_MAX] = xeve_tbl_split[BLOCK_11][IDX_MAX];
     xeve_tbl_split[BLOCK_12][IDX_MIN] = xeve_tbl_split[BLOCK_11][IDX_MIN] + 1;
-    xeve_tbl_split[BLOCK_14][IDX_MAX] = ctx->cdsc.ext->framework_cu14_max;
+    if (ctx->cdsc.ext->framework_cu14_max)
+    {
+        xeve_tbl_split[BLOCK_14][IDX_MAX] = ctx->cdsc.ext->framework_cu14_max;
+    }
+    else
+    {
+        xeve_tbl_split[BLOCK_14][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cu14_max;
+    }
     xeve_tbl_split[BLOCK_14][IDX_MIN] = xeve_tbl_split[BLOCK_12][IDX_MIN] + 1;
-    xeve_tbl_split[BLOCK_TT][IDX_MAX] = ctx->cdsc.ext->framework_tris_max;
-    xeve_tbl_split[BLOCK_TT][IDX_MIN] = ctx->cdsc.ext->framework_tris_min;
+
+    if (ctx->cdsc.ext->framework_tris_max)
+    {
+        xeve_tbl_split[BLOCK_TT][IDX_MAX] = ctx->cdsc.ext->framework_tris_max;
+    }
+    else
+    {
+        xeve_tbl_split[BLOCK_TT][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_tris_max;
+    }
+
+    if (ctx->cdsc.ext->framework_tris_max)
+    {
+        xeve_tbl_split[BLOCK_TT][IDX_MIN] = ctx->cdsc.ext->framework_tris_min;
+    }
+    else
+    {
+        xeve_tbl_split[BLOCK_TT][IDX_MIN] = ((XEVEM_PRESET*)ctx->param.preset)->btt_tris_min;
+    }
 }
 
 void xeve_mode_create_main(XEVE_CTX *ctx)
 {
     /* set function addresses */
-    ctx->fn_mode_init_frame = mode_init_frame_main;
+    ctx->fn_mode_init_tile = mode_init_tile_main;
     ctx->fn_mode_init_lcu = mode_init_lcu_main;
     ctx->fn_mode_copy_to_cu_data = copy_to_cu_data_main;
     ctx->fn_mode_reset_intra = mode_reset_intra_main;

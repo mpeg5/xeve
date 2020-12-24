@@ -1,3 +1,4 @@
+
 /* Copyright (c) 2020, Samsung Electronics Co., Ltd.
    All Rights Reserved. */
 /*
@@ -108,7 +109,7 @@ static int get_conf(XEVE_CDSC * cdsc)
 
     if (op_out_bit_depth == 0)
     {
-        op_out_bit_depth = op_inp_bit_depth;
+        op_out_bit_depth = op_codec_bit_depth;
     }
     cdsc->out_bit_depth = op_out_bit_depth;
 
@@ -125,12 +126,38 @@ static int get_conf(XEVE_CDSC * cdsc)
     cdsc->rdo_dbk_switch = op_rdo_dbk_switch;
     cdsc->inter_slice_type = op_inter_slice_type == 0 ? 0/*SLICE_B*/ : 1/*SLICE_P*/;
     cdsc->add_qp_frame = op_add_qp_frames;
+    cdsc->rc_type = op_rc_type; //rc_off =0 , rc_cbr = 1
+    cdsc->bps = op_bps;
+    cdsc->vbv_msec = op_vbv_msec;
+    cdsc->use_filler_flag = 0;
+    cdsc->num_pre_analysis_frames = 0;
     cdsc->picture_cropping_flag = op_picture_cropping_flag;
     cdsc->picture_crop_left_offset = op_picture_crop_left_offset;
     cdsc->picture_crop_right_offset = op_picture_crop_right_offset;
     cdsc->picture_crop_top_offset = op_picture_crop_top_offset;
     cdsc->picture_crop_bottom_offset = op_picture_crop_bottom_offset;
     cdsc->bitstream_buf_size = MAX_BS_BUF;
+
+    if (strcmp(op_preset, "fast") == 0)
+    {
+        cdsc->preset = FAST;
+    }
+    else if (strcmp(op_preset, "medium") == 0)
+    {
+        cdsc->preset = MEDIUM;
+    }
+    else if (strcmp(op_preset, "slow") == 0)
+    {
+        cdsc->preset = SLOW;
+    }
+    else if (strcmp(op_preset, "reference") == 0)
+    {
+        cdsc->preset = REFERENCE;
+    }
+    else
+    {
+        return XEVE_ERR_INVALID_ARGUMENT;
+    }
 
     XEVE_CDSC_EXT * cdsc_ext = (XEVE_CDSC_EXT*)malloc(sizeof(XEVE_CDSC_EXT));
     memset(cdsc_ext, 0, sizeof(XEVE_CDSC_EXT));
@@ -396,7 +423,7 @@ static int get_conf(XEVE_CDSC * cdsc)
         }
     }
 
-    return 0;
+    return XEVE_OK;
 }
 
 static void print_enc_conf(XEVE_CDSC * cdsc)
@@ -471,28 +498,33 @@ int check_conf(XEVE_CDSC* cdsc)
 
     if (cdsc->ext->btt == 1)
     {
-        if (cdsc->ext->framework_cb_max < 5) { logv0("Maximun Coding Block size cannot be smaller than 5\n"); success = 0; }
+        if (cdsc->ext->framework_cb_max && cdsc->ext->framework_cb_max < 5) { logv0("Maximun Coding Block size cannot be smaller than 5\n"); success = 0; }
         if (cdsc->ext->framework_cb_max > 7) { logv0("Maximun Coding Block size cannot be greater than 7\n"); success = 0; }
-        if (cdsc->ext->framework_cb_min < 2) { logv0("Minimum Coding Block size cannot be smaller than 2\n"); success = 0; }
-        if (cdsc->ext->framework_cb_min > cdsc->ext->framework_cb_max) { logv0("Minimum Coding Block size cannot be greater than Maximum coding Block size\n"); success = 0; }
+        if (cdsc->ext->framework_cb_min && cdsc->ext->framework_cb_min < 2) { logv0("Minimum Coding Block size cannot be smaller than 2\n"); success = 0; }
+        if ((cdsc->ext->framework_cb_max || cdsc->ext->framework_cb_min) &&
+            cdsc->ext->framework_cb_min > cdsc->ext->framework_cb_max) { logv0("Minimum Coding Block size cannot be greater than Maximum coding Block size\n"); success = 0; }
         if (cdsc->ext->framework_cu14_max > 6) { logv0("Maximun 1:4 Coding Block size cannot be greater than 6\n"); success = 0; }
-        if (cdsc->ext->framework_cu14_max > cdsc->ext->framework_cb_max) { logv0("Maximun 1:4 Coding Block size cannot be greater than Maximum coding Block size\n"); success = 0; }
+        if ((cdsc->ext->framework_cb_max || cdsc->ext->framework_cu14_max) &&
+            cdsc->ext->framework_cu14_max > cdsc->ext->framework_cb_max) { logv0("Maximun 1:4 Coding Block size cannot be greater than Maximum coding Block size\n"); success = 0; }
         if (cdsc->ext->framework_tris_max > 6) { logv0("Maximun Tri-split Block size be greater than 6\n"); success = 0; }
-        if (cdsc->ext->framework_tris_max > cdsc->ext->framework_cb_max) { logv0("Maximun Tri-split Block size cannot be greater than Maximum coding Block size\n"); success = 0; }
-        if (cdsc->ext->framework_tris_min < cdsc->ext->framework_cb_min + 2) { logv0("Maximun Tri-split Block size cannot be smaller than Minimum Coding Block size plus two\n"); success = 0; }
-        min_block_size = 1 << cdsc->ext->framework_cb_min;
+        if ((cdsc->ext->framework_tris_max || cdsc->ext->framework_cb_max) &&
+            cdsc->ext->framework_tris_max > cdsc->ext->framework_cb_max) { logv0("Maximun Tri-split Block size cannot be greater than Maximum coding Block size\n"); success = 0; }
+        if ((cdsc->ext->framework_tris_min || cdsc->ext->framework_cb_min) &&
+            cdsc->ext->framework_tris_min < cdsc->ext->framework_cb_min + 2) { logv0("Maximun Tri-split Block size cannot be smaller than Minimum Coding Block size plus two\n"); success = 0; }
+        if(cdsc->ext->framework_cb_min) min_block_size = 1 << cdsc->ext->framework_cb_min;
+        else min_block_size = 8;
     }
 
     if (cdsc->ext->suco == 1)
     {
         if (cdsc->ext->framework_suco_max > 6) { logv0("Maximun SUCO size cannot be greater than 6\n"); success = 0; }
-        if (cdsc->ext->framework_suco_max > cdsc->ext->framework_cb_max) { logv0("Maximun SUCO size cannot be greater than Maximum coding Block size\n"); success = 0; }
+        if (cdsc->ext->framework_cb_max && cdsc->ext->framework_suco_max > cdsc->ext->framework_cb_max) { logv0("Maximun SUCO size cannot be greater than Maximum coding Block size\n"); success = 0; }
         if (cdsc->ext->framework_suco_min < 4) { logv0("Minimun SUCO size cannot be smaller than 4\n"); success = 0; }
-        if (cdsc->ext->framework_suco_min < cdsc->ext->framework_cb_min) { logv0("Minimun SUCO size cannot be smaller than Minimum coding Block size\n"); success = 0; }
+        if (cdsc->ext->framework_cb_min && cdsc->ext->framework_suco_min < cdsc->ext->framework_cb_min) { logv0("Minimun SUCO size cannot be smaller than Minimum coding Block size\n"); success = 0; }
         if (cdsc->ext->framework_suco_min > cdsc->ext->framework_suco_max) { logv0("Minimum SUCO size cannot be greater than Maximum SUCO size\n"); success = 0; }
     }
 
-    int pic_m = (8 > min_block_size) ? 8 : min_block_size;
+    int pic_m = (8 > min_block_size) ? min_block_size : 8;
     if ((cdsc->w & (pic_m - 1)) != 0) { logv0("Current encoder does not support picture width, not multiple of max(8, minimum CU size)\n"); success = 0; }
     if ((cdsc->h & (pic_m - 1)) != 0) { logv0("Current encoder does not support picture height, not multiple of max(8, minimum CU size)\n"); success = 0; }
 
@@ -576,6 +608,11 @@ static void print_config(XEVE id)
 
     xeve_config(id, XEVE_CFG_GET_HIERARCHICAL_GOP, (void *)(&v), &s);
     logv2("\thierarchical GOP         = %s\n", v? "enabled": "disabled");
+
+    if(op_flag[OP_RC_TYPE])
+    {
+    logv2("\tBit_Rate                 = %d\n", op_bps);
+    }
 }
 
 static int write_rec(IMGB_LIST *list, XEVE_MTIME ts)
@@ -734,11 +771,8 @@ int main(int argc, const char **argv)
 
     /* read configurations and set values for create descriptor */
     int val = get_conf(&cdsc);
-    if (val)
+    if (val != XEVE_OK)
     {
-        if(val == -1) {
-            logv0("Number of tiles should be equal or more than number of slices\n");
-        }
         print_usage();
         return -1;
     }
@@ -781,64 +815,8 @@ int main(int argc, const char **argv)
     print_stat_init();
 
     bitrate = 0;
-
     bitb.addr = bs_buf;
     bitb.bsize = MAX_BS_BUF;
-
-    ret = xeve_encode_sps(id, &bitb, &stat);
-
-    if(XEVE_FAILED(ret))
-    {
-        logv0("cannot encode SPS\n");
-        return -1;
-    }
-
-    if (op_flag[OP_FLAG_FNAME_OUT])
-    {
-        if (write_data(op_fname_out, bs_buf, stat.write))
-        {
-            logv0("Cannot write header information (SPS)\n");
-            return -1;
-        }
-    }
-    bitrate += stat.write;
-
-    ret = xeve_encode_pps(id, &bitb, &stat);
-    if (XEVE_FAILED(ret))
-    {
-        logv0("cannot encode PPS\n");
-        return -1;
-    }
-
-    if (op_flag[OP_FLAG_FNAME_OUT])
-    {
-        if (write_data(op_fname_out, bs_buf, stat.write))
-        {
-            logv0("Cannot write header information (SPS)\n");
-            return -1;
-        }
-    }
-    bitrate += stat.write;
-
-    if (cdsc.ext->tool_dra)
-    {
-        ret = xeve_encode_aps(id, &bitb, &stat, 1);
-        if (XEVE_FAILED(ret))
-        {
-            logv0("cannot encode APS\n");
-            return -1;
-        }
-        if (op_flag[OP_FLAG_FNAME_OUT])
-        {
-            if (write_data(op_fname_out, bs_buf, stat.write))
-            {
-                logv0("Cannot write header information (SPS)\n");
-                return -1;
-            }
-        }
-        bitrate += stat.write;
-    }
-
 
     if(op_flag[OP_FLAG_SKIP_FRAMES] && op_skip_frames > 0)
     {
@@ -983,9 +961,9 @@ int main(int argc, const char **argv)
             }
             else if (ret == XEVE_OK)
             {
-                /* release recon image */
-                imgb_list_make_unused(ilist_rec, pic_ocnt);
-                pic_ocnt++;
+            /* release recon image */
+            imgb_list_make_unused(ilist_rec, pic_ocnt);
+            pic_ocnt++;
             }
             bitrate += (stat.write - stat.sei_size);
 
@@ -1042,9 +1020,9 @@ int main(int argc, const char **argv)
         }
         else if (ret == XEVE_OK)
         {
-            /* release recon image */
-            imgb_list_make_unused(ilist_rec, pic_ocnt);
-            pic_ocnt++;
+        /* release recon image */
+        imgb_list_make_unused(ilist_rec, pic_ocnt);
+        pic_ocnt++;
         }
     }
     if(pic_icnt != pic_ocnt)

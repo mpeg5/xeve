@@ -291,6 +291,121 @@ void xeve_poc_derivation(XEVE_SPS sps, int tid, XEVE_POC *poc)
     poc->poc_val = poc->prev_poc_val + poc_offset;
     poc->prev_doc_offset = doc_offset;
 }
+XEVE_PIC * xeve_alloc_spic_l(int w, int h, int pad_l, int pad_c, int * err, u8 bit_depth)
+{
+    XEVE_PIC *pic = NULL;
+    XEVE_IMGB *imgb = NULL;
+    int ret, opt, align[3], pad[3];
+    int w_scu, h_scu, f_scu, size;
+
+    //divide pic in half
+    w >>= 1;
+    h >>= 1;
+    /* allocate PIC structure */
+    pic = xeve_malloc(sizeof(XEVE_PIC));
+    xeve_assert_gv(pic != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+    xeve_mset(pic, 0, sizeof(XEVE_PIC));
+
+    opt = XEVE_IMGB_OPT_NONE;
+
+    /* set align value*/
+    align[0] = MIN_CU_SIZE >> 1;
+    align[1] = 1;
+    align[2] = 1;
+    /* set padding value*/
+    pad[0] = pad_l;
+    pad[1] = 0;
+    pad[2] = 0;
+    imgb = xeve_imgb_create(w, h, XEVE_CS_YCBCR420_10LE, opt, pad, align);
+    xeve_assert_gv(imgb != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+    /* set XEVE_PIC */
+    pic->buf_y = imgb->baddr[0];
+    pic->buf_u = NULL;
+    pic->buf_v = NULL;
+    pic->y = imgb->a[0];
+    pic->u = NULL;
+    pic->v = NULL;
+
+    pic->w_l = imgb->w[0];
+    pic->h_l = imgb->h[0];
+    pic->w_c = 0;
+    pic->h_c = 0;
+
+    pic->s_l = STRIDE_IMGB2PIC(imgb->s[0]);
+    pic->s_c = 0;
+
+    pic->pad_l = pad_l;
+    pic->pad_c = 0;
+
+    pic->imgb = imgb;
+
+    /* allocate maps */
+    w_scu = (pic->w_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
+    h_scu = (pic->h_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
+    f_scu = w_scu * h_scu;
+
+    size = sizeof(s8) * f_scu * REFP_NUM;
+    pic->map_refi = xeve_malloc_fast(size);
+    xeve_assert_gv(pic->map_refi, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+    xeve_mset_x64a(pic->map_refi, -1, size);
+
+    size = sizeof(s16) * f_scu * REFP_NUM * MV_D;
+    pic->map_mv = xeve_malloc_fast(size);
+    xeve_assert_gv(pic->map_mv, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+    xeve_mset_x64a(pic->map_mv, 0, size);
+
+    size = sizeof(s16) * f_scu * REFP_NUM * MV_D;
+    pic->map_unrefined_mv = xeve_malloc_fast(size);
+    xeve_assert_gv(pic->map_unrefined_mv, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+    xeve_mset_x64a(pic->map_unrefined_mv, 0, size);
+
+    if (err)
+    {
+        *err = XEVE_OK;
+    }
+    return pic;
+
+ERR:
+    if (pic)
+    {
+        xeve_mfree(pic->map_mv);
+        xeve_mfree(pic->map_unrefined_mv);
+        xeve_mfree(pic->map_refi);
+        xeve_mfree(pic);
+    }
+    if (err) *err = ret;
+    return NULL;
+}
+
+void xeve_picbuf_rc_free(XEVE_PIC *pic)
+{
+    XEVE_IMGB *imgb;
+
+    if (pic)
+    {
+        imgb = pic->imgb;
+
+        if (imgb)
+        {
+            imgb->release(imgb);
+
+            pic->y = NULL;
+            pic->u = NULL;
+            pic->v = NULL;
+            pic->w_l = 0;
+            pic->h_l = 0;
+            pic->w_c = 0;
+            pic->h_c = 0;
+            pic->s_l = 0;
+            pic->s_c = 0;
+        }
+        xeve_mfree(pic->map_mv);
+        xeve_mfree(pic->map_unrefined_mv);
+        xeve_mfree(pic->map_refi);
+        xeve_mfree(pic);
+    }
+}
 
 void scaling_mv(int ratio, s16 mvp[MV_D], s16 mv[MV_D])
 {
@@ -607,7 +722,8 @@ BOOL check_bi_applicability(int slice_type, int cuw, int cuh, int is_sps_admvp)
     return is_applicable;
 }
 
-void xeve_get_motion_skip_baseline(int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM], int cuw, int cuh, int w_scu, s8 refi[REFP_NUM][MAX_NUM_MVP], s16 mvp[REFP_NUM][MAX_NUM_MVP][MV_D], u16 avail_lr)
+void xeve_get_motion_skip(int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM], int cuw, int cuh, int w_scu
+                        , s8 refi[REFP_NUM][MAX_NUM_MVP], s16 mvp[REFP_NUM][MAX_NUM_MVP][MV_D], u16 avail_lr)
 {
     xeve_mset(mvp, 0, MAX_NUM_MVP * REFP_NUM * MV_D * sizeof(s16));
     xeve_mset(refi, REFI_INVALID, MAX_NUM_MVP * REFP_NUM * sizeof(s8));
@@ -1292,7 +1408,7 @@ void xeve_get_ctx_some_flags(int x_scu, int y_scu, int cuw, int cuh, int w_scu, 
             {
                 if(sps_cm_init_flag == 1)
                 {
-                    ctx[i] = min(ctx[i], NUM_CTX_SKIP_FLAG - 1);
+                    ctx[i] = XEVE_MIN(ctx[i], NUM_CTX_SKIP_FLAG - 1);
                 }
                 else
                 {
@@ -1303,7 +1419,7 @@ void xeve_get_ctx_some_flags(int x_scu, int y_scu, int cuw, int cuh, int w_scu, 
             {
               if (sps_cm_init_flag == 1)
               {
-                ctx[i] = min(ctx[i], NUM_CTX_IBC_FLAG - 1);
+                ctx[i] = XEVE_MIN(ctx[i], NUM_CTX_IBC_FLAG - 1);
               }
               else
               {
@@ -1314,7 +1430,7 @@ void xeve_get_ctx_some_flags(int x_scu, int y_scu, int cuw, int cuh, int w_scu, 
             {
                 if(sps_cm_init_flag == 1)
                 {
-                    ctx[i] = min(ctx[i], NUM_CTX_PRED_MODE - 1);
+                    ctx[i] = XEVE_MIN(ctx[i], NUM_CTX_PRED_MODE - 1);
                 }
                 else
                 {
@@ -1325,7 +1441,7 @@ void xeve_get_ctx_some_flags(int x_scu, int y_scu, int cuw, int cuh, int w_scu, 
             {
                 if (sps_cm_init_flag == 1)
                 {
-                    ctx[i] = min(ctx[i], NUM_CTX_MODE_CONS - 1);
+                    ctx[i] = XEVE_MIN(ctx[i], NUM_CTX_MODE_CONS - 1);
                 }
                 else
                 {
@@ -1336,7 +1452,7 @@ void xeve_get_ctx_some_flags(int x_scu, int y_scu, int cuw, int cuh, int w_scu, 
             {
                 if(sps_cm_init_flag == 1)
                 {
-                    ctx[i] = min(ctx[i], NUM_CTX_AFFINE_FLAG - 1);
+                    ctx[i] = XEVE_MIN(ctx[i], NUM_CTX_AFFINE_FLAG - 1);
                 }
                 else
                 {
@@ -1749,6 +1865,7 @@ static void imgb_cpy_shift_right(XEVE_IMGB * dst, XEVE_IMGB * src, int shift)
     }
 }
 
+#if 1
 void xeve_imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src)
 {
     int i, bd_src, bd_dst;
@@ -1846,7 +1963,7 @@ XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt,
 
     return imgb;
 }
-
+#endif
 
 void xeve_imgb_garbage_free(XEVE_IMGB * imgb)
 {
@@ -1858,7 +1975,6 @@ void xeve_imgb_garbage_free(XEVE_IMGB * imgb)
     }
     xeve_mfree(imgb);
 }
-
 #if X86_SSE
 #if (defined(_WIN64) || defined(_WIN32)) && !defined(__GNUC__)
 #include <intrin.h >
@@ -1882,23 +1998,21 @@ unsigned long long __xgetbv(unsigned int i)
     return ((unsigned long long)edx << 32) | eax;
 }
 #endif
-
 #define GET_CPU_INFO(A,B) ((B[((A >> 5) & 0x03)] >> (A & 0x1f)) & 1)
 
 int xeve_check_cpu_info()
 {
-    int support_sse = 0;
-    int support_avx = 0;
-
-    int cpu_info[4] = { 0 };
+    int support_sse  = 0;
+    int support_avx  = 0;
+    int support_avx2 = 0;
+    int cpu_info[4]  = { 0 };
     __cpuid(cpu_info, 0);
+    int id_cnt = cpu_info[0];
 
-    if (cpu_info[0] >= 1)
+    if (id_cnt >= 1)
     {
         __cpuid(cpu_info, 1);
-
         support_sse |= GET_CPU_INFO(XEVE_CPU_INFO_SSE41, cpu_info);
-
         int os_use_xsave = GET_CPU_INFO(XEVE_CPU_INFO_OSXSAVE, cpu_info);
         int cpu_support_avx = GET_CPU_INFO(XEVE_CPU_INFO_AVX, cpu_info);
 
@@ -1906,10 +2020,14 @@ int xeve_check_cpu_info()
         {
             unsigned long long xcr_feature_mask = __xgetbv(_XCR_XFEATURE_ENABLED_MASK);
             support_avx = (xcr_feature_mask & 0x6) || 0;
+            if (id_cnt >= 7)
+            {
+                __cpuid(cpu_info, 7);
+                support_avx2 = support_avx && GET_CPU_INFO(XEVE_CPU_INFO_AVX2, cpu_info);
+            }
         }
     }
 
-    return (support_sse << 1) | support_avx;
+    return (support_sse << 1) | support_avx | (support_avx2 << 2);
 }
 #endif
-

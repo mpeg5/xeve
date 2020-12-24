@@ -33,7 +33,7 @@
 #include <math.h>
 
 
-void xeve_recon(s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth)
+void xeve_recon_blk(s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth)
 {
     int i, j;
     s16 t0;

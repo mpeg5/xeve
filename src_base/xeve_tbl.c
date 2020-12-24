@@ -29,6 +29,7 @@
 */
 
 #include "xeve_def.h"
+#include "xeve_type.h"
 
 #define NA 255 //never split
 #define NB 14  //not reach in current setting of max AR 1:4
@@ -258,7 +259,7 @@ const u8 xeve_tbl_df_st[4][52] =
     },
 };
 
-int xeve_tbl_qp_chroma_ajudst_base[MAX_QP_TABLE_SIZE] =
+int xeve_tbl_qp_chroma_ajudst[MAX_QP_TABLE_SIZE] =
 {
      0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
     10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
@@ -268,21 +269,21 @@ int xeve_tbl_qp_chroma_ajudst_base[MAX_QP_TABLE_SIZE] =
     39, 39, 40, 40, 40, 41, 41, 41
 };
 
-int* xeve_tbl_qp_chroma_ajudst;
+int* xeve_qp_chroma_ajudst;
 
 // ChromaQP offset for U and V components
-int *xeve_tbl_qp_chroma_dynamic[2];
+int *xeve_qp_chroma_dynamic[2];
 int xeve_tbl_qp_chroma_dynamic_ext[2][MAX_QP_TABLE_SIZE_EXT];
-int *xeve_tbl_qp_chroma_dynamic_ext_temp[2] = { &(xeve_tbl_qp_chroma_dynamic_ext[0][0]) , &(xeve_tbl_qp_chroma_dynamic_ext[1][0]) };
-void set_chroma_qp_tbl_loc(int bit_depth)
+int *xeve_qp_chroma_dynamic_ext[2] = { &(xeve_tbl_qp_chroma_dynamic_ext[0][0]) , &(xeve_tbl_qp_chroma_dynamic_ext[1][0]) };
+void xeve_set_chroma_qp_tbl_loc(int bit_depth)
 {
     for(int i = 0; i < 6 * (bit_depth - 8); i++)
     {
         xeve_tbl_qp_chroma_dynamic_ext[0][i] = i - 6 * (bit_depth - 8);
         xeve_tbl_qp_chroma_dynamic_ext[1][i] = i - 6 * (bit_depth - 8);
     }
-    xeve_tbl_qp_chroma_dynamic[0] = &(xeve_tbl_qp_chroma_dynamic_ext[0][6 * (bit_depth - 8)]);
-    xeve_tbl_qp_chroma_dynamic[1] = &(xeve_tbl_qp_chroma_dynamic_ext[1][6 * (bit_depth - 8)]);
+    xeve_qp_chroma_dynamic[0] = &(xeve_tbl_qp_chroma_dynamic_ext[0][6 * (bit_depth - 8)]);
+    xeve_qp_chroma_dynamic[1] = &(xeve_tbl_qp_chroma_dynamic_ext[1][6 * (bit_depth - 8)]);
 }
 
 void xeve_tbl_derived_chroma_qp_mapping(XEVE_CHROMA_TABLE *structChromaQP, int bit_depth)
@@ -309,40 +310,40 @@ void xeve_tbl_derived_chroma_qp_mapping(XEVE_CHROMA_TABLE *structChromaQP, int b
             assert(qpOutVal[j] >= -qp_bd_offset_c && qpOutVal[j] <= MAX_QP);
         }
 
-        xeve_tbl_qp_chroma_dynamic[i][qpInVal[0]] = qpOutVal[0];
+        xeve_qp_chroma_dynamic[i][qpInVal[0]] = qpOutVal[0];
         for (int k = qpInVal[0] - 1; k >= -qp_bd_offset_c; k--)
         {
-            xeve_tbl_qp_chroma_dynamic[i][k] = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP, xeve_tbl_qp_chroma_dynamic[i][k + 1] - 1);
+            xeve_qp_chroma_dynamic[i][k] = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP, xeve_qp_chroma_dynamic[i][k + 1] - 1);
         }
         for (int j = 0; j < structChromaQP->num_points_in_qp_table_minus1[i]; j++)
         {
             int sh = (structChromaQP->delta_qp_in_val_minus1[i][j + 1] + 1) >> 1;
             for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
             {
-                xeve_tbl_qp_chroma_dynamic[i][k] = xeve_tbl_qp_chroma_dynamic[i][qpInVal[j]]
+                xeve_qp_chroma_dynamic[i][k] = xeve_qp_chroma_dynamic[i][qpInVal[j]]
                     + ((qpOutVal[j + 1] - qpOutVal[j]) * m + sh) / (structChromaQP->delta_qp_in_val_minus1[i][j + 1] + 1);
             }
         }
         for (int k = qpInVal[structChromaQP->num_points_in_qp_table_minus1[i]] + 1; k <= MAX_QP; k++)
         {
-            xeve_tbl_qp_chroma_dynamic[i][k] = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP, xeve_tbl_qp_chroma_dynamic[i][k - 1] + 1);
+            xeve_qp_chroma_dynamic[i][k] = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP, xeve_qp_chroma_dynamic[i][k - 1] + 1);
         }
     }
     if (structChromaQP->same_qp_table_for_chroma)
     {
-        memcpy(&(xeve_tbl_qp_chroma_dynamic[1][-qp_bd_offset_c]), &(xeve_tbl_qp_chroma_dynamic[0][-qp_bd_offset_c]), MAX_QP_TABLE_SIZE_EXT * sizeof(int));
+        memcpy(&(xeve_qp_chroma_dynamic[1][-qp_bd_offset_c]), &(xeve_qp_chroma_dynamic[0][-qp_bd_offset_c]), MAX_QP_TABLE_SIZE_EXT * sizeof(int));
     }
 }
 
-const int min_in_group[LAST_SIGNIFICANT_GROUPS] = { 0,1,2,3,4,6,8,12,16,24,32,48,64,96 };
-const int group_idx[MAX_TR_SIZE] = { 0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9, 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11 };
+const int xeve_min_in_group[LAST_SIGNIFICANT_GROUPS] = { 0,1,2,3,4,6,8,12,16,24,32,48,64,96 };
+const int xeve_group_idx[MAX_TR_SIZE] = { 0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9, 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11 };
 
-const int go_rice_range[MAX_GR_ORDER_RESIDUAL] =
+const int xeve_go_rice_range[MAX_GR_ORDER_RESIDUAL] =
 {
     6, 5, 6, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION, COEF_REMAIN_BIN_REDUCTION
 };
 
-const int go_rice_para_coeff[32] =
+const int xeve_go_rice_para_coeff[32] =
 {
     0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3
 };
@@ -591,4 +592,12 @@ const u8 xeve_tbl_mvp_idx_bits[5][4] =
     { 1,  1, },
     { 1,  2,  2, },
     { 1,  2,  3,  3 }
+};
+
+const XEVE_PRESET xeve_tbl_preset[ENC_PRESET_NUM] =
+{
+    { 32, 4, 64, 8, 1, 1, 32,  2, 2, 1, 0.5, 2, 1, 1, 5, 0},
+    { 32, 4, 64, 8, 1, 1, 64,  2, 4, 1, 0.3, 3, 1, 1, 5, 0},
+    { 32, 4, 64, 8, 1, 1, 128, 3, 4, 2, 0.2, 3, 1, 1, 5, 1},
+    { 64, 4, 64, 4, 2, 2, 384, 3, 8, 3, 0,   4, 1, 1, 5, 1},
 };

@@ -73,13 +73,11 @@ static s8 tbl_search_pattern_hpel_partial[8][2] =
 };
 
 
-static int pinter_init_frame(XEVE_CTX *ctx)
+static int pinter_init_tile(XEVE_CTX *ctx, int tile_idx)
 {
-    XEVE_PINTER *pi;
-    XEVE_PIC     *pic;
-    int size;
-
-    pi = &ctx->pinter[0];
+    XEVE_PINTER * pi = &ctx->pinter[tile_idx];
+    XEVE_PIC    * pic;
+    int           size;
 
     pic = pi->pic_o = PIC_ORIG(ctx);
     pi->o[Y_C] = pic->y;
@@ -367,7 +365,7 @@ static void get_org_bi(pel * org, pel * pred, int s_o, int cuw, int cuh, s16 * o
     }
 }
 
-static u32 me_raster(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2_cuh, s8 refi, int lidx, s16 range[MV_RANGE_DIM][MV_D], s16 gmvp[MV_D], s16 mv[MV_D], int bit_depth_luma)
+static u32 me_raster(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2_cuh, s8 refi, int lidx, s16 range[MV_RANGE_DIM][MV_D], s16 gmvp[MV_D], s16 mv[MV_D], int bit_depth_luma, int cost_init)
 {
     XEVE_PIC *ref_pic;
     pel      *org, *ref;
@@ -375,16 +373,17 @@ static u32 me_raster(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2_cuh,
     u32       cost_best, cost;
     int       i, j;
     s16       mv_x, mv_y;
-    s32       search_step_x = max(RASTER_SEARCH_STEP, (1 << (log2_cuw - 1))); /* Adaptive step size : Half of CU dimension */
-    s32       search_step_y = max(RASTER_SEARCH_STEP, (1 << (log2_cuh - 1))); /* Adaptive step size : Half of CU dimension */
+    s32       search_step_x = XEVE_MAX(RASTER_SEARCH_STEP, (1 << (log2_cuw - 1))); /* Adaptive step size : Half of CU dimension */
+    s32       search_step_y = XEVE_MAX(RASTER_SEARCH_STEP, (1 << (log2_cuh - 1))); /* Adaptive step size : Half of CU dimension */
     s16       center_mv[MV_D];
     s32       search_step;
-    search_step_x = search_step_y = max(RASTER_SEARCH_STEP, (1 << (min(log2_cuh, log2_cuw) - 1)));
+    search_step_x = search_step_y = XEVE_MAX(RASTER_SEARCH_STEP, (1 << (XEVE_MIN(log2_cuh, log2_cuw) - 1)));
+    search_step_x = search_step_y = XEVE_MAX(pi->me_opt->raster_search_step_opt, search_step_x);
 
     org = pi->o[Y_C] + y * pi->s_o[Y_C] + x;
     ref_pic = pi->refp[refi][lidx].pic;
     best_mv_bits = 0;
-    cost_best = XEVE_UINT32_MAX;
+    cost_best = cost_init;
 
 #if MULTI_REF_ME_STEP
     for(i = range[MV_RANGE_MIN][MV_Y]; i <= range[MV_RANGE_MAX][MV_Y]; i += (search_step_y * (refi + 1)))
@@ -430,10 +429,15 @@ static u32 me_raster(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2_cuh,
 
     /* Grid search around best mv for all dyadic step sizes till integer pel */
 #if MULTI_REF_ME_STEP
-    search_step = (refi + 1) * max(search_step_x, search_step_y) >> 1;
+    search_step = (refi + 1) * XEVE_MAX(search_step_x, search_step_y) >> 1;
 #else
-    search_step = max(search_step_x, search_step_y) >> 1;
+    search_step = XEVE_MAX(search_step_x, search_step_y) >> 1;
 #endif
+
+    /* Limit the search steps b/w min and max */
+    search_step = XEVE_MIN(pi->me_opt->search_step_max, search_step);
+    search_step = XEVE_MAX(pi->me_opt->search_step_min, search_step);
+    int new_center_cnt = 0;
 
     while(search_step > 0)
     {
@@ -497,8 +501,22 @@ static u32 me_raster(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2_cuh,
             }
         }
 
+        /* check if center is changing */
+        if (center_mv[MV_X] != mv[MV_X] || center_mv[MV_Y] != mv[MV_Y])
+        {
+            /* Refine around the new center with same step size */
+            if (new_center_cnt > pi->me_opt->raster_new_center_th)
+            {
+                /* Halve the step size */
+                search_step >>= 1;
+            }
+            new_center_cnt++;
+        }
+        else
+        {
         /* Halve the step size */
         search_step >>= 1;
+        }
     }
 
     if(best_mv_bits > 0)
@@ -626,7 +644,7 @@ static u32 me_ipel_diamond(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
     int            step, i, j;
     int            min_cmv_x, min_cmv_y, max_cmv_x, max_cmv_y;
     s16            imv_x, imv_y;
-    int            mvsize = 1;
+    int            mvsize_r = 1, mvsize_c = 1;
     int not_found_best = 0;
 
     org = pi->o[Y_C] + y * pi->s_o[Y_C] + x;
@@ -653,7 +671,7 @@ static u32 me_ipel_diamond(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
     {
         not_found_best++;
 
-        if(step <= 2)
+        if(step <= pi->me_opt->opt_me_diamond_mvr012_step)
         {
             if(pi->curr_mvr > 2)
             {
@@ -664,24 +682,34 @@ static u32 me_ipel_diamond(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
             }
             else
             {
-                min_cmv_x = (mv_best_x <= range[MV_RANGE_MIN][MV_X]) ? mv_best_x : mv_best_x - (bi == BI_NORMAL ? BI_STEP : 2);
-                min_cmv_y = (mv_best_y <= range[MV_RANGE_MIN][MV_Y]) ? mv_best_y : mv_best_y - (bi == BI_NORMAL ? BI_STEP : 2);
-                max_cmv_x = (mv_best_x >= range[MV_RANGE_MAX][MV_X]) ? mv_best_x : mv_best_x + (bi == BI_NORMAL ? BI_STEP : 2);
-                max_cmv_y = (mv_best_y >= range[MV_RANGE_MAX][MV_Y]) ? mv_best_y : mv_best_y + (bi == BI_NORMAL ? BI_STEP : 2);
+                min_cmv_x = (mv_best_x <= range[MV_RANGE_MIN][MV_X]) ? mv_best_x : mv_best_x - (bi == BI_NORMAL ? BI_STEP - pi->me_opt->mvr_012_bi_step : pi->me_opt->mvr_012_non_bi_step);
+                min_cmv_y = (mv_best_y <= range[MV_RANGE_MIN][MV_Y]) ? mv_best_y : mv_best_y - (bi == BI_NORMAL ? BI_STEP - pi->me_opt->mvr_012_bi_step : pi->me_opt->mvr_012_non_bi_step);
+                max_cmv_x = (mv_best_x >= range[MV_RANGE_MAX][MV_X]) ? mv_best_x : mv_best_x + (bi == BI_NORMAL ? BI_STEP - pi->me_opt->mvr_012_bi_step : pi->me_opt->mvr_012_non_bi_step);
+                max_cmv_y = (mv_best_y >= range[MV_RANGE_MAX][MV_Y]) ? mv_best_y : mv_best_y + (bi == BI_NORMAL ? BI_STEP - pi->me_opt->mvr_012_bi_step : pi->me_opt->mvr_012_non_bi_step);
             }
 
+            int off = 0, mask = 0;
             if(pi->curr_mvr > 2)
             {
-                mvsize = 1 << (pi->curr_mvr - 2);
+                mvsize_r = 1 << (pi->curr_mvr - 2);
+                mvsize_c = 1 << (pi->curr_mvr - 2);
             }
             else
             {
-                mvsize = 1;
+                mvsize_r = 1;
+                mvsize_c = 1;
+                if (bi == BI_NORMAL)
+                {
+                    mvsize_c = pi->me_opt->bi_normal_step_c;
+
+                    //to select diagonal points in a 2x2
+                    mask = pi->me_opt->bi_normal_mask;
+                }
             }
 
-            for(i = min_cmv_y; i <= max_cmv_y; i += mvsize)
+            for(i = min_cmv_y; i <= max_cmv_y; i += mvsize_r)
             {
-                for(j = min_cmv_x; j <= max_cmv_x; j += mvsize)
+                for(j = min_cmv_x + off; j <= max_cmv_x; j += mvsize_c)
                 {
                     mv_x = j;
                     mv_y = i;
@@ -731,6 +759,7 @@ static u32 me_ipel_diamond(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
                         }
                     }
                 }
+                off ^= mask;
             }
 
             mvc[MV_X] = mv_best_x;
@@ -739,11 +768,23 @@ static u32 me_ipel_diamond(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
             get_range_ipel(pi, mvc, range, (bi != BI_NORMAL) ? 0 : 1, refi, lidx);
 
             step += 2;
+            /* Optimization Notes:
+            * Cover the diamond points in 5x5 region in next loop by using step=2
+            */
+            if (pi->curr_mvr <= 2)
+            {
+                step = pi->me_opt->mvr_02_step_nxt;
+            }
         }
         else
         {
             int meidx = step > 8 ? 2 : 1;
             int multi;
+            int loop_cnt = 8;
+            if (meidx == 2)
+            {
+                loop_cnt = 16;
+            }
 
             if(pi->curr_mvr > 2)
             {
@@ -754,12 +795,17 @@ static u32 me_ipel_diamond(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
                 multi = step;
             }
 
-            for(i = 0; i < 16; i++)
+            for(i = 0; i < loop_cnt; i++)
             {
-                if(meidx == 1 && i > 8)
+                if (pi->curr_mvr <= 2)
                 {
+                    /* To allow only 4 diamond positions in 5x5 region for step=2 */
+                    if ((step == pi->me_opt->mvr_012_step_th) && (i == 1 || i == 3 || i == 5 || i == 7))
+                    {
                     continue;
                 }
+                }
+                else
                 if((step == 4) && (i == 1 || i == 3 || i == 5 || i == 7))
                 {
                     continue;
@@ -1006,7 +1052,7 @@ static u32 pinter_me_epzs(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2
     mvc[MV_Y] = XEVE_CLIP3(pi->min_clip[MV_Y], pi->max_clip[MV_Y], mvc[MV_Y]);
     
     get_range_ipel(pi, mvc, range, (bi != BI_NORMAL) ? 0 : 1, ri, lidx);
-    cost = me_ipel_diamond(pi, x, y, log2_cuw, log2_cuh, ri, lidx, range, gmvp, mvi, mvt, bi, &tmpstep, MAX_FIRST_SEARCH_STEP, bit_depth_luma);
+    cost = me_ipel_diamond(pi, x, y, log2_cuw, log2_cuh, ri, lidx, range, gmvp, mvi, mvt, bi, &tmpstep, MAX_FIRST_SEARCH_STEP - pi->me_opt->max_first_search_step_th, bit_depth_luma);
 
     if(cost < cost_best)
     {
@@ -1023,9 +1069,12 @@ static u32 pinter_me_epzs(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2
         }
     }
 
-    if(bi == BI_NON && beststep > RASTER_SEARCH_THD)
+    int cost_init = XEVE_UINT32_MAX;
+    /* Do raster search with best cost found so far */
+    cost_init = cost_best;
+    if(bi == BI_NON && beststep > RASTER_SEARCH_THD && pi->me_complexity > 1)
     {
-        cost = me_raster(pi, x, y, log2_cuw, log2_cuh, ri, lidx, range, gmvp, mvt, bit_depth_luma);
+        cost = me_raster(pi, x, y, log2_cuw, log2_cuh, ri, lidx, range, gmvp, mvt, bit_depth_luma, cost_init);
 
         if(cost < cost_best)
         {
@@ -1038,7 +1087,7 @@ static u32 pinter_me_epzs(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2
         }
     }
 
-    while(bi != BI_NORMAL && beststep > REFINE_SEARCH_THD)
+    while(bi != BI_NORMAL && beststep > REFINE_SEARCH_THD && pi->me_complexity > 0)
     {
         mvc[MV_X] = x + (mv[MV_X] >> 2);
         mvc[MV_Y] = y + (mv[MV_Y] >> 2);
@@ -1049,8 +1098,7 @@ static u32 pinter_me_epzs(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2
         mvi[MV_Y] = mv[MV_Y] + (y << 2);
 
         beststep = 0;
-
-        cost = me_ipel_diamond(pi, x, y, log2_cuw, log2_cuh, ri, lidx, range, gmvp, mvi, mvt, bi, &tmpstep, MAX_REFINE_SEARCH_STEP, bit_depth_luma);
+        cost = me_ipel_diamond(pi, x, y, log2_cuw, log2_cuh, ri, lidx, range, gmvp, mvi, mvt, bi, &tmpstep, MAX_REFINE_SEARCH_STEP - pi->me_opt->max_refine_search_step_th, bit_depth_luma);
 
         if(cost < cost_best)
         {
@@ -1108,26 +1156,88 @@ static u32 pinter_me_epzs(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2
     return cost_best;
 }
 
-static void xeve_mc_mmvd(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16 mv[REFP_NUM][MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[2][N_C][MAX_CU_DIM], int bit_depth_luma)
+static void xeve_mc_mmvd(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16 mv[REFP_NUM][MV_D], XEVE_REFP(*refp)[REFP_NUM]
+                       , pel pred[2][N_C][MAX_CU_DIM], int bit_depth_luma,  XEVE_MMVD_OPT *mmvd_opt)
 {
     XEVE_PIC *ref_pic;
     int       qpel_gmv_x, qpel_gmv_y;
     int       bidx = 0;
     s16       mv_t[REFP_NUM][MV_D];
-
     xeve_mv_clip(x, y, pic_w, pic_h, w, h, refi, mv, mv_t);
-
     if(REFI_IS_VALID(refi[REFP_0]))
     {
-        /* forward */
         ref_pic = refp[refi[REFP_0]][REFP_0].pic;
-        qpel_gmv_x = (x << 2) + mv_t[REFP_0][MV_X];
-        qpel_gmv_y = (y << 2) + mv_t[REFP_0][MV_Y];
-        xeve_bl_mc_l(ref_pic->y, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_l, w, pred[0][Y_C], w, h, bit_depth_luma);
+        int x_changed, y_changed;
+        x_changed = x - 128 * ((int)(x / 128));
+        y_changed = y - 128 * ((int)(y / 128));
+        int mmvd_opt_switch = 1;
+        if(mmvd_opt->enabled)
+        {
+            int idx_frm_poc = mmvd_opt->poc_to_idx[ref_pic->poc % mmvd_opt->i_period];
+            if(idx_frm_poc == -1)
+            {
+                int i;
+                for(i = 0; i < 4; i++)
+                {
+                    if(mmvd_opt->ref_buf_idx[i] == 0)
+                    {
+                        break;
+                    }
+                }
+                if(i == 4)
+                    mmvd_opt_switch = 0;
+            }
+        }
+        if(mmvd_opt->enabled && mmvd_opt_switch &&
+            ((x_changed << 2) + mv_t[REFP_0][MV_X]) >= -(OPT_MC_BI_PAD << 2) &&
+            ((x_changed<<2) + mv_t[REFP_0][MV_X]) < (((MAX_CU_SIZE + OPT_MC_BI_PAD) << 2) - (w << 2)) &&
+            ((y_changed << 2) + mv_t[REFP_0][MV_Y]) >= -(OPT_MC_BI_PAD << 2) &&
+            ((y_changed<<2) + mv_t[REFP_0][MV_Y]) < (((MAX_CU_SIZE + OPT_MC_BI_PAD) << 2) - (h << 2)))
+        {
+            qpel_gmv_x = (x_changed << 2) + mv_t[REFP_0][MV_X];
+            qpel_gmv_y = (y_changed << 2) + mv_t[REFP_0][MV_Y];
+            int idx_frm_poc = mmvd_opt->poc_to_idx[ref_pic->poc % mmvd_opt->i_period];
+            if(idx_frm_poc==-1)
+            {
+                int i;
+                for(i = 0; i < 4; i++)
+                {
+                    if(mmvd_opt->ref_buf_idx[i] == 0)
+                    {
+                        mmvd_opt->ref_buf_idx[i] = 1;
+                        mmvd_opt->poc_to_idx[ref_pic->poc % mmvd_opt->i_period] = i;
+                        break;
+                    }
+                }
+                idx_frm_poc = mmvd_opt->poc_to_idx[ref_pic->poc % mmvd_opt->i_period];
+                int x_buf, y_buf;
+                x_buf = 128 * ((int)x / 128);
+                y_buf = 128 * ((int)y / 128);
+                for(int yy = 0; yy < 4; yy++)
+                {
+                    for(int xx = 0; xx < 4; xx++)
+                    {
+                        int qpel_gmv_x_buf = (x_buf << 2) -(OPT_MC_BI_PAD<<2) + xx;
+                        int qpel_gmv_y_buf = (y_buf << 2) - (OPT_MC_BI_PAD << 2) + yy;
+                        int idx = ((qpel_gmv_x_buf & 0x03) << 2) + (qpel_gmv_y_buf & 0x03);
+                        xeve_bl_mc_l(ref_pic->y, (qpel_gmv_x_buf << 2), (qpel_gmv_y_buf << 2), ref_pic->s_l, (MAX_CU_SIZE + OPT_MC_BI_PAD * 2),
+                            mmvd_opt->pred_bi[idx_frm_poc][idx], (MAX_CU_SIZE + OPT_MC_BI_PAD * 2), (MAX_CU_SIZE + OPT_MC_BI_PAD * 2), bit_depth_luma);
+                    }
+                }
+            }
+            int idx = ((mv_t[REFP_0][MV_X] & 0x03) << 2) + (mv_t[REFP_0][MV_Y] & 0x03);
+            qpel_gmv_x += (OPT_MC_BI_PAD << 2);
+            qpel_gmv_y += (OPT_MC_BI_PAD << 2);
+            (xevem_func_bl_mc_l[0][0])(mmvd_opt->pred_bi[idx_frm_poc][idx], (qpel_gmv_x << 2), (qpel_gmv_y << 2), (MAX_CU_SIZE + OPT_MC_BI_PAD * 2), w, pred[0][Y_C], w, h, bit_depth_luma);
+        }
+        else
+        {
+            qpel_gmv_x = (x << 2) + mv_t[REFP_0][MV_X];
+            qpel_gmv_y = (y << 2) + mv_t[REFP_0][MV_Y];
+            xeve_bl_mc_l(ref_pic->y, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_l, w, pred[0][Y_C], w, h, bit_depth_luma);
+        }
         bidx++;
     }
-
-    /* check identical motion */
     if(REFI_IS_VALID(refi[REFP_0]) && REFI_IS_VALID(refi[REFP_1]))
     {
         if(refp[refi[REFP_0]][REFP_0].pic->poc == refp[refi[REFP_1]][REFP_1].pic->poc &&  mv_t[REFP_0][MV_X] == mv_t[REFP_1][MV_X] && mv_t[REFP_0][MV_Y] == mv_t[REFP_1][MV_Y])
@@ -1135,17 +1245,80 @@ static void xeve_mc_mmvd(int x, int y, int pic_w, int pic_h, int w, int h, s8 re
             return;
         }
     }
-
     if(REFI_IS_VALID(refi[REFP_1]))
     {
-        /* backward */
         ref_pic = refp[refi[REFP_1]][REFP_1].pic;
-        qpel_gmv_x = (x << 2) + mv_t[REFP_1][MV_X];
-        qpel_gmv_y = (y << 2) + mv_t[REFP_1][MV_Y];
-        xeve_bl_mc_l(ref_pic->y, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_l, w, pred[bidx][Y_C], w, h, bit_depth_luma);
+        int x_changed, y_changed;
+        x_changed = x - 128 * ((int)(x / 128));
+        y_changed = y - 128 * ((int)(y / 128));
+        int mmvd_opt_switch = 1;
+        if(mmvd_opt->enabled)
+        {
+            int idx_frm_poc = mmvd_opt->poc_to_idx[ref_pic->poc % mmvd_opt->i_period];
+            if(idx_frm_poc == -1)
+            {
+                int i;
+                for(i = 0; i < 4; i++)
+                {
+                    if(mmvd_opt->ref_buf_idx[i] == 0)
+                    {
+                        break;
+                    }
+                }
+                if(i == 4)
+                    mmvd_opt_switch = 0;
+            }
+        }
+        if( mmvd_opt->enabled && mmvd_opt_switch &&
+            ((x_changed << 2) + mv_t[REFP_1][MV_X]) >= -(OPT_MC_BI_PAD << 2) &&
+            ((x_changed << 2) + mv_t[REFP_1][MV_X]) < (((MAX_CU_SIZE + OPT_MC_BI_PAD) << 2) - (w << 2)) &&
+            ((y_changed << 2) + mv_t[REFP_1][MV_Y]) >= -(OPT_MC_BI_PAD << 2) &&
+            ((y_changed << 2) + mv_t[REFP_1][MV_Y]) < (((MAX_CU_SIZE + OPT_MC_BI_PAD) << 2) - (h << 2)))
+        {
+            qpel_gmv_x = (x_changed << 2) + mv_t[REFP_1][MV_X];
+            qpel_gmv_y = (y_changed << 2) + mv_t[REFP_1][MV_Y];
+            int idx_frm_poc = mmvd_opt->poc_to_idx[ref_pic->poc % mmvd_opt->i_period];
+            if(idx_frm_poc == -1)
+            {
+                int i;
+                for(i = 0; i < 4; i++)
+                {
+                    if(mmvd_opt->ref_buf_idx[i] == 0)
+                    {
+                        mmvd_opt->ref_buf_idx[i] = 1;
+                        mmvd_opt->poc_to_idx[ref_pic->poc % mmvd_opt->i_period] = i;
+                        break;
+                    }
+                }
+                idx_frm_poc = mmvd_opt->poc_to_idx[ref_pic->poc % mmvd_opt->i_period];
+                int x_buf, y_buf;
+                x_buf = 128 * ((int)x / 128);
+                y_buf = 128 * ((int)y / 128);
+                for(int yy = 0; yy < 4; yy++)
+                {
+                    for(int xx = 0; xx < 4; xx++)
+                    {
+                        int qpel_gmv_x_buf = (x_buf << 2) - (OPT_MC_BI_PAD << 2) + xx;
+                        int qpel_gmv_y_buf = (y_buf << 2) - (OPT_MC_BI_PAD << 2) + yy;
+                        int idx = ((qpel_gmv_x_buf & 0x03) << 2) + (qpel_gmv_y_buf & 0x03);
+                        xeve_bl_mc_l(ref_pic->y, (qpel_gmv_x_buf << 2), (qpel_gmv_y_buf << 2), ref_pic->s_l, (MAX_CU_SIZE + OPT_MC_BI_PAD * 2),
+                            mmvd_opt->pred_bi[idx_frm_poc][idx], (MAX_CU_SIZE + OPT_MC_BI_PAD * 2), (MAX_CU_SIZE + OPT_MC_BI_PAD * 2), bit_depth_luma);
+                    }
+                }
+            }
+            int idx = ((mv_t[REFP_1][MV_X] & 0x03) << 2) + (mv_t[REFP_1][MV_Y] & 0x03);
+            qpel_gmv_x += (OPT_MC_BI_PAD << 2);
+            qpel_gmv_y += (OPT_MC_BI_PAD << 2);
+            (xevem_func_bl_mc_l[0][0])(mmvd_opt->pred_bi[idx_frm_poc][idx], (qpel_gmv_x << 2), (qpel_gmv_y << 2), (MAX_CU_SIZE + OPT_MC_BI_PAD * 2), w, pred[bidx][Y_C], w, h, bit_depth_luma);
+        }
+        else
+        {
+            qpel_gmv_x = (x << 2) + mv_t[REFP_1][MV_X];
+            qpel_gmv_y = (y << 2) + mv_t[REFP_1][MV_Y];
+            xeve_bl_mc_l(ref_pic->y, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_l, w, pred[bidx][Y_C], w, h, bit_depth_luma);
+        }
         bidx++;
     }
-
     if(bidx == 2)
     {
         xeve_func_average_no_clip(pred[0][Y_C], pred[1][Y_C], pred[0][Y_C], w, w, w, w, h);
@@ -1240,8 +1413,8 @@ __inline static int mmvd_info_bit_cost(int mvp_idx, int type)
 
 static double pinter_residue_rdo_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, pel pred[2][N_C][MAX_CU_DIM], int pidx)
 {
-    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
-
+    XEVE_PINTER * pi = &ctx->pinter[core->thread_cnt];
+    XEVEM_CORE  * mcore = (XEVEM_CORE *)core;
     int             w, h, log2_w, log2_h;
     int             bit_cnt;
     double          cost = 0.0;
@@ -1253,8 +1426,7 @@ static double pinter_residue_rdo_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int
     log2_h = log2_cuh;
 
     /* prediction */
-    xeve_mc_mmvd(x, y, ctx->w, ctx->h, w, h, pi->refi[pidx], pi->mv[pidx], pi->refp, pred, ctx->sps.bit_depth_luma_minus8 + 8);
-
+    xeve_mc_mmvd(x, y, ctx->w, ctx->h, w, h, pi->refi[pidx], pi->mv[pidx], pi->refp, pred, ctx->sps.bit_depth_luma_minus8 + 8, &mcore->mmvd_opt);
     /* get distortion */
     y_org = pi->o[Y_C] + x + y * pi->s_o[Y_C];
     cost = xeve_satd_16b(log2_w, log2_h, pred[0][Y_C], y_org, w, pi->s_o[Y_C], ctx->sps.bit_depth_luma_minus8 + 8);
@@ -1335,8 +1507,8 @@ void calc_min_cost_ats_inter(XEVE_CTX *ctx, XEVE_CORE *core, pel pred[N_C][MAX_C
 {
     int cuw = 1 << core->log2_cuw;
     int cuh = 1 << core->log2_cuh;
-    int num_part_x = min(16, cuw) / 4;
-    int num_part_y = min(16, cuh) / 4;
+    int num_part_x = XEVE_MIN(16, cuw) / 4;
+    int num_part_y = XEVE_MIN(16, cuh) / 4;
     int log2_length_x[3];
     int log2_length_y[3];
     s64 dist[4][4], dist_blk, dist_temp[9];
@@ -1625,7 +1797,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     org[U_C] = pi->o[U_C] + ((y >> 1) * pi->s_o[U_C]) + (x >> 1);
     org[V_C] = pi->o[V_C] + ((y >> 1) * pi->s_o[V_C]) + (x >> 1);
 
-    if(ctx->cdsc.rdo_dbk_switch && mcore->affine_flag)
+    if(ctx->param.rdo_dbk_switch && mcore->affine_flag)
     {
         is_from_mv_field = 1;
     }
@@ -1654,7 +1826,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     //load best in history
     if(ats_inter_avail)
     {
-        int shift_val = min(log2_cuw + log2_cuh, 9);
+        int shift_val = XEVE_MIN(log2_cuw + log2_cuh, 9);
         dist_idx = dist_no_resi[Y_C] + dist_no_resi[U_C] + dist_no_resi[V_C];
         dist_idx = (dist_idx + (s64)(1 << (shift_val - 1))) >> shift_val;
         search_ats_inter_info_saved(ctx, core, (u32)dist_idx, log2_cuw, log2_cuh, x, y, &ats_inter_info_match);
@@ -1713,7 +1885,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 
             ctx->fn_itdp(ctx, core, coef_t, core->nnz_sub);
 
-            if(ctx->cdsc.rdo_dbk_switch && mcore->ats_inter_info == 0)
+            if(ctx->param.rdo_dbk_switch && mcore->ats_inter_info == 0)
             {
                 calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pred[0], cuw, x, y, core->avail_lr, 0, 0, pi->refi[pidx]
                                                 , pi->mv[pidx], is_from_mv_field, core);
@@ -1741,12 +1913,12 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
                 {
                     dist[1][i] = dist_no_resi[i];
                 }
-                if(ctx->cdsc.rdo_dbk_switch && mcore->ats_inter_info == 0)
+                if(ctx->param.rdo_dbk_switch && mcore->ats_inter_info == 0)
                 {
                     dist[0][i] += core->delta_dist[i];
                 }
             }
-            if(ctx->cdsc.rdo_dbk_switch)
+            if(ctx->param.rdo_dbk_switch)
             {
                 //complete rec
                 for(i = 0; i < N_C; i++)
@@ -2070,7 +2242,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
                 nnz[i] = 0;
                 xeve_mset(core->nnz_sub[i], 0, sizeof(int) * MAX_SUB_TB_NUM);
             }
-            if(ctx->cdsc.rdo_dbk_switch)
+            if(ctx->param.rdo_dbk_switch)
             {
                 calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pred[0], cuw, x, y, core->avail_lr, 0, 0
                                                 , pi->refi[pidx], pi->mv[pidx], is_from_mv_field, core);
@@ -2078,7 +2250,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             for(i = 0; i < N_C; i++)
             {
                 dist[0][i] = dist_no_resi[i];
-                if(ctx->cdsc.rdo_dbk_switch)
+                if(ctx->param.rdo_dbk_switch)
                 {
                     dist[0][i] += core->delta_dist[i];
                 }
@@ -2235,7 +2407,7 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
 
     if(admvp_flag == 0)
     {
-        xeve_get_motion_skip_baseline(slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, srefi, smvp, avail);
+        xeve_get_motion_skip(slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, srefi, smvp, avail);
     }
     else
     {
@@ -2392,7 +2564,7 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
 
     if(ctx->sps.tool_admvp == 0)
     {
-        xeve_get_motion_skip_baseline(ctx->sh.slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], cuw, cuh, ctx->w_scu, pi->refi_pred, pi->mvp, core->avail_cu);
+        xeve_get_motion_skip(ctx->sh.slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], cuw, cuh, ctx->w_scu, pi->refi_pred, pi->mvp, core->avail_cu);
     }
     else
     {
@@ -2437,7 +2609,7 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
             cu = xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->pred[PRED_NUM][0][U_C], u_org, cuw >> 1, pi->s_o[U_C], ctx->sps.bit_depth_chroma_minus8 + 8);
             cv = xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->pred[PRED_NUM][0][V_C], v_org, cuw >> 1, pi->s_o[V_C], ctx->sps.bit_depth_chroma_minus8 + 8);
 
-            if(ctx->cdsc.rdo_dbk_switch)
+            if(ctx->param.rdo_dbk_switch)
             {
                 calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->pred[PRED_NUM][0], cuw, x, y, core->avail_lr, 0, 0, refi, mvp, 0, core);
                 cy += core->delta_dist[Y_C];
@@ -2590,7 +2762,7 @@ static double analyze_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int lo
 
     if(ctx->sps.tool_admvp == 0)
     {
-        xeve_get_motion_skip_baseline(ctx->sh.slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], cuw, cuh, ctx->w_scu, pi->refi_pred, pi->mvp, core->avail_cu);
+        xeve_get_motion_skip(ctx->sh.slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], cuw, cuh, ctx->w_scu, pi->refi_pred, pi->mvp, core->avail_cu);
     }
     else
     {
@@ -2789,7 +2961,7 @@ static double analyze_skip_mmvd(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, 
         cu = xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->pred[PRED_NUM][0][U_C], u_org, cuw >> 1, pi->s_o[U_C], ctx->sps.bit_depth_chroma_minus8 + 8);
         cv = xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->pred[PRED_NUM][0][V_C], v_org, cuw >> 1, pi->s_o[V_C], ctx->sps.bit_depth_chroma_minus8 + 8);
 
-        if(ctx->cdsc.rdo_dbk_switch)
+        if(ctx->param.rdo_dbk_switch)
         {
             calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->pred[PRED_NUM][0], cuw, x, y, core->avail_lr, 0, 0, refi, mvp, 0, core);
             cy += core->delta_dist[Y_C];
@@ -3011,6 +3183,7 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         pi->mmvd_idx[pidx] = c_num;
 
         temp_cost = pinter_residue_rdo(ctx, core, x, y, log2_cuw, log2_cuh, pi->pred[pidx], pi->coef[pidx], pidx, pi->mvp_idx[pidx], FALSE);
+        //temp_cost = pinter_residue_rdo_mmvd(ctx, core, x, y, log2_cuw, log2_cuh, pi->pred[pidx], pidx);
 
         xeve_mcpy(pi->nnz_best[pidx], core->nnz, sizeof(int) * N_C);
         xeve_mcpy(pi->nnz_sub_best[pidx], core->nnz_sub, sizeof(int) * N_C * MAX_SUB_TB_NUM);
@@ -3917,7 +4090,7 @@ static double analyze_affine_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y,
             cu = xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->pred[PRED_NUM][0][U_C], u_org, cuw >> 1, pi->s_o[U_C], ctx->sps.bit_depth_chroma_minus8 + 8);
             cv = xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->pred[PRED_NUM][0][V_C], v_org, cuw >> 1, pi->s_o[V_C], ctx->sps.bit_depth_chroma_minus8 + 8);
 
-            if(ctx->cdsc.rdo_dbk_switch)
+            if(ctx->param.rdo_dbk_switch)
             {
                 xeve_set_affine_mvf(ctx, core, cuw, cuh, mrg_list_refi[idx], mrg_list_cp_mv[idx], mrg_list_cp_num[idx]);
                 calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->pred[PRED_NUM][0], cuw, x, y, core->avail_lr, 0, 0
@@ -4025,9 +4198,9 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
 
     if(ctx->sps.tool_amvr)
     {
-        if(core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
+        if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
         {
-            num_amvr = core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].mvr_idx + 1;
+            num_amvr = mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].mvr_idx + 1;
 
             if(num_amvr > MAX_NUM_MVR)
             {
@@ -4046,9 +4219,9 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
     cuh = (1 << log2_cuh);
 
     mcore->affine_flag = 0;
-    if(core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
+    if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
     {
-        if(core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].affine_flag == 0)
+        if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].affine_flag == 0)
         {
             allow_affine = 0;
         }
@@ -4304,10 +4477,10 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
                 int max_num_bi = MAX_NUM_BI;
                 int pred_mode = 0;
 
-                if(core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
+                if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
                 {
-                    max_num_bi = (core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].bi_idx == 2 ||
-                                  core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].bi_idx == 3) ? MAX_NUM_BI : 1;
+                    max_num_bi = (mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].bi_idx == 2 ||
+                                  mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].bi_idx == 3) ? MAX_NUM_BI : 1;
                 }
 
                 for(pi->curr_bi = 0; pi->curr_bi < max_num_bi; pi->curr_bi++)
@@ -4919,15 +5092,15 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
     mi->mvr_idx = pi->mvr_idx[best_idx];
     mi->bi_idx = pi->bi_idx[best_idx];
 
-    if(!core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
+    if(!mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
     {
-        core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].mvr_idx = mi->mvr_idx;
-        core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].bi_idx = mi->bi_idx;
+        mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].mvr_idx = mi->mvr_idx;
+        mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].bi_idx = mi->bi_idx;
     }
 
-    if(!core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
+    if(!mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
     {
-        core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].affine_flag = best_affine_mode;
+        mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].affine_flag = best_affine_mode;
     }
 
 #if TRACE_ADDITIONAL_FLAGS
@@ -4987,24 +5160,24 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
     for(int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
     {
         pi = &ctx->pinter[i];
-        pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : SEARCH_RANGE_IPEL_RA;
+        pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : ctx->param.preset->me_range;
         pi->search_range_ipel[MV_X] = pi->max_search_range;
         pi->search_range_ipel[MV_Y] = pi->max_search_range;
-        pi->search_range_spel[MV_X] = SEARCH_RANGE_SPEL;
-        pi->search_range_spel[MV_Y] = SEARCH_RANGE_SPEL;
+        pi->search_range_spel[MV_X] = ctx->param.preset->me_sub_range;
+        pi->search_range_spel[MV_Y] = ctx->param.preset->me_sub_range;
         pi->search_pattern_hpel = tbl_search_pattern_hpel_partial;
-        pi->search_pattern_hpel_cnt = 8;
+        pi->search_pattern_hpel_cnt = ctx->param.preset->me_sub_pos;
         pi->search_pattern_qpel = tbl_search_pattern_qpel_8point;
-        pi->search_pattern_qpel_cnt = 8;
+        pi->search_pattern_qpel_cnt = ctx->param.preset->me_sub_pos;
         if(ctx->cdsc.ext->tool_admvp == 0)
         {
-            ctx->fn_pinter_analyze_cu = xeve_pinter_analyze_cu_baseline;
+            ctx->fn_pinter_analyze_cu = xeve_pinter_analyze_cu;
         }
         else
         {
             ctx->fn_pinter_analyze_cu = pinter_analyze_cu;
         }
-        pi->me_level = ME_LEV_QPEL;
+        pi->me_level = ctx->param.preset->me_sub;
         pi->fn_me = pinter_me_epzs; /* [To be done] for baseline, pinter_me_epzs should be used */
         pi->fn_affine_me = pinter_affine_me_gradient;
         pi->complexity = complexity;
@@ -5013,6 +5186,9 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
         pi->fn_save_best_info = pinter_save_best_info_main;
         pi->fn_load_best_info = pinter_load_best_info_main;
         pi->fn_mc = pinter_mc_main;
+        pi->skip_merge_cand_num = ctx->param.preset->merge_num;
+        pi->me_complexity = ctx->param.preset->me_algo;
+        pi->me_opt = &tbl_inter_pred_comp[((XEVEM_PRESET *)ctx->param.preset)->me_fast];
     }
     return XEVE_OK;
 }
@@ -5020,19 +5196,19 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
 int xeve_pinter_create_main(XEVE_CTX *ctx, int complexity)
 {
     /* set function addresses */
-    ctx->fn_pinter_init_frame = pinter_init_frame;
+    ctx->fn_pinter_init_tile = pinter_init_tile;
     ctx->fn_pinter_init_lcu = pinter_init_lcu;
     ctx->fn_pinter_set_complexity = pinter_set_complexity;
 
     if(ctx->cdsc.ext->tool_admvp == 0)
     {
-        tbl_mc_l_coeff = &tbl_mc_l_coeff_base;
-        tbl_mc_c_coeff = &tbl_mc_c_coeff_base;
+        tbl_mc_l_coeff = xeve_tbl_mc_l_coeff;
+        tbl_mc_c_coeff = xeve_tbl_mc_c_coeff;
     }
     else
     {
-        tbl_mc_l_coeff = &tbl_mc_l_coeff_main;
-        tbl_mc_c_coeff = &tbl_mc_c_coeff_main;
+        tbl_mc_l_coeff = tbl_mc_l_coeff_main;
+        tbl_mc_c_coeff = tbl_mc_c_coeff_main;
     }
 
     XEVE_PINTER * pi;

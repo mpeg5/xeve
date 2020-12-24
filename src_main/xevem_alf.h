@@ -99,7 +99,10 @@ typedef struct CLIP_RNAGES
   BOOL chroma;
 } CLIP_RNAGES;
 
-static __inline int clip_pel (const int a, const CLIP_RANGE clip_range)         { return min(max(clip_range.min, a) , clip_range.max); }  ///< clip reconstruction
+static __inline int clip_pel (const int a, const CLIP_RANGE clip_range)
+{ 
+    return XEVE_CLIP3(clip_range.min, clip_range.max, a);
+}
 
 typedef struct CODING_STRUCTURE
 {

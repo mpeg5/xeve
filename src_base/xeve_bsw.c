@@ -45,8 +45,7 @@ static int xeve_bsw_flush(XEVE_BSW * bs)
     return 0;
 }
 
-void xeve_bsw_init(XEVE_BSW * bs, u8 * buf, int size,
-                   XEVE_BSW_FN_FLUSH fn_flush)
+void xeve_bsw_init(XEVE_BSW * bs, u8 * buf, int size, XEVE_BSW_FN_FLUSH fn_flush)
 {
     bs->size = size;
     bs->beg = buf;
@@ -57,12 +56,11 @@ void xeve_bsw_init(XEVE_BSW * bs, u8 * buf, int size,
     bs->fn_flush = (fn_flush == NULL ? xeve_bsw_flush : fn_flush);
 }
 
-void xeve_bsw_init_slice(XEVE_BSW * bs, u8 * buf, int size,
-    XEVE_BSW_FN_FLUSH fn_flush)
+void xeve_bsw_init_slice(XEVE_BSW * bs, u8 * buf, int size, XEVE_BSW_FN_FLUSH fn_flush)
 {
     bs->size = size;
     bs->cur = buf;
-    bs->end = buf + size - 1;
+    //bs->end = buf + size - 1;
     bs->code = 0;
     bs->leftbits = 32;
     bs->fn_flush = (fn_flush == NULL ? xeve_bsw_flush : fn_flush);

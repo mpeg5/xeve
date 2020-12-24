@@ -850,7 +850,7 @@ int xevem_eco_split_mode(XEVE_BSW *bs, XEVE_CTX *c, XEVE_CORE *core, int cud, in
                         smaller[i] = h[i] < cuh;
                 }
             }
-            ctx = min(smaller[0] + smaller[1] + smaller[2], 2);
+            ctx = XEVE_MIN(smaller[0] + smaller[1] + smaller[2], 2);
             ctx = ctx + 3 * xeve_tbl_split_flag_ctx[log2_cuw - 2][log2_cuh - 2];
         }
         else
@@ -1073,7 +1073,7 @@ static void code_coef_remain_exgolomb(XEVE_BSW *bs, int symbol, int rparam)
     XEVE_SBAC    * sbac = GET_SBAC_ENC(bs);
     int code_number = symbol;
     int length;
-    if (code_number < (go_rice_range[rparam] << rparam))
+    if (code_number < (xeve_go_rice_range[rparam] << rparam))
     {
         length = code_number >> rparam;
         sbac_encode_bins_ep((1 << (length + 1)) - 2, length + 1, sbac, bs);
@@ -1082,12 +1082,12 @@ static void code_coef_remain_exgolomb(XEVE_BSW *bs, int symbol, int rparam)
     else
     {
         length = rparam;
-        code_number = code_number - (go_rice_range[rparam] << rparam);
+        code_number = code_number - (xeve_go_rice_range[rparam] << rparam);
         while (code_number >= (1 << length))
         {
             code_number -= (1 << (length++));
         }
-        sbac_encode_bins_ep((1 << (go_rice_range[rparam] + length + 1 - rparam)) - 2, go_rice_range[rparam] + length + 1 - rparam, sbac, bs);
+        sbac_encode_bins_ep((1 << (xeve_go_rice_range[rparam] + length + 1 - rparam)) - 2, xeve_go_rice_range[rparam] + length + 1 - rparam, sbac, bs);
         sbac_encode_bins_ep(code_number, length, sbac, bs);
     }
 }
@@ -1105,8 +1105,8 @@ static void code_positionLastXY(XEVE_BSW *bs, int last_x, int last_y, int width,
     int blk_offset_x, blk_offset_y, shift_x, shift_y;
     int i, cnt;
 
-    group_idx_x = group_idx[last_x];
-    group_idx_y = group_idx[last_y];
+    group_idx_x = xeve_group_idx[last_x];
+    group_idx_y = xeve_group_idx[last_y];
     if (sbac->ctx.sps_cm_init_flag == 1)
     {
         xeve_get_ctx_last_pos_xy_para(ch_type, width, height, &blk_offset_x, &blk_offset_y, &shift_x, &shift_y);
@@ -1125,7 +1125,7 @@ static void code_positionLastXY(XEVE_BSW *bs, int last_x, int last_y, int width,
     {
         xeve_sbac_encode_bin(1, sbac, &cm_x[blk_offset_x + (bin >> shift_x)], bs);
     }
-    if (group_idx_x < group_idx[width - 1])
+    if (group_idx_x < xeve_group_idx[width - 1])
     {
         xeve_sbac_encode_bin(0, sbac, &cm_x[blk_offset_x + (bin >> shift_x)], bs);
     }
@@ -1135,7 +1135,7 @@ static void code_positionLastXY(XEVE_BSW *bs, int last_x, int last_y, int width,
     {
         xeve_sbac_encode_bin(1, sbac, &cm_y[blk_offset_y + (bin >> shift_y)], bs);
     }
-    if (group_idx_y < group_idx[height - 1])
+    if (group_idx_y < xeve_group_idx[height - 1])
     {
         xeve_sbac_encode_bin(0, sbac, &cm_y[blk_offset_y + (bin >> shift_y)], bs);
     }
@@ -1144,7 +1144,7 @@ static void code_positionLastXY(XEVE_BSW *bs, int last_x, int last_y, int width,
     if (group_idx_x > 3)
     {
         cnt = (group_idx_x - 2) >> 1;
-        last_x = last_x - min_in_group[group_idx_x];
+        last_x = last_x - xeve_min_in_group[group_idx_x];
         for (i = cnt - 1; i >= 0; i--)
         {
             sbac_encode_bin_ep((last_x >> i) & 1, sbac, bs);
@@ -1154,7 +1154,7 @@ static void code_positionLastXY(XEVE_BSW *bs, int last_x, int last_y, int width,
     if (group_idx_y > 3)
     {
         cnt = (group_idx_y - 2) >> 1;
-        last_y = last_y - min_in_group[group_idx_y];
+        last_y = last_y - xeve_min_in_group[group_idx_y];
         for (i = cnt - 1; i >= 0; i--)
         {
             sbac_encode_bin_ep((last_y >> i) & 1, sbac, bs);
@@ -1171,7 +1171,7 @@ static void xeve_eco_adcc(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int n
     SBAC_CTX_MODEL* cm_sig_coeff;
     SBAC_CTX_MODEL* cm_gtx;
     int scan_type = COEF_SCAN_ZIGZAG;
-    int log2_block_size = min(log2_w, log2_h);
+    int log2_block_size = XEVE_MIN(log2_w, log2_h);
     u16 *scan;
     int scan_pos_last = -1;
     int last_x = 0, last_y = 0;
@@ -1290,7 +1290,7 @@ static void xeve_eco_adcc(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int n
 
             if (num_nz > 0)
             {
-                int numC1Flag = min(num_nz, CAFLAG_NUMBER);
+                int numC1Flag = XEVE_MIN(num_nz, CAFLAG_NUMBER);
 
                 int firstC2FlagIdx = -1;
                 escape_data_present_ingroup = 0;
@@ -2068,7 +2068,7 @@ void xevem_eco_alf_golomb(XEVE_BSW * bs, int coeff, int k, const BOOL signed_coe
     if (k > 0)
     {
 #if TRACE_HLS
-        xeve_bsw_write_trace(bs, symbol & 0x01, "bins", k);
+        xeve_bsw_write_trace(bs, symbol, "bins", k);
 #else
         xeve_bsw_write(bs, symbol, k);
 #endif
@@ -2874,8 +2874,9 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
         s16(*map_mv)[REFP_NUM][MV_D];
         s16(*map_unrefined_mv)[REFP_NUM][MV_D];
         u32  *map_scu;
+        XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
 
-        map_affine = ctx->map_affine + core->scup;
+        map_affine = mctx->map_affine + core->scup;
         map_refi = ctx->map_refi + core->scup;
         map_scu = ctx->map_scu + core->scup;
         map_mv = ctx->map_mv + core->scup;

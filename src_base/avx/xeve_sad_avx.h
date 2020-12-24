@@ -28,29 +28,16 @@
    POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _XEVE_PRED_H_
-#define _XEVE_PRED_H_
+#ifndef _XEVE_SAD_AVX_H_
+#define _XEVE_SAD_AVX_H_
 
 #include "xeve_type.h"
+#include <immintrin.h>
 
-/* Intra prediction */
-int xeve_pintra_create(XEVE_CTX * ctx, int complexity);
-int xeve_pintra_set_complexity(XEVE_CTX * ctx, int complexity);
-int xeve_pintra_init_tile(XEVE_CTX * ctx, int tile_idx);
-int xeve_pintra_analyze_lcu(XEVE_CTX * ctx, XEVE_CORE * core);
-double xeve_pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
-
-/* Inter prediction */
-extern XEVE_PRED_INTER_COMP tbl_inter_pred_comp[2];
-
-#define BI_ITER                            4
-#define MAX_FIRST_SEARCH_STEP              3
-#define MAX_REFINE_SEARCH_STEP             2
-#define RASTER_SEARCH_STEP                 5
-#define RASTER_SEARCH_THD                  5
-#define REFINE_SEARCH_THD                  0
-#define BI_STEP                            5
-
-int xeve_pinter_create(XEVE_CTX * ctx, int complexity);
-
-#endif /* _XEVE_PRED_H_ */
+#if X86_SSE
+extern XEVE_FN_SAD xeve_tbl_sad_16b_avx[8][8];
+//extern XEVE_FN_SSD xeve_tbl_ssd_16b_sse[8][8];
+//extern XEVE_FN_DIFF xeve_tbl_diff_16b_sse[8][8];
+//extern XEVE_FN_SATD xeve_tbl_satd_16b_sse[1];
+#endif /* X86_SSE */
+#endif /* _XEVE_SAD_AVX_H_ */

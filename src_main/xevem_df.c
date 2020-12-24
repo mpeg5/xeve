@@ -649,8 +649,8 @@ static void deblock_addb_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, in
             {
                 t >>= 1;
                 int qp_u = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_u_offset);
-                indexA = get_index(xeve_tbl_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_alpha_offset);
-                indexB = get_index(xeve_tbl_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_beta_offset);
+                indexA = get_index(xeve_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_alpha_offset);
+                indexB = get_index(xeve_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_beta_offset);
                 alpha = addb_alpha_tbl[indexA] << bitdepth_scale;
                 beta = addb_beta_tbl[indexB] << bitdepth_scale;
                 c1 = addb_clip_tbl[indexA][bs_cur];
@@ -659,8 +659,8 @@ static void deblock_addb_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, in
                 deblock_scu_addb_hor_chroma(u + t, s_c, bs_cur, alpha, beta, c0, bit_depth_chroma - 8);
 
                 int qp_v = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_v_offset);
-                indexA = get_index(xeve_tbl_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_alpha_offset);
-                indexB = get_index(xeve_tbl_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_beta_offset);
+                indexA = get_index(xeve_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_alpha_offset);
+                indexB = get_index(xeve_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_beta_offset);
                 alpha = addb_alpha_tbl[indexA] << bitdepth_scale;
                 beta = addb_beta_tbl[indexB] << bitdepth_scale;
                 c1 = addb_clip_tbl[indexA][bs_cur];
@@ -725,8 +725,8 @@ static void deblock_addb_cu_ver_yuv(XEVE_PIC *pic, int x_pel, int y_pel, int log
             {
                 int qp_u = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_u_offset);
 
-                indexA = get_index(xeve_tbl_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_alpha_offset);
-                indexB = get_index(xeve_tbl_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_beta_offset);
+                indexA = get_index(xeve_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_alpha_offset);
+                indexB = get_index(xeve_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_beta_offset);
 
                 alpha = addb_alpha_tbl[indexA] << bitdepth_scale;
                 beta = addb_beta_tbl[indexB] << bitdepth_scale;
@@ -737,8 +737,8 @@ static void deblock_addb_cu_ver_yuv(XEVE_PIC *pic, int x_pel, int y_pel, int log
                 deblock_scu_addb_ver_chroma(u, s_c, bs_cur, alpha, beta, c0, bit_depth_chroma - 8);
 
                 int qp_v = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_v_offset);
-                indexA = get_index(xeve_tbl_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_alpha_offset);
-                indexB = get_index(xeve_tbl_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_beta_offset);
+                indexA = get_index(xeve_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_alpha_offset);
+                indexB = get_index(xeve_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_beta_offset);
 
                 alpha = addb_alpha_tbl[indexA] << bitdepth_scale;
                 beta = addb_beta_tbl[indexB] << bitdepth_scale;

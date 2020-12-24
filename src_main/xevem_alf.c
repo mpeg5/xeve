@@ -468,11 +468,11 @@ void alf_derive_classification(ADAPTIVE_LOOP_FILTER * alf, ALF_CLASSIFIER** clas
 
     for (int i = blk->y; i < height; i += CLASSIFICATION_BLK_SIZE)
     {
-        int h = min(i + CLASSIFICATION_BLK_SIZE, height) - i;
+        int h = XEVE_MIN(i + CLASSIFICATION_BLK_SIZE, height) - i;
 
         for (int j = blk->x; j < width; j += CLASSIFICATION_BLK_SIZE)
         {
-            int w = min(j + CLASSIFICATION_BLK_SIZE, width) - j;
+            int w = XEVE_MIN(j + CLASSIFICATION_BLK_SIZE, width) - j;
             AREA area = { j, i, w, h };
             alf_derive_classification_blk(classifier, src_luma, src_luma_stride, &area, alf->input_bit_depth[LUMA_CH] + 4, alf->input_bit_depth[LUMA_CH]);
         }
@@ -3404,7 +3404,7 @@ double xeve_alf_derive_coef_quant(int *filter_coef_quant, double **E, double *y,
     int min_value = -max_value;
     for (int i = 0; i < num_coef - 1; i++)
     {
-        filter_coef_quant[i] = min(max_value, max(min_value, filter_coef_quant[i]));
+        filter_coef_quant[i] = XEVE_CLIP3(min_value, max_value, filter_coef_quant[i]);
         filter_coef[i] = filter_coef_quant[i] / (double)factor;
     }
 

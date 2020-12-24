@@ -33,7 +33,9 @@
 
 #define QUANT(c, scale, offset, shift) ((s16)((((c)*(scale)) + (offset)) >> (shift)))
 
-const int quant_scale[6] = {26214, 23302, 20560, 18396, 16384, 14564};
+s64 err_scale_tbl[6][NUM_CU_LOG2 + 1];
+
+const int xeve_quant_scale[6] = {26214, 23302, 20560, 18396, 16384, 14564};
 
 static void tx_pb2b(void * src, void * dst, int shift, int line, int step)
 {
@@ -402,7 +404,7 @@ void xeve_init_err_scale(int bit_depth)
 
     for (qp = 0; qp < 6; qp++)
     {
-        int q_value = quant_scale[qp];
+        int q_value = xeve_quant_scale[qp];
 
         for (i = 0; i < NUM_CU_LOG2 + 1; i++)
         {
@@ -494,7 +496,7 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
     const int ns_shift = ((log2_cuw + log2_cuh) & 1) ? 7 : 0;
     const int ns_scale = ((log2_cuw + log2_cuh) & 1) ? 181 : 1;
     const int ns_offset = ((log2_cuw + log2_cuh) & 1) ? (1 << (ns_shift - 1)) : 0;
-    const int q_value = (quant_scale[qp_rem] * ns_scale + ns_offset) >> ns_shift;
+    const int q_value = (xeve_quant_scale[qp_rem] * ns_scale + ns_offset) >> ns_shift;
     const int log2_size = (log2_cuw + log2_cuh) >> 1;
     const int tr_shift = MAX_TX_DYNAMIC_RANGE - bit_depth - (log2_size);
     const u32 max_num_coef = 1 << (log2_cuw + log2_cuh);
@@ -638,11 +640,12 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
     return nnz;
 }
 
-static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int log2_cuw, int log2_cuh, u16 scale, int ch_type, int slice_type, XEVE_CORE * core, int bit_depth)
+static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int log2_cuw, int log2_cuh, u16 scale, int ch_type
+                        , int slice_type, XEVE_CORE * core, int bit_depth, int use_rdoq)
 {
     int nnz = 0;
 
-    if(USE_RDOQ)
+    if(use_rdoq)
     {
         s64 lev;
         s64 offset;
@@ -680,7 +683,7 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
         }
     }
 
-    if(USE_RDOQ)
+    if (use_rdoq)
     {
         nnz = xeve_rdoq_run_length_cc(qp, lambda, is_intra, coef, coef, log2_cuw, log2_cuh, ch_type, core, bit_depth);
     }
@@ -713,10 +716,10 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
     return nnz;
 }
 
-static int xeve_tq_nnz(u8 qp, double lambda, s16 * coef, int log2_cuw, int log2_cuh, u16 scale, int slice_type, int ch_type, int is_intra, XEVE_CORE * core, int bit_depth)
+static int xeve_tq_nnz(u8 qp, double lambda, s16 * coef, int log2_cuw, int log2_cuh, u16 scale, int slice_type, int ch_type, int is_intra, XEVE_CORE * core, int bit_depth, int rdoq)
 {
     xeve_trans(coef, log2_cuw, log2_cuh, bit_depth);
-    return xeve_quant_nnz(qp, lambda, is_intra, coef, log2_cuw, log2_cuh, scale, ch_type, slice_type, core, bit_depth);
+    return xeve_quant_nnz(qp, lambda, is_intra, coef, log2_cuw, log2_cuh, scale, ch_type, slice_type, core, bit_depth, rdoq);
 }
 
 int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, int slice_type, int nnz[N_C], int is_intra, int run_stats)
@@ -757,8 +760,8 @@ int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM
                         coef_temp[c] = coef[c];
                     }
 
-                    int scale = quant_scale[qp[c] % 6];
-                    core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, slice_type, c, is_intra, core, ctx->sps.bit_depth_luma_minus8 + 8);
+                    int scale = xeve_quant_scale[qp[c] % 6];
+                    core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, slice_type, c, is_intra, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.preset->rdoq);
                     nnz_temp[c] += core->nnz_sub[c][(j << 1) | i];
 
                     if(loop_h + loop_w > 2)

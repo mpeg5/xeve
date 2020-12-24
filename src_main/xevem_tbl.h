@@ -125,4 +125,6 @@ extern int int_chroma_inv_scale_lut[2][DRA_LUT_MAXSIZE];               // LUT fo
 extern const int dra_chroma_qp_offset_tbl[NUM_CHROMA_QP_OFFSET_LOG];
 extern const int dra_exp_nom_v2[NUM_CHROMA_QP_SCALE_EXP];
 
+extern const XEVEM_PRESET xevem_tbl_preset[2][ENC_PRESET_NUM];
+
 #endif /* _XEVE_TBL_H_ */

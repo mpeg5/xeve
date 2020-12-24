@@ -421,11 +421,11 @@ static int  op_level              = 0;
 static int  op_btt                = 1;
 static int  op_suco               = 1;
 static int  op_add_qp_frames      = 0;
-static int  op_framework_cb_max   = 7;
-static int  op_framework_cb_min   = 2;
-static int  op_framework_cu14_max = 6;
-static int  op_framework_tris_max = 6;
-static int  op_framework_tris_min = 4;
+static int  op_framework_cb_max   = 0;
+static int  op_framework_cb_min   = 0;
+static int  op_framework_cu14_max = 0;
+static int  op_framework_tris_max = 0;
+static int  op_framework_tris_min = 0;
 static int  op_framework_suco_max = 6;
 static int  op_framework_suco_min = 4;
 static int  op_tool_amvr          = 1; /* default on */
@@ -462,7 +462,11 @@ static int  op_arbitrary_slice_flag                  = 0;     // default  0
 static char op_num_remaining_tiles_in_slice[600]     = { 0 }; // only in case of arbitrary slices
 static int  op_loop_filter_across_tiles_enabled_flag = 0;     // by default disabled
 static int  op_parallel_task                         = 1;     // default single task
-
+static int  op_rc_type                               = 0;     // rc_off = 0 , rc_cbr = 1
+static int  op_bps                                   = 100000;// Default 100Kbps
+static int  op_vbv_msec                              = 2000;  // Default value 2000ms
+static int  op_use_filler_flag                       = 0;     // Default value 0
+static int  op_num_pre_analysis_frames               = 0;     // Default value 0
 static int  op_chroma_qp_table_present_flag       = 0;
 static char op_chroma_qp_num_points_in_table[256] = {0};
 static char op_chroma_qp_delta_in_val_cb[256]     = {0};
@@ -494,6 +498,8 @@ static int  op_picture_crop_left_offset   = 0;
 static int  op_picture_crop_right_offset  = 0;
 static int  op_picture_crop_top_offset    = 0;
 static int  op_picture_crop_bottom_offset = 0;
+
+static char  op_preset[16] = "reference"; /* default - reference SW level */
 
 typedef enum _OP_FLAGS
 {
@@ -570,6 +576,11 @@ typedef enum _OP_FLAGS
     OP_NUM_REMAINING_TILES_IN_SLICE,
     OP_LOOP_FILTER_ACROSS_TILES_ENABLED_FLAG,
     OP_PARALLEL_TASK,
+    OP_RC_TYPE,
+    OP_BPS,
+    OP_VBV_MSEC,
+    OP_USE_FILLER_FLAG,
+    OP_NUM_PRE_ANALYSIS_FRAMES,
     OP_CHROMA_QP_TABLE_PRESENT_FLAG,
     OP_CHROMA_QP_NUM_POINTS_IN_TABLE,
     OP_CHROMA_QP_DELTA_IN_VAL_CB,
@@ -651,6 +662,7 @@ typedef enum _OP_FLAGS
     OP_PIC_CROP_RIGHT,
     OP_PIC_CROP_TOP,
     OP_PIC_CROP_BOTTOM,
+    OP_PRESET,
 
     OP_FLAG_MAX
 } OP_FLAGS;
@@ -1041,6 +1053,31 @@ static ARGS_OPTION options[] = \
         "Loop filter across tiles enabled or disabled"
     },
     {
+        ARGS_NO_KEY,  "rc_type", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_RC_TYPE], &op_rc_type,
+        "Rate control type: OFF, CBR"
+    },
+    {
+        ARGS_NO_KEY,  "bps", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_BPS], &op_bps,
+        "Bits per second"
+    },
+    {
+        ARGS_NO_KEY,  "vbv_msec", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_VBV_MSEC], &op_vbv_msec,
+        "VBV size in msec"
+    },
+    {
+        ARGS_NO_KEY,  "use_filler", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_USE_FILLER_FLAG], &op_use_filler_flag,
+        "user filler flag"
+    },
+    {
+        ARGS_NO_KEY,  "pre_analysis_frames", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_NUM_PRE_ANALYSIS_FRAMES], &op_num_pre_analysis_frames,
+        "number of pre analysis frames"
+    },
+    {
         ARGS_NO_KEY,  "chroma_qp_table_present_flag", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_CHROMA_QP_TABLE_PRESENT_FLAG], &op_chroma_qp_table_present_flag,
         "chroma_qp_table_present_flag"
@@ -1411,7 +1448,12 @@ static ARGS_OPTION options[] = \
         &op_flag[OP_PIC_CROP_BOTTOM], &op_picture_crop_bottom_offset,
         "INTER_SLICE_TYPE"
     },
-
+    {
+        ARGS_NO_KEY,  "preset", ARGS_VAL_TYPE_STRING,
+        &op_flag[OP_PRESET], &op_preset,
+        "Encoder PRESET"
+        "\t [fast, medium, slow, reference]"
+    },
     {0, "", ARGS_VAL_TYPE_NONE, NULL, NULL, ""} /* termination */
 };
 

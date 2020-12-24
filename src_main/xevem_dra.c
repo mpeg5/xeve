@@ -50,7 +50,7 @@ void prec_quantize_entry_i(QUANT_PARAM_DRA *quant_param_entry, int const value, 
     else
     {
         int est_bits = (int)ceil(log(abs(temp) + 0.0) / log(2.0));
-        quant_param_entry->num_tot_bits = min(est_bits, int_bits);
+        quant_param_entry->num_tot_bits = XEVE_MIN(est_bits, int_bits);
     }
 }
 void prec_quantize_entry_d(QUANT_PARAM_DRA *quant_param_entry, double const value, int const fracBits, int const int_bits)
@@ -66,7 +66,7 @@ void prec_quantize_entry_d(QUANT_PARAM_DRA *quant_param_entry, double const valu
     else
     {
         int est_bits = (int)ceil(log(abs(temp) + 0.0) / log(2.0));
-        quant_param_entry->num_tot_bits = min(est_bits, int_bits + fracBits);
+        quant_param_entry->num_tot_bits = XEVE_MIN(est_bits, int_bits + fracBits);
     }
 }
 
@@ -94,7 +94,7 @@ QUANT_PARAM_DRA prec_plus_entry(QUANT_PARAM_DRA value_this, const QUANT_PARAM_DR
     QUANT_PARAM_DRA tempL = value_this;
     if (value_this.num_frac_bits != rhs.num_frac_bits)
     {
-        int num_frac_bits_final = max(tempL.num_frac_bits, temp.num_frac_bits);
+        int num_frac_bits_final = XEVE_MAX(tempL.num_frac_bits, temp.num_frac_bits);
         lshift(&tempL, num_frac_bits_final - tempL.num_frac_bits);
         lshift(&temp, num_frac_bits_final - temp.num_frac_bits);
 
@@ -105,7 +105,7 @@ QUANT_PARAM_DRA prec_plus_entry(QUANT_PARAM_DRA value_this, const QUANT_PARAM_DR
         this_prec.num_frac_bits = rhs.num_frac_bits;
     }
     this_prec.value = tempL.value + temp.value;
-    this_prec.num_tot_bits = max(tempL.num_tot_bits, rhs.num_tot_bits) + 1;
+    this_prec.num_tot_bits = XEVE_MAX(tempL.num_tot_bits, rhs.num_tot_bits) + 1;
     return this_prec;
 }
 QUANT_PARAM_DRA prec_minus_entry(QUANT_PARAM_DRA value_this, const QUANT_PARAM_DRA rhs)
@@ -115,7 +115,7 @@ QUANT_PARAM_DRA prec_minus_entry(QUANT_PARAM_DRA value_this, const QUANT_PARAM_D
     QUANT_PARAM_DRA tempL = value_this;
     if (value_this.num_frac_bits != rhs.num_frac_bits)
     {
-        int num_frac_bits_final = max(tempL.num_frac_bits, temp.num_frac_bits);
+        int num_frac_bits_final = XEVE_MAX(tempL.num_frac_bits, temp.num_frac_bits);
         lshift(&tempL, num_frac_bits_final - value_this.num_frac_bits);
         lshift(&temp, num_frac_bits_final - temp.num_frac_bits);
 
@@ -126,7 +126,7 @@ QUANT_PARAM_DRA prec_minus_entry(QUANT_PARAM_DRA value_this, const QUANT_PARAM_D
         this_prec.num_frac_bits = rhs.num_frac_bits;
     }
     this_prec.value = tempL.value - temp.value;
-    this_prec.num_tot_bits = max(tempL.num_tot_bits, rhs.num_tot_bits) + 1;
+    this_prec.num_tot_bits = XEVE_MAX(tempL.num_tot_bits, rhs.num_tot_bits) + 1;
     return this_prec;
 }
 QUANT_PARAM_DRA prec_mult_entry(QUANT_PARAM_DRA value_this, const QUANT_PARAM_DRA rhs)
@@ -187,7 +187,7 @@ int xeve_get_scaled_chroma_qp2(int comp_id, int unscaledChromaQP, int bit_depth)
 {
     int qp_bd_offset_c = 6 * (bit_depth - 8);
     int qp_value = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP_TABLE_SIZE - 1, unscaledChromaQP);
-    qp_value = *(xeve_tbl_qp_chroma_dynamic[comp_id - 1] + qp_value);
+    qp_value = *(xeve_qp_chroma_dynamic[comp_id - 1] + qp_value);
     return qp_value;
 }
 
@@ -359,7 +359,7 @@ double xeve_get_cb_scale_dra(DRA_CHROMA_OFF_CONTROL *dra_chroma_control, int idx
     double chroma_qp = dra_chroma_control->chroma_qp_scale * idx_qp + dra_chroma_control->chroma_qp_offset;
     chroma_qp = chroma_qp * dra_chroma_control->cb_qp_scale;
     int cb_qp = (int)(chroma_qp + (chroma_qp < 0 ? -0.5 : 0.5));
-    cb_qp = XEVE_CLIP3(-12, 12, min(0, cb_qp) + dra_chroma_control->dra_cb_qp_offset);
+    cb_qp = XEVE_CLIP3(-12, 12, XEVE_MIN(0, cb_qp) + dra_chroma_control->dra_cb_qp_offset);
     cb_qp = cb_qp - dra_chroma_control->dra_cb_qp_offset;
     scale_cb_dra = xeve_get_qp2_scale_dra(cb_qp);
     scale_cb_dra = 1 / scale_cb_dra;  // chroma QP Offset is added to luma, which equialent of reduced scale factor 1/x
@@ -372,7 +372,7 @@ double xeve_get_cr_scale_dra(DRA_CHROMA_OFF_CONTROL *dra_chroma_control, int idx
 
     chroma_qp = chroma_qp * dra_chroma_control->cr_qp_scale;
     int crQP = (int)(chroma_qp + (chroma_qp < 0 ? -0.5 : 0.5));
-    crQP = XEVE_CLIP3(-12, 12, min(0, crQP) + dra_chroma_control->dra_cr_qp_offset);
+    crQP = XEVE_CLIP3(-12, 12, XEVE_MIN(0, crQP) + dra_chroma_control->dra_cr_qp_offset);
     crQP = crQP - dra_chroma_control->dra_cr_qp_offset;
     scale_cr_dra = xeve_get_qp2_scale_dra(crQP);
     scale_cr_dra = 1 / scale_cr_dra;

@@ -28,29 +28,15 @@
    POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _XEVE_PRED_H_
-#define _XEVE_PRED_H_
+#ifndef _XEVE_MC_AVX_H_
+#define _XEVE_MC_AVX_H_
+#include <xeve_type.h>
 
-#include "xeve_type.h"
+#if X86_SSE
+#include <immintrin.h>
 
-/* Intra prediction */
-int xeve_pintra_create(XEVE_CTX * ctx, int complexity);
-int xeve_pintra_set_complexity(XEVE_CTX * ctx, int complexity);
-int xeve_pintra_init_tile(XEVE_CTX * ctx, int tile_idx);
-int xeve_pintra_analyze_lcu(XEVE_CTX * ctx, XEVE_CORE * core);
-double xeve_pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
+extern XEVE_MC_L xeve_tbl_mc_l_avx[2][2];
+extern XEVE_MC_C xeve_tbl_mc_c_avx[2][2];
+#endif /* X86_SSE */
 
-/* Inter prediction */
-extern XEVE_PRED_INTER_COMP tbl_inter_pred_comp[2];
-
-#define BI_ITER                            4
-#define MAX_FIRST_SEARCH_STEP              3
-#define MAX_REFINE_SEARCH_STEP             2
-#define RASTER_SEARCH_STEP                 5
-#define RASTER_SEARCH_THD                  5
-#define REFINE_SEARCH_THD                  0
-#define BI_STEP                            5
-
-int xeve_pinter_create(XEVE_CTX * ctx, int complexity);
-
-#endif /* _XEVE_PRED_H_ */
+#endif /* _XEVE_MC_SSE_H_ */

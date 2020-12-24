@@ -77,11 +77,11 @@
 #define MC_IBUF_PAD_L          8
 #define MC_IBUF_PAD_BL         2
 
-extern s16 (*tbl_mc_l_coeff)[16][8];
-extern s16 tbl_mc_l_coeff_base[16][8];
+extern s16 (*tbl_mc_l_coeff)[8];
+extern s16 xeve_tbl_mc_l_coeff[16][8];
 
-extern s16 (*tbl_mc_c_coeff)[32][4];
-extern s16 tbl_mc_c_coeff_base[32][4];
+extern s16 (*tbl_mc_c_coeff)[4];
+extern s16 xeve_tbl_mc_c_coeff[32][4];
 
 typedef void (*XEVE_MC_L) (pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth);
 typedef void (*XEVE_MC_C) (pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth);
@@ -90,22 +90,23 @@ typedef void (*XEVE_AVG_NO_CLIP)(s16 *src, s16 *ref, s16 *dst, int s_src, int s_
 extern XEVE_MC_L xeve_tbl_mc_l[2][2];
 extern XEVE_MC_C xeve_tbl_mc_c[2][2];
 
-XEVE_MC_L (*xeve_func_mc_l)[2][2];
-XEVE_MC_C (*xeve_func_mc_c)[2][2];
-XEVE_AVG_NO_CLIP xeve_func_average_no_clip;
+extern XEVE_MC_L (*xeve_func_mc_l)[2];
+extern XEVE_MC_C (*xeve_func_mc_c)[2];
+extern XEVE_AVG_NO_CLIP xeve_func_average_no_clip;
 
 #define xeve_mc_l(ori_mv_x, ori_mv_y, ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth) \
-    ((*xeve_func_mc_l)[((ori_mv_x) | ((ori_mv_x)>>1) | ((ori_mv_x)>>2) | ((ori_mv_x)>>3)) & 0x1])\
+       (xeve_func_mc_l[((ori_mv_x) | ((ori_mv_x)>>1) | ((ori_mv_x)>>2) | ((ori_mv_x)>>3)) & 0x1])\
         [((ori_mv_y) | ((ori_mv_y)>>1) | ((ori_mv_y)>>2) | ((ori_mv_y)>>3)) & 0x1]\
         (ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth)
 
 #define xeve_mc_c(ori_mv_x, ori_mv_y, ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth) \
-    ((*xeve_func_mc_c)[((ori_mv_x) | ((ori_mv_x)>>1) | ((ori_mv_x)>>2)| ((ori_mv_x)>>3) | ((ori_mv_x)>>4)) & 0x1]\
+       (xeve_func_mc_c[((ori_mv_x) | ((ori_mv_x)>>1) | ((ori_mv_x)>>2)| ((ori_mv_x)>>3) | ((ori_mv_x)>>4)) & 0x1]\
         [((ori_mv_y) | ((ori_mv_y)>>1) | ((ori_mv_y)>>2) | ((ori_mv_y)>>3) | ((ori_mv_y)>>4)) & 0x1])\
         (ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth)
 
-void xeve_mc_base(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma);
+void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma);
 void xeve_mv_clip(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16 mv[REFP_NUM][MV_D], s16(*mv_t)[MV_D]);
 void xeve_average_16b_no_clip(s16 *src, s16 *ref, s16 *dst, int s_src, int s_ref, int s_dst, int wd, int ht);
-
+void xeve_mc_l_00(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth);
+void xeve_mc_c_00(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth);
 #endif /* _XEVE_MC_H_ */

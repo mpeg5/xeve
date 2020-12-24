@@ -50,9 +50,6 @@
 #define GET_QP(qp,dqp)                             ((qp + dqp + 52) % 52)
 #define GET_LUMA_QP(qp, qp_bd_offset)               (qp + 6 * qp_bd_offset)
 
-//platform tools & trivial improvement
-#define USE_RDOQ                                     1 // Use RDOQ
-
 //fast algorithm
 #define ENC_ECU_DEPTH                                8 // for early CU termination
 #define ENC_ECU_ADAPTIVE                             1 // for early CU termination
@@ -60,7 +57,6 @@
 #define MULTI_REF_ME_STEP                            1 // for ME speed-up
 #define FAST_MERGE_THR                               1.3
 #define ENC_SUCO_FAST_CONFIG                         1  /* fast config: 1(low complexity), 2(medium complexity), 4(high_complexity) */
-
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
@@ -199,12 +195,10 @@ enum SAD_POINT_INDEX
 /* ALF (END) */
 
 /* TRANSFORM PACKAGE (START) */
-#define ATS_INTRA_FAST                     0
-#if ATS_INTRA_FAST
+#define ATS_INTRA_FAST                     1
 #define ATS_INTER_INTRA_SKIP_THR           1.05
-#define ATS_INTRA_Y_NZZ_THR                1.00
+#define ATS_INTRA_Y_NZZ_THR                1
 #define ATS_INTRA_IPD_THR                  1.10
-#endif
 
 #define ATS_INTER_SL_NUM                   16
 #define get_ats_inter_idx(s)               (s & 0xf)
@@ -256,14 +250,10 @@ enum SAD_POINT_INDEX
 #define CABAC_ZERO_PARAM                   32
 /* CABAC ZERO WORD (END) */
 
-/* Common routines (START) */
-#define max(x, y) (((x) > (y)) ? (x) : (y))
-#define min(x, y) (((x) < (y)) ? (x) : (y))
-
-typedef int BOOL;
+/* COMMON (START) */typedef int BOOL;
 #define TRUE                               1
 #define FALSE                              0
-/* Common stuff (END) */
+/* COMMON (END) */
 
 /* For debugging (START) */
 #define USE_DRAW_PARTITION_DEC             0
@@ -323,7 +313,11 @@ extern int fp_trace_started;
 #define XEVE_TRACE_FLUSH
 #endif
 /* For debugging (END) */
-
+/*************Optimization************/
+#define OPT_MC_BI_PAD            32
+#define PRED_BI_SIZE           ((MAX_CU_SIZE + OPT_MC_BI_PAD * 2) * (MAX_CU_SIZE + OPT_MC_BI_PAD * 2))
+#define PRED_MAX_I_PERIOD       100
+#define PRED_MAX_REF_FRAMES     4
 
 /********* Conditional tools definition ********/
 
@@ -374,7 +368,7 @@ extern int fp_trace_started;
 #define MAX_TR_DIM                        (MAX_TR_SIZE * MAX_TR_SIZE)
 #define MIN_TR_DIM                        (MIN_TR_SIZE * MIN_TR_SIZE)
 
-#define MAX_BEF_DATA_NUM                  (NUM_NEIB << 1)
+#define MAX_BEF_DATA_NUM                  (1)
 
 /* maximum CB count in a LCB */
 #define MAX_CU_CNT_IN_LCU                  (MAX_CU_DIM/MIN_CU_DIM)
@@ -1406,7 +1400,32 @@ enum TQC_RUN {
     RUN_CR = 4
 };
 
-#include "xeve_tbl.h"
+/*****************************************************************************
+ * Encoder preset
+ *****************************************************************************/
+typedef struct _XEVE_PRESET
+{
+    /* log2 scale of Min/Max CU size */
+    int    max_cu_intra;
+    int    min_cu_intra;
+    int    max_cu_inter;
+    int    min_cu_inter;
+    int    me_ref_num;
+    int    me_algo;
+    int    me_range;
+    int    me_sub;
+    int    me_sub_pos;
+    int    me_sub_range;
+    double skip_th;
+    int    merge_num;
+    int    rdoq;
+    int    cabac_refine;
+    int    bframe;
+    int    rdo_dbk;
+
+} XEVE_PRESET;
+
+#include "xeve_thread_pool.h"
 #include "xeve_recon.h"
 #include "xeve_ipred.h"
 #include "xeve_tbl.h"
@@ -1414,7 +1433,7 @@ enum TQC_RUN {
 #include "xeve_picman.h"
 #include "xeve_mc.h"
 #include "xeve_mc_sse.h"
-#include "xeve_thread_pool.h"
+#include "xeve_mc_avx.h"
 #include "xeve_util.h"
 
 #endif /* _XEVE_DEF_H_ */

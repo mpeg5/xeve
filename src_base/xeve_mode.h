@@ -64,7 +64,6 @@ void xeve_sbac_bit_reset(XEVE_SBAC * sbac);
 u32  xeve_get_bit_number(XEVE_SBAC * sbac);
 void xeve_init_bits_est();
 u16  xeve_get_lr(u16 avail_lr);
-void xeve_init_bef_data(XEVE_CORE * core, XEVE_CTX * ctx);
 void calc_delta_dist_filter_boundary(XEVE_CTX* ctx, XEVE_PIC *pic_rec, XEVE_PIC *pic_org, int cuw, int cuh, pel(*src)[MAX_CU_DIM], int s_src, int x, int y, u16 avail_lr
                                    , u8 intra_flag, u8 cbf_l, s8 *refi, s16(*mv)[MV_D], u8 is_mv_from_mvf, XEVE_CORE * core);
 void copy_to_cu_data(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi, s16 coef_src[N_C][MAX_CU_DIM]);
@@ -81,7 +80,7 @@ int copy_cu_data(XEVE_CU_DATA *dst, XEVE_CU_DATA *src, int x, int y, int log2_cu
 void mode_cpy_rec_to_ref(XEVE_CORE *core, int x, int y, int w, int h, XEVE_PIC *pic, TREE_CONS tree_cons);
 int get_cu_pred_data(XEVE_CU_DATA *src, int x, int y, int log2_cuw, int log2_cuh, int log2_cus, int cud, XEVE_MODE *mi, XEVE_CTX *ctx, XEVE_CORE *core);
 
-int mode_init_frame(XEVE_CTX *ctx);
+int mode_init_tile(XEVE_CTX *ctx, int tile_idx);
 int mode_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core);
 void update_to_ctx_map(XEVE_CTX *ctx, XEVE_CORE *core);
 

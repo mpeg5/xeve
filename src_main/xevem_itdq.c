@@ -42,6 +42,8 @@ INV_TRANS xeve_itrans_map_tbl[16][5] =
     { NULL, xeve_itrans_ats_intra_DST7_B4, xeve_itrans_ats_intra_DST7_B8, xeve_itrans_ats_intra_DST7_B16, xeve_itrans_ats_intra_DST7_B32 },
 };
 
+INV_TRANS (*xeve_func_itrans)[5];
+
 void xeve_itrans_ats_intra(s16 *coef, int log2_cuw, int log2_cuh, u8 ats_mode, int skip_w, int skip_h, int bit_depth);
 void xeve_it_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, const int max_log2_tr_dynamic_range, u8 ats_intra_tridx, int skip_w, int skip_h);
 
@@ -382,8 +384,8 @@ void xeve_it_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, const int
     t_idx_h = xeve_tbl_tr_subset_intra[ats_intra_tridx >> 1];
     t_idx_v = xeve_tbl_tr_subset_intra[ats_intra_tridx & 1];
 
-    (*xeve_func_itrans)[t_idx_v][log2_minus1_h](coef, t, shift_1st, tuw, skip_w, skip_h);
-    (*xeve_func_itrans)[t_idx_h][log2_minus1_w](t, coef, shift_2nd, tuh, 0, skip_w);
+    xeve_func_itrans[t_idx_v][log2_minus1_h](coef, t, shift_1st, tuw, skip_w, skip_h);
+    xeve_func_itrans[t_idx_h][log2_minus1_w](t, coef, shift_2nd, tuh, 0, skip_w);
 }
 
 static void itx_pb2(s16 *src, s16 *dst, int shift, int line)

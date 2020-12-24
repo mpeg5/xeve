@@ -359,7 +359,7 @@ static double pibc_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int
             dist[i] = xeve_ssd_16b(log2_w[i], log2_h[i], rec[i], org[i], w[i], pi->s_o[i], bit_depth_tbl[i]);
         }
 
-        if(ctx->cdsc.rdo_dbk_switch)
+        if(ctx->param.rdo_dbk_switch)
         {
             //filter rec and calculate ssd
             calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, rec, cuw, x, y, core->avail_lr, 0, nnz[Y_C] != 0, NULL, pi->mv, is_from_mv_field, core);
@@ -427,7 +427,7 @@ static double pibc_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int
             ctx->fn_recon(ctx, core, coef[i], pred[0][i], nnz[i], w[i], h[i], w[i], rec[i], bit_depth_tbl[i]);
             dist[i] = xeve_ssd_16b(log2_w[i], log2_h[i], rec[i], org[i], w[i], pi->s_o[i], bit_depth_tbl[i]);
         }
-        if(ctx->cdsc.rdo_dbk_switch)
+        if(ctx->param.rdo_dbk_switch)
         {
             calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, rec, cuw, x, y, core->avail_lr, 0, 0, NULL, pi->mv, is_from_mv_field, core);
 
@@ -1110,15 +1110,12 @@ static double pibc_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int 
     }
 }
 
-static int pibc_init_frame(XEVE_CTX *ctx)
+static int pibc_init_tile(XEVE_CTX *ctx, int tile_idx)
 {
-    XEVE_PIBC *pi;
-    XEVE_PIC  *pic;
-    XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
-
-    int size;
-
-    pi = &mctx->pibc[0];
+    XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
+    XEVE_PIBC * pi = &mctx->pibc[tile_idx];
+    XEVE_PIC  * pic;
+    int         size;
 
     pic = pi->pic_o = PIC_ORIG(ctx);
     pi->o[Y_C] = pic->y;
@@ -1218,7 +1215,7 @@ int xeve_pibc_create(XEVE_CTX *ctx, int complexity)
     XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
 
     /* set function addresses */
-    mctx->fn_pibc_init_frame = pibc_init_frame;
+    mctx->fn_pibc_init_tile = pibc_init_tile;
     mctx->fn_pibc_init_lcu = pibc_init_lcu;
     mctx->fn_pibc_set_complexity = pibc_set_complexity;
     

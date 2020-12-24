@@ -35,6 +35,9 @@
 
 #include "xevem_type.h"
 
+
+XEVE_INTRA_PRED_ANG (*xeve_func_intra_pred_ang)[2];
+
 void xevem_get_nbr(int x, int y, int cuw, int cuh, pel *src, int s_src, u16 avail_cu, pel nb[N_C][N_REF][MAX_CU_SIZE * 3], int scup, u32 * map_scu
                  , int w_scu, int h_scu, int ch_type, int constrained_intra_pred, u8 * map_tidx, int bit_depth)
 {
@@ -889,7 +892,7 @@ void xevem_ipred(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, 
         default:
             func_ipm = (ipm < IPD_VER ? 0 : (ipm > IPD_HOR ? 1 : 2));
             func_lr = func_ipm < 2 ? (((avail_lr >> 1) & 1)) : (avail_lr == LR_01);
-            (*xeve_func_intra_pred_ang)[func_ipm][func_lr](src_le, src_up, src_ri, avail_lr, dst, w, h, ipm, bit_depth);
+            xeve_func_intra_pred_ang[func_ipm][func_lr](src_le, src_up, src_ri, avail_lr, dst, w, h, ipm, bit_depth);
             break;
     }
 }
@@ -914,7 +917,7 @@ void xevem_ipred_uv(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *ds
                 default:
                     func_ipm = (ipm < IPD_VER ? 0 : (ipm > IPD_HOR ? 1 : 2));
                     func_lr = func_ipm < 2 ? (((avail_lr >> 1) & 1)) : (avail_lr == LR_01);
-                    (*xeve_func_intra_pred_ang)[func_ipm][func_lr](src_le, src_up, src_ri, avail_lr, dst, w, h, ipm, bit_depth);
+                    xeve_func_intra_pred_ang[func_ipm][func_lr](src_le, src_up, src_ri, avail_lr, dst, w, h, ipm, bit_depth);
                     break;
             }
             break;

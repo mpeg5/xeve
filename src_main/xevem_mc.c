@@ -36,6 +36,14 @@
 #include "xevem_type.h"
 #include <assert.h>
 
+
+XEVE_DMVR_MC_L (*xevem_func_dmvr_mc_l)[2];
+XEVE_DMVR_MC_C (*xevem_func_dmvr_mc_c)[2];
+XEVE_MC_C      (*xevem_func_bl_mc_l)[2];
+XEVE_AFFINE_H_SOBEL_FLT xevem_func_aff_h_sobel_flt;
+XEVE_AFFINE_V_SOBEL_FLT xevem_func_aff_v_sobel_flt;
+XEVE_AFFINE_EQUAL_COEF  xevem_func_aff_eq_coef_comp;
+
 s16 tbl_mc_l_coeff_main[16][8] =
 {
     {  0, 0,   0, 64,  0,   0,  0,  0 },
@@ -184,7 +192,7 @@ void xeve_mc_dmvr_l_n0(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pe
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_8TAP_N0((*tbl_mc_l_coeff)[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7]);
+            pt = MAC_8TAP_N0(tbl_mc_l_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         ref += s_ref;
@@ -204,7 +212,7 @@ void xeve_mc_dmvr_l_0n(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pe
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_8TAP_0N((*tbl_mc_l_coeff)[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j], ref[s_ref * 4 + j], ref[s_ref * 5 + j], ref[s_ref * 6 + j], ref[s_ref * 7 + j]);
+            pt = MAC_8TAP_0N(tbl_mc_l_coeff[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j], ref[s_ref * 4 + j], ref[s_ref * 5 + j], ref[s_ref * 6 + j], ref[s_ref * 7 + j]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         ref += s_ref;
@@ -233,7 +241,7 @@ void xeve_mc_dmvr_l_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            b[j] = MAC_8TAP_NN_S1((*tbl_mc_l_coeff)[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7], offset1, shift1);
+            b[j] = MAC_8TAP_NN_S1(tbl_mc_l_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7], offset1, shift1);
         }
         ref += s_ref;
         b += w;
@@ -244,7 +252,7 @@ void xeve_mc_dmvr_l_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_8TAP_NN_S2((*tbl_mc_l_coeff)[dy], b[j], b[j + w], b[j + w * 2], b[j + w * 3], b[j + w * 4], b[j + w * 5], b[j + w * 6], b[j + w * 7], offset2, shift2);
+            pt = MAC_8TAP_NN_S2(tbl_mc_l_coeff[dy], b[j], b[j + w], b[j + w * 2], b[j + w * 3], b[j + w * 4], b[j + w * 5], b[j + w * 6], b[j + w * 7], offset2, shift2);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -385,7 +393,7 @@ void xeve_mc_dmvr_c_n0(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_4TAP_N0((*tbl_mc_c_coeff)[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3]);
+            pt = MAC_4TAP_N0(tbl_mc_c_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -405,7 +413,7 @@ void xeve_mc_dmvr_c_0n(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_4TAP_0N((*tbl_mc_c_coeff)[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j]);
+            pt = MAC_4TAP_0N(tbl_mc_c_coeff[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -435,7 +443,7 @@ void xeve_mc_dmvr_c_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            b[j] = MAC_4TAP_NN_S1((*tbl_mc_c_coeff)[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], offset1, shift1);
+            b[j] = MAC_4TAP_NN_S1(tbl_mc_c_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], offset1, shift1);
         }
         ref += s_ref;
         b += w;
@@ -446,7 +454,7 @@ void xeve_mc_dmvr_c_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_4TAP_NN_S2((*tbl_mc_c_coeff)[dy], b[j], b[j + w], b[j + 2 * w], b[j + 3 * w], offset2, shift2);
+            pt = MAC_4TAP_NN_S2(tbl_mc_c_coeff[dy], b[j], b[j + w], b[j + 2 * w], b[j + 3 * w], offset2, shift2);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -925,8 +933,8 @@ void processDMVR(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_
     int array_cost[SAD_COUNT];
     int dx, dy;
 
-    dy = min(h, DMVR_SUBCU_SIZE);
-    dx = min(w, DMVR_SUBCU_SIZE);
+    dy = XEVE_MIN(h, DMVR_SUBCU_SIZE);
+    dx = XEVE_MIN(w, DMVR_SUBCU_SIZE);
 
     int num = 0;
     int sub_start_x, sub_start_y, start_x, start_y;
@@ -1091,13 +1099,13 @@ void xeve_mc_main(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP
 
     if(sps_admvp_flag == 1)
     {
-        tbl_mc_l_coeff = &tbl_mc_l_coeff_main;
-        tbl_mc_c_coeff = &tbl_mc_c_coeff_main;
+        tbl_mc_l_coeff = tbl_mc_l_coeff_main;
+        tbl_mc_c_coeff = tbl_mc_c_coeff_main;
     }
     else
     {
-        tbl_mc_l_coeff = &tbl_mc_l_coeff_base;
-        tbl_mc_c_coeff = &tbl_mc_c_coeff_base;
+        tbl_mc_l_coeff = xeve_tbl_mc_l_coeff;
+        tbl_mc_c_coeff = xeve_tbl_mc_c_coeff;
     }
 
     if(REFI_IS_VALID(refi[REFP_0]))
@@ -1279,12 +1287,12 @@ void eif_derive_mv_clip_range(int x, int y, int cuw, int cuh, int dmv_hor[MV_D],
             if(min_mv[comp] < min_mv_pic[comp])
             {
                 min_mv[comp] = min_mv_pic[comp];
-                max_mv[comp] = min(max_mv_pic[comp], min_mv_pic[comp] + 2 * mv_spread);
+                max_mv[comp] = XEVE_MIN(max_mv_pic[comp], min_mv_pic[comp] + 2 * mv_spread);
             }
             else if(max_mv[comp] > max_mv_pic[comp])
             {
                 max_mv[comp] = max_mv_pic[comp];
-                min_mv[comp] = max(min_mv_pic[comp], max_mv_pic[comp] - 2 * mv_spread);
+                min_mv[comp] = XEVE_MAX(min_mv_pic[comp], max_mv_pic[comp] - 2 * mv_spread);
             }
         }
 
@@ -1370,8 +1378,8 @@ void xeve_affine_mc_l(int x, int y, int pic_w, int pic_h, int cuw, int cuh, s16 
             mv_scale_tmp_ver_ori = mv_scale_tmp_ver;
             mv_scale_tmp_hor_ori = mv_scale_tmp_hor;
             // clip
-            mv_scale_tmp_hor = min(hor_max, max(hor_min, mv_scale_tmp_hor));
-            mv_scale_tmp_ver = min(ver_max, max(ver_min, mv_scale_tmp_ver));
+            mv_scale_tmp_hor = XEVE_MIN(hor_max, XEVE_MAX(hor_min, mv_scale_tmp_hor));
+            mv_scale_tmp_ver = XEVE_MIN(ver_max, XEVE_MAX(ver_min, mv_scale_tmp_ver));
 
             qpel_gmv_x = ((x + w) << mc_prec) + mv_scale_tmp_hor;
             qpel_gmv_y = ((y + h) << mc_prec) + mv_scale_tmp_ver;
@@ -1463,8 +1471,8 @@ void xeve_affine_mc_lc(int x, int y, int pic_w, int pic_h, int cuw, int cuh, s16
             mv_scale_tmp_ver_ori = mv_scale_tmp_ver;
             mv_scale_tmp_hor_ori = mv_scale_tmp_hor;
             // clip
-            mv_scale_tmp_hor = min(hor_max, max(hor_min, mv_scale_tmp_hor));
-            mv_scale_tmp_ver = min(ver_max, max(ver_min, mv_scale_tmp_ver));
+            mv_scale_tmp_hor = XEVE_MIN(hor_max, XEVE_MAX(hor_min, mv_scale_tmp_hor));
+            mv_scale_tmp_ver = XEVE_MIN(ver_max, XEVE_MAX(ver_min, mv_scale_tmp_ver));
 
             qpel_gmv_x = ((x + w) << mc_prec) + mv_scale_tmp_hor;
             qpel_gmv_y = ((y + h) << mc_prec) + mv_scale_tmp_ver;
@@ -1474,8 +1482,8 @@ void xeve_affine_mc_lc(int x, int y, int pic_w, int pic_h, int cuw, int cuh, s16
 #if (AFFINE_MIN_BLOCK_SIZE == 1)
             if((w & 1) == 0 && (h & 1) == 0)
             {
-                xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->u, qpel_gmv_x, qpel_gmv_y, ref_pic->s_c, cuw >> 1, pred_u + (w >> 1), max((sub_w >> 1), 1), max((sub_h >> 1), 1), bit_depth_chroma);
-                xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->v, qpel_gmv_x, qpel_gmv_y, ref_pic->s_c, cuw >> 1, pred_v + (w >> 1), max((sub_w >> 1), 1), max((sub_h >> 1), 1), bit_depth_chroma);
+                xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->u, qpel_gmv_x, qpel_gmv_y, ref_pic->s_c, cuw >> 1, pred_u + (w >> 1), XEVE_MAX((sub_w >> 1), 1), XEVE_MAX((sub_h >> 1), 1), bit_depth_chroma);
+                xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->v, qpel_gmv_x, qpel_gmv_y, ref_pic->s_c, cuw >> 1, pred_v + (w >> 1), XEVE_MAX((sub_w >> 1), 1), XEVE_MAX((sub_h >> 1), 1), bit_depth_chroma);
             }
 #else
             xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->u, qpel_gmv_x, qpel_gmv_y, ref_pic->s_c, cuw >> 1, pred_u + (w >> 1), sub_w >> 1, sub_h >> 1, bit_depth_chroma);
@@ -1548,8 +1556,7 @@ void xeve_eif_filter(int block_width, int block_height, pel* p_tmp_buf, int tmp_
         for(int x = 0; x < block_width; ++x, ++t, ++p_dst_buf)
         {
             pel res = (-t[-tmp_buf_stride] + (t[0] * 10) - t[tmp_buf_stride] + offsets[3]) >> shifts[3];
-
-            *p_dst_buf = min((1 << bit_depth) - 1, max(0, res));
+            *p_dst_buf = XEVE_CLIP3(0, (1 << bit_depth) - 1, res);
         }
     }
 }
@@ -1572,8 +1579,8 @@ void xeve_eif_bilinear_clip(int block_width, int block_height, int mv0[MV_D], in
 
         for(int x = -1; x <= block_width; ++x, tmp_mv[MV_X] += d_x[MV_X], tmp_mv[MV_Y] += d_x[MV_Y])
         {
-            mv[MV_X] = min(mv_max[MV_X], max(mv_min[MV_X], tmp_mv[MV_X] >> (EIF_MV_PRECISION_INTERNAL - EIF_MV_PRECISION_BILINEAR)));
-            mv[MV_Y] = min(mv_max[MV_Y], max(mv_min[MV_Y], tmp_mv[MV_Y] >> (EIF_MV_PRECISION_INTERNAL - EIF_MV_PRECISION_BILINEAR)));
+            mv[MV_X] = XEVE_CLIP3(mv_min[MV_X], mv_max[MV_X], tmp_mv[MV_X] >> (EIF_MV_PRECISION_INTERNAL - EIF_MV_PRECISION_BILINEAR));
+            mv[MV_Y] = XEVE_CLIP3(mv_min[MV_Y], mv_max[MV_Y], tmp_mv[MV_Y] >> (EIF_MV_PRECISION_INTERNAL - EIF_MV_PRECISION_BILINEAR));
 
             int xInt = x + (mv[MV_X] >> EIF_MV_PRECISION_BILINEAR);
             int yInt = y + (mv[MV_Y] >> EIF_MV_PRECISION_BILINEAR);
@@ -1689,7 +1696,7 @@ void xeve_eif_mc(int block_width, int block_height, int x, int y, int mv_scale_h
     assert(bit_depth < 16);
 
 #if EIF_MV_PRECISION_BILINEAR == 4 || EIF_MV_PRECISION_BILINEAR == 5
-    int shifts[4] = {0, 0, max(bit_depth + 5 - 16, 0), 6 - max(bit_depth + 5 - 16, 0)};
+    int shifts[4] = {0, 0, XEVE_MAX(bit_depth + 5 - 16, 0), 6 - XEVE_MAX(bit_depth + 5 - 16, 0)};
 #else
     int shifts[4] = {bit_depth + EIF_MV_PRECISION_BILINEAR - 13, EIF_MV_PRECISION_BILINEAR + 1, 4, 14 - bit_depth}; //4 -- number of bits in 10 ; all pels are positive after bilinear interpolation
 #endif

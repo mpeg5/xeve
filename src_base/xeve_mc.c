@@ -34,7 +34,11 @@
 #include <assert.h>
 
 
-s16 tbl_mc_l_coeff_base[16][8] =
+XEVE_MC_L (*xeve_func_mc_l)[2];
+XEVE_MC_C (*xeve_func_mc_c)[2];
+XEVE_AVG_NO_CLIP xeve_func_average_no_clip;
+
+s16 xeve_tbl_mc_l_coeff[16][8] =
 {
     {  0, 0,   0, 64,  0,   0,  0,  0 },
     {  0, 0,   0,  0,  0,   0,  0,  0 },
@@ -54,7 +58,7 @@ s16 tbl_mc_l_coeff_base[16][8] =
     {  0, 0,   0,  0,  0,   0,  0,  0 },
 };
 
-s16 tbl_mc_c_coeff_base[32][4] =
+s16 xeve_tbl_mc_c_coeff[32][4] =
 {
     {  0, 64,  0,  0 },
     {  0,  0,  0,  0 },
@@ -90,8 +94,8 @@ s16 tbl_mc_c_coeff_base[32][4] =
     {  0,  0,  0,  0 },
 };
 
-s16 (*tbl_mc_l_coeff)[16][8] = &tbl_mc_l_coeff_base;
-s16 (*tbl_mc_c_coeff)[32][4] = &tbl_mc_c_coeff_base;
+s16 (*tbl_mc_l_coeff)[8] = xeve_tbl_mc_l_coeff;
+s16 (*tbl_mc_c_coeff)[4] = xeve_tbl_mc_c_coeff;
 
 
 /****************************************************************************
@@ -99,17 +103,14 @@ s16 (*tbl_mc_c_coeff)[32][4] = &tbl_mc_c_coeff_base;
  ****************************************************************************/
 void xeve_mc_l_00(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth)
 {
-    int i, j;
+    int size = sizeof(pel) * w;
     gmv_x >>= 4;
     gmv_y >>= 4;
     ref += gmv_y * s_ref + gmv_x;
        
-    for (i = 0; i < h; i++)
+    for (int i = 0; i < h; i++)
     {
-        for (j = 0; j < w; j++)
-        {
-            pred[j] = ref[j];
-        }
+        xeve_mcpy(pred, ref, size);
         pred += s_pred;
         ref += s_ref;
     }
@@ -126,7 +127,7 @@ void xeve_mc_l_n0(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pr
     {
         for (j = 0; j < w; j++)
         {
-            pt = MAC_8TAP_N0((*tbl_mc_l_coeff)[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7]);
+            pt = MAC_8TAP_N0(tbl_mc_l_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         ref += s_ref;
@@ -146,7 +147,7 @@ void xeve_mc_l_0n(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pr
     {
         for (j = 0; j < w; j++)
         {
-            pt = MAC_8TAP_0N((*tbl_mc_l_coeff)[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j], ref[s_ref * 4 + j], ref[s_ref * 5 + j], ref[s_ref * 6 + j], ref[s_ref * 7 + j]);
+            pt = MAC_8TAP_0N(tbl_mc_l_coeff[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j], ref[s_ref * 4 + j], ref[s_ref * 5 + j], ref[s_ref * 6 + j], ref[s_ref * 7 + j]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         ref += s_ref;
@@ -175,7 +176,7 @@ void xeve_mc_l_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pr
     {
         for (j = 0; j < w; j++)
         {
-            b[j] = MAC_8TAP_NN_S1((*tbl_mc_l_coeff)[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7],offset1, shift1);
+            b[j] = MAC_8TAP_NN_S1(tbl_mc_l_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7],offset1, shift1);
         }
         ref += s_ref;
         b += w;
@@ -186,7 +187,7 @@ void xeve_mc_l_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pr
     {
         for (j = 0; j < w; j++)
         {
-            pt = MAC_8TAP_NN_S2((*tbl_mc_l_coeff)[dy], b[j], b[j + w], b[j + w * 2], b[j + w * 3], b[j + w * 4], b[j + w * 5], b[j + w * 6], b[j + w * 7], offset2, shift2);
+            pt = MAC_8TAP_NN_S2(tbl_mc_l_coeff[dy], b[j], b[j + w], b[j + w * 2], b[j + w * 3], b[j + w * 4], b[j + w * 5], b[j + w * 6], b[j + w * 7], offset2, shift2);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -200,18 +201,15 @@ void xeve_mc_l_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pr
  ****************************************************************************/
 void xeve_mc_c_00(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
 {
-    int i, j;
+    int size = sizeof(pel) * w;
 
     gmv_x >>= 5;
     gmv_y >>= 5;
     ref += gmv_y * s_ref + gmv_x;
 
-    for (i = 0; i < h; i++)
+    for (int i = 0; i < h; i++)
     {
-        for (j = 0; j < w; j++)
-        {
-            pred[j] = ref[j];
-        }
+        xeve_mcpy(pred, ref, size);
         pred += s_pred;
         ref += s_ref;
     }
@@ -229,7 +227,7 @@ void xeve_mc_c_n0(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pr
     {
         for (j = 0; j < w; j++)
         {
-            pt = MAC_4TAP_N0((*tbl_mc_c_coeff)[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3]);
+            pt = MAC_4TAP_N0(tbl_mc_c_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -249,7 +247,7 @@ void xeve_mc_c_0n(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pr
     {
         for (j = 0; j < w; j++)
         {
-            pt = MAC_4TAP_0N((*tbl_mc_c_coeff)[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j]);
+            pt = MAC_4TAP_0N(tbl_mc_c_coeff[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -279,7 +277,7 @@ void xeve_mc_c_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pr
     {
         for (j = 0; j < w; j++)
         {
-            b[j] = MAC_4TAP_NN_S1((*tbl_mc_c_coeff)[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], offset1, shift1);
+            b[j] = MAC_4TAP_NN_S1(tbl_mc_c_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], offset1, shift1);
         }
         ref += s_ref;
         b += w;
@@ -290,7 +288,7 @@ void xeve_mc_c_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pr
     {
         for (j = 0; j < w; j++)
         {
-            pt = MAC_4TAP_NN_S2((*tbl_mc_c_coeff)[dy], b[j], b[j + w], b[j + 2 * w], b[j + 3 * w], offset2, shift2);
+            pt = MAC_4TAP_NN_S2(tbl_mc_c_coeff[dy], b[j], b[j + w], b[j + 2 * w], b[j + 3 * w], offset2, shift2);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -374,7 +372,7 @@ void xeve_average_16b_no_clip(s16 *src, s16 *ref, s16 *dst, int s_src, int s_ref
     }
 }
 
-void xeve_mc_base(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma)
+void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma)
 {
     XEVE_PIC    *ref_pic;
     int          qpel_gmv_x, qpel_gmv_y;
@@ -389,8 +387,8 @@ void xeve_mc_base(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP
 
     xeve_mv_clip(x, y, pic_w, pic_h, w, h, refi, mv, mv_t);
 
-    tbl_mc_c_coeff = &tbl_mc_c_coeff_base;
-    tbl_mc_l_coeff = &tbl_mc_l_coeff_base;
+    tbl_mc_l_coeff = xeve_tbl_mc_l_coeff;
+    tbl_mc_c_coeff = xeve_tbl_mc_c_coeff;
 
     if(REFI_IS_VALID(refi[REFP_0]))
     {

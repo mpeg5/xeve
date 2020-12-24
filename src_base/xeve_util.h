@@ -33,27 +33,48 @@
 
 #include "xeve_def.h"
 
+/* macro to determine maximum */
 #define XEVE_MAX(a,b)               (((a) > (b)) ? (a) : (b))
+
+/* macro to determine minimum */
 #define XEVE_MIN(a,b)               (((a) < (b)) ? (a) : (b))
+
+/* macro to determine median */
+#define XEVE_MEDIAN(x,y,z)          ((((y) < (z))^((z) < (x))) ? (((x) < (y))^((z) < (x))) ? (y) : (x) : (z))
+
+/* macro to absolute a value */
 #define XEVE_ABS(a)                 (((a) > (0)) ? (a) : (-(a)))
-/* absolute a 64-bit value */
+
+/* macro to absolute a 64-bit value */
 #define XEVE_ABS64(a)               (((a)^((a)>>63)) - ((a)>>63))
-/* absolute a 32-bit value */
+
+/* macro to absolute a 32-bit value */
 #define XEVE_ABS32(a)               (((a)^((a)>>31)) - ((a)>>31))
-/* absolute a 16-bit value */
+
+/* macro to absolute a 16-bit value */
 #define XEVE_ABS16(a)               (((a)^((a)>>15)) - ((a)>>15))
+
+/* macro to clipping within min and max */
 #define XEVE_CLIP3(min, max, val)   XEVE_MAX((min), XEVE_MIN((max), (val)))
-/* get a sign flag from value: if(val < 0) return 1, else return 0 */
-#define XEVE_SIGN_GET(val)         ((val < 0) ? 1 : 0)
-/* set sign to value: if(sign==0) return val, if(sign==1) return -val*/
-#define XEVE_SIGN_SET(val, sign)   ((sign)? -val : val)
-/* get a sign flag from 16-bit value: if(val < 0) return 1, else return 0 */
-#define XEVE_SIGN_GET16(val)       (((val)>>15) & 1)
-/* set sign to 16-bit value: if(sign==0) return val, if(sign==1) return -val */
-#define XEVE_SIGN_SET16(val, sign) (((val) ^ ((s16)((sign)<<15)>>15)) + (sign))
+
+/* macro to get a sign from a 16-bit value.
+operation: if(val < 0) return 1, else return 0 */
+#define XEVE_SIGN_GET(val)          ((val < 0) ? 1 : 0)
+
+/* macro to set sign into a value.
+operation: if(sign == 0) return val, else if(sign == 1) return -val */
+#define XEVE_SIGN_SET(val, sign)    ((sign)? -val : val)
+
+/* macro to get a sign from a 16-bit value.
+operation: if(val < 0) return 1, else return 0 */
+#define XEVE_SIGN_GET16(val)        (((val)>>15) & 1)
+
+/* macro to set sign into a 16-bit value.
+operation: if(sign == 0) return val, else if(sign == 1) return -val */
+#define XEVE_SIGN_SET16(val, sign)  (((val) ^ ((s16)((sign)<<15)>>15)) + (sign))
+
 /* change to log value */
 #define XEVE_LOG2(v)                (xeve_tbl_log2[v])
-/* align value */
 #define XEVE_ALIGN_VAL(val, align)  ((((val)+(align)-1)/(align))*(align))
 
 u16  xeve_get_avail_inter(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int cuw, int cuh, u32 *map_scu, u8* map_tidx);
@@ -62,6 +83,8 @@ XEVE_PIC* xeve_picbuf_alloc(int w, int h, int pad_l, int pad_c, int bit_depth, i
 void xeve_picbuf_free(XEVE_PIC *pic);
 void xeve_picbuf_expand(XEVE_PIC *pic, int exp_l, int exp_c);
 void xeve_poc_derivation(XEVE_SPS sps, int tid, XEVE_POC *poc);
+XEVE_PIC* xeve_alloc_spic_l(int w, int h, int pad_l, int pad_c, int * err, u8 bit_depth);
+void xeve_picbuf_rc_free(XEVE_PIC *pic);
 void xeve_check_motion_availability(int scup, int cuw, int cuh, int w_scu, int h_scu, int neb_addr[MAX_NUM_POSSIBLE_SCAND], int valid_flag[MAX_NUM_POSSIBLE_SCAND], u32 *map_scu, u16 avail_lr, int num_mvp, int is_ibc, u8 * map_tidx);
 int  xeve_get_default_motion(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int valid_flag[MAX_NUM_POSSIBLE_SCAND], s8 cur_refi, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], s8 *refi, s16 mv[MV_D]
                            , u32 *map_scu, s16(*map_unrefined_mv)[REFP_NUM][MV_D], int scup, int w_scu);
@@ -69,8 +92,8 @@ s8   xeve_get_first_refi(int scup, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_m
                        , s16(*map_unrefined_mv)[REFP_NUM][MV_D], u8 * map_tidx);
 void xeve_get_motion(int scup, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D]
                    , XEVE_REFP(*refp)[REFP_NUM], int cuw, int cuh, int w_scu, u16 avail, s8 refi[MAX_NUM_MVP], s16 mvp[MAX_NUM_MVP][MV_D]);
-void xeve_get_motion_skip_baseline(int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM], int cuw, int cuh, int w_scu
-                                 , s8 refi[REFP_NUM][MAX_NUM_MVP], s16 mvp[REFP_NUM][MAX_NUM_MVP][MV_D], u16 avail_lr);
+void xeve_get_motion_skip(int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM], int cuw, int cuh, int w_scu
+                        , s8 refi[REFP_NUM][MAX_NUM_MVP], s16 mvp[REFP_NUM][MAX_NUM_MVP][MV_D], u16 avail_lr);
 
 enum
 {
@@ -141,19 +164,19 @@ BOOL xeve_signal_mode_cons(TREE_CONS* parent, TREE_CONS* cur_split);
 
 
 #define XEVE_IMGB_OPT_NONE                 (0)
-
+#if 1
 XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt,
     int pad[XEVE_IMGB_MAX_PLANE], int align[XEVE_IMGB_MAX_PLANE]);
 void xeve_imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src);
+#endif
 void xeve_imgb_garbage_free(XEVE_IMGB * imgb);
-
-
 #define XEVE_CPU_INFO_SSE2     0x7A // ((3 << 5) | 26)
 #define XEVE_CPU_INFO_SSE3     0x40 // ((2 << 5) |  0)
 #define XEVE_CPU_INFO_SSSE3    0x49 // ((2 << 5) |  9)
 #define XEVE_CPU_INFO_SSE41    0x53 // ((2 << 5) | 19)
 #define XEVE_CPU_INFO_OSXSAVE  0x5B // ((2 << 5) | 27)
 #define XEVE_CPU_INFO_AVX      0x5C // ((2 << 5) | 28)
+#define XEVE_CPU_INFO_AVX2     0x25 // ((1 << 5) |  5)
 
 int  xeve_check_cpu_info();
 

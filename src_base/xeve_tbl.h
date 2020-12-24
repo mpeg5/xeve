@@ -46,24 +46,26 @@ extern u16      * xeve_inv_scan_tbl[COEF_SCAN_TYPE_NUM][MAX_CU_LOG2 - 1][MAX_CU_
 
 extern const int  xeve_tbl_dq_scale_b[6];
 extern const u8   xeve_tbl_df_st[4][52];
-extern int        xeve_tbl_qp_chroma_ajudst_base[MAX_QP_TABLE_SIZE];
-extern int      * xeve_tbl_qp_chroma_ajudst;
+extern int        xeve_tbl_qp_chroma_ajudst[MAX_QP_TABLE_SIZE];
+extern int      * xeve_qp_chroma_ajudst;
 extern int        xeve_tbl_qp_chroma_dynamic_ext[2][MAX_QP_TABLE_SIZE_EXT];
-extern int      * xeve_tbl_qp_chroma_dynamic_ext_temp[2];// pointer to [0th position in xeve_tbl_qp_chroma_dynamic_ext]
-extern int      * xeve_tbl_qp_chroma_dynamic[2];    // pointer to [12th position in xeve_tbl_qp_chroma_dynamic_ext]
+extern int      * xeve_qp_chroma_dynamic_ext[2];// pointer to [0th position in xeve_tbl_qp_chroma_dynamic_ext]
+extern int      * xeve_qp_chroma_dynamic[2];    // pointer to [12th position in xeve_tbl_qp_chroma_dynamic_ext]
 void              xeve_tbl_derived_chroma_qp_mapping(XEVE_CHROMA_TABLE *structChromaQP, int bit_depth);
-void              set_chroma_qp_tbl_loc(int bit_depth);
+void              xeve_set_chroma_qp_tbl_loc(int bit_depth);
 
-extern const int min_in_group[LAST_SIGNIFICANT_GROUPS];
-extern const int group_idx[MAX_TR_SIZE];
-extern const int go_rice_range[MAX_GR_ORDER_RESIDUAL];
-extern const int go_rice_para_coeff[32];
-extern const u8 *xeve_tbl_mv_bits;
-extern const u8 xeve_tbl_refi_bits[17][16];
-extern const u8 xeve_tbl_mvp_idx_bits[5][4];
-extern const int quant_scale[6];
+extern const int  xeve_min_in_group[LAST_SIGNIFICANT_GROUPS];
+extern const int  xeve_group_idx[MAX_TR_SIZE];
+extern const int  xeve_go_rice_range[MAX_GR_ORDER_RESIDUAL];
+extern const int  xeve_go_rice_para_coeff[32];
+extern const u8 * xeve_tbl_mv_bits;
+extern const u8   xeve_tbl_refi_bits[17][16];
+extern const u8   xeve_tbl_mvp_idx_bits[5][4];
+extern const int  xeve_quant_scale[6];
 
 #define RATE_TO_COST_LAMBDA(l, r)       ((double)r * l)
 #define RATE_TO_COST_SQRT_LAMBDA(l, r)  ((double)r * l)
+
+extern const XEVE_PRESET xeve_tbl_preset[ENC_PRESET_NUM];
 
 #endif /* _XEVE_TBL_H_ */

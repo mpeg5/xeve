@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-
+   
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-
+   
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
+   
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-
+   
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -50,7 +50,7 @@ typedef int64_t                 s64;
 typedef uint64_t                u64;
 
 typedef s16                     pel;
-typedef s32                     double_pel;
+typedef s32                     double_pel; 
 /*****************************************************************************
  * limit constant
  *****************************************************************************/
@@ -101,12 +101,11 @@ static __inline void xeve_mset_16b(s16 * dst, s16 v, int cnt)
  *****************************************************************************/
 void xeve_trace0(char * filename, int line, const char *fmt, ...);
 void xeve_trace_line(char * pre);
-
-/* trace function */
 #ifndef XEVE_TRACE
 #define XEVE_TRACE               0
 #endif
 
+/* trace function */
 #if XEVE_TRACE
 #if defined(__GNUC__)
 #define __FILENAME__ \
@@ -120,13 +119,11 @@ void xeve_trace_line(char * pre);
 #else
 #define xeve_trace(args,...) {}
 #endif
-
 #if defined(__GNUC__)
 #define xeve_print(args...) xeve_trace0(NULL, -1, args)
 #else
 #define xeve_print(args,...) xeve_trace0(NULL, -1, args,__VA_ARGS__)
 #endif
-
 
 /* assert function */
 #include <assert.h>
@@ -141,8 +138,6 @@ void xeve_trace_line(char * pre);
 #define xeve_assert_gv(x,r,v,g) \
     {if(!(x)){assert(x); (r)=(v); goto g;}}
 
-
-
 #define X86_SSE                 1
 
 #if X86_SSE
@@ -155,5 +150,4 @@ void xeve_trace_line(char * pre);
 #include <x86intrin.h>
 #endif
 #endif
-
 #endif /* _XEVE_PORT_H_ */

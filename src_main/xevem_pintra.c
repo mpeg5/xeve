@@ -91,7 +91,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
 
         cost += xeve_ssd_16b(log2_cuw, log2_cuh, pi->rec[Y_C], org_luma, cuw, s_org, ctx->sps.bit_depth_luma_minus8 + 8);
 
-        if(ctx->cdsc.rdo_dbk_switch)
+        if(ctx->param.rdo_dbk_switch)
         {
             calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->rec, cuw, x, y, core->avail_lr, 1, core->nnz[Y_C] != 0, NULL, NULL, 0, core);
             cost += core->delta_dist[Y_C];
@@ -146,7 +146,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
         cost += ctx->dist_chroma_weight[0] * xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->rec[U_C], org_cb, cuw >> 1, s_org_c, ctx->sps.bit_depth_chroma_minus8 + 8);
         cost += ctx->dist_chroma_weight[1] * xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->rec[V_C], org_cr, cuw >> 1, s_org_c, ctx->sps.bit_depth_chroma_minus8 + 8);
 
-        if(ctx->cdsc.rdo_dbk_switch)
+        if(ctx->param.rdo_dbk_switch)
         {
             calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->rec, cuw, x, y, core->avail_lr, 1,
                                             !xeve_check_luma(core->tree_cons) ? core->cu_data_temp[log2_cuw - 2][log2_cuh - 2].nnz[Y_C] != 0 :
@@ -325,16 +325,15 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
     pel* mod_cb, *mod_cr;
     double cost_t, cost = MAX_COST;
     int sec_best_ipd = IPD_INVALID;
-
     u8 best_ats_intra_cu = 0;
     u8 best_ats_mode = 0;
     u8 ats_intra_usage = ctx->sps.tool_ats ? 2 : 1;
     u8 ats_intra_cu_flag = 0;
-#if ATS_INTRA_FAST
     u8 ats_intra_zero_cu_flag = 0;
+    u8 ats_intra_fast = ((XEVEM_PRESET*)ctx->param.preset)->ats_intra_fast;
     int best_nnz = 1;
     double cost_ipd[IPD_CNT];
-#endif
+
     mcore->ats_inter_info = 0;
 
     cuw = 1 << log2_cuw;
@@ -370,41 +369,51 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
             return MAX_COST;
         }
 
-        if(log2_cuw == 6 || log2_cuh == 6 || log2_cuw == 7 || log2_cuh == 7) ats_intra_usage = 1;
-#if ATS_INTRA_FAST
-        if(ctx->slice_type != SLICE_I && core->nnz[Y_C] <= ATS_INTRA_Y_NZZ_THR) ats_intra_usage = 1;
-        if(ats_intra_usage > 1)
+        if (log2_cuw == 6 || log2_cuh == 6 || log2_cuw == 7 || log2_cuh == 7)
         {
-            if(core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit && core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ats_intra_cu_idx_intra == 0)
+            ats_intra_usage = 1;
+        }
+
+        if (ats_intra_fast && (ctx->slice_type != SLICE_I && core->nnz[Y_C] <= ATS_INTRA_Y_NZZ_THR))
+        {
+            ats_intra_usage = 1;
+        }
+
+        if(ats_intra_fast && ats_intra_usage > 1)
+        {
+            if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit && mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ats_intra_cu_idx_intra == 0)
             {
                 ats_intra_usage = 1;
             }
         }
-#endif
+
         for(ats_intra_cu_flag = 0; ats_intra_cu_flag < ats_intra_usage; ats_intra_cu_flag++) /* ats intra cu loop */
         {
             u8 ats_intra_tr_idx = 0;
             u8 num_tr_idx_cands = (ats_intra_cu_flag) ? 4 : 1;
 
             mcore->ats_intra_cu = ats_intra_cu_flag;
-#if ATS_INTRA_FAST
-            if(ats_intra_cu_flag)
+
+            if (ats_intra_fast)
             {
-                if(ats_intra_zero_cu_flag) break;
-                if(cost > ATS_INTER_INTRA_SKIP_THR * core->cost_best) break;
-                for(j = 0; j < pred_cnt; j++)
+                if (ats_intra_cu_flag)
                 {
-                    if(cost_ipd[j] > cost * ATS_INTRA_IPD_THR)
+                    if (ats_intra_zero_cu_flag) break;
+                    if (cost > ATS_INTER_INTRA_SKIP_THR * core->cost_best) break;
+                    for (j = 0; j < pred_cnt; j++)
                     {
-                        ipred_list[j] = IPD_INVALID;
+                        if (cost_ipd[j] > cost * ATS_INTRA_IPD_THR)
+                        {
+                            ipred_list[j] = IPD_INVALID;
+                        }
                     }
                 }
+                else
+                {
+                    for (j = 0; j < pred_cnt; j++) cost_ipd[j] = MAX_COST;
+                }
             }
-            else
-            {
-                for(j = 0; j < pred_cnt; j++) cost_ipd[j] = MAX_COST;
-            }
-#endif
+
             for(ats_intra_tr_idx = 0; ats_intra_tr_idx < num_tr_idx_cands; ats_intra_tr_idx++) /* ats_intra tu loop */
             {
                 mcore->ats_mode = ats_intra_tr_idx;
@@ -420,9 +429,9 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
                     if(ctx->sps.tool_eipd)
                     {
                         core->ipm[1] = IPD_INVALID;
-#if ATS_INTRA_FAST
-                        if(i == IPD_INVALID) continue;
-#endif
+
+                        if(ats_intra_fast && i == IPD_INVALID) continue;
+
                         cost_t = pintra_residue_rdo(ctx, core, org, NULL, NULL, s_org, s_org_c, log2_cuw, log2_cuh, coef, &dist_t, 0, x, y);
                     }
                     else
@@ -449,9 +458,8 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
                         best_ipd = i;
                         best_ats_intra_cu = ats_intra_cu_flag;
                         best_ats_mode = ats_intra_tr_idx;
-#if ATS_INTRA_FAST
                         best_nnz = core->nnz[Y_C];
-#endif
+
                         xeve_mcpy(pi->coef_best[Y_C], coef[Y_C], (cuw * cuh) * sizeof(s16));
                         xeve_mcpy(pi->rec_best[Y_C], pi->rec[Y_C], (cuw * cuh) * sizeof(pel));
 
@@ -459,14 +467,10 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
                         xeve_mcpy(pi->nnz_sub_best[Y_C], core->nnz_sub[Y_C], sizeof(int) * MAX_SUB_TB_NUM);
                         SBAC_STORE(core->s_temp_prev_comp_best, core->s_temp_run);
                     }
-#if ATS_INTRA_FAST
-                    if(ats_intra_cu_flag == 0 && cost_t < cost_ipd[j]) cost_ipd[j] = cost_t;
-#endif
+                    if(ats_intra_fast && ats_intra_cu_flag == 0 && cost_t < cost_ipd[j]) cost_ipd[j] = cost_t;
                 }
             }
-#if ATS_INTRA_FAST
             ats_intra_zero_cu_flag = (best_nnz == 0) ? 1 : 0;
-#endif
         }
         mcore->ats_intra_cu = best_ats_intra_cu;
         mcore->ats_mode = best_ats_mode;
@@ -513,7 +517,6 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
                     cost = cost_t;
                     best_dist_c = dist_t;
                     best_ipd_c = i;
-
                     for(j = U_C; j < N_C; j++)
                     {
                         int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : 2);
@@ -531,10 +534,12 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
             s32 dist_tc = 0;
             core->ipm[0] = best_ipd;
             core->ipm[1] = best_ipd;
+
             cost_t = pintra_residue_rdo(ctx, core, org, org_cb, org_cr, s_org, s_org_c, log2_cuw, log2_cuh, coef, &dist_tc, 1, x, y);
 
             best_ipd_c = core->ipm[1];
             best_dist_c = dist_tc;
+
             for(j = U_C; j < N_C; j++)
             {
                 int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : 2);
@@ -546,14 +551,32 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
             }
         }
     }
+
+    if(xeve_check_luma(core->tree_cons))
+    {
+        core->ipm[0] = best_ipd;
+        mcore->ats_intra_cu = best_ats_intra_cu;
+        mcore->ats_mode = best_ats_mode;
+
+        if(ats_intra_fast && !mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
+        {
+            mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ats_intra_cu_idx_intra = best_ats_intra_cu == 0 && core->nnz[Y_C] < 2 ? 0 : 1;
+        }
+    }
+    if(xeve_check_chroma(core->tree_cons))
+    {
+        core->ipm[1] = best_ipd_c;
+        xeve_assert(best_ipd_c != IPD_INVALID);
+    }
+
     int start_comp = xeve_check_luma(core->tree_cons) ? Y_C : U_C;
     int end_comp = xeve_check_chroma(core->tree_cons) ? N_C : U_C;
-    if(xeve_check_all(core->tree_cons))
+    if (xeve_check_all(core->tree_cons))
     {
-        core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ipm[0] = best_ipd;
-        core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ipm[1] = sec_best_ipd;
+        mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ipm[0] = best_ipd;
+        mcore->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ipm[1] = sec_best_ipd;
     }
-    for(j = start_comp; j < end_comp; j++)
+    for (j = start_comp; j < end_comp; j++)
     {
         int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : 2);
         xeve_mcpy(coef[j], pi->coef_best[j], size_tmp * sizeof(u16));
@@ -562,24 +585,6 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
         xeve_mcpy(core->nnz_sub[j], pi->nnz_sub_best[j], sizeof(int) * MAX_SUB_TB_NUM);
         rec[j] = pi->rec[j];
         s_rec[j] = cuw >> (j == 0 ? 0 : 1);
-    }
-
-    if(xeve_check_luma(core->tree_cons))
-    {
-        core->ipm[0] = best_ipd;
-        mcore->ats_intra_cu = best_ats_intra_cu;
-        mcore->ats_mode = best_ats_mode;
-#if ATS_INTRA_FAST
-        if(!core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].visit)
-        {
-            core->bef_data[log2_cuw - 2][log2_cuh - 2][core->cup][core->bef_data_idx].ats_intra_cu_idx_intra = best_ats_intra_cu == 0 && core->nnz[Y_C] < 2 ? 0 : 1;
-        }
-#endif
-    }
-    if(xeve_check_chroma(core->tree_cons))
-    {
-        core->ipm[1] = best_ipd_c;
-        xeve_assert(best_ipd_c != IPD_INVALID);
     }
 
     /* cost calculation */
@@ -613,7 +618,7 @@ int xeve_pintra_create_main(XEVE_CTX * ctx, int complexity)
 {
     /* set function addresses */
     ctx->fn_pintra_set_complexity = xeve_pintra_set_complexity;
-    ctx->fn_pintra_init_frame = xeve_pintra_init_frame;
+    ctx->fn_pintra_init_tile = xeve_pintra_init_tile;
     ctx->fn_pintra_init_lcu = xeve_pintra_analyze_lcu;
     ctx->fn_pintra_analyze_cu = pintra_analyze_cu;
 

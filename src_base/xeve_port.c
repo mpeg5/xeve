@@ -46,11 +46,11 @@ void xeve_trace_line(char * pre)
 {
     char str[128]={'\0',};
     const int chars = 80;
-    int len = (pre == NULL)? 0: strlen(pre);
+    int len = (pre == NULL)? 0: (int)strlen(pre);
     if(len > 0)
     {
         sprintf(str, "%s ", pre);
-        len = strlen(str);
+        len = (int)strlen(str);
     }
     for(int i = len ; i< chars; i++) {str[i] = '=';}
     str[chars] = '\0';

@@ -43,20 +43,8 @@
     \
     sac0 = _mm_add_epi32(sac0, s00);
 
-#define SSE_SAD_16B_8PEL(src1, src2, s00, s01, sac0, sac1) \
-    s00 = _mm_loadu_si128((__m128i*)(src1)); \
-    s01 = _mm_loadu_si128((__m128i*)(src2)); \
-    s00 = _mm_sub_epi16(s00, s01); \
-    s01 = _mm_abs_epi16(s00); \
-    \
-    s00 = _mm_srli_si128(s01, 8); \
-    s00 = _mm_cvtepi16_epi32(s00); \
-    s01 = _mm_cvtepi16_epi32(s01); \
-    \
-    sac0 = _mm_add_epi32(sac0, s00); \
-    sac1 = _mm_add_epi32(sac1, s01);
 
-static int sad_16b_sse_4x2(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
+int sad_16b_sse_4x2(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
 {
     int sad;
     s16 * s1;
@@ -71,15 +59,14 @@ static int sad_16b_sse_4x2(int w, int h, void * src1, void * src2, int s_src1, i
     SSE_SAD_16B_4PEL(s1, s2, s00, s01, sac0);
     SSE_SAD_16B_4PEL(s1 + s_src1, s2 + s_src2, s00, s01, sac0);
 
+    sac0 = _mm_hadd_epi32(sac0, sac0);
+    sac0 = _mm_hadd_epi32(sac0, sac0);
     sad = _mm_extract_epi32(sac0, 0);
-    sad += _mm_extract_epi32(sac0, 1);
-    sad += _mm_extract_epi32(sac0, 2);
-    sad += _mm_extract_epi32(sac0, 3);
 
     return (sad >> (bit_depth - 8));
 }
 
-static int sad_16b_sse_4x2n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
+int sad_16b_sse_4x2n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
 {
     int sad;
     s16 * s1;
@@ -99,15 +86,14 @@ static int sad_16b_sse_4x2n(int w, int h, void * src1, void * src2, int s_src1, 
         s2 += s_src2 << 1;
     }
 
+    sac0 = _mm_hadd_epi32(sac0, sac0);
+    sac0 = _mm_hadd_epi32(sac0, sac0);
     sad = _mm_extract_epi32(sac0, 0);
-    sad += _mm_extract_epi32(sac0, 1);
-    sad += _mm_extract_epi32(sac0, 2);
-    sad += _mm_extract_epi32(sac0, 3);
 
     return (sad >> (bit_depth - 8));
 }
 
-static int sad_16b_sse_4x4(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
+int sad_16b_sse_4x4(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
 {
     int sad;
     s16 * s1;
@@ -124,44 +110,14 @@ static int sad_16b_sse_4x4(int w, int h, void * src1, void * src2, int s_src1, i
     SSE_SAD_16B_4PEL(s1 + (s_src1*2), s2 + (s_src2*2), s00, s01, sac0);
     SSE_SAD_16B_4PEL(s1 + (s_src1*3), s2 + (s_src2*3), s00, s01, sac0);
 
-    sad  = _mm_extract_epi32(sac0, 0);
-    sad += _mm_extract_epi32(sac0, 1);
-    sad += _mm_extract_epi32(sac0, 2);
-    sad += _mm_extract_epi32(sac0, 3);
+    sac0 = _mm_hadd_epi32(sac0, sac0);
+    sac0 = _mm_hadd_epi32(sac0, sac0);
+    sad = _mm_extract_epi32(sac0, 0);
 
     return (sad >> (bit_depth - 8));
 }
 
-static int sad_16b_sse_16x2(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
-{
-    int sad;
-    s16 * s1;
-    s16 * s2;
-    __m128i s00, s01, sac0, sac1;
-
-    s1 = (s16 *)src1;
-    s2 = (s16 *)src2;
-
-    sac0 = _mm_setzero_si128();
-    sac1 = _mm_setzero_si128();
-
-    SSE_SAD_16B_8PEL(s1, s2, s00, s01, sac0, sac1);
-    SSE_SAD_16B_8PEL(s1 + 8, s2 + 8, s00, s01, sac0, sac1);
-
-    SSE_SAD_16B_8PEL(s1 + s_src1, s2 + s_src2, s00, s01, sac0, sac1);
-    SSE_SAD_16B_8PEL(s1 + s_src1 + 8, s2 + s_src2 + 8, s00, s01, sac0, sac1);
-
-    s00 = _mm_add_epi32(sac0, sac1);
-
-    sad  = _mm_extract_epi32(s00, 0);
-    sad += _mm_extract_epi32(s00, 1);
-    sad += _mm_extract_epi32(s00, 2);
-    sad += _mm_extract_epi32(s00, 3);
-
-    return (sad >> (bit_depth - 8));
-}
-
-static int sad_16b_sse_8x2(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
+int sad_16b_sse_8x2n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
 {
     __m128i src_8x16b;
     __m128i src_8x16b_1;
@@ -171,169 +127,84 @@ static int sad_16b_sse_8x2(int w, int h, void * src1, void * src2, int s_src1, i
 
     __m128i temp;
     __m128i temp_1;
-    __m128i temp_3;
+    __m128i temp_2;
 
     __m128i temp_dummy;
     __m128i result;
 
-    short *pu2_inp;
-    short *pu2_ref;
+    short *pu2_inp, *pu2_inp2;
+    short *pu2_ref, *pu2_ref2;
 
+    int  i, j;
     int sad = 0;
+    int s_src1_t2 = s_src1 * 2;
+    int s_src2_t2 = s_src2 * 2;
 
     assert(bit_depth <= 14);
-    assert(w == 8); /* fun usage expects w ==8, but assumption is width has to be multiple of 8 */
-    assert(h == 2); /* fun usage expects h ==2, but assumption is height has to be multiple of 2 */
-
-    pu2_inp = src1;
-    pu2_ref = src2;
-
-    temp_dummy = _mm_setzero_si128();
-    result = _mm_setzero_si128();
-
-    {
-        src_8x16b = _mm_loadu_si128((__m128i *) (pu2_inp));
-        src_8x16b_1 = _mm_loadu_si128((__m128i *) (pu2_inp + s_src1));
-
-        pred_8x16b = _mm_loadu_si128((__m128i *) (pu2_ref));
-        pred_8x16b_1 = _mm_loadu_si128((__m128i *) (pu2_ref + s_src2));
-
-        temp = _mm_sub_epi16(src_8x16b, pred_8x16b);
-        temp_1 = _mm_sub_epi16(src_8x16b_1, pred_8x16b_1);
-
-        temp = _mm_abs_epi16(temp);
-        temp_1 = _mm_abs_epi16(temp_1);
-
-        temp = _mm_adds_epu16(temp, temp_1);
-
-        temp_1 = _mm_unpackhi_epi16(temp, temp_dummy);
-        temp_3 = _mm_unpacklo_epi16(temp, temp_dummy);
-
-        temp = _mm_add_epi32(temp_1, temp_3);
-
-        result = _mm_add_epi32(result, temp);
-
-    }
-
-    {
-        int *val = (int*)&result;
-        sad = val[0] + val[1] + val[2] + val[3];
-    }
-
-    return (sad >> (bit_depth - 8));
-}
-
-static int sad_16b_sse_8x4n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
-{
-    __m128i src_8x16b;
-    __m128i src_8x16b_1;
-    __m128i src_8x16b_2;
-    __m128i src_8x16b_3;
-
-    __m128i pred_8x16b;
-    __m128i pred_8x16b_1;
-    __m128i pred_8x16b_2;
-    __m128i pred_8x16b_3;
-
-    __m128i temp;
-    __m128i temp_1;
-    __m128i temp_2;
-    __m128i temp_3;
-    __m128i temp_4;
-    __m128i temp_5;
-
-    __m128i temp_dummy;
-    __m128i result, result_1;
-
-    short *pu2_inp;
-    short *pu2_ref;
-
-    int  i;
-    int sad = 0;
-
-    assert(bit_depth <= 14);
-    assert(w == 8); /* fun usage expects w ==8, but assumption is width has to be multiple of 8 */
+    assert(!(w & 7)); /* width has to be multiple of 4  */
     assert(!(h & 3)); /* height has to be multiple of 4 */
 
     pu2_inp = src1;
     pu2_ref = src2;
+    pu2_inp2 = (short*)src1 + s_src1;
+    pu2_ref2 = (short*)src2 + s_src2;
 
     temp_dummy = _mm_setzero_si128();
     result = _mm_setzero_si128();
-    result_1 = _mm_setzero_si128();
 
+    for (i = 0; i < h >> 1; i++)
     {
-        for (i = 0; i < h / 4; i++)
+        for (j = 0; j < w; j += 8)
         {
-            src_8x16b = _mm_loadu_si128((__m128i *) (pu2_inp));
-            src_8x16b_1 = _mm_loadu_si128((__m128i *) (pu2_inp + s_src1));
-            src_8x16b_2 = _mm_loadu_si128((__m128i *) (pu2_inp + (s_src1 * 2)));
-            src_8x16b_3 = _mm_loadu_si128((__m128i *) (pu2_inp + (s_src1 * 3)));
+            src_8x16b = _mm_loadu_si128((__m128i *) (&pu2_inp[j]));
+            src_8x16b_1 = _mm_loadu_si128((__m128i *) (&pu2_inp2[j]));
 
-            pred_8x16b = _mm_loadu_si128((__m128i *) (pu2_ref));
-            pred_8x16b_1 = _mm_loadu_si128((__m128i *) (pu2_ref + s_src2));
-            pred_8x16b_2 = _mm_loadu_si128((__m128i *) (pu2_ref + (s_src2 * 2)));
-            pred_8x16b_3 = _mm_loadu_si128((__m128i *) (pu2_ref + (s_src2 * 3)));
+            pred_8x16b = _mm_loadu_si128((__m128i *) (&pu2_ref[j]));
+            pred_8x16b_1 = _mm_loadu_si128((__m128i *) (&pu2_ref2[j]));
 
             temp = _mm_sub_epi16(src_8x16b, pred_8x16b);
             temp_1 = _mm_sub_epi16(src_8x16b_1, pred_8x16b_1);
-            temp_2 = _mm_sub_epi16(src_8x16b_2, pred_8x16b_2);
-            temp_3 = _mm_sub_epi16(src_8x16b_3, pred_8x16b_3);
 
             temp = _mm_abs_epi16(temp);
             temp_1 = _mm_abs_epi16(temp_1);
-            temp_2 = _mm_abs_epi16(temp_2);
-            temp_3 = _mm_abs_epi16(temp_3);
 
             temp = _mm_add_epi16(temp, temp_1);
-            temp_2 = _mm_add_epi16(temp_2, temp_3);
 
             temp_1 = _mm_unpackhi_epi16(temp, temp_dummy);
-            temp_3 = _mm_unpacklo_epi16(temp, temp_dummy);
-            temp_4 = _mm_unpackhi_epi16(temp_2, temp_dummy);
-            temp_5 = _mm_unpacklo_epi16(temp_2, temp_dummy);
+            temp_2 = _mm_unpacklo_epi16(temp, temp_dummy);
 
-            temp = _mm_add_epi32(temp_1, temp_3);
-            temp_2 = _mm_add_epi32(temp_4, temp_5);
-
+            temp = _mm_add_epi32(temp_1, temp_2);
             result = _mm_add_epi32(result, temp);
-            result_1 = _mm_add_epi32(result_1, temp_2);
-
-            pu2_inp += (4 * s_src1);
-            pu2_ref += (4 * s_src2);
         }
-        result = _mm_add_epi32(result, result_1);
+
+        pu2_inp += s_src1_t2;
+        pu2_ref += s_src2_t2;
+        pu2_inp2 += s_src1_t2;
+        pu2_ref2 += s_src2_t2;
     }
 
-    {
-        int *val = (int*)&result;
-        sad = val[0] + val[1] + val[2] + val[3];
-    }
+    result = _mm_hadd_epi32(result, result);
+    result = _mm_hadd_epi32(result, result);
+    sad = _mm_extract_epi32(result, 0);
 
     return (sad >> (bit_depth - 8));
 }
 
-static int sad_16b_sse_16nx4n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
+
+int sad_16b_sse_16nx1n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
 {
     __m128i src_8x16b;
     __m128i src_8x16b_1;
-    __m128i src_8x16b_2;
-    __m128i src_8x16b_3;
 
     __m128i pred_8x16b;
     __m128i pred_8x16b_1;
-    __m128i pred_8x16b_2;
-    __m128i pred_8x16b_3;
 
     __m128i temp;
     __m128i temp_1;
     __m128i temp_2;
-    __m128i temp_3;
-    __m128i temp_4;
-    __m128i temp_5;
 
     __m128i temp_dummy;
-    __m128i result, result_1;
+    __m128i result;
 
     short *pu2_inp;
     short *pu2_ref;
@@ -343,69 +214,45 @@ static int sad_16b_sse_16nx4n(int w, int h, void * src1, void * src2, int s_src1
 
     assert(bit_depth <= 14);
     assert(!(w & 15)); /*fun used only for multiple of 16, but internal assumption is only 8 */
-    assert(!(h & 3)); /* height has to be multiple of 4 */
 
     pu2_inp = src1;
     pu2_ref = src2;
 
     temp_dummy = _mm_setzero_si128();
     result = _mm_setzero_si128();
-    result_1 = _mm_setzero_si128();
 
+    for (i = 0; i < h; i++)
     {
-        for (i = 0; i < h / 4; i++)
-          {
-            int count = 0;
+        for (j = 0; j < w; j += 16)
+        {
+            src_8x16b = _mm_loadu_si128((__m128i *) (&pu2_inp[j]));
+            src_8x16b_1 = _mm_loadu_si128((__m128i *) (&pu2_inp[j + 8]));
 
-            for (j = w; j > 7; j -= 8)
-            {
-                src_8x16b = _mm_loadu_si128((__m128i *) (pu2_inp + count));
-                src_8x16b_1 = _mm_loadu_si128((__m128i *) (pu2_inp + count + s_src1));
-                src_8x16b_2 = _mm_loadu_si128((__m128i *) (pu2_inp + count + (s_src1 * 2)));
-                src_8x16b_3 = _mm_loadu_si128((__m128i *) (pu2_inp + count + (s_src1 * 3)));
+            pred_8x16b = _mm_loadu_si128((__m128i *) (&pu2_ref[j]));
+            pred_8x16b_1 = _mm_loadu_si128((__m128i *) (&pu2_ref[j + 8]));
 
-                pred_8x16b = _mm_loadu_si128((__m128i *) (pu2_ref + count));
-                pred_8x16b_1 = _mm_loadu_si128((__m128i *) (pu2_ref + count + s_src2));
-                pred_8x16b_2 = _mm_loadu_si128((__m128i *) (pu2_ref + count + (s_src2 * 2)));
-                pred_8x16b_3 = _mm_loadu_si128((__m128i *) (pu2_ref + count + (s_src2 * 3)));
+            temp = _mm_sub_epi16(src_8x16b, pred_8x16b);
+            temp_1 = _mm_sub_epi16(src_8x16b_1, pred_8x16b_1);
 
-                temp = _mm_sub_epi16(src_8x16b, pred_8x16b);
-                temp_1 = _mm_sub_epi16(src_8x16b_1, pred_8x16b_1);
-                temp_2 = _mm_sub_epi16(src_8x16b_2, pred_8x16b_2);
-                temp_3 = _mm_sub_epi16(src_8x16b_3, pred_8x16b_3);
+            temp = _mm_abs_epi16(temp);
+            temp_1 = _mm_abs_epi16(temp_1);
 
-                temp = _mm_abs_epi16(temp);
-                temp_1 = _mm_abs_epi16(temp_1);
-                temp_2 = _mm_abs_epi16(temp_2);
-                temp_3 = _mm_abs_epi16(temp_3);
+            temp = _mm_add_epi16(temp, temp_1);
 
-                temp = _mm_add_epi16(temp, temp_1);
-                temp_2 = _mm_add_epi16(temp_2, temp_3);
+            temp_1 = _mm_unpackhi_epi16(temp, temp_dummy);
+            temp_2 = _mm_unpacklo_epi16(temp, temp_dummy);
 
-                temp_1 = _mm_unpackhi_epi16(temp, temp_dummy);
-                temp_3 = _mm_unpacklo_epi16(temp, temp_dummy);
-                temp_4 = _mm_unpackhi_epi16(temp_2, temp_dummy);
-                temp_5 = _mm_unpacklo_epi16(temp_2, temp_dummy);
-
-                temp = _mm_add_epi32(temp_1, temp_3);
-                temp_2 = _mm_add_epi32(temp_4, temp_5);
-
-                result = _mm_add_epi32(result, temp);
-                result_1 = _mm_add_epi32(result_1, temp_2);
-
-                count += 8;
-            }
-
-            pu2_inp += (4 * s_src1);
-            pu2_ref += (4 * s_src2);
+            temp = _mm_add_epi32(temp_1, temp_2);
+            result = _mm_add_epi32(result, temp);
         }
-        result = _mm_add_epi32(result, result_1);
+
+        pu2_inp += s_src1;
+        pu2_ref += s_src2;
     }
 
-    {
-        int *val = (int*)&result;
-        sad = val[0] + val[1] + val[2] + val[3];
-    }
+    result = _mm_hadd_epi32(result, result);
+    result = _mm_hadd_epi32(result, result);
+    sad = _mm_extract_epi32(result, 0);
 
     return (sad >> (bit_depth - 8));
 }
@@ -449,57 +296,57 @@ XEVE_FN_SAD xeve_tbl_sad_16b_sse[8][8] =
     /* width == 8 */
     {
         sad_16b,          /* height == 1 */
-        sad_16b_sse_8x2,  /* height == 2 */
-        sad_16b_sse_8x4n, /* height == 4 */
-        sad_16b_sse_8x4n, /* height == 8 */
-        sad_16b_sse_8x4n, /* height == 16 */
-        sad_16b_sse_8x4n, /* height == 32 */
-        sad_16b_sse_8x4n, /* height == 64 */
-        sad_16b_sse_8x4n, /* height == 128 */
+        sad_16b_sse_8x2n, /* height == 2 */
+        sad_16b_sse_8x2n, /* height == 4 */
+        sad_16b_sse_8x2n, /* height == 8 */
+        sad_16b_sse_8x2n, /* height == 16 */
+        sad_16b_sse_8x2n, /* height == 32 */
+        sad_16b_sse_8x2n, /* height == 64 */
+        sad_16b_sse_8x2n, /* height == 128 */
     },
     /* width == 16 */
     {
-        sad_16b,             /* height == 1 */
-        sad_16b_sse_16x2,    /* height == 2 */
-        sad_16b_sse_16nx4n,  /* height == 4 */
-        sad_16b_sse_16nx4n,  /* height == 8 */
-        sad_16b_sse_16nx4n,  /* height == 16 */
-        sad_16b_sse_16nx4n,  /* height == 32 */
-        sad_16b_sse_16nx4n,  /* height == 64 */
-        sad_16b_sse_16nx4n,  /* height == 128 */
+        sad_16b_sse_16nx1n,  /* height == 1 */
+        sad_16b_sse_16nx1n,  /* height == 2 */
+        sad_16b_sse_16nx1n,  /* height == 4 */
+        sad_16b_sse_16nx1n,  /* height == 8 */
+        sad_16b_sse_16nx1n,  /* height == 16 */
+        sad_16b_sse_16nx1n,  /* height == 32 */
+        sad_16b_sse_16nx1n,  /* height == 64 */
+        sad_16b_sse_16nx1n,  /* height == 128 */
     },
     /* width == 32 */
     {
-        sad_16b,             /* height == 1 */
-        sad_16b,             /* height == 2 */
-        sad_16b_sse_16nx4n,  /* height == 4 */
-        sad_16b_sse_16nx4n,  /* height == 8 */
-        sad_16b_sse_16nx4n,  /* height == 16 */
-        sad_16b_sse_16nx4n,  /* height == 32 */
-        sad_16b_sse_16nx4n,  /* height == 64 */
-        sad_16b_sse_16nx4n,  /* height == 128 */
+        sad_16b_sse_16nx1n,  /* height == 1 */
+        sad_16b_sse_16nx1n,  /* height == 2 */
+        sad_16b_sse_16nx1n,  /* height == 4 */
+        sad_16b_sse_16nx1n,  /* height == 8 */
+        sad_16b_sse_16nx1n,  /* height == 16 */
+        sad_16b_sse_16nx1n,  /* height == 32 */
+        sad_16b_sse_16nx1n,  /* height == 64 */
+        sad_16b_sse_16nx1n,  /* height == 128 */
     },
     /* width == 64 */
     {
-        sad_16b,             /* height == 1 */
-        sad_16b,             /* height == 2 */
-        sad_16b_sse_16nx4n,  /* height == 4 */
-        sad_16b_sse_16nx4n,  /* height == 8 */
-        sad_16b_sse_16nx4n,  /* height == 16 */
-        sad_16b_sse_16nx4n,  /* height == 32 */
-        sad_16b_sse_16nx4n,  /* height == 64 */
-        sad_16b_sse_16nx4n,  /* height == 128 */
+        sad_16b_sse_16nx1n,  /* height == 1 */
+        sad_16b_sse_16nx1n,  /* height == 2 */
+        sad_16b_sse_16nx1n,  /* height == 4 */
+        sad_16b_sse_16nx1n,  /* height == 8 */
+        sad_16b_sse_16nx1n,  /* height == 16 */
+        sad_16b_sse_16nx1n,  /* height == 32 */
+        sad_16b_sse_16nx1n,  /* height == 64 */
+        sad_16b_sse_16nx1n,  /* height == 128 */
     },
     /* width == 128 */
     {
-        sad_16b,             /* height == 1 */
-        sad_16b,             /* height == 2 */
-        sad_16b,             /* height == 4 */
-        sad_16b,             /* height == 8 */
-        sad_16b_sse_16nx4n,  /* height == 16 */
-        sad_16b_sse_16nx4n,  /* height == 32 */
-        sad_16b_sse_16nx4n,  /* height == 64 */
-        sad_16b_sse_16nx4n,  /* height == 128 */
+        sad_16b_sse_16nx1n,  /* height == 1 */
+        sad_16b_sse_16nx1n,  /* height == 2 */
+        sad_16b_sse_16nx1n,  /* height == 4 */
+        sad_16b_sse_16nx1n,  /* height == 8 */
+        sad_16b_sse_16nx1n,  /* height == 16 */
+        sad_16b_sse_16nx1n,  /* height == 32 */
+        sad_16b_sse_16nx1n,  /* height == 64 */
+        sad_16b_sse_16nx1n,  /* height == 128 */
     }
 };
 
@@ -1241,7 +1088,7 @@ XEVE_FN_SSD xeve_tbl_ssd_16b_sse[8][8] =
 /* SATD **********************************************************************/
 int xeve_had_4x4_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_depth)
 {
-    if(bit_depth <= 10)
+   if(bit_depth <= 10)
     {
         int satd = 0;
         __m128i r0 = (_mm_loadl_epi64((const __m128i*)&org[0]));
@@ -1334,91 +1181,94 @@ int xeve_had_4x4_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit
     {
         int k;
         int satd = 0;
-        int diff[16], m[16], d[16];
+        int subs[16], interm1[16], interm2[16];
+        pel * orgn = org;
+        pel * curn = cur;
+
 
         for(k = 0; k < 16; k += 4)
         {
-            diff[k + 0] = org[0] - cur[0];
-            diff[k + 1] = org[1] - cur[1];
-            diff[k + 2] = org[2] - cur[2];
-            diff[k + 3] = org[3] - cur[3];
+            subs[k + 0] = orgn[0] - curn[0];
+            subs[k + 1] = orgn[1] - curn[1];
+            subs[k + 2] = orgn[2] - curn[2];
+            subs[k + 3] = orgn[3] - curn[3];
 
-            cur += s_cur;
-            org += s_org;
+            curn += s_cur;
+            orgn += s_org;
         }
 
-        m[0] = diff[0] + diff[12];
-        m[1] = diff[1] + diff[13];
-        m[2] = diff[2] + diff[14];
-        m[3] = diff[3] + diff[15];
-        m[4] = diff[4] + diff[8];
-        m[5] = diff[5] + diff[9];
-        m[6] = diff[6] + diff[10];
-        m[7] = diff[7] + diff[11];
-        m[8] = diff[4] - diff[8];
-        m[9] = diff[5] - diff[9];
-        m[10] = diff[6] - diff[10];
-        m[11] = diff[7] - diff[11];
-        m[12] = diff[0] - diff[12];
-        m[13] = diff[1] - diff[13];
-        m[14] = diff[2] - diff[14];
-        m[15] = diff[3] - diff[15];
+        interm1[0] = subs[0] + subs[12];
+        interm1[1] = subs[1] + subs[13];
+        interm1[2] = subs[2] + subs[14];
+        interm1[3] = subs[3] + subs[15];
+        interm1[4] = subs[4] + subs[8];
+        interm1[5] = subs[5] + subs[9];
+        interm1[6] = subs[6] + subs[10];
+        interm1[7] = subs[7] + subs[11];
+        interm1[8] = subs[4] - subs[8];
+        interm1[9] = subs[5] - subs[9];
+        interm1[10] = subs[6] - subs[10];
+        interm1[11] = subs[7] - subs[11];
+        interm1[12] = subs[0] - subs[12];
+        interm1[13] = subs[1] - subs[13];
+        interm1[14] = subs[2] - subs[14];
+        interm1[15] = subs[3] - subs[15];
 
-        d[0] = m[0] + m[4];
-        d[1] = m[1] + m[5];
-        d[2] = m[2] + m[6];
-        d[3] = m[3] + m[7];
-        d[4] = m[8] + m[12];
-        d[5] = m[9] + m[13];
-        d[6] = m[10] + m[14];
-        d[7] = m[11] + m[15];
-        d[8] = m[0] - m[4];
-        d[9] = m[1] - m[5];
-        d[10] = m[2] - m[6];
-        d[11] = m[3] - m[7];
-        d[12] = m[12] - m[8];
-        d[13] = m[13] - m[9];
-        d[14] = m[14] - m[10];
-        d[15] = m[15] - m[11];
+        interm2[0] = interm1[0] + interm1[4];
+        interm2[1] = interm1[1] + interm1[5];
+        interm2[2] = interm1[2] + interm1[6];
+        interm2[3] = interm1[3] + interm1[7];
+        interm2[4] = interm1[8] + interm1[12];
+        interm2[5] = interm1[9] + interm1[13];
+        interm2[6] = interm1[10] + interm1[14];
+        interm2[7] = interm1[11] + interm1[15];
+        interm2[8] = interm1[0] - interm1[4];
+        interm2[9] = interm1[1] - interm1[5];
+        interm2[10] = interm1[2] - interm1[6];
+        interm2[11] = interm1[3] - interm1[7];
+        interm2[12] = interm1[12] - interm1[8];
+        interm2[13] = interm1[13] - interm1[9];
+        interm2[14] = interm1[14] - interm1[10];
+        interm2[15] = interm1[15] - interm1[11];
 
-        m[0] = d[0] + d[3];
-        m[1] = d[1] + d[2];
-        m[2] = d[1] - d[2];
-        m[3] = d[0] - d[3];
-        m[4] = d[4] + d[7];
-        m[5] = d[5] + d[6];
-        m[6] = d[5] - d[6];
-        m[7] = d[4] - d[7];
-        m[8] = d[8] + d[11];
-        m[9] = d[9] + d[10];
-        m[10] = d[9] - d[10];
-        m[11] = d[8] - d[11];
-        m[12] = d[12] + d[15];
-        m[13] = d[13] + d[14];
-        m[14] = d[13] - d[14];
-        m[15] = d[12] - d[15];
+        interm1[0] = interm2[0] + interm2[3];
+        interm1[1] = interm2[1] + interm2[2];
+        interm1[2] = interm2[1] - interm2[2];
+        interm1[3] = interm2[0] - interm2[3];
+        interm1[4] = interm2[4] + interm2[7];
+        interm1[5] = interm2[5] + interm2[6];
+        interm1[6] = interm2[5] - interm2[6];
+        interm1[7] = interm2[4] - interm2[7];
+        interm1[8] = interm2[8] + interm2[11];
+        interm1[9] = interm2[9] + interm2[10];
+        interm1[10] = interm2[9] - interm2[10];
+        interm1[11] = interm2[8] - interm2[11];
+        interm1[12] = interm2[12] + interm2[15];
+        interm1[13] = interm2[13] + interm2[14];
+        interm1[14] = interm2[13] - interm2[14];
+        interm1[15] = interm2[12] - interm2[15];
 
-        d[0] = m[0] + m[1];
-        d[1] = m[0] - m[1];
-        d[2] = m[2] + m[3];
-        d[3] = m[3] - m[2];
-        d[4] = m[4] + m[5];
-        d[5] = m[4] - m[5];
-        d[6] = m[6] + m[7];
-        d[7] = m[7] - m[6];
-        d[8] = m[8] + m[9];
-        d[9] = m[8] - m[9];
-        d[10] = m[10] + m[11];
-        d[11] = m[11] - m[10];
-        d[12] = m[12] + m[13];
-        d[13] = m[12] - m[13];
-        d[14] = m[14] + m[15];
-        d[15] = m[15] - m[14];
+        interm2[0] = XEVE_ABS(interm1[0] + interm1[1]);
+        interm2[1] = XEVE_ABS(interm1[0] - interm1[1]);
+        interm2[2] = XEVE_ABS(interm1[2] + interm1[3]);
+        interm2[3] = XEVE_ABS(interm1[3] - interm1[2]);
+        interm2[4] = XEVE_ABS(interm1[4] + interm1[5]);
+        interm2[5] = XEVE_ABS(interm1[4] - interm1[5]);
+        interm2[6] = XEVE_ABS(interm1[6] + interm1[7]);
+        interm2[7] = XEVE_ABS(interm1[7] - interm1[6]);
+        interm2[8] = XEVE_ABS(interm1[8] + interm1[9]);
+        interm2[9] = XEVE_ABS(interm1[8] - interm1[9]);
+        interm2[10] = XEVE_ABS(interm1[10] + interm1[11]);
+        interm2[11] = XEVE_ABS(interm1[11] - interm1[10]);
+        interm2[12] = XEVE_ABS(interm1[12] + interm1[13]);
+        interm2[13] = XEVE_ABS(interm1[12] - interm1[13]);
+        interm2[14] = XEVE_ABS(interm1[14] + interm1[15]);
+        interm2[15] = XEVE_ABS(interm1[15] - interm1[14]);
 
-        satd += (XEVE_ABS(d[0]) >> 2);
+        satd = (interm2[0] >> 2);
         for(k = 1; k < 16; k++)
         {
-            satd += XEVE_ABS(d[k]);
+            satd += interm2[k];
         }
         satd = ((satd + 1) >> 1);
 
@@ -1428,7 +1278,7 @@ int xeve_had_4x4_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit
 
 int xeve_had_8x8_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_depth)
 {
-    if(bit_depth <= 10)
+     if(bit_depth <= 10)
     {
         int sad = 0;
         /* all 128 bit registers are named with a suffix mxnb, where m is the */
@@ -1938,96 +1788,97 @@ int xeve_had_8x8_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit
     {
         int k, i, j, jj;
         int satd = 0;
-        int diff[64], m1[8][8], m2[8][8], m3[8][8];
+        int sub[64], interm1[8][8], interm2[8][8], interm3[8][8];
+		pel * orgn = org, * curn = cur;
 
         for(k = 0; k < 64; k += 8)
         {
-            diff[k + 0] = org[0] - cur[0];
-            diff[k + 1] = org[1] - cur[1];
-            diff[k + 2] = org[2] - cur[2];
-            diff[k + 3] = org[3] - cur[3];
-            diff[k + 4] = org[4] - cur[4];
-            diff[k + 5] = org[5] - cur[5];
-            diff[k + 6] = org[6] - cur[6];
-            diff[k + 7] = org[7] - cur[7];
+            sub[k + 0] = orgn[0] - curn[0];
+            sub[k + 1] = orgn[1] - curn[1];
+            sub[k + 2] = orgn[2] - curn[2];
+            sub[k + 3] = orgn[3] - curn[3];
+            sub[k + 4] = orgn[4] - curn[4];
+            sub[k + 5] = orgn[5] - curn[5];
+            sub[k + 6] = orgn[6] - curn[6];
+            sub[k + 7] = orgn[7] - curn[7];
 
-            cur += s_cur;
-            org += s_org;
+            curn += s_cur;
+            orgn += s_org;
         }
 
         /* horizontal */
         for(j = 0; j < 8; j++)
         {
             jj = j << 3;
-            m2[j][0] = diff[jj] + diff[jj + 4];
-            m2[j][1] = diff[jj + 1] + diff[jj + 5];
-            m2[j][2] = diff[jj + 2] + diff[jj + 6];
-            m2[j][3] = diff[jj + 3] + diff[jj + 7];
-            m2[j][4] = diff[jj] - diff[jj + 4];
-            m2[j][5] = diff[jj + 1] - diff[jj + 5];
-            m2[j][6] = diff[jj + 2] - diff[jj + 6];
-            m2[j][7] = diff[jj + 3] - diff[jj + 7];
+            interm2[j][0] = sub[jj] + sub[jj + 4];
+            interm2[j][1] = sub[jj + 1] + sub[jj + 5];
+            interm2[j][2] = sub[jj + 2] + sub[jj + 6];
+            interm2[j][3] = sub[jj + 3] + sub[jj + 7];
+            interm2[j][4] = sub[jj] - sub[jj + 4];
+            interm2[j][5] = sub[jj + 1] - sub[jj + 5];
+            interm2[j][6] = sub[jj + 2] - sub[jj + 6];
+            interm2[j][7] = sub[jj + 3] - sub[jj + 7];
 
-            m1[j][0] = m2[j][0] + m2[j][2];
-            m1[j][1] = m2[j][1] + m2[j][3];
-            m1[j][2] = m2[j][0] - m2[j][2];
-            m1[j][3] = m2[j][1] - m2[j][3];
-            m1[j][4] = m2[j][4] + m2[j][6];
-            m1[j][5] = m2[j][5] + m2[j][7];
-            m1[j][6] = m2[j][4] - m2[j][6];
-            m1[j][7] = m2[j][5] - m2[j][7];
+            interm1[j][0] = interm2[j][0] + interm2[j][2];
+            interm1[j][1] = interm2[j][1] + interm2[j][3];
+            interm1[j][2] = interm2[j][0] - interm2[j][2];
+            interm1[j][3] = interm2[j][1] - interm2[j][3];
+            interm1[j][4] = interm2[j][4] + interm2[j][6];
+            interm1[j][5] = interm2[j][5] + interm2[j][7];
+            interm1[j][6] = interm2[j][4] - interm2[j][6];
+            interm1[j][7] = interm2[j][5] - interm2[j][7];
 
-            m2[j][0] = m1[j][0] + m1[j][1];
-            m2[j][1] = m1[j][0] - m1[j][1];
-            m2[j][2] = m1[j][2] + m1[j][3];
-            m2[j][3] = m1[j][2] - m1[j][3];
-            m2[j][4] = m1[j][4] + m1[j][5];
-            m2[j][5] = m1[j][4] - m1[j][5];
-            m2[j][6] = m1[j][6] + m1[j][7];
-            m2[j][7] = m1[j][6] - m1[j][7];
+            interm2[j][0] = interm1[j][0] + interm1[j][1];
+            interm2[j][1] = interm1[j][0] - interm1[j][1];
+            interm2[j][2] = interm1[j][2] + interm1[j][3];
+            interm2[j][3] = interm1[j][2] - interm1[j][3];
+            interm2[j][4] = interm1[j][4] + interm1[j][5];
+            interm2[j][5] = interm1[j][4] - interm1[j][5];
+            interm2[j][6] = interm1[j][6] + interm1[j][7];
+            interm2[j][7] = interm1[j][6] - interm1[j][7];
         }
 
         /* vertical */
         for(i = 0; i < 8; i++)
         {
-            m3[0][i] = m2[0][i] + m2[4][i];
-            m3[1][i] = m2[1][i] + m2[5][i];
-            m3[2][i] = m2[2][i] + m2[6][i];
-            m3[3][i] = m2[3][i] + m2[7][i];
-            m3[4][i] = m2[0][i] - m2[4][i];
-            m3[5][i] = m2[1][i] - m2[5][i];
-            m3[6][i] = m2[2][i] - m2[6][i];
-            m3[7][i] = m2[3][i] - m2[7][i];
+            interm3[0][i] = interm2[0][i] + interm2[4][i];
+            interm3[1][i] = interm2[1][i] + interm2[5][i];
+            interm3[2][i] = interm2[2][i] + interm2[6][i];
+            interm3[3][i] = interm2[3][i] + interm2[7][i];
+            interm3[4][i] = interm2[0][i] - interm2[4][i];
+            interm3[5][i] = interm2[1][i] - interm2[5][i];
+            interm3[6][i] = interm2[2][i] - interm2[6][i];
+            interm3[7][i] = interm2[3][i] - interm2[7][i];
 
-            m1[0][i] = m3[0][i] + m3[2][i];
-            m1[1][i] = m3[1][i] + m3[3][i];
-            m1[2][i] = m3[0][i] - m3[2][i];
-            m1[3][i] = m3[1][i] - m3[3][i];
-            m1[4][i] = m3[4][i] + m3[6][i];
-            m1[5][i] = m3[5][i] + m3[7][i];
-            m1[6][i] = m3[4][i] - m3[6][i];
-            m1[7][i] = m3[5][i] - m3[7][i];
+            interm1[0][i] = interm3[0][i] + interm3[2][i];
+            interm1[1][i] = interm3[1][i] + interm3[3][i];
+            interm1[2][i] = interm3[0][i] - interm3[2][i];
+            interm1[3][i] = interm3[1][i] - interm3[3][i];
+            interm1[4][i] = interm3[4][i] + interm3[6][i];
+            interm1[5][i] = interm3[5][i] + interm3[7][i];
+            interm1[6][i] = interm3[4][i] - interm3[6][i];
+            interm1[7][i] = interm3[5][i] - interm3[7][i];
 
-            m2[0][i] = m1[0][i] + m1[1][i];
-            m2[1][i] = m1[0][i] - m1[1][i];
-            m2[2][i] = m1[2][i] + m1[3][i];
-            m2[3][i] = m1[2][i] - m1[3][i];
-            m2[4][i] = m1[4][i] + m1[5][i];
-            m2[5][i] = m1[4][i] - m1[5][i];
-            m2[6][i] = m1[6][i] + m1[7][i];
-            m2[7][i] = m1[6][i] - m1[7][i];
+            interm2[0][i] = XEVE_ABS(interm1[0][i] + interm1[1][i]);
+            interm2[1][i] = XEVE_ABS(interm1[0][i] - interm1[1][i]);
+            interm2[2][i] = XEVE_ABS(interm1[2][i] + interm1[3][i]);
+            interm2[3][i] = XEVE_ABS(interm1[2][i] - interm1[3][i]);
+            interm2[4][i] = XEVE_ABS(interm1[4][i] + interm1[5][i]);
+            interm2[5][i] = XEVE_ABS(interm1[4][i] - interm1[5][i]);
+            interm2[6][i] = XEVE_ABS(interm1[6][i] + interm1[7][i]);
+            interm2[7][i] = XEVE_ABS(interm1[6][i] - interm1[7][i]);
         }
 
-        satd += XEVE_ABS(m2[0][0]) >> 2;
+        satd = interm2[0][0] >> 2;
         for(j = 1; j < 8; j++)
         {
-            satd += XEVE_ABS(m2[0][j]);
+            satd += interm2[0][j];
         }
         for(i = 1; i < 8; i++)
         {
             for(j = 0; j < 8; j++)
             {
-                satd += XEVE_ABS(m2[i][j]);
+                satd += interm2[i][j];
             }
         }
 
@@ -2039,7 +1890,7 @@ int xeve_had_8x8_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit
 
 int xeve_had_16x8_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_depth)
 {
-    if(bit_depth <= 10)
+     if(bit_depth <= 10)
     {    
         int sad = 0;
 
@@ -3060,149 +2911,150 @@ int xeve_had_16x8_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bi
     {
         int k, i, j, jj;
         int satd = 0;
-        int diff[128], m1[8][16], m2[8][16];
+        int sub[128], interm1[8][16], interm2[8][16];
+		pel * curn = cur, *orgn = org;
 
         for(k = 0; k < 128; k += 16)
         {
-            diff[k + 0] = org[0] - cur[0];
-            diff[k + 1] = org[1] - cur[1];
-            diff[k + 2] = org[2] - cur[2];
-            diff[k + 3] = org[3] - cur[3];
-            diff[k + 4] = org[4] - cur[4];
-            diff[k + 5] = org[5] - cur[5];
-            diff[k + 6] = org[6] - cur[6];
-            diff[k + 7] = org[7] - cur[7];
+            sub[k + 0] = orgn[0] - curn[0];
+            sub[k + 1] = orgn[1] - curn[1];
+            sub[k + 2] = orgn[2] - curn[2];
+            sub[k + 3] = orgn[3] - curn[3];
+            sub[k + 4] = orgn[4] - curn[4];
+            sub[k + 5] = orgn[5] - curn[5];
+            sub[k + 6] = orgn[6] - curn[6];
+            sub[k + 7] = orgn[7] - curn[7];
 
-            diff[k + 8] = org[8] - cur[8];
-            diff[k + 9] = org[9] - cur[9];
-            diff[k + 10] = org[10] - cur[10];
-            diff[k + 11] = org[11] - cur[11];
-            diff[k + 12] = org[12] - cur[12];
-            diff[k + 13] = org[13] - cur[13];
-            diff[k + 14] = org[14] - cur[14];
-            diff[k + 15] = org[15] - cur[15];
+            sub[k + 8] = orgn[8] - curn[8];
+            sub[k + 9] = orgn[9] - curn[9];
+            sub[k + 10] = orgn[10] - curn[10];
+            sub[k + 11] = orgn[11] - curn[11];
+            sub[k + 12] = orgn[12] - curn[12];
+            sub[k + 13] = orgn[13] - curn[13];
+            sub[k + 14] = orgn[14] - curn[14];
+            sub[k + 15] = orgn[15] - curn[15];
 
-            cur += s_cur;
-            org += s_org;
+            curn += s_cur;
+            orgn += s_org;
         }
 
         for(j = 0; j < 8; j++)
         {
             jj = j << 4;
 
-            m2[j][0] = diff[jj] + diff[jj + 8];
-            m2[j][1] = diff[jj + 1] + diff[jj + 9];
-            m2[j][2] = diff[jj + 2] + diff[jj + 10];
-            m2[j][3] = diff[jj + 3] + diff[jj + 11];
-            m2[j][4] = diff[jj + 4] + diff[jj + 12];
-            m2[j][5] = diff[jj + 5] + diff[jj + 13];
-            m2[j][6] = diff[jj + 6] + diff[jj + 14];
-            m2[j][7] = diff[jj + 7] + diff[jj + 15];
-            m2[j][8] = diff[jj] - diff[jj + 8];
-            m2[j][9] = diff[jj + 1] - diff[jj + 9];
-            m2[j][10] = diff[jj + 2] - diff[jj + 10];
-            m2[j][11] = diff[jj + 3] - diff[jj + 11];
-            m2[j][12] = diff[jj + 4] - diff[jj + 12];
-            m2[j][13] = diff[jj + 5] - diff[jj + 13];
-            m2[j][14] = diff[jj + 6] - diff[jj + 14];
-            m2[j][15] = diff[jj + 7] - diff[jj + 15];
+            interm2[j][0] = sub[jj] + sub[jj + 8];
+            interm2[j][1] = sub[jj + 1] + sub[jj + 9];
+            interm2[j][2] = sub[jj + 2] + sub[jj + 10];
+            interm2[j][3] = sub[jj + 3] + sub[jj + 11];
+            interm2[j][4] = sub[jj + 4] + sub[jj + 12];
+            interm2[j][5] = sub[jj + 5] + sub[jj + 13];
+            interm2[j][6] = sub[jj + 6] + sub[jj + 14];
+            interm2[j][7] = sub[jj + 7] + sub[jj + 15];
+            interm2[j][8] = sub[jj] - sub[jj + 8];
+            interm2[j][9] = sub[jj + 1] - sub[jj + 9];
+            interm2[j][10] = sub[jj + 2] - sub[jj + 10];
+            interm2[j][11] = sub[jj + 3] - sub[jj + 11];
+            interm2[j][12] = sub[jj + 4] - sub[jj + 12];
+            interm2[j][13] = sub[jj + 5] - sub[jj + 13];
+            interm2[j][14] = sub[jj + 6] - sub[jj + 14];
+            interm2[j][15] = sub[jj + 7] - sub[jj + 15];
 
-            m1[j][0] = m2[j][0] + m2[j][4];
-            m1[j][1] = m2[j][1] + m2[j][5];
-            m1[j][2] = m2[j][2] + m2[j][6];
-            m1[j][3] = m2[j][3] + m2[j][7];
-            m1[j][4] = m2[j][0] - m2[j][4];
-            m1[j][5] = m2[j][1] - m2[j][5];
-            m1[j][6] = m2[j][2] - m2[j][6];
-            m1[j][7] = m2[j][3] - m2[j][7];
-            m1[j][8] = m2[j][8] + m2[j][12];
-            m1[j][9] = m2[j][9] + m2[j][13];
-            m1[j][10] = m2[j][10] + m2[j][14];
-            m1[j][11] = m2[j][11] + m2[j][15];
-            m1[j][12] = m2[j][8] - m2[j][12];
-            m1[j][13] = m2[j][9] - m2[j][13];
-            m1[j][14] = m2[j][10] - m2[j][14];
-            m1[j][15] = m2[j][11] - m2[j][15];
+            interm1[j][0] = interm2[j][0] + interm2[j][4];
+            interm1[j][1] = interm2[j][1] + interm2[j][5];
+            interm1[j][2] = interm2[j][2] + interm2[j][6];
+            interm1[j][3] = interm2[j][3] + interm2[j][7];
+            interm1[j][4] = interm2[j][0] - interm2[j][4];
+            interm1[j][5] = interm2[j][1] - interm2[j][5];
+            interm1[j][6] = interm2[j][2] - interm2[j][6];
+            interm1[j][7] = interm2[j][3] - interm2[j][7];
+            interm1[j][8] = interm2[j][8] + interm2[j][12];
+            interm1[j][9] = interm2[j][9] + interm2[j][13];
+            interm1[j][10] = interm2[j][10] + interm2[j][14];
+            interm1[j][11] = interm2[j][11] + interm2[j][15];
+            interm1[j][12] = interm2[j][8] - interm2[j][12];
+            interm1[j][13] = interm2[j][9] - interm2[j][13];
+            interm1[j][14] = interm2[j][10] - interm2[j][14];
+            interm1[j][15] = interm2[j][11] - interm2[j][15];
 
-            m2[j][0] = m1[j][0] + m1[j][2];
-            m2[j][1] = m1[j][1] + m1[j][3];
-            m2[j][2] = m1[j][0] - m1[j][2];
-            m2[j][3] = m1[j][1] - m1[j][3];
-            m2[j][4] = m1[j][4] + m1[j][6];
-            m2[j][5] = m1[j][5] + m1[j][7];
-            m2[j][6] = m1[j][4] - m1[j][6];
-            m2[j][7] = m1[j][5] - m1[j][7];
-            m2[j][8] = m1[j][8] + m1[j][10];
-            m2[j][9] = m1[j][9] + m1[j][11];
-            m2[j][10] = m1[j][8] - m1[j][10];
-            m2[j][11] = m1[j][9] - m1[j][11];
-            m2[j][12] = m1[j][12] + m1[j][14];
-            m2[j][13] = m1[j][13] + m1[j][15];
-            m2[j][14] = m1[j][12] - m1[j][14];
-            m2[j][15] = m1[j][13] - m1[j][15];
+            interm2[j][0] = interm1[j][0] + interm1[j][2];
+            interm2[j][1] = interm1[j][1] + interm1[j][3];
+            interm2[j][2] = interm1[j][0] - interm1[j][2];
+            interm2[j][3] = interm1[j][1] - interm1[j][3];
+            interm2[j][4] = interm1[j][4] + interm1[j][6];
+            interm2[j][5] = interm1[j][5] + interm1[j][7];
+            interm2[j][6] = interm1[j][4] - interm1[j][6];
+            interm2[j][7] = interm1[j][5] - interm1[j][7];
+            interm2[j][8] = interm1[j][8] + interm1[j][10];
+            interm2[j][9] = interm1[j][9] + interm1[j][11];
+            interm2[j][10] = interm1[j][8] - interm1[j][10];
+            interm2[j][11] = interm1[j][9] - interm1[j][11];
+            interm2[j][12] = interm1[j][12] + interm1[j][14];
+            interm2[j][13] = interm1[j][13] + interm1[j][15];
+            interm2[j][14] = interm1[j][12] - interm1[j][14];
+            interm2[j][15] = interm1[j][13] - interm1[j][15];
 
-            m1[j][0] = m2[j][0] + m2[j][1];
-            m1[j][1] = m2[j][0] - m2[j][1];
-            m1[j][2] = m2[j][2] + m2[j][3];
-            m1[j][3] = m2[j][2] - m2[j][3];
-            m1[j][4] = m2[j][4] + m2[j][5];
-            m1[j][5] = m2[j][4] - m2[j][5];
-            m1[j][6] = m2[j][6] + m2[j][7];
-            m1[j][7] = m2[j][6] - m2[j][7];
-            m1[j][8] = m2[j][8] + m2[j][9];
-            m1[j][9] = m2[j][8] - m2[j][9];
-            m1[j][10] = m2[j][10] + m2[j][11];
-            m1[j][11] = m2[j][10] - m2[j][11];
-            m1[j][12] = m2[j][12] + m2[j][13];
-            m1[j][13] = m2[j][12] - m2[j][13];
-            m1[j][14] = m2[j][14] + m2[j][15];
-            m1[j][15] = m2[j][14] - m2[j][15];
+            interm1[j][0] = interm2[j][0] + interm2[j][1];
+            interm1[j][1] = interm2[j][0] - interm2[j][1];
+            interm1[j][2] = interm2[j][2] + interm2[j][3];
+            interm1[j][3] = interm2[j][2] - interm2[j][3];
+            interm1[j][4] = interm2[j][4] + interm2[j][5];
+            interm1[j][5] = interm2[j][4] - interm2[j][5];
+            interm1[j][6] = interm2[j][6] + interm2[j][7];
+            interm1[j][7] = interm2[j][6] - interm2[j][7];
+            interm1[j][8] = interm2[j][8] + interm2[j][9];
+            interm1[j][9] = interm2[j][8] - interm2[j][9];
+            interm1[j][10] = interm2[j][10] + interm2[j][11];
+            interm1[j][11] = interm2[j][10] - interm2[j][11];
+            interm1[j][12] = interm2[j][12] + interm2[j][13];
+            interm1[j][13] = interm2[j][12] - interm2[j][13];
+            interm1[j][14] = interm2[j][14] + interm2[j][15];
+            interm1[j][15] = interm2[j][14] - interm2[j][15];
         }
 
         for(i = 0; i < 16; i++)
         {
-            m2[0][i] = m1[0][i] + m1[4][i];
-            m2[1][i] = m1[1][i] + m1[5][i];
-            m2[2][i] = m1[2][i] + m1[6][i];
-            m2[3][i] = m1[3][i] + m1[7][i];
-            m2[4][i] = m1[0][i] - m1[4][i];
-            m2[5][i] = m1[1][i] - m1[5][i];
-            m2[6][i] = m1[2][i] - m1[6][i];
-            m2[7][i] = m1[3][i] - m1[7][i];
+            interm2[0][i] = interm1[0][i] + interm1[4][i];
+            interm2[1][i] = interm1[1][i] + interm1[5][i];
+            interm2[2][i] = interm1[2][i] + interm1[6][i];
+            interm2[3][i] = interm1[3][i] + interm1[7][i];
+            interm2[4][i] = interm1[0][i] - interm1[4][i];
+            interm2[5][i] = interm1[1][i] - interm1[5][i];
+            interm2[6][i] = interm1[2][i] - interm1[6][i];
+            interm2[7][i] = interm1[3][i] - interm1[7][i];
 
-            m1[0][i] = m2[0][i] + m2[2][i];
-            m1[1][i] = m2[1][i] + m2[3][i];
-            m1[2][i] = m2[0][i] - m2[2][i];
-            m1[3][i] = m2[1][i] - m2[3][i];
-            m1[4][i] = m2[4][i] + m2[6][i];
-            m1[5][i] = m2[5][i] + m2[7][i];
-            m1[6][i] = m2[4][i] - m2[6][i];
-            m1[7][i] = m2[5][i] - m2[7][i];
+            interm1[0][i] = interm2[0][i] + interm2[2][i];
+            interm1[1][i] = interm2[1][i] + interm2[3][i];
+            interm1[2][i] = interm2[0][i] - interm2[2][i];
+            interm1[3][i] = interm2[1][i] - interm2[3][i];
+            interm1[4][i] = interm2[4][i] + interm2[6][i];
+            interm1[5][i] = interm2[5][i] + interm2[7][i];
+            interm1[6][i] = interm2[4][i] - interm2[6][i];
+            interm1[7][i] = interm2[5][i] - interm2[7][i];
 
-            m2[0][i] = m1[0][i] + m1[1][i];
-            m2[1][i] = m1[0][i] - m1[1][i];
-            m2[2][i] = m1[2][i] + m1[3][i];
-            m2[3][i] = m1[2][i] - m1[3][i];
-            m2[4][i] = m1[4][i] + m1[5][i];
-            m2[5][i] = m1[4][i] - m1[5][i];
-            m2[6][i] = m1[6][i] + m1[7][i];
-            m2[7][i] = m1[6][i] - m1[7][i];
+            interm2[0][i] = XEVE_ABS(interm1[0][i] + interm1[1][i]);
+            interm2[1][i] = XEVE_ABS(interm1[0][i] - interm1[1][i]);
+            interm2[2][i] = XEVE_ABS(interm1[2][i] + interm1[3][i]);
+            interm2[3][i] = XEVE_ABS(interm1[2][i] - interm1[3][i]);
+            interm2[4][i] = XEVE_ABS(interm1[4][i] + interm1[5][i]);
+            interm2[5][i] = XEVE_ABS(interm1[4][i] - interm1[5][i]);
+            interm2[6][i] = XEVE_ABS(interm1[6][i] + interm1[7][i]);
+            interm2[7][i] = XEVE_ABS(interm1[6][i] - interm1[7][i]);
         }
 
-        satd += XEVE_ABS(m2[0][0]) >> 2;
+        satd = interm2[0][0] >> 2;
         for(j = 1; j < 16; j++)
         {
-            satd += XEVE_ABS(m2[0][j]);
+            satd += interm2[0][j];
         }
         for(i = 1; i < 8; i++)
         {
             for(j = 0; j < 16; j++)
             {
-                satd += XEVE_ABS(m2[i][j]);
+                satd += interm2[i][j];
             }
         }
 
-        satd = (int)(satd / sqrt(16.0 * 8.0) * 2.0);
+        satd = (int)(satd / (2.0 *sqrt(8.0)));
 
         return satd;
     }
@@ -4247,140 +4099,141 @@ int xeve_had_8x16_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bi
     {
         int k, i, j, jj;
         int satd = 0;
-        int diff[128], m1[16][8], m2[16][8];
+        int sub[128], interm1[16][8], interm2[16][8];
+		pel * orgn = org, *curn = cur;
 
         for(k = 0; k < 128; k += 8)
         {
-            diff[k + 0] = org[0] - cur[0];
-            diff[k + 1] = org[1] - cur[1];
-            diff[k + 2] = org[2] - cur[2];
-            diff[k + 3] = org[3] - cur[3];
-            diff[k + 4] = org[4] - cur[4];
-            diff[k + 5] = org[5] - cur[5];
-            diff[k + 6] = org[6] - cur[6];
-            diff[k + 7] = org[7] - cur[7];
+            sub[k + 0] = orgn[0] - curn[0];
+            sub[k + 1] = orgn[1] - curn[1];
+            sub[k + 2] = orgn[2] - curn[2];
+            sub[k + 3] = orgn[3] - curn[3];
+            sub[k + 4] = orgn[4] - curn[4];
+            sub[k + 5] = orgn[5] - curn[5];
+            sub[k + 6] = orgn[6] - curn[6];
+            sub[k + 7] = orgn[7] - curn[7];
 
-            cur += s_cur;
-            org += s_org;
+            curn += s_cur;
+            orgn += s_org;
         }
 
         for(j = 0; j < 16; j++)
         {
             jj = j << 3;
 
-            m2[j][0] = diff[jj] + diff[jj + 4];
-            m2[j][1] = diff[jj + 1] + diff[jj + 5];
-            m2[j][2] = diff[jj + 2] + diff[jj + 6];
-            m2[j][3] = diff[jj + 3] + diff[jj + 7];
-            m2[j][4] = diff[jj] - diff[jj + 4];
-            m2[j][5] = diff[jj + 1] - diff[jj + 5];
-            m2[j][6] = diff[jj + 2] - diff[jj + 6];
-            m2[j][7] = diff[jj + 3] - diff[jj + 7];
+            interm2[j][0] = sub[jj] + sub[jj + 4];
+            interm2[j][1] = sub[jj + 1] + sub[jj + 5];
+            interm2[j][2] = sub[jj + 2] + sub[jj + 6];
+            interm2[j][3] = sub[jj + 3] + sub[jj + 7];
+            interm2[j][4] = sub[jj] - sub[jj + 4];
+            interm2[j][5] = sub[jj + 1] - sub[jj + 5];
+            interm2[j][6] = sub[jj + 2] - sub[jj + 6];
+            interm2[j][7] = sub[jj + 3] - sub[jj + 7];
 
-            m1[j][0] = m2[j][0] + m2[j][2];
-            m1[j][1] = m2[j][1] + m2[j][3];
-            m1[j][2] = m2[j][0] - m2[j][2];
-            m1[j][3] = m2[j][1] - m2[j][3];
-            m1[j][4] = m2[j][4] + m2[j][6];
-            m1[j][5] = m2[j][5] + m2[j][7];
-            m1[j][6] = m2[j][4] - m2[j][6];
-            m1[j][7] = m2[j][5] - m2[j][7];
+            interm1[j][0] = interm2[j][0] + interm2[j][2];
+            interm1[j][1] = interm2[j][1] + interm2[j][3];
+            interm1[j][2] = interm2[j][0] - interm2[j][2];
+            interm1[j][3] = interm2[j][1] - interm2[j][3];
+            interm1[j][4] = interm2[j][4] + interm2[j][6];
+            interm1[j][5] = interm2[j][5] + interm2[j][7];
+            interm1[j][6] = interm2[j][4] - interm2[j][6];
+            interm1[j][7] = interm2[j][5] - interm2[j][7];
 
-            m2[j][0] = m1[j][0] + m1[j][1];
-            m2[j][1] = m1[j][0] - m1[j][1];
-            m2[j][2] = m1[j][2] + m1[j][3];
-            m2[j][3] = m1[j][2] - m1[j][3];
-            m2[j][4] = m1[j][4] + m1[j][5];
-            m2[j][5] = m1[j][4] - m1[j][5];
-            m2[j][6] = m1[j][6] + m1[j][7];
-            m2[j][7] = m1[j][6] - m1[j][7];
+            interm2[j][0] = interm1[j][0] + interm1[j][1];
+            interm2[j][1] = interm1[j][0] - interm1[j][1];
+            interm2[j][2] = interm1[j][2] + interm1[j][3];
+            interm2[j][3] = interm1[j][2] - interm1[j][3];
+            interm2[j][4] = interm1[j][4] + interm1[j][5];
+            interm2[j][5] = interm1[j][4] - interm1[j][5];
+            interm2[j][6] = interm1[j][6] + interm1[j][7];
+            interm2[j][7] = interm1[j][6] - interm1[j][7];
         }
 
         for(i = 0; i < 8; i++)
         {
-            m1[0][i] = m2[0][i] + m2[8][i];
-            m1[1][i] = m2[1][i] + m2[9][i];
-            m1[2][i] = m2[2][i] + m2[10][i];
-            m1[3][i] = m2[3][i] + m2[11][i];
-            m1[4][i] = m2[4][i] + m2[12][i];
-            m1[5][i] = m2[5][i] + m2[13][i];
-            m1[6][i] = m2[6][i] + m2[14][i];
-            m1[7][i] = m2[7][i] + m2[15][i];
-            m1[8][i] = m2[0][i] - m2[8][i];
-            m1[9][i] = m2[1][i] - m2[9][i];
-            m1[10][i] = m2[2][i] - m2[10][i];
-            m1[11][i] = m2[3][i] - m2[11][i];
-            m1[12][i] = m2[4][i] - m2[12][i];
-            m1[13][i] = m2[5][i] - m2[13][i];
-            m1[14][i] = m2[6][i] - m2[14][i];
-            m1[15][i] = m2[7][i] - m2[15][i];
+            interm1[0][i] = interm2[0][i] + interm2[8][i];
+            interm1[1][i] = interm2[1][i] + interm2[9][i];
+            interm1[2][i] = interm2[2][i] + interm2[10][i];
+            interm1[3][i] = interm2[3][i] + interm2[11][i];
+            interm1[4][i] = interm2[4][i] + interm2[12][i];
+            interm1[5][i] = interm2[5][i] + interm2[13][i];
+            interm1[6][i] = interm2[6][i] + interm2[14][i];
+            interm1[7][i] = interm2[7][i] + interm2[15][i];
+            interm1[8][i] = interm2[0][i] - interm2[8][i];
+            interm1[9][i] = interm2[1][i] - interm2[9][i];
+            interm1[10][i] = interm2[2][i] - interm2[10][i];
+            interm1[11][i] = interm2[3][i] - interm2[11][i];
+            interm1[12][i] = interm2[4][i] - interm2[12][i];
+            interm1[13][i] = interm2[5][i] - interm2[13][i];
+            interm1[14][i] = interm2[6][i] - interm2[14][i];
+            interm1[15][i] = interm2[7][i] - interm2[15][i];
 
-            m2[0][i] = m1[0][i] + m1[4][i];
-            m2[1][i] = m1[1][i] + m1[5][i];
-            m2[2][i] = m1[2][i] + m1[6][i];
-            m2[3][i] = m1[3][i] + m1[7][i];
-            m2[4][i] = m1[0][i] - m1[4][i];
-            m2[5][i] = m1[1][i] - m1[5][i];
-            m2[6][i] = m1[2][i] - m1[6][i];
-            m2[7][i] = m1[3][i] - m1[7][i];
-            m2[8][i] = m1[8][i] + m1[12][i];
-            m2[9][i] = m1[9][i] + m1[13][i];
-            m2[10][i] = m1[10][i] + m1[14][i];
-            m2[11][i] = m1[11][i] + m1[15][i];
-            m2[12][i] = m1[8][i] - m1[12][i];
-            m2[13][i] = m1[9][i] - m1[13][i];
-            m2[14][i] = m1[10][i] - m1[14][i];
-            m2[15][i] = m1[11][i] - m1[15][i];
+            interm2[0][i] = interm1[0][i] + interm1[4][i];
+            interm2[1][i] = interm1[1][i] + interm1[5][i];
+            interm2[2][i] = interm1[2][i] + interm1[6][i];
+            interm2[3][i] = interm1[3][i] + interm1[7][i];
+            interm2[4][i] = interm1[0][i] - interm1[4][i];
+            interm2[5][i] = interm1[1][i] - interm1[5][i];
+            interm2[6][i] = interm1[2][i] - interm1[6][i];
+            interm2[7][i] = interm1[3][i] - interm1[7][i];
+            interm2[8][i] = interm1[8][i] + interm1[12][i];
+            interm2[9][i] = interm1[9][i] + interm1[13][i];
+            interm2[10][i] = interm1[10][i] + interm1[14][i];
+            interm2[11][i] = interm1[11][i] + interm1[15][i];
+            interm2[12][i] = interm1[8][i] - interm1[12][i];
+            interm2[13][i] = interm1[9][i] - interm1[13][i];
+            interm2[14][i] = interm1[10][i] - interm1[14][i];
+            interm2[15][i] = interm1[11][i] - interm1[15][i];
 
-            m1[0][i] = m2[0][i] + m2[2][i];
-            m1[1][i] = m2[1][i] + m2[3][i];
-            m1[2][i] = m2[0][i] - m2[2][i];
-            m1[3][i] = m2[1][i] - m2[3][i];
-            m1[4][i] = m2[4][i] + m2[6][i];
-            m1[5][i] = m2[5][i] + m2[7][i];
-            m1[6][i] = m2[4][i] - m2[6][i];
-            m1[7][i] = m2[5][i] - m2[7][i];
-            m1[8][i] = m2[8][i] + m2[10][i];
-            m1[9][i] = m2[9][i] + m2[11][i];
-            m1[10][i] = m2[8][i] - m2[10][i];
-            m1[11][i] = m2[9][i] - m2[11][i];
-            m1[12][i] = m2[12][i] + m2[14][i];
-            m1[13][i] = m2[13][i] + m2[15][i];
-            m1[14][i] = m2[12][i] - m2[14][i];
-            m1[15][i] = m2[13][i] - m2[15][i];
+            interm1[0][i] = interm2[0][i] + interm2[2][i];
+            interm1[1][i] = interm2[1][i] + interm2[3][i];
+            interm1[2][i] = interm2[0][i] - interm2[2][i];
+            interm1[3][i] = interm2[1][i] - interm2[3][i];
+            interm1[4][i] = interm2[4][i] + interm2[6][i];
+            interm1[5][i] = interm2[5][i] + interm2[7][i];
+            interm1[6][i] = interm2[4][i] - interm2[6][i];
+            interm1[7][i] = interm2[5][i] - interm2[7][i];
+            interm1[8][i] = interm2[8][i] + interm2[10][i];
+            interm1[9][i] = interm2[9][i] + interm2[11][i];
+            interm1[10][i] = interm2[8][i] - interm2[10][i];
+            interm1[11][i] = interm2[9][i] - interm2[11][i];
+            interm1[12][i] = interm2[12][i] + interm2[14][i];
+            interm1[13][i] = interm2[13][i] + interm2[15][i];
+            interm1[14][i] = interm2[12][i] - interm2[14][i];
+            interm1[15][i] = interm2[13][i] - interm2[15][i];
 
-            m2[0][i] = m1[0][i] + m1[1][i];
-            m2[1][i] = m1[0][i] - m1[1][i];
-            m2[2][i] = m1[2][i] + m1[3][i];
-            m2[3][i] = m1[2][i] - m1[3][i];
-            m2[4][i] = m1[4][i] + m1[5][i];
-            m2[5][i] = m1[4][i] - m1[5][i];
-            m2[6][i] = m1[6][i] + m1[7][i];
-            m2[7][i] = m1[6][i] - m1[7][i];
-            m2[8][i] = m1[8][i] + m1[9][i];
-            m2[9][i] = m1[8][i] - m1[9][i];
-            m2[10][i] = m1[10][i] + m1[11][i];
-            m2[11][i] = m1[10][i] - m1[11][i];
-            m2[12][i] = m1[12][i] + m1[13][i];
-            m2[13][i] = m1[12][i] - m1[13][i];
-            m2[14][i] = m1[14][i] + m1[15][i];
-            m2[15][i] = m1[14][i] - m1[15][i];
+            interm2[0][i] = XEVE_ABS(interm1[0][i] + interm1[1][i]);
+            interm2[1][i] = XEVE_ABS(interm1[0][i] - interm1[1][i]);
+            interm2[2][i] = XEVE_ABS(interm1[2][i] + interm1[3][i]);
+            interm2[3][i] = XEVE_ABS(interm1[2][i] - interm1[3][i]);
+            interm2[4][i] = XEVE_ABS(interm1[4][i] + interm1[5][i]);
+            interm2[5][i] = XEVE_ABS(interm1[4][i] - interm1[5][i]);
+            interm2[6][i] = XEVE_ABS(interm1[6][i] + interm1[7][i]);
+            interm2[7][i] = XEVE_ABS(interm1[6][i] - interm1[7][i]);
+            interm2[8][i] = XEVE_ABS(interm1[8][i] + interm1[9][i]);
+            interm2[9][i] = XEVE_ABS(interm1[8][i] - interm1[9][i]);
+            interm2[10][i] = XEVE_ABS(interm1[10][i] + interm1[11][i]);
+            interm2[11][i] = XEVE_ABS(interm1[10][i] - interm1[11][i]);
+            interm2[12][i] = XEVE_ABS(interm1[12][i] + interm1[13][i]);
+            interm2[13][i] = XEVE_ABS(interm1[12][i] - interm1[13][i]);
+            interm2[14][i] = XEVE_ABS(interm1[14][i] + interm1[15][i]);
+            interm2[15][i] = XEVE_ABS(interm1[14][i] - interm1[15][i]);
         }
 
-        satd += XEVE_ABS(m2[0][0]) >> 2;
+        satd = interm2[0][0] >> 2;
         for(j = 1; j < 8; j++)
         {
-            satd += XEVE_ABS(m2[0][j]);
+            satd += interm2[0][j];
         }
         for(i = 1; i < 16; i++)
         {
             for(j = 0; j < 8; j++)
             {
-                satd += XEVE_ABS(m2[i][j]);
+                satd += interm2[i][j];
             }
         }
 
-        satd = (int)(satd / sqrt(16.0 * 8.0) * 2.0);
+        satd = (int)(satd / (2.0* sqrt(8.0)));
 
         return satd;
     }
@@ -4495,82 +4348,83 @@ int xeve_had_8x4_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit
     {
         int k, i, j, jj;
         int satd = 0;
-        int diff[32], m1[4][8], m2[4][8];
+        int sub[32], interm1[4][8], interm2[4][8];
+		pel *orgn = org, * curn= cur;
 
         for(k = 0; k < 32; k += 8)
         {
-            diff[k + 0] = org[0] - cur[0];
-            diff[k + 1] = org[1] - cur[1];
-            diff[k + 2] = org[2] - cur[2];
-            diff[k + 3] = org[3] - cur[3];
-            diff[k + 4] = org[4] - cur[4];
-            diff[k + 5] = org[5] - cur[5];
-            diff[k + 6] = org[6] - cur[6];
-            diff[k + 7] = org[7] - cur[7];
+            sub[k + 0] = orgn[0] - curn[0];
+            sub[k + 1] = orgn[1] - curn[1];
+            sub[k + 2] = orgn[2] - curn[2];
+            sub[k + 3] = orgn[3] - curn[3];
+            sub[k + 4] = orgn[4] - curn[4];
+            sub[k + 5] = orgn[5] - curn[5];
+            sub[k + 6] = orgn[6] - curn[6];
+            sub[k + 7] = orgn[7] - curn[7];
 
-            cur += s_cur;
-            org += s_org;
+            curn += s_cur;
+            orgn += s_org;
         }
 
         for(j = 0; j < 4; j++)
         {
             jj = j << 3;
 
-            m2[j][0] = diff[jj] + diff[jj + 4];
-            m2[j][1] = diff[jj + 1] + diff[jj + 5];
-            m2[j][2] = diff[jj + 2] + diff[jj + 6];
-            m2[j][3] = diff[jj + 3] + diff[jj + 7];
-            m2[j][4] = diff[jj] - diff[jj + 4];
-            m2[j][5] = diff[jj + 1] - diff[jj + 5];
-            m2[j][6] = diff[jj + 2] - diff[jj + 6];
-            m2[j][7] = diff[jj + 3] - diff[jj + 7];
+            interm2[j][0] = sub[jj] + sub[jj + 4];
+            interm2[j][1] = sub[jj + 1] + sub[jj + 5];
+            interm2[j][2] = sub[jj + 2] + sub[jj + 6];
+            interm2[j][3] = sub[jj + 3] + sub[jj + 7];
+            interm2[j][4] = sub[jj] - sub[jj + 4];
+            interm2[j][5] = sub[jj + 1] - sub[jj + 5];
+            interm2[j][6] = sub[jj + 2] - sub[jj + 6];
+            interm2[j][7] = sub[jj + 3] - sub[jj + 7];
 
-            m1[j][0] = m2[j][0] + m2[j][2];
-            m1[j][1] = m2[j][1] + m2[j][3];
-            m1[j][2] = m2[j][0] - m2[j][2];
-            m1[j][3] = m2[j][1] - m2[j][3];
-            m1[j][4] = m2[j][4] + m2[j][6];
-            m1[j][5] = m2[j][5] + m2[j][7];
-            m1[j][6] = m2[j][4] - m2[j][6];
-            m1[j][7] = m2[j][5] - m2[j][7];
+            interm1[j][0] = interm2[j][0] + interm2[j][2];
+            interm1[j][1] = interm2[j][1] + interm2[j][3];
+            interm1[j][2] = interm2[j][0] - interm2[j][2];
+            interm1[j][3] = interm2[j][1] - interm2[j][3];
+            interm1[j][4] = interm2[j][4] + interm2[j][6];
+            interm1[j][5] = interm2[j][5] + interm2[j][7];
+            interm1[j][6] = interm2[j][4] - interm2[j][6];
+            interm1[j][7] = interm2[j][5] - interm2[j][7];
 
-            m2[j][0] = m1[j][0] + m1[j][1];
-            m2[j][1] = m1[j][0] - m1[j][1];
-            m2[j][2] = m1[j][2] + m1[j][3];
-            m2[j][3] = m1[j][2] - m1[j][3];
-            m2[j][4] = m1[j][4] + m1[j][5];
-            m2[j][5] = m1[j][4] - m1[j][5];
-            m2[j][6] = m1[j][6] + m1[j][7];
-            m2[j][7] = m1[j][6] - m1[j][7];
+            interm2[j][0] = interm1[j][0] + interm1[j][1];
+            interm2[j][1] = interm1[j][0] - interm1[j][1];
+            interm2[j][2] = interm1[j][2] + interm1[j][3];
+            interm2[j][3] = interm1[j][2] - interm1[j][3];
+            interm2[j][4] = interm1[j][4] + interm1[j][5];
+            interm2[j][5] = interm1[j][4] - interm1[j][5];
+            interm2[j][6] = interm1[j][6] + interm1[j][7];
+            interm2[j][7] = interm1[j][6] - interm1[j][7];
         }
 
         for(i = 0; i < 8; i++)
         {
-            m1[0][i] = m2[0][i] + m2[2][i];
-            m1[1][i] = m2[1][i] + m2[3][i];
-            m1[2][i] = m2[0][i] - m2[2][i];
-            m1[3][i] = m2[1][i] - m2[3][i];
+            interm1[0][i] = interm2[0][i] + interm2[2][i];
+            interm1[1][i] = interm2[1][i] + interm2[3][i];
+            interm1[2][i] = interm2[0][i] - interm2[2][i];
+            interm1[3][i] = interm2[1][i] - interm2[3][i];
 
-            m2[0][i] = m1[0][i] + m1[1][i];
-            m2[1][i] = m1[0][i] - m1[1][i];
-            m2[2][i] = m1[2][i] + m1[3][i];
-            m2[3][i] = m1[2][i] - m1[3][i];
+            interm2[0][i] = XEVE_ABS(interm1[0][i] + interm1[1][i]);
+            interm2[1][i] = XEVE_ABS(interm1[0][i] - interm1[1][i]);
+            interm2[2][i] = XEVE_ABS(interm1[2][i] + interm1[3][i]);
+            interm2[3][i] = XEVE_ABS(interm1[2][i] - interm1[3][i]);
         }
 
-        satd += XEVE_ABS(m2[0][0]) >> 2;
+        satd = interm2[0][0]>> 2;
         for(j = 1; j < 8; j++)
         {
-            satd += XEVE_ABS(m2[0][j]);
+            satd += interm2[0][j];
         }
         for(i = 1; i < 4; i++)
         {
             for(j = 0; j < 8; j++)
             {
-                satd += XEVE_ABS(m2[i][j]);
+                satd += interm2[i][j];
             }
         }
 
-        satd = (int)(satd / sqrt(4.0 * 8.0) * 2.0);
+        satd = (int)(satd / sqrt(8.0));
 
         return satd;
     }
@@ -4578,7 +4432,7 @@ int xeve_had_8x4_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit
 
 int xeve_had_4x8_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_depth)
 {
-    if(bit_depth <= 10)
+     if(bit_depth <= 10)
     {
         int k, i;
         __m128i m1[8], m2[8];
@@ -4687,77 +4541,78 @@ int xeve_had_4x8_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit
     {
         int k, i, j, jj;
         int satd = 0;
-        int diff[32], m1[8][4], m2[8][4];
+        int sub[32], interm1[8][4], interm2[8][4];
+		pel * curn = curn, *orgn = orgn;
 
         for(k = 0; k < 32; k += 4)
         {
-            diff[k + 0] = org[0] - cur[0];
-            diff[k + 1] = org[1] - cur[1];
-            diff[k + 2] = org[2] - cur[2];
-            diff[k + 3] = org[3] - cur[3];
+            sub[k + 0] = orgn[0] - curn[0];
+            sub[k + 1] = orgn[1] - curn[1];
+            sub[k + 2] = orgn[2] - curn[2];
+            sub[k + 3] = orgn[3] - curn[3];
 
-            cur += s_cur;
-            org += s_org;
+            curn += s_cur;
+            orgn += s_org;
         }
 
         for(j = 0; j < 8; j++)
         {
             jj = j << 2;
-            m2[j][0] = diff[jj] + diff[jj + 2];
-            m2[j][1] = diff[jj + 1] + diff[jj + 3];
-            m2[j][2] = diff[jj] - diff[jj + 2];
-            m2[j][3] = diff[jj + 1] - diff[jj + 3];
+            interm2[j][0] = sub[jj] + sub[jj + 2];
+            interm2[j][1] = sub[jj + 1] + sub[jj + 3];
+            interm2[j][2] = sub[jj] - sub[jj + 2];
+            interm2[j][3] = sub[jj + 1] - sub[jj + 3];
 
-            m1[j][0] = m2[j][0] + m2[j][1];
-            m1[j][1] = m2[j][0] - m2[j][1];
-            m1[j][2] = m2[j][2] + m2[j][3];
-            m1[j][3] = m2[j][2] - m2[j][3];
+            interm1[j][0] = interm2[j][0] + interm2[j][1];
+            interm1[j][1] = interm2[j][0] - interm2[j][1];
+            interm1[j][2] = interm2[j][2] + interm2[j][3];
+            interm1[j][3] = interm2[j][2] - interm2[j][3];
         }
 
         for(i = 0; i<4; i++)
         {
-            m2[0][i] = m1[0][i] + m1[4][i];
-            m2[1][i] = m1[1][i] + m1[5][i];
-            m2[2][i] = m1[2][i] + m1[6][i];
-            m2[3][i] = m1[3][i] + m1[7][i];
-            m2[4][i] = m1[0][i] - m1[4][i];
-            m2[5][i] = m1[1][i] - m1[5][i];
-            m2[6][i] = m1[2][i] - m1[6][i];
-            m2[7][i] = m1[3][i] - m1[7][i];
+            interm2[0][i] = interm1[0][i] + interm1[4][i];
+            interm2[1][i] = interm1[1][i] + interm1[5][i];
+            interm2[2][i] = interm1[2][i] + interm1[6][i];
+            interm2[3][i] = interm1[3][i] + interm1[7][i];
+            interm2[4][i] = interm1[0][i] - interm1[4][i];
+            interm2[5][i] = interm1[1][i] - interm1[5][i];
+            interm2[6][i] = interm1[2][i] - interm1[6][i];
+            interm2[7][i] = interm1[3][i] - interm1[7][i];
 
-            m1[0][i] = m2[0][i] + m2[2][i];
-            m1[1][i] = m2[1][i] + m2[3][i];
-            m1[2][i] = m2[0][i] - m2[2][i];
-            m1[3][i] = m2[1][i] - m2[3][i];
-            m1[4][i] = m2[4][i] + m2[6][i];
-            m1[5][i] = m2[5][i] + m2[7][i];
-            m1[6][i] = m2[4][i] - m2[6][i];
-            m1[7][i] = m2[5][i] - m2[7][i];
+            interm1[0][i] = interm2[0][i] + interm2[2][i];
+            interm1[1][i] = interm2[1][i] + interm2[3][i];
+            interm1[2][i] = interm2[0][i] - interm2[2][i];
+            interm1[3][i] = interm2[1][i] - interm2[3][i];
+            interm1[4][i] = interm2[4][i] + interm2[6][i];
+            interm1[5][i] = interm2[5][i] + interm2[7][i];
+            interm1[6][i] = interm2[4][i] - interm2[6][i];
+            interm1[7][i] = interm2[5][i] - interm2[7][i];
 
-            m2[0][i] = m1[0][i] + m1[1][i];
-            m2[1][i] = m1[0][i] - m1[1][i];
-            m2[2][i] = m1[2][i] + m1[3][i];
-            m2[3][i] = m1[2][i] - m1[3][i];
-            m2[4][i] = m1[4][i] + m1[5][i];
-            m2[5][i] = m1[4][i] - m1[5][i];
-            m2[6][i] = m1[6][i] + m1[7][i];
-            m2[7][i] = m1[6][i] - m1[7][i];
+            interm2[0][i] = XEVE_ABS(interm1[0][i] + interm1[1][i]);
+            interm2[1][i] = XEVE_ABS(interm1[0][i] - interm1[1][i]);
+            interm2[2][i] = XEVE_ABS(interm1[2][i] + interm1[3][i]);
+            interm2[3][i] = XEVE_ABS(interm1[2][i] - interm1[3][i]);
+            interm2[4][i] = XEVE_ABS(interm1[4][i] + interm1[5][i]);
+            interm2[5][i] = XEVE_ABS(interm1[4][i] - interm1[5][i]);
+            interm2[6][i] = XEVE_ABS(interm1[6][i] + interm1[7][i]);
+            interm2[7][i] = XEVE_ABS(interm1[6][i] - interm1[7][i]);
         }
 
-        satd += XEVE_ABS(m2[0][0]) >> 2;
+        satd = interm2[0][0] >> 2;
         for(j = 1; j < 4; j++)
         {
-            satd += XEVE_ABS(m2[0][j]);
+            satd += interm2[0][j];
         }
         for(i = 1; i < 8; i++)
         {
             for(j = 0; j < 4; j++)
             {
-                satd += XEVE_ABS(m2[i][j]);
+                satd += interm2[i][j];
             }
         }
 
-        satd = (int)(satd / sqrt(4.0 * 8.0) * 2.0);
+        satd = (int)(satd / sqrt(8.0));
 
         return satd;
     }

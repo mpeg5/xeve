@@ -243,7 +243,7 @@ void xeve_get_mmvd_mvp_list(s8(*map_refi)[REFP_NUM], XEVE_REFP refp[REFP_NUM], s
 
     if (admvp_flag == 0)
     {
-        xeve_get_motion_skip_baseline(slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, srefi, smvp, avail);
+        xeve_get_motion_skip(slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, srefi, smvp, avail);
     }
     else
     {
@@ -642,7 +642,7 @@ void xeve_get_default_motion_main(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int vali
     {
         if (!found)
         {
-            for (k = 1; k <= min(history_buffer.currCnt, ALLOWED_CHECKED_AMVP_NUM); k++)
+            for (k = 1; k <= XEVE_MIN(history_buffer.currCnt, ALLOWED_CHECKED_AMVP_NUM); k++)
             {
                 tmp_refi = REFI_IS_VALID(history_buffer.history_refi_table[history_buffer.currCnt - k][lidx]) ? history_buffer.history_refi_table[history_buffer.currCnt - k][lidx] : REFI_INVALID;
                 if (tmp_refi == cur_refi)
@@ -658,7 +658,7 @@ void xeve_get_default_motion_main(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int vali
 
         if (!found)
         {
-            for (k = 1; k <= min(history_buffer.currCnt, ALLOWED_CHECKED_AMVP_NUM); k++)
+            for (k = 1; k <= XEVE_MIN(history_buffer.currCnt, ALLOWED_CHECKED_AMVP_NUM); k++)
             {
                 tmp_refi = REFI_IS_VALID(history_buffer.history_refi_table[history_buffer.currCnt - k][lidx]) ? history_buffer.history_refi_table[history_buffer.currCnt - k][lidx] : REFI_INVALID;
                 if (tmp_refi != REFI_INVALID)
@@ -1070,7 +1070,7 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
     if (cnt < (small_cu ? MAX_NUM_MVP_SMALL_CU : MAX_NUM_MVP))
     {
 
-        for (k = 3; k <= min(history_buffer.currCnt, small_cu ? ALLOWED_CHECKED_NUM_SMALL_CU : ALLOWED_CHECKED_NUM); k += 4)
+        for (k = 3; k <= XEVE_MIN(history_buffer.currCnt, small_cu ? ALLOWED_CHECKED_NUM_SMALL_CU : ALLOWED_CHECKED_NUM); k += 4)
         {
             ref_dst = &(refi[0][cnt]);
             map_mv_dst_L0 = mvp[REFP_0][cnt];
@@ -1524,8 +1524,8 @@ void xeve_set_suco_flag(s8  suco_flag, int cud, int cup, int cuw, int cuh, int l
 
 u8 xeve_check_suco_cond(int cuw, int cuh, s8 split_mode, int boundary, u8 log2_max_cuwh, u8 log2_min_cuwh, u8 suco_max_depth, u8 suco_depth)
 {
-    int suco_log2_maxsize = min((log2_max_cuwh - suco_max_depth), 6);
-    int suco_log2_minsize = max((suco_log2_maxsize - suco_depth), max(4, log2_min_cuwh));
+    int suco_log2_maxsize = XEVE_MIN((log2_max_cuwh - suco_max_depth), 6);
+    int suco_log2_minsize = XEVE_MAX((suco_log2_maxsize - suco_depth), XEVE_MAX(4, log2_min_cuwh));
     if (XEVE_MIN(cuw, cuh) < (1 << suco_log2_minsize) || XEVE_MAX(cuw, cuh) > (1 << suco_log2_maxsize))
     {
         return 0;
@@ -1594,7 +1594,7 @@ void derive_affine_subblock_size_bi( s16 ac_mv[REFP_NUM][VER_NUM][MV_D], s8 refi
               dmv_ver_y = dmv_hor_x;
             }
 
-            mv_wx = max(abs(dmv_hor_x), abs(dmv_hor_y)), mv_wy = max(abs(dmv_ver_x), abs(dmv_ver_y));
+            mv_wx = XEVE_MAX(abs(dmv_hor_x), abs(dmv_hor_y)), mv_wy = XEVE_MAX(abs(dmv_ver_x), abs(dmv_ver_y));
             int sub_lut[4] = { 32, 16, 8, 8 };
             if (mv_wx > 4)
             {
@@ -1622,8 +1622,8 @@ void derive_affine_subblock_size_bi( s16 ac_mv[REFP_NUM][VER_NUM][MV_D], s8 refi
               h = sub_lut[mv_wy - 1];
             }
 
-            *sub_w = min( *sub_w, w );
-            *sub_h = min( *sub_h, h );
+            *sub_w = XEVE_MIN( *sub_w, w );
+            *sub_h = XEVE_MIN( *sub_h, h );
         }
     }
 
@@ -1631,8 +1631,8 @@ void derive_affine_subblock_size_bi( s16 ac_mv[REFP_NUM][VER_NUM][MV_D], s8 refi
 
     if ( !apply_eif )
     {
-      *sub_w = max( *sub_w, AFFINE_ADAPT_EIF_SIZE );
-      *sub_h = max( *sub_h, AFFINE_ADAPT_EIF_SIZE );
+      *sub_w = XEVE_MAX( *sub_w, AFFINE_ADAPT_EIF_SIZE );
+      *sub_h = XEVE_MAX( *sub_h, AFFINE_ADAPT_EIF_SIZE );
     }
 }
 
@@ -1658,7 +1658,7 @@ void derive_affine_subblock_size( s16 ac_mv[VER_NUM][MV_D], int cuw, int cuh, in
       dmv_ver_y = dmv_hor_x;
     }
 
-    mv_wx = max(abs(dmv_hor_x), abs(dmv_hor_y)), mv_wy = max(abs(dmv_ver_x), abs(dmv_ver_y));
+    mv_wx = XEVE_MAX(abs(dmv_hor_x), abs(dmv_hor_y)), mv_wy = XEVE_MAX(abs(dmv_ver_x), abs(dmv_ver_y));
     int sub_lut[4] = { 32, 16, 8, 8 };
     if (mv_wx > 4)
     {
@@ -1693,8 +1693,8 @@ void derive_affine_subblock_size( s16 ac_mv[VER_NUM][MV_D], int cuw, int cuh, in
 
     if ( !apply_eif )
     {
-      *sub_w = max( *sub_w, AFFINE_ADAPT_EIF_SIZE );
-      *sub_h = max( *sub_h, AFFINE_ADAPT_EIF_SIZE );
+      *sub_w = XEVE_MAX( *sub_w, AFFINE_ADAPT_EIF_SIZE );
+      *sub_h = XEVE_MAX( *sub_h, AFFINE_ADAPT_EIF_SIZE );
     }
 }
 
@@ -1736,9 +1736,9 @@ void calculate_bounding_box_size( int w, int h, s16 ac_mv[VER_NUM][MV_D], int d_
 
   for ( int coord = MV_X; coord < MV_D; ++coord )
   {
-    max[coord] = max( max( corners[coord][0], corners[coord][1] ), max( corners[coord][2], corners[coord][3] ) );
+    max[coord] = XEVE_MAX( XEVE_MAX( corners[coord][0], corners[coord][1] ), XEVE_MAX( corners[coord][2], corners[coord][3] ) );
 
-    min[coord] = min( min( corners[coord][0], corners[coord][1] ), min( corners[coord][2], corners[coord][3] ) );
+    min[coord] = XEVE_MIN( XEVE_MIN( corners[coord][0], corners[coord][1] ), XEVE_MIN( corners[coord][2], corners[coord][3] ) );
 
     diff[coord] = ( max[coord] - min[coord] + ( 1 << mv_precision ) - 1 ) >> mv_precision; //ceil
   }
@@ -1752,7 +1752,7 @@ BOOL check_eif_num_fetched_lines_restrictions( s16 ac_mv[VER_NUM][MV_D], int d_h
   if ( d_ver[MV_Y] < -1 << mv_precision )
     return FALSE;
 
-  if( ( max( 0, d_ver[MV_Y] ) + abs( d_hor[MV_Y] ) ) * ( 1 + EIF_SUBBLOCK_SIZE ) > ( EIF_NUM_ALLOWED_FETCHED_LINES_FOR_THE_FIRST_LINE - 2 ) << mv_precision )
+  if( ( XEVE_MAX( 0, d_ver[MV_Y] ) + abs( d_hor[MV_Y] ) ) * ( 1 + EIF_SUBBLOCK_SIZE ) > ( EIF_NUM_ALLOWED_FETCHED_LINES_FOR_THE_FIRST_LINE - 2 ) << mv_precision )
     return FALSE;
 
   return TRUE;
@@ -3060,7 +3060,7 @@ int get_rice_para(s16 *pcoeff, int blkpos, int width, int height, int base_level
         }
     }
     sum_abs = XEVE_MAX(XEVE_MIN(sum_abs - 5 * base_level, 31), 0);
-    return go_rice_para_coeff[sum_abs];
+    return xeve_go_rice_para_coeff[sum_abs];
 }
 
 

@@ -311,8 +311,8 @@ static void deblock_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh
             {
                 int qp_u = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_u_offset);
                 int qp_v = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_v_offset);
-                deblock_scu_hor_chroma(u + (t >> 1), xeve_tbl_qp_chroma_dynamic[0][qp_u], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
-                deblock_scu_hor_chroma(v + (t >> 1), xeve_tbl_qp_chroma_dynamic[1][qp_v], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
+                deblock_scu_hor_chroma(u + (t >> 1), xeve_qp_chroma_dynamic[0][qp_u], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
+                deblock_scu_hor_chroma(v + (t >> 1), xeve_qp_chroma_dynamic[1][qp_v], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
             }
         }
     }
@@ -384,8 +384,8 @@ static void deblock_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh
             {
                 int qp_u = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_u_offset);
                 int qp_v = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_v_offset);
-                deblock_scu_ver_chroma(u, xeve_tbl_qp_chroma_dynamic[0][qp_u], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
-                deblock_scu_ver_chroma(v, xeve_tbl_qp_chroma_dynamic[1][qp_v], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
+                deblock_scu_ver_chroma(u, xeve_qp_chroma_dynamic[0][qp_u], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
+                deblock_scu_ver_chroma(v, xeve_qp_chroma_dynamic[1][qp_v], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
             }
 
             y += (s_l << MIN_CU_LOG2);
@@ -430,8 +430,8 @@ static void deblock_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh
             {
                 int qp_u = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_u_offset);
                 int qp_v = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_v_offset);
-                deblock_scu_ver_chroma(u, xeve_tbl_qp_chroma_dynamic[0][qp_u], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
-                deblock_scu_ver_chroma(v, xeve_tbl_qp_chroma_dynamic[1][qp_v], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
+                deblock_scu_ver_chroma(u, xeve_qp_chroma_dynamic[0][qp_u], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
+                deblock_scu_ver_chroma(v, xeve_qp_chroma_dynamic[1][qp_v], s_c, 0, tbl_qp_to_st, bit_depth_chroma - 8);
             }
 
             y += (s_l << MIN_CU_LOG2);

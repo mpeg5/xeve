@@ -741,8 +741,8 @@ __inline static s64 get_rate_positionLastXY(int pos_x, int pos_y, int width, int
     int offset_x = (ch_type == Y_C ? 0 : (sps_cm_init_flag == 1 ? NUM_CTX_LAST_SIG_COEFF_LUMA : 11));
     int offset_y = (ch_type == Y_C ? 0 : (sps_cm_init_flag == 1 ? NUM_CTX_LAST_SIG_COEFF_LUMA : 11));
 
-    group_idx_x = group_idx[pos_x];
-    group_idx_y = group_idx[pos_y];
+    group_idx_x = xeve_group_idx[pos_x];
+    group_idx_y = xeve_group_idx[pos_y];
     if (sps_cm_init_flag == 1)
     {
         xeve_get_ctx_last_pos_xy_para(ch_type, width, height, &blk_offset_x, &blk_offset_y, &shift_x, &shift_y);
@@ -762,7 +762,7 @@ __inline static s64 get_rate_positionLastXY(int pos_x, int pos_y, int width, int
     {
         rate += core->rdoq_est_last_sig_coeff_x[offset_x + blk_offset_x + (bin >> shift_x)][1];
     }
-    if (group_idx_x < group_idx[width - 1])
+    if (group_idx_x < xeve_group_idx[width - 1])
     {
         rate += core->rdoq_est_last_sig_coeff_x[offset_x + blk_offset_x + (bin >> shift_x)][0];
     }
@@ -773,7 +773,7 @@ __inline static s64 get_rate_positionLastXY(int pos_x, int pos_y, int width, int
     {
         rate += core->rdoq_est_last_sig_coeff_y[offset_y + blk_offset_y + (bin >> shift_y)][1];
     }
-    if (group_idx_y < group_idx[height - 1])
+    if (group_idx_y < xeve_group_idx[height - 1])
     {
         rate += core->rdoq_est_last_sig_coeff_y[offset_y + blk_offset_y + (bin >> shift_y)][0];
     }
@@ -783,13 +783,13 @@ __inline static s64 get_rate_positionLastXY(int pos_x, int pos_y, int width, int
     if (group_idx_x > 3)
     {
         cnt = (group_idx_x - 2) >> 1;
-        pos_x = pos_x - min_in_group[group_idx_x];
+        pos_x = pos_x - xeve_min_in_group[group_idx_x];
         rate += (cnt * GET_IEP_RATE);
     }
     if (group_idx_y > 3)
     {
         cnt = (group_idx_y - 2) >> 1;
-        pos_y = pos_y - min_in_group[group_idx_y];
+        pos_y = pos_y - xeve_min_in_group[group_idx_y];
         rate += (cnt * GET_IEP_RATE);
     }
 
@@ -813,7 +813,7 @@ __inline static int get_ic_rate(int abs_level, int ctx_gtA, int ctx_gtB, int rpa
         int symbol = abs_level - base_level;
         int length;
 
-        if (symbol < (go_rice_range[rparam] << rparam))
+        if (symbol < (xeve_go_rice_range[rparam] << rparam))
         {
             length = symbol >> rparam;
             rate += (length + 1 + rparam) << 15;
@@ -821,12 +821,12 @@ __inline static int get_ic_rate(int abs_level, int ctx_gtA, int ctx_gtB, int rpa
         else
         {
             length = rparam;
-            symbol = symbol - (go_rice_range[rparam] << rparam);
+            symbol = symbol - (xeve_go_rice_range[rparam] << rparam);
             while (symbol >= (1 << length))
             {
                 symbol -= (1 << (length++));
             }
-            rate += (go_rice_range[rparam] + length + 1 - rparam + length) << 15;
+            rate += (xeve_go_rice_range[rparam] + length + 1 - rparam + length) << 15;
         }
 
         if (c1_idx < num_gtA)
@@ -1014,7 +1014,7 @@ int xeve_rdoq_method_adcc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s1
     const int ns_shift = ((log2_cuw + log2_cuh) & 1) ? 7 : 0;
     const int ns_scale = ((log2_cuw + log2_cuh) & 1) ? 181 : 1;
     const int qp_rem = qp % 6;
-    const int q_value = (quant_scale[qp_rem] * ns_scale) >> ns_shift;
+    const int q_value = (xeve_quant_scale[qp_rem] * ns_scale) >> ns_shift;
     const int log2_size = (log2_cuw + log2_cuh) >> 1;
     const int tr_shift = MAX_TX_DYNAMIC_RANGE - bit_depth - (log2_size);
 
@@ -1025,7 +1025,7 @@ int xeve_rdoq_method_adcc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s1
     const int height = (1 << log2_cuh);
     const int max_num_coef = width * height;
     int scan_type = COEF_SCAN_ZIGZAG;
-    int log2_block_size = min(log2_cuw, log2_cuh);
+    int log2_block_size = XEVE_MIN(log2_cuw, log2_cuh);
     u16 *scan;
     int scan_pos_last = -1;
     int ipos;
@@ -1291,11 +1291,11 @@ int xeve_rdoq_method_adcc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s1
 }
 
 static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int log2_cuw, int log2_cuh, u16 scale, int ch_type
-                        , int slice_type, int sps_cm_init_flag, int tool_adcc, XEVE_CORE * core, int bit_depth)
+                        , int slice_type, int sps_cm_init_flag, int tool_adcc, XEVE_CORE * core, int bit_depth, int use_rdoq)
 {
     int nnz = 0;
 
-    if(USE_RDOQ)
+    if(use_rdoq)
     {
         s64 lev;
         s64 offset;
@@ -1333,7 +1333,7 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
         }
     }
 
-    if(USE_RDOQ)
+    if(use_rdoq)
     {
         if (tool_adcc)
         {
@@ -1375,7 +1375,7 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
 
 
 static int xeve_tq_nnz(u8 qp, double lambda, s16 * coef, int log2_cuw, int log2_cuh, u16 scale, int slice_type, int ch_type, int is_intra, int sps_cm_init_flag, int iqt_flag
-                     , u8 ats_intra_cu, u8 ats_mode, int tool_adcc, XEVE_CORE * core, int bit_depth)
+                     , u8 ats_intra_cu, u8 ats_mode, int tool_adcc, XEVE_CORE * core, int bit_depth, int rdoq)
 {
     if (ats_intra_cu)
     {
@@ -1386,7 +1386,7 @@ static int xeve_tq_nnz(u8 qp, double lambda, s16 * coef, int log2_cuw, int log2_
         xeve_trans(coef, log2_cuw, log2_cuh, iqt_flag,  bit_depth);
     }
 
-    return xeve_quant_nnz(qp, lambda, is_intra, coef, log2_cuw, log2_cuh, scale, ch_type, slice_type, sps_cm_init_flag, tool_adcc, core, bit_depth);
+    return xeve_quant_nnz(qp, lambda, is_intra, coef, log2_cuw, log2_cuh, scale, ch_type, slice_type, sps_cm_init_flag, tool_adcc, core, bit_depth, rdoq);
 }
 
 int xeve_rdoq_set_ctx_cc_main(XEVE_CORE * core, int ch_type, int prev_level)
@@ -1450,9 +1450,9 @@ int xeve_sub_block_tq_main(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_C
                         coef_temp[c] = coef[c];
                     }
 
-                    int scale = quant_scale[qp[c] % 6];
+                    int scale = xeve_quant_scale[qp[c] % 6];
                     core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, slice_type, c, is_intra, ctx->sps.tool_cm_init, ctx->sps.tool_iqt
-                                                               , ats_intra_cu_on, ats_mode_idx, ctx->sps.tool_adcc,  core, ctx->sps.bit_depth_luma_minus8 + 8);
+                                                               , ats_intra_cu_on, ats_mode_idx, ctx->sps.tool_adcc, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.preset->rdoq);
                     nnz_temp[c] += core->nnz_sub[c][(j << 1) | i];
 
                     if(loop_h + loop_w > 2)

@@ -696,8 +696,8 @@ int mode_cu_init(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int log2_cuw, i
     core->qp_y = GET_LUMA_QP(core->qp, ctx->sps.bit_depth_luma_minus8);
     qp_i_cb = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh.qp_u_offset);
     qp_i_cr = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh.qp_v_offset);
-    core->qp_u = xeve_tbl_qp_chroma_dynamic[0][qp_i_cb] + 6 * ctx->sps.bit_depth_chroma_minus8;
-    core->qp_v = xeve_tbl_qp_chroma_dynamic[1][qp_i_cr] + 6 * ctx->sps.bit_depth_chroma_minus8;
+    core->qp_u = xeve_qp_chroma_dynamic[0][qp_i_cb] + 6 * ctx->sps.bit_depth_chroma_minus8;
+    core->qp_v = xeve_qp_chroma_dynamic[1][qp_i_cr] + 6 * ctx->sps.bit_depth_chroma_minus8;
 
     XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
@@ -1092,10 +1092,6 @@ void clear_map_scu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int cuw, int cu
     }
 }
 
-void xeve_init_bef_data(XEVE_CORE* core, XEVE_CTX* ctx)
-{
-    xeve_mset(&core->bef_data, 0, sizeof(XEVE_BEF_DATA) * NUM_CU_LOG2 * NUM_CU_LOG2 * MAX_CU_CNT_IN_LCU * MAX_BEF_DATA_NUM);
-}
 
 u16 xeve_get_lr(u16 avail)
 {
@@ -1424,132 +1420,6 @@ int check_nev_block(XEVE_CTX *ctx, int x0, int y0, int log2_cuw, int log2_cuh, i
     }
 
     return (max_depth);
-}
-
-static void check_run_split(XEVE_CORE *core, int log2_cuw, int log2_cuh, int cup, int next_split, int do_curr, int do_split, u16 bef_data_idx, int* split_allow, int boundary, TREE_CONS tree_cons)
-{
-    int i;
-    double min_cost = MAX_COST;
-    int run_list[MAX_SPLIT_NUM];
-
-    if(!next_split)
-    {
-        split_allow[0] = 1;
-
-        for(i = 1; i < MAX_SPLIT_NUM; i++)
-        {
-            split_allow[i] = 0;
-        }
-
-        return;
-    }
-    if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit)
-    {
-        if((core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].nosplit < 1
-            && core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split >= 1))
-        {
-            run_list[0] = 0;
-
-            for(i = 1; i < MAX_SPLIT_NUM; i++)
-            {
-                if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i] < min_cost && split_allow[i])
-                {
-                    min_cost = core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i];
-                }
-            }
-
-            if(min_cost == MAX_COST)
-            {
-                run_list[0] = 1;
-                for(i = 1; i < MAX_SPLIT_NUM; i++)
-                {
-                    if((core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> i) & 0x01)
-                    {
-                        run_list[i] = 1;
-                    }
-                    else
-                    {
-                        run_list[i] = 0;
-                    }
-                }
-            }
-            else
-            {
-                for(i = 1; i < MAX_SPLIT_NUM; i++)
-                {
-                    double th = 1.01;
-                    if (core->ctx->cdsc.rdo_dbk_switch)
-                    {
-                        th = (min_cost < 0) ? 0.99 : 1.02;
-                    }
-
-                    if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i] <= th * min_cost)
-                    {
-                        run_list[i] = 1;
-                    }
-                    else if((core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> i) & 0x01)
-                    {
-                        run_list[i] = 1;
-                    }
-                    else
-                    {
-                        run_list[i] = 0;
-                    }
-                }
-            }
-        }
-        else if(core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].nosplit == 0
-                && core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split == 0)
-        {
-            run_list[0] = 1;
-            for(i = 1; i < MAX_SPLIT_NUM; i++)
-            {
-                if((core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split >> i) & 0x01)
-                {
-                    run_list[i] = 1;
-            }
-                else
-                {
-                    run_list[i] = 0;
-                }
-            }
-        }
-        else
-        {
-            run_list[0] = 1;
-
-            for(i = 1; i < MAX_SPLIT_NUM; i++)
-            {
-                run_list[i] = 0;
-            }
-        }
-    }
-    else
-    {
-        for(i = 0; i < MAX_SPLIT_NUM; i++)
-        {
-            run_list[i] = 1;
-            core->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[i] = MAX_COST;
-        }
-
-        run_list[0] &= do_curr;
-
-        for(i = 1; i < MAX_SPLIT_NUM; i++)
-        {
-            run_list[i] &= do_split;
-        }
-    }
-
-    int num_run = 0;
-    split_allow[0] = run_list[0];
-    for(i = 1; i < MAX_SPLIT_NUM; i++)
-    {
-        split_allow[i] = run_list[i] && split_allow[i];
-        num_run += split_allow[i];
-    }
-
-    if(num_run == 0)
-        split_allow[0] = 1;
 }
 
 void calc_delta_dist_filter_boundary(XEVE_CTX* ctx, XEVE_PIC *pic_rec, XEVE_PIC *pic_org, int cuw, int cuh,
@@ -1919,6 +1789,18 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
     double cost_temp_dqp;
     int cu_mode_dqp = 0;
     int dist_cu_best_dqp = 0;
+    int check_max_cu, check_min_cu;
+
+    if (ctx->slice_type == SLICE_I)
+    {
+        check_max_cu = ctx->param.preset->max_cu_intra;
+        check_min_cu = ctx->param.preset->min_cu_intra;
+    }
+    else
+    {
+        check_max_cu = ctx->param.preset->max_cu_inter;
+        check_min_cu = ctx->param.preset->min_cu_inter;
+    }
 
     core->tree_cons = tree_cons;
     core->avail_lr = avail_lr;
@@ -1945,7 +1827,7 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
         ctx->sh.qp_prev_mode = core->dqp_data[log2_cuw - 2][log2_cuh - 2].prev_qp;
         best_dqp = ctx->sh.qp_prev_mode;
         split_mode = NO_SPLIT;
-        if(split_allow[split_mode])
+        if(split_allow[split_mode] && (cuw <= check_max_cu && cuh <= check_max_cu))
         {
             if ((cuw > ctx->min_cuwh || cuh > ctx->min_cuwh) && xeve_check_luma(core->tree_cons))
             {
@@ -2047,7 +1929,7 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
         }
     }
 
-    if((cuw > MIN_CU_SIZE || cuh > MIN_CU_SIZE) && next_split)
+    if((cuw > MIN_CU_SIZE || cuh > MIN_CU_SIZE) && next_split && (cuw > check_min_cu || cuh > check_min_cu))
     {
         int split_mode_num = 0;
         core->tree_cons = tree_cons;
@@ -2205,27 +2087,27 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
     return (cost_best > MAX_COST) ? MAX_COST : cost_best;
 }
 
-int mode_init_frame(XEVE_CTX *ctx)
+int mode_init_tile(XEVE_CTX *ctx, int tile_idx)
 {
     XEVE_MODE *mi;
     int ret;
 
-    mi = &ctx->mode[0];
+    mi = &ctx->mode[tile_idx];
 
     /* set default values to mode information */
     mi->log2_culine = ctx->log2_max_cuwh - MIN_CU_LOG2;
 
     /* initialize pintra */
-    if (ctx->fn_pintra_init_frame)
+    if (ctx->fn_pintra_init_tile)
     {
-        ret = ctx->fn_pintra_init_frame(ctx);
+        ret = ctx->fn_pintra_init_tile(ctx, tile_idx);
         xeve_assert_rv(ret == XEVE_OK, ret);
     }
 
     /* initialize pinter */
-    if (ctx->fn_pinter_init_frame)
+    if (ctx->fn_pinter_init_tile)
     {
-        ret = ctx->fn_pinter_init_frame(ctx);
+        ret = ctx->fn_pinter_init_tile(ctx, tile_idx);
         xeve_assert_rv(ret == XEVE_OK, ret);
     }
 
@@ -2447,7 +2329,7 @@ int xeve_mode_create(XEVE_CTX *ctx, int complexity)
     xeve_mset(mi, 0, sizeof(XEVE_MODE));
 
     /* set function addresses */
-    ctx->fn_mode_init_frame = mode_init_frame;
+    ctx->fn_mode_init_tile = mode_init_tile;
     ctx->fn_mode_init_lcu = mode_init_lcu;
     ctx->fn_mode_analyze_frame = mode_analyze_frame;
     ctx->fn_mode_analyze_lcu = mode_analyze_lcu;
@@ -2524,110 +2406,12 @@ static void picbuf_expand(pel *a, int s, int w, int h, int exp)
 
 void xeve_pic_expand(XEVE_CTX *ctx, XEVE_PIC *pic)
 {
-#if 0
-    picbuf_expand(pic->y, pic->s_l, pic->w_l, pic->h_l, pic->pad_l);
-    picbuf_expand(pic->u, pic->s_c, pic->w_c, pic->h_c, pic->pad_c);
-    picbuf_expand(pic->v, pic->s_c, pic->w_c, pic->h_c, pic->pad_c);
-#else
     xeve_picbuf_expand(pic, pic->pad_l, pic->pad_c);
-#endif
-
 }
 
 XEVE_PIC * xeve_pic_alloc(PICBUF_ALLOCATOR * pa, int * ret)
 {
-#if 0
-    int w = pa->w;
-    int h = pa->h;
-    int bit_depth = pa->bit_depth;
-
-    XEVE_PIC *pic = NULL;
-    XEVE_IMGB *imgb = NULL;
-    int err, opt, align[XEVE_IMGB_MAX_PLANE], pad[XEVE_IMGB_MAX_PLANE];
-    int w_scu, h_scu, f_scu, size;
-
-    /* allocate PIC structure */
-    pic = xeve_malloc(sizeof(XEVE_PIC));
-    xeve_assert_gv(pic != NULL, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mset(pic, 0, sizeof(XEVE_PIC));
-
-    opt = XEVE_IMGB_OPT_NONE;
-
-    /* set align value*/
-    align[0] = MIN_CU_SIZE;
-    align[1] = MIN_CU_SIZE >> 1;
-    align[2] = MIN_CU_SIZE >> 1;
-
-    /* set padding value*/
-    pad[0] = pa->pad_l;
-    pad[1] = pa->pad_c;
-    pad[2] = pa->pad_c;
-
-    imgb = xeve_imgb_create(w, h, XEVE_CS_YCBCR420_10LE, opt, pad, align);
-    imgb->cs = XEVE_CS_SET(XEVE_CF_YCBCR420, bit_depth, 0);
-
-    xeve_assert_gv(imgb != NULL, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
-
-    /* set XEVE_PIC */
-    pic->buf_y = imgb->baddr[0];
-    pic->buf_u = imgb->baddr[1];
-    pic->buf_v = imgb->baddr[2];
-    pic->y     = imgb->a[0];
-    pic->u     = imgb->a[1];
-    pic->v     = imgb->a[2];
-
-    pic->w_l   = imgb->w[0];
-    pic->h_l   = imgb->h[0];
-    pic->w_c   = imgb->w[1];
-    pic->h_c   = imgb->h[1];
-
-    pic->s_l   = STRIDE_IMGB2PIC(imgb->s[0]);
-    pic->s_c   = STRIDE_IMGB2PIC(imgb->s[1]);
-
-    pic->pad_l = pa->pad_l;
-    pic->pad_c = pa->pad_c;
-
-    pic->imgb  = imgb;
-
-    /* allocate maps */
-    w_scu = (pic->w_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
-    h_scu = (pic->h_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
-    f_scu = w_scu * h_scu;
-
-    size = sizeof(s8) * f_scu * REFP_NUM;
-    pic->map_refi = xeve_malloc_fast(size);
-    xeve_assert_gv(pic->map_refi, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mset_x64a(pic->map_refi, -1, size);
-
-    size = sizeof(s16) * f_scu * REFP_NUM * MV_D;
-    pic->map_mv = xeve_malloc_fast(size);
-    xeve_assert_gv(pic->map_mv, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mset_x64a(pic->map_mv, 0, size);
-
-    size = sizeof(s16) * f_scu * REFP_NUM * MV_D;
-    pic->map_unrefined_mv = xeve_malloc_fast(size);
-    xeve_assert_gv(pic->map_unrefined_mv, err, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mset_x64a(pic->map_unrefined_mv, 0, size);
-
-    if(ret)
-    {
-        *ret = XEVE_OK;
-    }
-    return pic;
-
-ERR:
-    if(pic)
-    {
-        xeve_mfree(pic->map_mv);
-        xeve_mfree(pic->map_unrefined_mv);
-        xeve_mfree(pic->map_refi);
-        xeve_mfree(pic);
-    }
-    if(ret) *ret = err;
-    return NULL;
-#else
     return xeve_picbuf_alloc(pa->w, pa->h, pa->pad_l, pa->pad_c, pa->bit_depth, ret);
-#endif
 }
 
 void xeve_pic_free(PICBUF_ALLOCATOR *pa, XEVE_PIC *pic)
@@ -2695,8 +2479,8 @@ void xeve_set_qp(XEVE_CTX *ctx, XEVE_CORE *core, u8 qp)
     core->qp_y = GET_LUMA_QP(core->qp, ctx->sps.bit_depth_luma_minus8);
     qp_i_cb = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh.qp_u_offset);
     qp_i_cr = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh.qp_v_offset);
-    core->qp_u = xeve_tbl_qp_chroma_dynamic[0][qp_i_cb] + 6 * ctx->sps.bit_depth_chroma_minus8;
-    core->qp_v = xeve_tbl_qp_chroma_dynamic[1][qp_i_cr] + 6 * ctx->sps.bit_depth_chroma_minus8;
+    core->qp_u = xeve_qp_chroma_dynamic[0][qp_i_cb] + 6 * ctx->sps.bit_depth_chroma_minus8;
+    core->qp_v = xeve_qp_chroma_dynamic[1][qp_i_cr] + 6 * ctx->sps.bit_depth_chroma_minus8;
 }
 
 MODE_CONS xeve_derive_mode_cons(XEVE_CTX *ctx, int lcu_num, int cup)

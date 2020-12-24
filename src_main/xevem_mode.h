@@ -53,4 +53,5 @@ void copy_to_cu_data_main(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi, s16 coe
 void xeve_split_tbl_init(XEVE_CTX *ctx);
 void xeve_set_affine_mvf(XEVE_CTX * ctx, XEVE_CORE * core, int w, int h, s8 refi[REFP_NUM], s16 mv[REFP_NUM][VER_NUM][MV_D], int vertex_num);
 int  xeve_hmvp_init(XEVE_HISTORY_BUFFER *history_buffer);
+void xeve_init_bef_data(XEVE_CORE * core, XEVE_CTX * ctx);
 #endif /* _XEVE_MODE_H_ */

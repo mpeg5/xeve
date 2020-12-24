@@ -52,22 +52,22 @@ extern XEVE_DMVR_MC_L xevem_tbl_dmvr_mc_l[2][2];
 extern XEVE_DMVR_MC_C xevem_tbl_dmvr_mc_c[2][2];
 extern XEVE_MC_C      xevem_tbl_bl_mc_l[2][2];
 
-XEVE_DMVR_MC_L (*xevem_func_dmvr_mc_l)[2][2];
-XEVE_DMVR_MC_C (*xevem_func_dmvr_mc_c)[2][2];
-XEVE_MC_C      (*xevem_func_bl_mc_l)[2][2];
+extern XEVE_DMVR_MC_L (*xevem_func_dmvr_mc_l)[2];
+extern XEVE_DMVR_MC_C (*xevem_func_dmvr_mc_c)[2];
+extern XEVE_MC_C      (*xevem_func_bl_mc_l)[2];
 
 #define xeve_dmvr_mc_l(ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth) \
-    ((*xevem_func_dmvr_mc_l)[((gmv_x) | ((gmv_x)>>1) | ((gmv_x)>>2) | ((gmv_x)>>3)) & 0x1])\
+       (xevem_func_dmvr_mc_l[((gmv_x) | ((gmv_x)>>1) | ((gmv_x)>>2) | ((gmv_x)>>3)) & 0x1])\
         [((gmv_y) | ((gmv_y)>>1) | ((gmv_y)>>2) | ((gmv_y)>>3)) & 0x1]\
         (ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth)
 
 #define xeve_dmvr_mc_c(ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth) \
-    ((*xevem_func_dmvr_mc_c)[((gmv_x) | ((gmv_x)>>1) | ((gmv_x)>>2)| ((gmv_x)>>3) | ((gmv_x)>>4)) & 0x1]\
+       (xevem_func_dmvr_mc_c[((gmv_x) | ((gmv_x)>>1) | ((gmv_x)>>2)| ((gmv_x)>>3) | ((gmv_x)>>4)) & 0x1]\
         [((gmv_y) | ((gmv_y)>>1) | ((gmv_y)>>2) | ((gmv_y)>>3) | ((gmv_y)>>4)) & 0x1])\
         (ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth)
 
 #define xeve_bl_mc_l(ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth) \
-    ((*xevem_func_bl_mc_l)[((gmv_x) | ((gmv_x)>>1) | ((gmv_x)>>2) | ((gmv_x)>>3)) & 0x1])\
+       (xevem_func_bl_mc_l[((gmv_x) | ((gmv_x)>>1) | ((gmv_x)>>2) | ((gmv_x)>>3)) & 0x1])\
         [((gmv_y) | ((gmv_y)>>1) | ((gmv_y)>>2) | ((gmv_y)>>3)) & 0x1]\
         (ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth)
 
@@ -90,8 +90,8 @@ typedef void (*XEVE_AFFINE_H_SOBEL_FLT)(pel *pred, int pred_stride, int *derivat
 typedef void (*XEVE_AFFINE_V_SOBEL_FLT)(pel *pred, int pred_stride, int *derivate, int derivate_buf_stride, int width, int height);
 typedef void (*XEVE_AFFINE_EQUAL_COEF)(pel *residue, int residue_stride, int **derivate, int derivate_buf_stride, s64(*equal_coeff)[7], int width, int height, int vertex_num);
 
-XEVE_AFFINE_H_SOBEL_FLT xevem_func_aff_h_sobel_flt;
-XEVE_AFFINE_V_SOBEL_FLT xevem_func_aff_v_sobel_flt;
-XEVE_AFFINE_EQUAL_COEF  xevem_func_aff_eq_coef_comp;
+extern XEVE_AFFINE_H_SOBEL_FLT xevem_func_aff_h_sobel_flt;
+extern XEVE_AFFINE_V_SOBEL_FLT xevem_func_aff_v_sobel_flt;
+extern XEVE_AFFINE_EQUAL_COEF  xevem_func_aff_eq_coef_comp;
 
 #endif /* _XEVEM_MC_H_ */

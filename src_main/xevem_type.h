@@ -39,6 +39,36 @@
 #include <xeve_type.h>
 #include "xevem_dra.h"
 
+typedef struct _XEVE_BEF_DATA
+{
+    int                visit;
+    int                nosplit;
+    int                split;
+    int                ipm[2];
+    int                split_visit;
+    double             split_cost[MAX_SPLIT_NUM];
+    /* splits which are not tried in the first visit (each bit corresponds to one split mode)*/
+    u8                 remaining_split;
+    int                suco[3];
+    int                mvr_idx;
+    int                bi_idx;
+    s16                mmvd_idx;
+    int                affine_flag;
+    int                ats_intra_cu_idx_intra;
+    int                ats_intra_cu_idx_inter;
+} XEVE_BEF_DATA;
+
+typedef struct _XEVE_MMVD_OPT XEVE_MMVD_OPT;
+struct _XEVE_MMVD_OPT
+{
+    int                ref_ctu[PRED_MAX_REF_FRAMES];
+    int                poc_to_idx[PRED_MAX_I_PERIOD];        // maximum I period allowed is 100
+    int                i_period;
+    int                ref_buf_idx[PRED_MAX_REF_FRAMES];         // 2 reference frames per ctu
+    pel                pred_bi[PRED_MAX_REF_FRAMES][16][PRED_BI_SIZE];
+    int                enabled;
+};
+
 /*****************************************************************************
  * CORE information used for encoding process.
  *
@@ -68,6 +98,8 @@ typedef struct _XEVEM_CORE
     pel                 eif_tmp_buffer[(MAX_CU_SIZE + 2) * (MAX_CU_SIZE + 2)];
     u8                  eval_mvp_idx[MAX_NUM_MVP];
     u8                  dmvr_flag;
+    XEVE_BEF_DATA       bef_data[NUM_CU_LOG2][NUM_CU_LOG2][MAX_CU_CNT_IN_LCU][MAX_BEF_DATA_NUM];
+    XEVE_MMVD_OPT       mmvd_opt;
 }XEVEM_CORE;
 
 /******************************************************************************
@@ -89,7 +121,7 @@ typedef struct _XEVEM_CTX
     int   (*fn_pibc_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
     double(*fn_pibc_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
     int   (*fn_pibc_set_complexity)(XEVE_CTX * ctx, int complexity);
-    int   (*fn_pibc_init_frame)(XEVE_CTX * ctx);
+    int   (*fn_pibc_init_tile)(XEVE_CTX * ctx, int tile_idx);
     
     /* adaptive loop filter */
     XEVE_ALF         * enc_alf;
@@ -110,6 +142,27 @@ typedef struct _XEVEM_CTX
     u8               * ats_inter_num_pred[XEVE_MAX_TASK_CNT];
 
 }XEVEM_CTX;
+
+/*****************************************************************************
+ * Encoder preset
+ *****************************************************************************/
+typedef struct _XEVEM_PRESET
+{
+    XEVE_PRESET preset;
+
+    /* BTT */
+    u8 btt_cb_max;
+    u8 btt_cb_min;
+    u8 btt_cu14_max;
+    u8 btt_tris_max;
+    u8 btt_tris_min;
+
+    /* Fast Option */
+    u8 ats_intra_fast;
+    u8 mmvd_fast;
+    u8 me_fast;
+
+} XEVEM_PRESET;
 
 #include "xevem_mode.h"
 #include "xevem_eco.h"
