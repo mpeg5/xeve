@@ -102,7 +102,7 @@ XEVE supports all profiles of EVC. Examples of configure file of coding structur
 | -q, --op_qp           | 32        | QP value (0~51)                                |
 | -d, --input_bit_depth | 8         | input bitdepth (8, 10)                         |
 | -m, --parallel_task   | 0         | mumber of threads to be created                |  
-| -\-profile            | 0(base)   | index of profile(0:baseline, 1:main)           |
+| -\-profile            | baseline  | index of profile (baseline, main)              |
 | -\-config             | -         | file name of configuration                     | 
 | -\-rc_type            | -         | 0 (rc_off) / 1(rc_on)                          | 
 | -\-bps                | -         | bits per second                                | 
