@@ -156,7 +156,7 @@ int is_bv_valid(XEVE_CTX *ctx, int x, int y, int width, int height, int log2_cuw
                     return 0;
                 }
 
-                //Check the collocated 64x64 region of the reference block¡¯s top-right corner is valid for reference or not
+                //Check the collocated 64x64 region of the reference block's top-right corner is valid for reference or not
                 int RT_ref_pos_LT_col_x = x + x_bv + ctu_size + width - 1;
                 if (RT_ref_pos_LT_col_x < pic_width)
                 {
@@ -605,7 +605,7 @@ static int refine_ibc_chroma_mv(XEVE_CTX *ctx,
 
         temp_sad = sad_best_cand[cand];
 
-        xeve_IBC_mc(cu_x, cu_y, log2_cuw, log2_cuh, mv_cand[cand], ref_pic, pred);
+        xeve_IBC_mc(cu_x, cu_y, log2_cuw, log2_cuh, mv_cand[cand], ref_pic, pred, core->treecons);
 
         org = pi->pic_o->u + chroma_cu_y * org_stride + chroma_cu_x;
         ref = pred[U_C];
