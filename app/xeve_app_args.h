@@ -834,7 +834,7 @@ static ARGS_OPTION options[] = \
     {
         ARGS_NO_KEY,  "profile", ARGS_VAL_TYPE_STRING,
         &op_flag[OP_PROFILE], &op_profile,
-        "profile setting flag  main, baseline (default: main) "
+        "profile setting flag  main, baseline (default: baseline) "
     },
     {
         ARGS_NO_KEY,  "level", ARGS_VAL_TYPE_INTEGER,
