@@ -98,7 +98,6 @@ static int get_conf(XEVE_CDSC * cdsc)
     cdsc->fps = op_fps;
     cdsc->iperiod = op_iperiod;
     cdsc->max_b_frames = op_max_b_frames;
-    cdsc->profile = op_profile;
     cdsc->level = op_level;
     cdsc->use_dqp = op_use_dqp;
     cdsc->ref_pic_gap_length = op_ref_pic_gap_length;
@@ -106,6 +105,19 @@ static int get_conf(XEVE_CDSC * cdsc)
     cdsc->codec_bit_depth = op_codec_bit_depth;
     cdsc->constrained_intra_pred = op_constrained_intra_pred;
     cdsc->use_deblock = op_tool_deblocking;
+
+    if (strcmp(op_profile, "main") == 0)
+    {
+        cdsc->profile = 1;
+    }
+    else if (strcmp(op_profile, "baseline") == 0)
+    {
+        cdsc->preset = 0;
+    }
+    else
+    {
+        return XEVE_ERR_INVALID_ARGUMENT;
+    }
 
     if (op_out_bit_depth == 0)
     {

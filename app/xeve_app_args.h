@@ -416,7 +416,7 @@ static int  op_inp_bit_depth      = 8;
 static int  op_out_bit_depth      = 0; /* same as input bit depth */
 static int  op_codec_bit_depth    = 10;
 static int  op_rdo_dbk_switch     = 1;
-static int  op_profile            = 0;
+static char op_profile[16]        = "baseline";
 static int  op_level              = 0;
 static int  op_btt                = 1;
 static int  op_suco               = 1;
@@ -805,9 +805,9 @@ static ARGS_OPTION options[] = \
         "use IBC hash based block matching search feature. if not set, it is disable"
     },
     {
-      ARGS_NO_KEY,  "ibc_hash_search_max_cand", ARGS_VAL_TYPE_INTEGER,
-      &op_flag[OP_IBC_HASH_SEARCH_MAX_CAND], &op_ibc_hash_search_max_cand,
-      "Max candidates for hash based IBC search (default 64)"
+        ARGS_NO_KEY,  "ibc_hash_search_max_cand", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_IBC_HASH_SEARCH_MAX_CAND], &op_ibc_hash_search_max_cand,
+        "Max candidates for hash based IBC search (default 64)"
     },
     {
         ARGS_NO_KEY,  "ibc_hash_search_range_4smallblk", ARGS_VAL_TYPE_INTEGER,
@@ -832,9 +832,9 @@ static ARGS_OPTION options[] = \
         "number of skipped frames before encoding. default 0"
     },
     {
-        ARGS_NO_KEY,  "profile", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "profile", ARGS_VAL_TYPE_STRING,
         &op_flag[OP_PROFILE], &op_profile,
-        "profile setting flag  1: main, 0: baseline (default 1 (main)) "
+        "profile setting flag  main, baseline (default: baseline) "
     },
     {
         ARGS_NO_KEY,  "level", ARGS_VAL_TYPE_INTEGER,
