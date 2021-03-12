@@ -39,18 +39,22 @@
 XEVE_INTRA_PRED_ANG (*xeve_func_intra_pred_ang)[2];
 
 void xevem_get_nbr(int x, int y, int cuw, int cuh, pel *src, int s_src, u16 avail_cu, pel nb[N_C][N_REF][MAX_CU_SIZE * 3], int scup, u32 * map_scu
-                 , int w_scu, int h_scu, int ch_type, int constrained_intra_pred, u8 * map_tidx, int bit_depth)
+                 , int w_scu, int h_scu, int ch_type, int constrained_intra_pred, u8 * map_tidx, int bit_depth, int chroma_format_idc)
 {
     int  i, j;
-    int  scuw = (ch_type == Y_C) ? (cuw >> MIN_CU_LOG2) : (cuw >> (MIN_CU_LOG2 - 1));
-    int  scuh = (ch_type == Y_C) ? (cuh >> MIN_CU_LOG2) : (cuh >> (MIN_CU_LOG2 - 1));
+    int w_shift = (XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc));
+    int h_shift = (XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc));
+    int  scuw = (ch_type == Y_C) ? (cuw >> MIN_CU_LOG2) : (cuw >> (MIN_CU_LOG2 - w_shift));
+    int  scuh = (ch_type == Y_C) ? (cuh >> MIN_CU_LOG2) : (cuh >> (MIN_CU_LOG2 - h_shift));
     int  unit_size = (ch_type == Y_C) ? MIN_CU_SIZE : (MIN_CU_SIZE >> 1);
-    int  x_scu = PEL2SCU(ch_type == Y_C ? x : x << 1);
-    int  y_scu = PEL2SCU(ch_type == Y_C ? y : y << 1);
+    int  x_scu = PEL2SCU(ch_type == Y_C ? x : x << w_shift);
+    int  y_scu = PEL2SCU(ch_type == Y_C ? y : y << h_shift);
     pel *tmp = src;
     pel *left = nb[ch_type][0] + 2;
     pel *up = nb[ch_type][1] + cuh;
     pel *right = nb[ch_type][2] + 2;
+    scuh = ((ch_type != Y_C) && (chroma_format_idc == 2)) ? scuh * 2 : scuh;
+    unit_size = ((ch_type != Y_C) && (chroma_format_idc == 3)) ? unit_size * 2 : unit_size;
 
     if (IS_AVAIL(avail_cu, AVAIL_UP_LE) && (!constrained_intra_pred || MCU_GET_IF(map_scu[scup - w_scu - 1])) &&
         (map_tidx[scup] == map_tidx[scup - w_scu - 1])  )

@@ -66,7 +66,7 @@ int  cu_init(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int cup, int cuw, int
 void coef_rect_to_series(XEVE_CTX * ctx, s16 *coef_src[N_C], int x, int y, int cuw, int cuh, s16 coef_dst[N_C][MAX_CU_DIM], XEVE_CORE * core);
 int  xeve_eco_coef(XEVE_CTX * ctx, XEVE_CORE * core, XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], u8 pred_mode, int enc_dqp, int b_no_cbf, int run_stats);
 void xeve_eco_run_length_cc(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int num_sig, int ch_type);
-int  xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, int b_no_cbf, int is_sub, int sub_pos, int cbf_all, int run[N_C], TREE_CONS tree_cons);
+int  xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, int b_no_cbf, int is_sub, int sub_pos, int cbf_all, int run[N_C], TREE_CONS tree_cons, int chroma_format_idc);
 int  xeve_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int cuw, int cuh, TREE_CONS tree_cons, XEVE_BSW * bs);
 
 #endif /* _XEVE_ECO_H_ */

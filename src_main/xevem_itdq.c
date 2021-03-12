@@ -768,7 +768,7 @@ static void xeve_itdq(s16 *coef, int log2_w, int log2_h, int scale, int iqt_flag
 
 
 void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, u8 qp_y, u8 qp_u, u8 qp_v, int flag[N_C], int nnz_sub[N_C][MAX_SUB_TB_NUM], int iqt_flag
-                            , u8 ats_intra_cu, u8 ats_mode, u8 ats_inter_info, int bit_depth)
+                            , u8 ats_intra_cu, u8 ats_mode, u8 ats_inter_info, int bit_depth, int chroma_format_idc)
 {
     s16 *coef_temp[N_C];
     s16 coef_temp_buf[N_C][MAX_TR_DIM];
@@ -779,6 +779,8 @@ void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_
     int loop_h = (log2_cuh > MAX_TR_LOG2) ? (1 << (log2_cuh - MAX_TR_LOG2)) : 1;
     int stride = (1 << log2_cuw);
     int sub_stride = (1 << log2_w_sub);
+    int w_shift = (XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc));
+    int h_shift = (XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc));
     u8 qp[N_C] = { qp_y, qp_u, qp_v };
     int scale = 0;
     u8 ats_intra_cu_on = 0;
@@ -796,6 +798,8 @@ void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_
         {
             for(c = 0; c < N_C; c++)
             {
+                if((c != 0) && !chroma_format_idc)
+                    continue;
                 ats_intra_cu_on = (c == 0)? ats_intra_cu : 0;
                 ats_mode_idx = (c == 0) ? ats_mode : 0;
 
@@ -806,12 +810,15 @@ void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_
 
                 if(nnz_sub[c][(j << 1) | i])
                 {
-                    int pos_sub_x = i * (1 << (log2_w_sub - !!c));
-                    int pos_sub_y = j * (1 << (log2_h_sub - !!c)) * (stride >> (!!c));
+                    int pos_sub_x = c == 0 ? (i * (1 << (log2_w_sub))) : (i * (1 << (log2_w_sub - w_shift)));
+                    int pos_sub_y = c == 0 ? j * (1 << (log2_h_sub)) * (stride) : j * (1 << (log2_h_sub - h_shift)) * (stride >> w_shift);
 
                     if(loop_h + loop_w > 2)
                     {
+                        if(c == 0)
                         xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), coef_temp_buf[c], sub_stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
+                        else
+                            xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, coef_temp_buf[c], sub_stride >> h_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
                         coef_temp[c] = coef_temp_buf[c];
                     }
                     else
@@ -827,12 +834,17 @@ void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_
                     {
                         scale = xeve_tbl_dq_scale_b[qp[c] % 6] << (qp[c] / 6);
                     }
-
+                    if(c == 0)
                     xeve_itdq(coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, iqt_flag, ats_intra_cu_on, ats_mode_idx, bit_depth);
+                    else
+                        xeve_itdq(coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale, iqt_flag, ats_intra_cu_on, ats_mode_idx, bit_depth);
 
                     if(loop_h + loop_w > 2)
                     {
+                        if(c==0)
                         xeve_block_copy(coef_temp_buf[c], sub_stride >> (!!c), coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
+                        else
+                            xeve_block_copy(coef_temp_buf[c], sub_stride >> w_shift, coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
                     }
                 }
             }

@@ -4542,7 +4542,7 @@ int xeve_had_4x8_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit
         int k, i, j, jj;
         int satd = 0;
         int sub[32], interm1[8][4], interm2[8][4];
-		pel * curn = curn, *orgn = orgn;
+        pel * curn = cur, *orgn = org;
 
         for(k = 0; k < 32; k += 4)
         {

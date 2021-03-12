@@ -415,6 +415,7 @@ static int  op_skip_frames        = 0;
 static int  op_inp_bit_depth      = 8;
 static int  op_out_bit_depth      = 0; /* same as input bit depth */
 static int  op_codec_bit_depth    = 10;
+static int  op_chroma_format_idc   = 1; /*chroma format idc: default 1 (420)*/
 static int  op_rdo_dbk_switch     = 1;
 static char op_profile[16]        = "baseline";
 static int  op_level              = 0;
@@ -463,7 +464,7 @@ static char op_num_remaining_tiles_in_slice[600]     = { 0 }; // only in case of
 static int  op_loop_filter_across_tiles_enabled_flag = 0;     // by default disabled
 static int  op_parallel_task                         = 1;     // default single task
 static int  op_rc_type                               = 0;     // rc_off = 0 , rc_cbr = 1
-static int  op_bps                                   = 100000;// Default 100Kbps
+static char op_bps[256]                              = "100000";// Default 100Kbps
 static int  op_vbv_msec                              = 2000;  // Default value 2000ms
 static int  op_use_filler_flag                       = 0;     // Default value 0
 static int  op_num_pre_analysis_frames               = 0;     // Default value 0
@@ -488,7 +489,7 @@ static int  op_rpl_extern = 0;
 static char op_rpl0[MAX_NUM_RPLS][256];
 static char op_rpl1[MAX_NUM_RPLS][256];
 
-static int  op_use_dqp             = 0;  /* default cu_delta_qp is off */
+static int  op_qpa = 0;  /* default block qp adaptation is off */
 static int  op_cu_qp_delta_area    = 10; /* default cu_delta_qp_area is 10 */
 
 static int  op_inter_slice_type     = 0;
@@ -530,6 +531,7 @@ typedef enum _OP_FLAGS
     OP_FLAG_OUT_BIT_DEPTH,
     OP_FLAG_IN_BIT_DEPTH,
     OP_FLAG_CODEC_BIT_DEPTH,
+    OP_FLAG_CHROMA_FORMAT_IDC,
     OP_FLAG_RDO_DBK_SWITCH,
     OP_FLAG_SKIP_FRAMES,
     OP_PROFILE,
@@ -707,9 +709,13 @@ static ARGS_OPTION options[] = \
         "QP value (0~51)"
     },
     {
-        ARGS_NO_KEY,  "use_dqp", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_USE_DQP], &op_use_dqp,
-        "use_dqp ({0,..,25})(default: 0) "
+        ARGS_NO_KEY,  "qpa", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_FLAG_USE_DQP], &op_qpa,
+        "use block qp adaptation"
+        "\t 0: off (default) \n"
+        "\t 1: adaptive quantization + block tree\n"
+        "\t 2: adaptive quantization \n"
+        "\t 3: block tree \n"
     },
     {
         ARGS_NO_KEY,  "cu_qp_delta_area", ARGS_VAL_TYPE_INTEGER,
@@ -762,7 +768,12 @@ static ARGS_OPTION options[] = \
     {
         ARGS_NO_KEY,  "codec_bit_depth", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_CODEC_BIT_DEPTH], &op_codec_bit_depth,
-        "codec internal bitdepth (10(default), 8, 12, 14) "
+        "codec internal bitdepth (10(default), 12) "
+    },
+    {
+        ARGS_NO_KEY,  "chroma_format_idc", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_FLAG_CHROMA_FORMAT_IDC], &op_chroma_format_idc,
+        "chroma format idc (1(default); main: 0(400), 1(420); baseline: 0(400), 1(420), 2(422), 3(444)) "
     },
     {
         ARGS_NO_KEY,  "rdo_dbk_switch", ARGS_VAL_TYPE_INTEGER,
@@ -819,7 +830,7 @@ static ARGS_OPTION options[] = \
         &op_flag[OP_IBC_FAST_METHOD], &op_ibc_fast_method,
         "Fast methods for IBC\n"
         "\t 1: Buffer IBC block vector (current not support)\n"
-            "\t 2: Adaptive search range (default)\n"
+        "\t 2: Adaptive search range (default)\n"
     },
     {
         ARGS_NO_KEY,  "disable_hgop", ARGS_VAL_TYPE_NONE,
@@ -1055,12 +1066,13 @@ static ARGS_OPTION options[] = \
     {
         ARGS_NO_KEY,  "rc_type", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_RC_TYPE], &op_rc_type,
-        "Rate control type: OFF, CBR"
+        "Rate control type, 0: OFF, 1: CBR(fixed hierarchy bit), 2: CBR(equal bit)"
     },
     {
-        ARGS_NO_KEY,  "bps", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "bps", ARGS_VAL_TYPE_STRING,
         &op_flag[OP_BPS], &op_bps,
-        "Bits per second"
+        "Bits per second: bps, Kbps(K,k), Mbps(M,m)"
+        "\n\tex) 100000 / 100K / 0.1M"
     },
     {
         ARGS_NO_KEY,  "vbv_msec", ARGS_VAL_TYPE_INTEGER,

@@ -32,7 +32,7 @@
 #define _XEVE_MC_H_
 
 #define MAC_SFT_N0            (6)
-#define MAC_ADD_N0            (1<<5)
+#define MAC_ADD_N0            0
 
 #define MAC_SFT_0N            MAC_SFT_N0
 #define MAC_ADD_0N            MAC_ADD_N0
@@ -104,7 +104,7 @@ extern XEVE_AVG_NO_CLIP xeve_func_average_no_clip;
         [((ori_mv_y) | ((ori_mv_y)>>1) | ((ori_mv_y)>>2) | ((ori_mv_y)>>3) | ((ori_mv_y)>>4)) & 0x1])\
         (ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth)
 
-void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma);
+void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc);
 void xeve_mv_clip(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16 mv[REFP_NUM][MV_D], s16(*mv_t)[MV_D]);
 void xeve_average_16b_no_clip(s16 *src, s16 *ref, s16 *dst, int s_src, int s_ref, int s_dst, int wd, int ht);
 void xeve_mc_l_00(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth);

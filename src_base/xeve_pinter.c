@@ -812,12 +812,14 @@ static u32 pinter_me_epzs(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2
     return cost_best;
 }
 
-static void copy_tu_from_cu(s16 tu_resi[N_C][MAX_CU_DIM], s16 cu_resi[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh)
+static void copy_tu_from_cu(s16 tu_resi[N_C][MAX_CU_DIM], s16 cu_resi[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, int chroma_format_idc)
 {
     int j;
     int cuw = 1 << log2_cuw;
     int log2_tuw, log2_tuh;
     int tuw, tuh;
+    int w_shift = XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc);
+    int h_shift = XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc);
 
     log2_tuw = log2_cuw;
     log2_tuh = log2_cuh;
@@ -829,42 +831,46 @@ static void copy_tu_from_cu(s16 tu_resi[N_C][MAX_CU_DIM], s16 cu_resi[N_C][MAX_C
     {
         memcpy(tu_resi[Y_C] + j * tuw, cu_resi[Y_C] + j * cuw, sizeof(s16)*tuw);
     }
-
-    //UV
-    tuw >>= 1;
-    tuh >>= 1;
-    cuw >>= 1;
-
-    for(j = 0; j < tuh; j++)
+    if(chroma_format_idc)
     {
-        memcpy(tu_resi[U_C] + j * tuw, cu_resi[U_C] + j * cuw, sizeof(s16)*tuw);
-        memcpy(tu_resi[V_C] + j * tuw, cu_resi[V_C] + j * cuw, sizeof(s16)*tuw);
+    //UV
+        tuw >>= w_shift;
+        tuh >>= h_shift;
+        cuw >>= w_shift;
+
+        for(j = 0; j < tuh; j++)
+        {
+            memcpy(tu_resi[U_C] + j * tuw, cu_resi[U_C] + j * cuw, sizeof(s16)*tuw);
+            memcpy(tu_resi[V_C] + j * tuw, cu_resi[V_C] + j * cuw, sizeof(s16)*tuw);
+        }
     }
 }
 
 static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, pel pred[2][N_C][MAX_CU_DIM], s16 coef[N_C][MAX_CU_DIM], int pidx, u8 *mvp_idx)
 {
     XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
-    s16    coef_t[N_C][MAX_CU_DIM];
-    int   *nnz, tnnz, w[N_C], h[N_C], log2_w[N_C], log2_h[N_C];
-    int    cuw;
-    int    cuh;
-    pel  (*rec)[MAX_CU_DIM];
-    s64    dist[2][N_C];
-    double cost, cost_best = MAX_COST;
-    int    cbf_idx[N_C], nnz_store[N_C];
-    int    nnz_sub_store[N_C][MAX_SUB_TB_NUM] = {{0},};
-    int    bit_cnt;
-    int    i, idx_y, idx_u, idx_v;
-    pel   *org[N_C];
-    double cost_comp_best = MAX_COST;
-    int    idx_best[N_C] = {0, };
-    int    j;
-    u8     is_from_mv_field = 0;
-    s64    dist_no_resi[N_C];
-    int    nnz_best[N_C] = { -1, -1, -1 };
-    u8     num_rdo_tried = 0;
-    s64    dist_idx = -1;
+    s16     coef_t[N_C][MAX_CU_DIM];
+    int   * nnz, tnnz, w[N_C], h[N_C], log2_w[N_C], log2_h[N_C];
+    int     cuw;
+    int     cuh;
+    pel  (* rec)[MAX_CU_DIM];
+    s64     dist[2][N_C];
+    double  cost, cost_best = MAX_COST;
+    int     cbf_idx[N_C], nnz_store[N_C];
+    int     nnz_sub_store[N_C][MAX_SUB_TB_NUM] = {{0},};
+    int     bit_cnt;
+    int     i, idx_y, idx_u, idx_v;
+    pel   * org[N_C];
+    double  cost_comp_best = MAX_COST;
+    int     idx_best[N_C] = {0, };
+    int     j;
+    u8      is_from_mv_field = 0;
+    s64     dist_no_resi[N_C];
+    int     nnz_best[N_C] = { -1, -1, -1 };
+    u8      num_rdo_tried = 0;
+    s64     dist_idx = -1;
+    int     w_shift = ctx->param.cs_w_shift;
+    int     h_shift = ctx->param.cs_h_shift;
 
     rec = pi->rec[pidx];
     nnz = core->nnz;
@@ -872,15 +878,15 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     cuh = 1 << log2_cuh;
     w[Y_C] = 1 << log2_cuw;
     h[Y_C] = 1 << log2_cuh;
-    w[U_C] = w[V_C] = 1 << (log2_cuw - 1);
-    h[U_C] = h[V_C] = 1 << (log2_cuh - 1);
+    w[U_C] = w[V_C] = 1 << (log2_cuw - w_shift);
+    h[U_C] = h[V_C] = 1 << (log2_cuh - h_shift);
     log2_w[Y_C] = log2_cuw;
     log2_h[Y_C] = log2_cuh;
-    log2_w[U_C] = log2_w[V_C] = log2_cuw - 1;
-    log2_h[U_C] = log2_h[V_C] = log2_cuh - 1;
+    log2_w[U_C] = log2_w[V_C] = log2_cuw - w_shift;
+    log2_h[U_C] = log2_h[V_C] = log2_cuh - h_shift;
     org[Y_C] = pi->o[Y_C] + (y * pi->s_o[Y_C]) + x;
-    org[U_C] = pi->o[U_C] + ((y >> 1) * pi->s_o[U_C]) + (x >> 1);
-    org[V_C] = pi->o[V_C] + ((y >> 1) * pi->s_o[V_C]) + (x >> 1);
+    org[U_C] = pi->o[U_C] + ((y >> h_shift) * pi->s_o[U_C]) + (x >> w_shift);
+    org[V_C] = pi->o[V_C] + ((y >> h_shift) * pi->s_o[V_C]) + (x >> w_shift);
 
     /* prediction */
     pi->fn_mc(ctx, core, x, y, w[0], h[0], pi->refi[pidx], pi->mv[pidx], pi->refp, pred, 0, 0, NULL);
@@ -888,15 +894,22 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     int bit_depth_tbl[3] = {ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8 };
 
     /* get residual */
-    xeve_diff_pred(x, y, log2_cuw, log2_cuh, pi->pic_o, pred[0], pi->resi, ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+    xeve_diff_pred(x, y, log2_cuw, log2_cuh, pi->pic_o, pred[0], pi->resi, ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
 
     for (i = 0; i < N_C; i++)
     {
-        dist[0][i] = xeve_ssd_16b(log2_w[i], log2_h[i], pred[0][i], org[i], w[i], pi->s_o[i], bit_depth_tbl[i]);
+        if (!ctx->sps.chroma_format_idc && i != 0)
+        {
+            dist[0][i] = 0;
+        }
+        else
+        {
+            dist[0][i] = xeve_ssd_16b(log2_w[i], log2_h[i], pred[0][i], org[i], w[i], pi->s_o[i], bit_depth_tbl[i]);
+        }
         dist_no_resi[i] = dist[0][i];
     }
 
-    copy_tu_from_cu(coef, pi->resi, log2_cuw, log2_cuh);
+    copy_tu_from_cu(coef, pi->resi, log2_cuw, log2_cuh,ctx->sps.chroma_format_idc);
 
     if(ctx->pps.cu_qp_delta_enabled_flag)
     {
@@ -910,7 +923,14 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     {
         for(i = 0; i < N_C; i++)
         {
-            int size = (cuw * cuh) >> (i == 0 ? 0 : 2);
+            if(i != 0 && !ctx->sps.chroma_format_idc)
+            {
+                cbf_idx[i] = 0;
+                nnz_store[i] = nnz[i];
+                xeve_mcpy(nnz_sub_store[i], core->nnz_sub[i], sizeof(int) * MAX_SUB_TB_NUM);
+                continue;
+            }
+            int size = (cuw * cuh) >> (i == 0 ? 0 : (w_shift+h_shift));
             xeve_mcpy(coef_t[i], coef[i], sizeof(s16) * size);
 
             cbf_idx[i] = 0;
@@ -931,7 +951,14 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             if(nnz[i])
             {
                 ctx->fn_recon(ctx, core, coef_t[i], pred[0][i], nnz[i], w[i], h[i], w[i], rec[i], ctx->sps.bit_depth_luma_minus8 + 8);
-                dist[1][i] = xeve_ssd_16b(log2_w[i], log2_h[i], rec[i], org[i], w[i], pi->s_o[i], bit_depth_tbl[i]);
+                if (!ctx->sps.chroma_format_idc && i != 0)
+                {
+                    dist[1][i] = 0;
+                }
+                else
+                {
+                    dist[1][i] = xeve_ssd_16b(log2_w[i], log2_h[i], rec[i], org[i], w[i], pi->s_o[i], bit_depth_tbl[i]);
+                }
             }
             else
             {
@@ -958,6 +985,10 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             for(i = 0; i < N_C; i++)
             {
                 dist[1][i] += core->delta_dist[i];
+                if (i != 0 && !ctx->sps.chroma_format_idc)
+                {
+                    dist[1][i] = 0;
+                }
             }
         }
 
@@ -972,7 +1003,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             nnz[V_C] = 0;
             xeve_mset(core->nnz_sub, 0, sizeof(int) * N_C * MAX_SUB_TB_NUM);
 
-            cost = (double)dist[idx_y][Y_C] + (((double)dist[idx_u][U_C] * ctx->dist_chroma_weight[0]) + ((double)dist[idx_v][V_C] * ctx->dist_chroma_weight[1]));
+            cost = (double)dist[idx_y][Y_C] + (((double)dist[idx_u][U_C] * core->dist_chroma_weight[0]) + ((double)dist[idx_v][V_C] * core->dist_chroma_weight[1]));
 
             SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
             DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
@@ -981,7 +1012,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
 
             bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-            cost += RATE_TO_COST_LAMBDA(ctx->lambda[0], bit_cnt);
+            cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
 
             if(cost < cost_best)
             {
@@ -1004,7 +1035,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         nnz[V_C] = nnz_store[V_C];
         xeve_mcpy(core->nnz_sub, nnz_sub_store, sizeof(int) * N_C * MAX_SUB_TB_NUM);
 
-        cost = (double)dist[idx_y][Y_C] + (((double)dist[idx_u][U_C] * ctx->dist_chroma_weight[0]) + ((double)dist[idx_v][V_C] * ctx->dist_chroma_weight[1]));
+        cost = (double)dist[idx_y][Y_C] + (((double)dist[idx_u][U_C] * core->dist_chroma_weight[0]) + ((double)dist[idx_v][V_C] * core->dist_chroma_weight[1]));
 
         SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
         DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
@@ -1013,7 +1044,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
 
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-        cost += RATE_TO_COST_LAMBDA(ctx->lambda[0], bit_cnt);
+        cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
 
         if(cost < cost_best)
         {
@@ -1037,7 +1068,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
                 SBAC_LOAD(core->s_temp_prev_comp_run, core->s_temp_prev_comp_best);
                 for(j = 0; j < 2; j++)
                 {
-                    cost = dist[j][i] * (i == 0 ? 1 : ctx->dist_chroma_weight[i - 1]);
+                    cost = dist[j][i] * (i == 0 ? 1 : core->dist_chroma_weight[i - 1]);
                     nnz[i] = j ? nnz_store[i] : 0;
                     if(j)
                     {
@@ -1054,7 +1085,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
                                                    , core->tree_cons);
 
                     bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-                    cost += RATE_TO_COST_LAMBDA(ctx->lambda[i], bit_cnt);
+                    cost += RATE_TO_COST_LAMBDA(core->lambda[i], bit_cnt);
                     if(cost < cost_comp_best)
                     {
                         cost_comp_best = cost;
@@ -1092,7 +1123,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 
         if(nnz[Y_C] != nnz_store[Y_C] || nnz[U_C] != nnz_store[U_C] || nnz[V_C] != nnz_store[V_C])
         {
-            cost = (double)dist[idx_y][Y_C] + (((double)dist[idx_u][U_C] * ctx->dist_chroma_weight[0]) + ((double)dist[idx_v][V_C] * ctx->dist_chroma_weight[1]));
+            cost = (double)dist[idx_y][Y_C] + (((double)dist[idx_u][U_C] * core->dist_chroma_weight[0]) + ((double)dist[idx_v][V_C] * core->dist_chroma_weight[1]));
 
             SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
             DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
@@ -1101,7 +1132,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
 
             bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-            cost += RATE_TO_COST_LAMBDA(ctx->lambda[0], bit_cnt);
+            cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
 
             if(cost < cost_best)
             {
@@ -1129,7 +1160,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             if(nnz[i] == 0 && nnz_store[i] != 0)
             {
                 xeve_mset(core->nnz_sub[i], 0, sizeof(int) * MAX_SUB_TB_NUM);
-                xeve_mset(coef[i], 0, sizeof(s16) * ((cuw * cuh) >> (i == 0 ? 0 : 2)));
+                xeve_mset(coef[i], 0, sizeof(s16) * ((cuw * cuh) >> (i == 0 ? 0 : (w_shift + h_shift))));
             }
         }
     }
@@ -1160,8 +1191,10 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             {
                 dist[0][i] += core->delta_dist[i];
             }
+            if(i != 0 && !ctx->sps.chroma_format_idc)
+                dist[0][i] = 0;
         }
-        cost_best = (double)dist[0][Y_C] + (ctx->dist_chroma_weight[0] * (double)dist[0][U_C]) + (ctx->dist_chroma_weight[1] * (double)dist[0][V_C]);
+        cost_best = (double)dist[0][Y_C] + (core->dist_chroma_weight[0] * (double)dist[0][U_C]) + (core->dist_chroma_weight[1] * (double)dist[0][V_C]);
 
         SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
         DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
@@ -1170,7 +1203,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
 
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-        cost_best += RATE_TO_COST_LAMBDA(ctx->lambda[0], bit_cnt);
+        cost_best += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
         SBAC_STORE(core->s_temp_best, core->s_temp_run);
         DQP_STORE(core->dqp_temp_best, core->dqp_temp_run);
         nnz_best[Y_C] = nnz_best[U_C] = nnz_best[V_C] = 0;
@@ -1182,14 +1215,17 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 
 static double xeve_analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh)
 {
-    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
-    pel          *y_org, *u_org, *v_org;
-    s16          mvp[REFP_NUM][MV_D];
-    s8           refi[REFP_NUM];
-    double       cost, cost_best = MAX_COST;
-    int          cuw, cuh, idx0, idx1, cnt, bit_cnt;
-    s64          cy, cu, cv;
-    s64          temp_ssd = 0;
+    XEVE_PINTER * pi = &ctx->pinter[core->thread_cnt];
+    pel         * y_org, *u_org, *v_org;
+    s16           mvp[REFP_NUM][MV_D];
+    s8            refi[REFP_NUM];
+    double        cost, cost_best = MAX_COST;
+    int           cuw, cuh, idx0, idx1, cnt, bit_cnt;
+    s64           cy, cu, cv;
+    s64           temp_ssd = 0;
+    int           w_shift = ctx->param.cs_w_shift;
+    int           h_shift = ctx->param.cs_h_shift;
+
     pi->best_ssd = (s64)1 << (log2_cuw + log2_cuh + 16);
 
     if(ctx->pps.cu_qp_delta_enabled_flag)
@@ -1199,11 +1235,12 @@ static double xeve_analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
             xeve_set_qp(ctx, core, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2].prev_qp);
         }
     }
+    cu = cv = cy = 0;
     cuw = (1 << log2_cuw);
     cuh = (1 << log2_cuh);
     y_org = pi->o[Y_C] + x + y * pi->s_o[Y_C];
-    u_org = pi->o[U_C] + (x >> 1) + ((y >> 1) * pi->s_o[U_C]);
-    v_org = pi->o[V_C] + (x >> 1) + ((y >> 1) * pi->s_o[V_C]);
+    u_org = pi->o[U_C] + (x >> w_shift) + ((y >> h_shift) * pi->s_o[U_C]);
+    v_org = pi->o[V_C] + (x >> w_shift) + ((y >> h_shift) * pi->s_o[V_C]);
 
     xeve_get_motion(core->scup, REFP_0, ctx->map_refi, ctx->map_mv, pi->refp, cuw, cuh, ctx->w_scu, core->avail_cu, pi->refi_pred[REFP_0], pi->mvp[REFP_0]);
     if(ctx->slice_type == SLICE_B)
@@ -1238,8 +1275,11 @@ static double xeve_analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
             pi->fn_mc(ctx, core, x, y, cuw, cuh, refi, mvp, pi->refp, pi->pred[PRED_NUM], 0, 0, NULL);
 
             cy = xeve_ssd_16b(log2_cuw, log2_cuh, pi->pred[PRED_NUM][0][Y_C], y_org, cuw, pi->s_o[Y_C], ctx->sps.bit_depth_luma_minus8 + 8);
-            cu = xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->pred[PRED_NUM][0][U_C], u_org, cuw >> 1, pi->s_o[U_C], ctx->sps.bit_depth_chroma_minus8 + 8);
-            cv = xeve_ssd_16b(log2_cuw - 1, log2_cuh - 1, pi->pred[PRED_NUM][0][V_C], v_org, cuw >> 1, pi->s_o[V_C], ctx->sps.bit_depth_chroma_minus8 + 8);
+            if(ctx->sps.chroma_format_idc)
+            {
+                cu = xeve_ssd_16b(log2_cuw - w_shift, log2_cuh - h_shift, pi->pred[PRED_NUM][0][U_C], u_org, cuw >> w_shift, pi->s_o[U_C], ctx->sps.bit_depth_chroma_minus8 + 8);
+                cv = xeve_ssd_16b(log2_cuw - w_shift, log2_cuh - h_shift, pi->pred[PRED_NUM][0][V_C], v_org, cuw >> w_shift, pi->s_o[V_C], ctx->sps.bit_depth_chroma_minus8 + 8);
+            }
 
             temp_ssd = cy + cu + cv;
 
@@ -1247,11 +1287,14 @@ static double xeve_analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
             {
                 calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->pred[PRED_NUM][0], cuw, x, y, core->avail_lr, 0, 0, refi, mvp, 0,  core);
                 cy += core->delta_dist[Y_C];
-                cu += core->delta_dist[U_C];
-                cv += core->delta_dist[V_C];
+                if(ctx->sps.chroma_format_idc)
+                {
+                    cu += core->delta_dist[U_C];
+                    cv += core->delta_dist[V_C];
+                }
             }
 
-            cost = (double)cy + (ctx->dist_chroma_weight[0] * (double)cu) + (ctx->dist_chroma_weight[1] * (double)cv);
+            cost = (double)cy + (core->dist_chroma_weight[0] * (double)cu) + (core->dist_chroma_weight[1] * (double)cv);
 
             SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
             DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
@@ -1261,7 +1304,7 @@ static double xeve_analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
             xeve_rdo_bit_cnt_cu_skip(ctx, core, ctx->sh.slice_type, core->scup, idx0, idx1, 0, 0);
 
             bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-            cost += RATE_TO_COST_LAMBDA(ctx->lambda[0], bit_cnt);
+            cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
 
             if(cost < cost_best)
             {
@@ -1285,7 +1328,9 @@ static double xeve_analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
 
                 for(j = 0; j < N_C; j++)
                 {
-                    int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : 2);
+                    if(j != 0 && !ctx->sps.chroma_format_idc)
+                        continue;
+                    int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : (w_shift + h_shift));
                     xeve_mcpy(pi->pred[PRED_SKIP][0][j], pi->pred[PRED_NUM][0][j], size_tmp * sizeof(pel));
                 }
 
@@ -1510,7 +1555,7 @@ static int pinter_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
 {
     XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
-    pi->lambda_mv = (u32)floor(65536.0 * ctx->sqrt_lambda[0]);
+    pi->lambda_mv = (u32)floor(65536.0 * core->sqrt_lambda[0]);
     pi->qp_y      = core->qp_y;
     pi->qp_u      = core->qp_u;
     pi->qp_v      = core->qp_v;
@@ -1538,7 +1583,7 @@ static void check_best_mvp(XEVE_CTX *ctx, XEVE_CORE *core, s32 slice_type, s8 re
     xeve_rdo_bit_cnt_mvp(ctx, core, slice_type, refi, mvd_tmp, pidx, *mvp_idx);
     bit_cnt = xeve_get_bit_number(&core->s_temp_run);
 
-    best_cost = RATE_TO_COST_LAMBDA(ctx->lambda[0], bit_cnt);
+    best_cost = RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
 
     best_idx = *mvp_idx;
 
@@ -1559,7 +1604,7 @@ static void check_best_mvp(XEVE_CTX *ctx, XEVE_CORE *core, s32 slice_type, s8 re
         xeve_rdo_bit_cnt_mvp(ctx, core, slice_type, refi, mvd_tmp, pidx, idx);
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
 
-        cost = RATE_TO_COST_LAMBDA(ctx->lambda[0], bit_cnt);
+        cost = RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
         if(cost < best_cost)
         {
             best_idx = idx;
@@ -1691,7 +1736,9 @@ double xeve_pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int 
 
                 for(j = 0; j < N_C; j++)
                 {
-                    int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : 2);
+                    if(j != 0 && !ctx->sps.chroma_format_idc)
+                        continue;
+                    int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : (ctx->param.cs_w_shift + ctx->param.cs_h_shift));
                     pi->nnz_best[pidx][j] = core->nnz[j];
                     xeve_mcpy(pi->nnz_sub_best[pidx][j], core->nnz_sub[j], sizeof(int) * MAX_SUB_TB_NUM);
                     xeve_mcpy(pred[0][j], pi->pred[PRED_NUM][0][j], size_tmp * sizeof(pel));
@@ -1716,21 +1763,35 @@ double xeve_pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int 
             }
         }
     }
+
+
+
+
     /* reconstruct */
     for(j = 0; j < N_C; j++)
     {
-        int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : 2);
+        if(j != 0 && !ctx->sps.chroma_format_idc)
+            continue;
+        int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : (ctx->param.cs_w_shift + ctx->param.cs_h_shift));
         xeve_mcpy(coef[j], pi->coef[best_idx][j], sizeof(s16) * size_tmp);
         xeve_mcpy(pi->residue[j], pi->coef[best_idx][j], sizeof(s16) * size_tmp);
+    }
+
+    if(ctx->pps.cu_qp_delta_enabled_flag)
+    {
+        xeve_set_qp(ctx, core, core->dqp_next_best[log2_cuw - 2][log2_cuh - 2].prev_qp);
     }
 
     ctx->fn_itdp(ctx, core, pi->residue, pi->nnz_sub_best[best_idx]);
 
     for(i = 0; i < N_C; i++)
     {
+        if(i != 0 && !ctx->sps.chroma_format_idc)
+            continue;
         rec[i] = pi->rec[best_idx][i];
-        s_rec[i] = (i == 0 ? cuw : cuw >> 1);
-        ctx->fn_recon(ctx, core, pi->residue[i], pi->pred[best_idx][0][i], pi->nnz_best[best_idx][i], s_rec[i], (i == 0 ? cuh : cuh >> 1), s_rec[i], rec[i], ctx->sps.bit_depth_chroma_minus8 + 8);    
+        s_rec[i] = (i == 0 ? cuw : cuw >> ctx->param.cs_w_shift);
+        ctx->fn_recon(ctx, core, pi->residue[i], pi->pred[best_idx][0][i], pi->nnz_best[best_idx][i], s_rec[i]
+                    , (i == 0 ? cuh : cuh >> ctx->param.cs_h_shift), s_rec[i], rec[i], ctx->sps.bit_depth_chroma_minus8 + 8);
         core->nnz[i] = pi->nnz_best[best_idx][i];
         xeve_mcpy(core->nnz_sub[i], pi->nnz_sub_best[best_idx][i], sizeof(int) * MAX_SUB_TB_NUM);
     }
@@ -1757,7 +1818,7 @@ double xeve_pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int 
 static void pinter_mc(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM]
                       , pel pred[REFP_NUM][N_C][MAX_CU_DIM], int tmp_val1, int tmp_val2, s16 tmp_buf[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D])
 {
-    xeve_mc(x, y, ctx->w, ctx->h, w, h, refi, mv, refp, pred, ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+    xeve_mc(x, y, ctx->w, ctx->h, w, h, refi, mv, refp, pred, ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
 }
 
 static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)

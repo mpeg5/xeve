@@ -68,7 +68,7 @@ void xeve_rdo_bit_cnt_cu_intra_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
 
     if (ctx->sps.tool_eipd )
     {
-        if (xeve_check_chroma(core->tree_cons))
+        if (xeve_check_chroma(core->tree_cons) && ctx->sps.chroma_format_idc)
         {
             xevem_eco_intra_dir_c(&core->bs_temp, core->ipm[1], core->ipm[0]);
         }
@@ -83,7 +83,7 @@ void xeve_rdo_bit_cnt_cu_intra_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
     {
         core->cu_qp_delta_code = core->dqp_temp_run.cu_qp_delta_code;
         core->cu_qp_delta_is_coded = core->dqp_temp_run.cu_qp_delta_is_coded;
-        ctx->tile[core->tile_idx].qp_prev_eco = core->dqp_temp_run.prev_qp;
+        ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt] = core->dqp_temp_run.prev_qp;
     }
 
     ctx->fn_eco_coef(ctx, core, &core->bs_temp, coef, MODE_INTRA, ctx->pps.cu_qp_delta_enabled_flag, 0, RUN_L | RUN_CB | RUN_CR);
@@ -92,7 +92,7 @@ void xeve_rdo_bit_cnt_cu_intra_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
     {
         core->dqp_temp_run.cu_qp_delta_code = core->cu_qp_delta_code;
         core->dqp_temp_run.cu_qp_delta_is_coded = core->cu_qp_delta_is_coded;
-        core->dqp_temp_run.prev_qp = ctx->tile[core->tile_idx].qp_prev_eco;
+        core->dqp_temp_run.prev_qp = ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt] ;
         core->dqp_temp_run.curr_qp = core->qp;
     }
 }
@@ -242,7 +242,7 @@ void xeve_rdo_bit_cnt_cu_ibc(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_type, s
     {
         core->cu_qp_delta_code = core->dqp_temp_run.cu_qp_delta_code;
         core->cu_qp_delta_is_coded = core->dqp_temp_run.cu_qp_delta_is_coded;
-        ctx->tile[core->tile_idx].qp_prev_eco = core->dqp_temp_run.prev_qp;
+        ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt]  = core->dqp_temp_run.prev_qp;
     }
 
     ctx->fn_eco_coef(ctx, core, &core->bs_temp, coef, MODE_IBC, ctx->pps.cu_qp_delta_enabled_flag, b_no_cbf, RUN_L | RUN_CB | RUN_CR);
@@ -251,7 +251,7 @@ void xeve_rdo_bit_cnt_cu_ibc(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_type, s
     {
         core->dqp_temp_run.cu_qp_delta_code = core->cu_qp_delta_code;
         core->dqp_temp_run.cu_qp_delta_is_coded = core->cu_qp_delta_is_coded;
-        core->dqp_temp_run.prev_qp = ctx->tile[core->tile_idx].qp_prev_eco;
+        core->dqp_temp_run.prev_qp = ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt] ;
         core->dqp_temp_run.curr_qp = core->qp;
     }
 }
@@ -476,7 +476,7 @@ void xeve_rdo_bit_cnt_cu_inter_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
     {
         core->cu_qp_delta_code = core->dqp_temp_run.cu_qp_delta_code;
         core->cu_qp_delta_is_coded = core->dqp_temp_run.cu_qp_delta_is_coded;
-        ctx->tile[core->tile_idx].qp_prev_eco = core->dqp_temp_run.prev_qp;
+        ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt]  = core->dqp_temp_run.prev_qp;
     }
 
     ctx->fn_eco_coef(ctx, core, &core->bs_temp, coef, MODE_INTER, ctx->pps.cu_qp_delta_enabled_flag, b_no_cbf, RUN_L | RUN_CB | RUN_CR);
@@ -485,7 +485,7 @@ void xeve_rdo_bit_cnt_cu_inter_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
     {
         core->dqp_temp_run.cu_qp_delta_code = core->cu_qp_delta_code;
         core->dqp_temp_run.cu_qp_delta_is_coded = core->cu_qp_delta_is_coded;
-        core->dqp_temp_run.prev_qp = ctx->tile[core->tile_idx].qp_prev_eco;
+        core->dqp_temp_run.prev_qp = ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt] ;
         core->dqp_temp_run.curr_qp = core->qp;
     }
 }
@@ -1057,7 +1057,7 @@ static double mode_check_ibc(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int l
 
             if (cost < cost_best)
             {
-                cost_best = cost;
+                cost_best = cost; 
                 core->cu_mode = MODE_IBC;
                 mcore->ibc_flag = 1;
 
@@ -1082,6 +1082,10 @@ static double mode_check_ibc(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int l
                 core->skip_flag = 0;
                 mcore->affine_flag = 0;
                 mcore->dmvr_flag = 0;
+                if (ctx->pps.cu_qp_delta_enabled_flag)
+                {
+                    xeve_set_qp(ctx, core, core->dqp_next_best[log2_cuw - 2][log2_cuh - 2].prev_qp);
+                }
                 ctx->fn_mode_copy_to_cu_data(ctx, core, mi, coef);
             }
         }
@@ -1096,15 +1100,15 @@ static double mode_coding_unit_main(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y
 
     xeve_assert(abs(log2_cuw - log2_cuh) <= 2);
     mode_cu_init_main(ctx, core, x, y, log2_cuw, log2_cuh, cud);
-
+    
     if (ctx->sps.sps_btt_flag && log2_cuw == 2 && log2_cuh == 2 && ctx->sps.tool_admvp)
     {
         // Check only in main profile
-        xeve_assert(!xeve_check_all(core->tree_cons));
+        xeve_assert(ctx->sps.chroma_format_idc == 0 || !xeve_check_all(core->tree_cons));
         xeve_assert(xeve_check_only_intra(core->tree_cons));
     }
 
-    if (((log2_cuw + log2_cuh) == 5 && ctx->sps.tool_admvp) )
+    if (ctx->sps.chroma_format_idc != 0 && ((log2_cuw + log2_cuh) == 5 && ctx->sps.tool_admvp))
     {
         xeve_assert(!xeve_check_all_preds(core->tree_cons));
 
@@ -1460,7 +1464,10 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
         check_max_cu = ctx->param.preset->max_cu_inter;
         check_min_cu = ctx->param.preset->min_cu_inter;
     }
-    if ( ctx->sps.sps_btt_flag && log2_cuw == 2 && log2_cuh == 2 &&
+
+    set_lambda(ctx, core, &ctx->sh, ctx->tile[core->tile_idx].qp);
+
+    if (ctx->sps.chroma_format_idc != 0 && ctx->sps.sps_btt_flag && log2_cuw == 2 && log2_cuh == 2 &&
         (xeve_check_luma(core->tree_cons) || xeve_check_all(core->tree_cons)) && ctx->sps.tool_admvp)
     {
         // Check only for main profile
@@ -1530,7 +1537,6 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
         {
             copy_history_buffer(&mcore->history_buffer, &org_mot_lut);
         }
-
         ctx->sh.qp_prev_mode = core->dqp_data[log2_cuw - 2][log2_cuh - 2].prev_qp;
         best_dqp = ctx->sh.qp_prev_mode;
         split_mode = NO_SPLIT;
@@ -1545,7 +1551,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                 ctx->fn_eco_split_mode(&core->bs_temp, ctx, core, cud, 0, cuw, cuh, cuw, x0, y0);
 
                 bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-                cost_temp += RATE_TO_COST_LAMBDA(ctx->lambda[0], bit_cnt);
+                cost_temp += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
                 SBAC_STORE(core->s_curr_best[log2_cuw - 2][log2_cuh - 2], core->s_temp_run);
             }
             core->cup = cup;
@@ -1554,6 +1560,12 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
             for (int dqp = min_qp; dqp <= max_qp; dqp++)
             {
                 core->qp = GET_QP((s8)qp, dqp - (s8)qp);
+
+                if (ctx->param.qpa)
+                {
+                    set_lambda(ctx, core, &ctx->sh, core->qp);
+                }
+
                 core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2].curr_qp = core->qp;
                 if (core->cu_qp_delta_code_mode != 2 || is_dqp_set)
                 {
@@ -1569,8 +1581,11 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                     copy_history_buffer(&mcore->history_buffer, &org_mot_lut);
                 }
 
+                if(ctx->sps.tool_admvp && log2_cuw == 2 && log2_cuh == 2)
+                    core->tree_cons.mode_cons = eOnlyIntra;
                 clear_map_scu_main(ctx, core, x0, y0, cuw, cuh);
                 cost_temp_dqp += mode_coding_unit_main(ctx, core, x0, y0, log2_cuw, log2_cuh, cud, mi);
+
 
                 if (cost_best > cost_temp_dqp)
                 {
@@ -1578,12 +1593,12 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                     cu_mode_dqp = core->cu_mode;
                     dist_cu_best_dqp = core->dist_cu_best;
                     /* backup the current best data */
-                    copy_cu_data(&core->cu_data_best[log2_cuw - 2][log2_cuh - 2], &core->cu_data_temp[log2_cuw - 2][log2_cuh - 2], 0, 0, log2_cuw, log2_cuh, log2_cuw, cud, core->tree_cons );
+                    copy_cu_data(&core->cu_data_best[log2_cuw - 2][log2_cuh - 2], &core->cu_data_temp[log2_cuw - 2][log2_cuh - 2], 0, 0, log2_cuw, log2_cuh, log2_cuw, cud, core->tree_cons, ctx->sps.chroma_format_idc);
                     cost_best = cost_temp_dqp;
                     best_split_mode = NO_SPLIT;
                     SBAC_STORE(s_temp_depth, core->s_next_best[log2_cuw - 2][log2_cuh - 2]);
                     DQP_STORE(dqp_temp_depth, core->dqp_next_best[log2_cuw - 2][log2_cuh - 2]);
-                    mode_cpy_rec_to_ref(core, x0, y0, cuw, cuh, PIC_MODE(ctx), core->tree_cons);
+                    mode_cpy_rec_to_ref(core, x0, y0, cuw, cuh, PIC_MODE(ctx), core->tree_cons, ctx->sps.chroma_format_idc);
 
                     if (xeve_check_luma(core->tree_cons))
                     {
@@ -1608,10 +1623,12 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
             {
                 core->cu_qp_delta_code_mode = 0;
             }
+
             cost_temp = cost_best;
             mcore->ibc_flag = ibc_flag_dqp;
             core->cu_mode = cu_mode_dqp;
             core->dist_cu_best = dist_cu_best_dqp;
+
 
 #if TRACE_COSTS
             XEVE_TRACE_COUNTER;
@@ -1671,7 +1688,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
             bits_inc_by_split += (log2_cuw + log2_cuh >= 6) ? 2 : 0; //two split flags
             bits_inc_by_split += 8; //one more (intra dir + cbf + edi_flag + mtr info) + 1-bit penalty, approximately 8 bits
 
-            if(dist_cu < ctx->lambda[0] * bits_inc_by_split)
+            if(dist_cu < core->lambda[0] * bits_inc_by_split)
                 next_split = 0;
         }
     }
@@ -1744,9 +1761,9 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
 
                     if ( ctx->sps.tool_admvp && ctx->sps.sps_btt_flag )
                     {
-                        split_struct.tree_cons.changed = tree_cons.mode_cons == eAll && !xeve_is_chroma_split_allowed( cuw, cuh, split_mode );
+                        split_struct.tree_cons.changed = tree_cons.mode_cons == eAll && ctx->sps.chroma_format_idc != 0 && !xeve_is_chroma_split_allowed( cuw, cuh, split_mode );
                         mode_cons_changed = xeve_signal_mode_cons( &core->tree_cons, &split_struct.tree_cons ); 
-                        mode_cons_signal = mode_cons_changed && ( ctx->sh.slice_type != SLICE_I ) && ( xeve_get_mode_cons_by_split( split_mode, cuw, cuh ) == eAll );
+                        mode_cons_signal = mode_cons_changed && ( ctx->sh.slice_type != SLICE_I ) && ( xeve_get_mode_cons_by_split( split_mode, cuw, cuh ) == eAll ) && (ctx->sps.chroma_format_idc == 1);
                     }
 
                     for (int mode_num = 0; mode_num < (mode_cons_signal ? 2 : 1); ++mode_num)
@@ -1807,7 +1824,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                                     xevem_eco_mode_constr(&core->bs_temp, split_struct.tree_cons.mode_cons, core->ctx_flags[CNID_MODE_CONS]);
                                 }
                                 bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-                                cost_temp += RATE_TO_COST_LAMBDA(ctx->lambda[0], bit_cnt);
+                                cost_temp += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
                                 SBAC_STORE(core->s_curr_best[log2_cuw - 2][log2_cuh - 2], core->s_temp_run);
                             }
                             get_min_max_qp(ctx, core, &min_qp, &max_qp, &is_dqp_set, split_mode, cuw, cuh, qp, x0, y0);
@@ -1821,6 +1838,11 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                             {
                                 int dqp = min_qp + dqp_loop;
                                 core->qp = GET_QP((s8)qp, dqp - (s8)qp);
+
+                                if (ctx->param.qpa)
+                                {
+                                    set_lambda(ctx, core, &ctx->sh, core->qp);
+                                }
                                 if (is_dqp_set)
                                 {
                                     core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2].cu_qp_delta_code = 2;
@@ -1875,7 +1897,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                                         core->qp = GET_QP((s8)qp, dqp - (s8)qp);
 
                                         copy_cu_data(&core->cu_data_temp[log2_cuw - 2][log2_cuh - 2], &core->cu_data_best[log2_sub_cuw - 2][log2_sub_cuh - 2], x_pos - split_struct.x_pos[0]
-                                                   , y_pos - split_struct.y_pos[0], log2_sub_cuw, log2_sub_cuh, log2_cuw, cud, split_struct.tree_cons);
+                                                   , y_pos - split_struct.y_pos[0], log2_sub_cuw, log2_sub_cuh, log2_cuw, cud, split_struct.tree_cons, ctx->sps.chroma_format_idc);
 
                                         update_map_scu_main(ctx, core, x_pos, y_pos, cur_cuw, cur_cuh);
                                         prev_log2_sub_cuw = log2_sub_cuw;
@@ -1960,7 +1982,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                                 {
                                     /* backup the current best data */
                                     copy_cu_data(&core->cu_data_best[log2_cuw - 2][log2_cuh - 2], &core->cu_data_temp[log2_cuw - 2][log2_cuh - 2]
-                                               , 0, 0, log2_cuw, log2_cuh, log2_cuw, cud, core->tree_cons);
+                                               , 0, 0, log2_cuw, log2_cuh, log2_cuw, cud, core->tree_cons, ctx->sps.chroma_format_idc);
                                     cost_best = cost_temp_dqp;
                                     best_dqp = core->dqp_data[prev_log2_sub_cuw - 2][prev_log2_sub_cuh - 2].prev_qp;
                                     DQP_STORE(dqp_temp_depth, core->dqp_next_best[prev_log2_sub_cuw - 2][prev_log2_sub_cuh - 2]);
@@ -2028,7 +2050,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
             {
                 if(split_cost[NO_SPLIT] != MAX_COST && split_cost[SPLIT_BI_HOR] != MAX_COST)
                 {
-                    if(split_cost[SPLIT_BI_HOR] < split_cost[NO_SPLIT] + ctx->lambda[0] * rdc_bits_th && split_cost[SPLIT_BI_HOR] > split_cost[NO_SPLIT]
+                    if(split_cost[SPLIT_BI_HOR] < split_cost[NO_SPLIT] + core->lambda[0] * rdc_bits_th && split_cost[SPLIT_BI_HOR] > split_cost[NO_SPLIT]
                        && split_mode_child_rdo[SPLIT_BI_HOR][0] == NO_SPLIT && split_mode_child_rdo[SPLIT_BI_HOR][1] == NO_SPLIT)
                     {
                         break;
@@ -2039,7 +2061,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
             {
                 if(split_cost[NO_SPLIT] != MAX_COST && split_cost[SPLIT_BI_VER] != MAX_COST)
                 {
-                    if(split_cost[SPLIT_BI_VER] < split_cost[NO_SPLIT] + ctx->lambda[0] * rdc_bits_th && split_cost[SPLIT_BI_VER] > split_cost[NO_SPLIT]
+                    if(split_cost[SPLIT_BI_VER] < split_cost[NO_SPLIT] + core->lambda[0] * rdc_bits_th && split_cost[SPLIT_BI_VER] > split_cost[NO_SPLIT]
                        && split_mode_child_rdo[SPLIT_BI_VER][0] == NO_SPLIT && split_mode_child_rdo[SPLIT_BI_VER][1] == NO_SPLIT)
                     {
                         break;
@@ -2056,7 +2078,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
         copy_history_buffer(&mcore->history_buffer, &org_mot_lut);
     }
 
-    mode_cpy_rec_to_ref(core, x0, y0, cuw, cuh, PIC_MODE(ctx), core->tree_cons);
+    mode_cpy_rec_to_ref(core, x0, y0, cuw, cuh, PIC_MODE(ctx), core->tree_cons, ctx->sps.chroma_format_idc);
 
     /* restore best data */
     xeve_set_split_mode(best_split_mode, cud, 0, cuw, cuh, cuw, core->cu_data_best[log2_cuw - 2][log2_cuh - 2].split_mode);
@@ -2305,7 +2327,7 @@ static int mode_analyze_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
 
     update_to_ctx_map_main(ctx, core);
     copy_cu_data(&ctx->map_cu_data[core->lcu_num], &core->cu_data_best[ctx->log2_max_cuwh - 2][ctx->log2_max_cuwh - 2],
-                 0, 0, ctx->log2_max_cuwh, ctx->log2_max_cuwh, ctx->log2_max_cuwh, 0, xeve_get_default_tree_cons());
+                 0, 0, ctx->log2_max_cuwh, ctx->log2_max_cuwh, ctx->log2_max_cuwh, 0, xeve_get_default_tree_cons(), ctx->sps.chroma_format_idc);
 
 #if TRACE_ENC_CU_DATA_CHECK
     h = w = 1 << (ctx->log2_max_cuwh - MIN_CU_LOG2);

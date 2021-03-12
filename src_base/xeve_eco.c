@@ -828,7 +828,8 @@ static void xeve_eco_xcoef(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int 
 #endif
 }
 
-int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, int b_no_cbf, int is_sub,int sub_pos, int cbf_all, int run[N_C], TREE_CONS tree_cons)
+int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, int b_no_cbf, int is_sub,int sub_pos, int cbf_all
+               , int run[N_C], TREE_CONS tree_cons, int chroma_format_idc)
 {
     XEVE_SBAC    *sbac;
     XEVE_SBAC_CTX *sbac_ctx;
@@ -871,7 +872,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
             }
         }
        
-        if (run[U_C])
+        if (run[U_C] && chroma_format_idc)
         {
             xeve_sbac_encode_bin(cbf_u, sbac, sbac_ctx->cbf_cb, bs);
             XEVE_TRACE_COUNTER;
@@ -879,7 +880,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
             XEVE_TRACE_INT(cbf_u);
             XEVE_TRACE_STR("\n");
         }
-        if (run[V_C])
+        if (run[V_C] && chroma_format_idc)
         {
             xeve_sbac_encode_bin(cbf_v, sbac, sbac_ctx->cbf_cr, bs);
             XEVE_TRACE_COUNTER;
@@ -899,7 +900,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
     }
     else
     {
-        if (run[U_C])
+        if (run[U_C] && chroma_format_idc)
         {
             xeve_assert(xeve_check_chroma(tree_cons));
             xeve_sbac_encode_bin(cbf_u, sbac, sbac_ctx->cbf_cb, bs);
@@ -908,7 +909,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
             XEVE_TRACE_INT(cbf_u);
             XEVE_TRACE_STR("\n");
         }
-        if (run[V_C])
+        if (run[V_C] && chroma_format_idc)
         {
             xeve_assert(xeve_check_chroma(tree_cons));
             xeve_sbac_encode_bin(cbf_v, sbac, sbac_ctx->cbf_cr, bs);
@@ -975,6 +976,8 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
     int stride = (1 << log2_cuw);
     int sub_stride = (1 << log2_w_sub);
     int is_sub = loop_h + loop_w > 2 ? 1 : 0;
+    int w_shift = ctx->param.cs_w_shift;
+    int h_shift = ctx->param.cs_h_shift;
 
     if (!xeve_check_luma(tree_cons))
     {
@@ -1008,7 +1011,7 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
     {
         for (i = 0; i < loop_w; i++)
         {
-            xeve_eco_cbf(bs, !!nnz_sub[Y_C][(j << 1) | i], !!nnz_sub[U_C][(j << 1) | i], !!nnz_sub[V_C][(j << 1) | i], pred_mode, b_no_cbf, is_sub, j + i, cbf_all, run, tree_cons);
+            xeve_eco_cbf(bs, !!nnz_sub[Y_C][(j << 1) | i], !!nnz_sub[U_C][(j << 1) | i], !!nnz_sub[V_C][(j << 1) | i], pred_mode, b_no_cbf, is_sub, j + i, cbf_all, run, tree_cons, ctx->sps.chroma_format_idc);
 
             if(ctx->pps.cu_qp_delta_enabled_flag)
             {
@@ -1018,9 +1021,9 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
                     if((((!(ctx->sps.dquant_flag) || (core->cu_qp_delta_code == 1 && !core->cu_qp_delta_is_coded)) && (cbf_for_dqp))
                         || (core->cu_qp_delta_code == 2 && !core->cu_qp_delta_is_coded)))
                     {
-                        xeve_eco_dqp(bs, ctx->tile[core->tile_idx].qp_prev_eco, cur_qp);
+                        xeve_eco_dqp(bs, ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt], cur_qp);
                         core->cu_qp_delta_is_coded = 1;
-                        ctx->tile[core->tile_idx].qp_prev_eco = cur_qp;
+                        ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt] = cur_qp;
                     }
                 }
             }
@@ -1029,24 +1032,32 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
             {
                 if (nnz_sub[c][(j << 1) | i] && run[c])
                 {
-                    int pos_sub_x = i * (1 << (log2_w_sub - !!c));
-                    int pos_sub_y = j * (1 << (log2_h_sub - !!c)) * (stride >> (!!c));
+                    int pos_sub_x = c == 0 ? i * (1 << (log2_w_sub)) : (i * (1 << (log2_w_sub - w_shift)));
+                    int pos_sub_y = c == 0 ? j * (1 << (log2_h_sub)) * (stride) : j * (1 << (log2_h_sub - h_shift)) * (stride >> w_shift);
 
                     if (is_sub)
                     {
+                        if(c == 0)
                         xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), coef_temp_buf[c], sub_stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
+                        else
+                            xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, coef_temp_buf[c], sub_stride >> w_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
                         coef_temp[c] = coef_temp_buf[c];
                     }
                     else
                     {
                         coef_temp[c] = coef[c];
                     }
-
+                    if(c == 0)
                     xeve_eco_xcoef(bs, coef_temp[c], log2_w_sub - (!!c), log2_h_sub - (!!c), nnz_sub[c][(j << 1) | i], c);
+                    else
+                        xeve_eco_xcoef(bs, coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, nnz_sub[c][(j << 1) | i], c);
 
                     if (is_sub)
                     {
+                        if(c==0)
                         xeve_block_copy(coef_temp_buf[c], sub_stride >> (!!c), coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
+                        else
+                            xeve_block_copy(coef_temp_buf[c], sub_stride >> w_shift, coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
                     }
                 }
             }
@@ -1309,6 +1320,8 @@ int cu_init(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int cup, int cuw, int 
 void coef_rect_to_series(XEVE_CTX * ctx, s16 *coef_src[N_C], int x, int y, int cuw, int cuh, s16 coef_dst[N_C][MAX_CU_DIM], XEVE_CORE * core)
 {
     int i, j, sidx, didx;
+    int w_shift = ctx->param.cs_w_shift;
+    int h_shift = ctx->param.cs_h_shift;
 
     sidx = (x&(ctx->max_cuwh - 1)) + ((y&(ctx->max_cuwh - 1)) << ctx->log2_max_cuwh);
     didx = 0;
@@ -1324,13 +1337,13 @@ void coef_rect_to_series(XEVE_CTX * ctx, s16 *coef_src[N_C], int x, int y, int c
             sidx += ctx->max_cuwh;
         }
     }
-    if (xeve_check_chroma(core->tree_cons))
+    if (xeve_check_chroma(core->tree_cons) && ctx->sps.chroma_format_idc)
     {
-        x >>= 1;
-        y >>= 1;
-        cuw >>= 1;
-        cuh >>= 1;
-        sidx = (x&((ctx->max_cuwh >> 1) - 1)) + ((y&((ctx->max_cuwh >> 1) - 1)) << (ctx->log2_max_cuwh - 1));
+        x >>= w_shift;
+        y >>= h_shift;
+        cuw >>= w_shift;
+        cuh >>= h_shift;
+        sidx = (x&((ctx->max_cuwh >> w_shift) - 1)) + ((y&((ctx->max_cuwh >> h_shift) - 1)) << (ctx->log2_max_cuwh - w_shift));
         didx = 0;
 
         for(j = 0; j < cuh; j++)
@@ -1341,7 +1354,7 @@ void coef_rect_to_series(XEVE_CTX * ctx, s16 *coef_src[N_C], int x, int y, int c
                 coef_dst[V_C][didx] = coef_src[V_C][sidx + i];
                 didx++;
             }
-            sidx += (ctx->max_cuwh >> 1);
+            sidx += (ctx->max_cuwh >> w_shift);
         }
     }
 }
@@ -1548,7 +1561,7 @@ int xeve_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int c
             if(ctx->pps.cu_qp_delta_enabled_flag)
             {
                 MCU_CLR_QP(map_scu[j]);
-                MCU_SET_QP(map_scu[j], ctx->tile[core->tile_idx].qp_prev_eco);
+                MCU_SET_QP(map_scu[j], ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt]);
             }
 
             MCU_SET_LOGW(map_cu_mode[j], core->log2_cuw);

@@ -71,12 +71,13 @@ int xeve_atomic_dec(volatile int *pcnt)
     return ret;
 }
 
-XEVE_PIC * xeve_picbuf_alloc(int w, int h, int pad_l, int pad_c, int bit_depth, int *err)
+XEVE_PIC * xeve_picbuf_alloc(int w, int h, int pad_l, int pad_c, int bit_depth, int *err, int chroma_format_idc)
 {
     XEVE_PIC *pic = NULL;
     XEVE_IMGB *imgb = NULL;
     int ret, opt, align[XEVE_IMGB_MAX_PLANE], pad[XEVE_IMGB_MAX_PLANE];
     int w_scu, h_scu, f_scu, size;
+    int cs;
 
     /* allocate PIC structure */
     pic = xeve_malloc(sizeof(XEVE_PIC));
@@ -87,16 +88,17 @@ XEVE_PIC * xeve_picbuf_alloc(int w, int h, int pad_l, int pad_c, int bit_depth, 
 
     /* set align value*/
     align[0] = MIN_CU_SIZE;
-    align[1] = MIN_CU_SIZE >> 1;
-    align[2] = MIN_CU_SIZE >> 1;
+    align[1] = MIN_CU_SIZE;
+    align[2] = MIN_CU_SIZE;
 
     /* set padding value*/
     pad[0] = pad_l;
     pad[1] = pad_c;
     pad[2] = pad_c;
 
-    imgb = xeve_imgb_create(w, h, XEVE_CS_YCBCR420_10LE, opt, pad, align);
-    imgb->cs = XEVE_CS_SET(XEVE_CF_YCBCR420, bit_depth, 0);
+    cs = XEVE_CS_SET(XEVE_CF_FROM_CFI(chroma_format_idc), bit_depth, 0);
+    imgb = xeve_imgb_create(w, h, cs, opt, pad, align);
+    imgb->cs = XEVE_CS_SET(cs, bit_depth, 0);
 
     xeve_assert_gv(imgb != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
 
@@ -153,6 +155,7 @@ ERR:
         xeve_mfree(pic->map_mv);
         xeve_mfree(pic->map_unrefined_mv);
         xeve_mfree(pic->map_refi);
+        xeve_mfree(pic->map_dqp_lah);
         xeve_mfree(pic);
     }
     if(err) *err = ret;
@@ -184,6 +187,7 @@ void xeve_picbuf_free(XEVE_PIC *pic)
         xeve_mfree(pic->map_mv);
         xeve_mfree(pic->map_unrefined_mv);
         xeve_mfree(pic->map_refi);
+        xeve_mfree(pic->map_dqp_lah);
         xeve_mfree(pic);
     }
 }
@@ -246,11 +250,14 @@ static void picbuf_expand(pel *a, int s, int w, int h, int exp)
 }
 
 
-void xeve_picbuf_expand(XEVE_PIC *pic, int exp_l, int exp_c)
+void xeve_picbuf_expand(XEVE_PIC *pic, int exp_l, int exp_c, int chroma_format_idc)
 {
     picbuf_expand(pic->y, pic->s_l, pic->w_l, pic->h_l, exp_l);
-    picbuf_expand(pic->u, pic->s_c, pic->w_c, pic->h_c, exp_c);
-    picbuf_expand(pic->v, pic->s_c, pic->w_c, pic->h_c, exp_c);
+    if(chroma_format_idc)
+    {
+        picbuf_expand(pic->u, pic->s_c, pic->w_c, pic->h_c, exp_c);
+        picbuf_expand(pic->v, pic->s_c, pic->w_c, pic->h_c, exp_c);
+    }
 }
 
 void xeve_poc_derivation(XEVE_SPS sps, int tid, XEVE_POC *poc)
@@ -291,92 +298,6 @@ void xeve_poc_derivation(XEVE_SPS sps, int tid, XEVE_POC *poc)
     poc->poc_val = poc->prev_poc_val + poc_offset;
     poc->prev_doc_offset = doc_offset;
 }
-XEVE_PIC * xeve_alloc_spic_l(int w, int h, int pad_l, int pad_c, int * err, u8 bit_depth)
-{
-    XEVE_PIC *pic = NULL;
-    XEVE_IMGB *imgb = NULL;
-    int ret, opt, align[3], pad[3];
-    int w_scu, h_scu, f_scu, size;
-
-    //divide pic in half
-    w >>= 1;
-    h >>= 1;
-    /* allocate PIC structure */
-    pic = xeve_malloc(sizeof(XEVE_PIC));
-    xeve_assert_gv(pic != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mset(pic, 0, sizeof(XEVE_PIC));
-
-    opt = XEVE_IMGB_OPT_NONE;
-
-    /* set align value*/
-    align[0] = MIN_CU_SIZE >> 1;
-    align[1] = 1;
-    align[2] = 1;
-    /* set padding value*/
-    pad[0] = pad_l;
-    pad[1] = 0;
-    pad[2] = 0;
-    imgb = xeve_imgb_create(w, h, XEVE_CS_YCBCR420_10LE, opt, pad, align);
-    xeve_assert_gv(imgb != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
-
-    /* set XEVE_PIC */
-    pic->buf_y = imgb->baddr[0];
-    pic->buf_u = NULL;
-    pic->buf_v = NULL;
-    pic->y = imgb->a[0];
-    pic->u = NULL;
-    pic->v = NULL;
-
-    pic->w_l = imgb->w[0];
-    pic->h_l = imgb->h[0];
-    pic->w_c = 0;
-    pic->h_c = 0;
-
-    pic->s_l = STRIDE_IMGB2PIC(imgb->s[0]);
-    pic->s_c = 0;
-
-    pic->pad_l = pad_l;
-    pic->pad_c = 0;
-
-    pic->imgb = imgb;
-
-    /* allocate maps */
-    w_scu = (pic->w_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
-    h_scu = (pic->h_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
-    f_scu = w_scu * h_scu;
-
-    size = sizeof(s8) * f_scu * REFP_NUM;
-    pic->map_refi = xeve_malloc_fast(size);
-    xeve_assert_gv(pic->map_refi, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mset_x64a(pic->map_refi, -1, size);
-
-    size = sizeof(s16) * f_scu * REFP_NUM * MV_D;
-    pic->map_mv = xeve_malloc_fast(size);
-    xeve_assert_gv(pic->map_mv, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mset_x64a(pic->map_mv, 0, size);
-
-    size = sizeof(s16) * f_scu * REFP_NUM * MV_D;
-    pic->map_unrefined_mv = xeve_malloc_fast(size);
-    xeve_assert_gv(pic->map_unrefined_mv, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mset_x64a(pic->map_unrefined_mv, 0, size);
-
-    if (err)
-    {
-        *err = XEVE_OK;
-    }
-    return pic;
-
-ERR:
-    if (pic)
-    {
-        xeve_mfree(pic->map_mv);
-        xeve_mfree(pic->map_unrefined_mv);
-        xeve_mfree(pic->map_refi);
-        xeve_mfree(pic);
-    }
-    if (err) *err = ret;
-    return NULL;
-}
 
 void xeve_picbuf_rc_free(XEVE_PIC *pic)
 {
@@ -400,9 +321,7 @@ void xeve_picbuf_rc_free(XEVE_PIC *pic)
             pic->s_l = 0;
             pic->s_c = 0;
         }
-        xeve_mfree(pic->map_mv);
-        xeve_mfree(pic->map_unrefined_mv);
-        xeve_mfree(pic->map_refi);
+
         xeve_mfree(pic);
     }
 }
@@ -943,6 +862,103 @@ u16 xeve_get_avail_intra(int x_scu, int y_scu, int w_scu, int h_scu, int scup, i
 
     return avail;
 }
+
+/******************************************************************************
+ * alloc sub-picture only for luma
+ ******************************************************************************/
+XEVE_PIC * xeve_alloc_spic_l(int w, int h)
+{
+    XEVE_PIC * pic = NULL;
+    XEVE_IMGB * imgb = NULL;
+    int ret, opt, align[XEVE_IMGB_MAX_PLANE], pad[XEVE_IMGB_MAX_PLANE];
+    int w_scu, h_scu, f_scu;
+
+    /* make half-size for sub-pic allocation */
+    w >>= 1;
+    h >>= 1;
+
+    /* allocate PIC structure */
+    pic = xeve_malloc(sizeof(XEVE_PIC));
+    xeve_assert_gv(pic != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+    opt = XEVE_IMGB_OPT_NONE;
+
+    /* set align value*/
+    align[0] = MIN_CU_SIZE;
+    align[1] = MIN_CU_SIZE;
+    align[2] = MIN_CU_SIZE;
+
+    /* set padding value*/
+    pad[0] = 32;
+    pad[1] = 0;
+    pad[2] = 0;
+    
+    imgb = xeve_imgb_create(w, h, XEVE_CS_YCBCR420_10LE, opt, pad, align);
+    imgb->cs = XEVE_CS_YCBCR420_10LE;
+
+    xeve_assert_gv(imgb != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+    /* set XEVE_PIC */
+    /* allocate maps */
+    w_scu = (pic->w_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
+    h_scu = (pic->h_l + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
+    f_scu = w_scu * h_scu;
+
+    /* set XEVE_PIC */
+    pic->buf_y = imgb->baddr[0];
+    pic->y       = imgb->a[0];
+    pic->w_l   = imgb->w[0];
+    pic->h_l   = imgb->h[0];
+    pic->s_l   = STRIDE_IMGB2PIC(imgb->s[0]);
+    pic->pad_l = pad[0];
+
+    /* don't use chroma &*/
+    pic->buf_u = NULL;
+    pic->buf_v = NULL;
+    pic->u       = NULL;
+    pic->v       = NULL;
+    pic->w_c   = 0;
+    pic->s_c   = 0;
+    pic->h_c   = 0;
+    pic->pad_c = 0;
+
+    pic->imgb = imgb;
+    return pic;
+
+ERR:
+    if(pic) xeve_mfree(pic);
+    return NULL;
+}
+
+/******************************************************************************
+ * generate sub-picture
+ ******************************************************************************/
+void arace_gen_subpic(void * src_y, void * dst_y, int w, int h, int s_s,
+    int d_s, int bit_depth)
+{
+    /* source bottom and top top */
+    u8 * src_b, * src_t, * dst;
+    int     x, k, y;
+    
+    /* top source */
+    src_t = (u8 *)src_y;
+    /* bottom source */
+    src_b = src_t + s_s;
+    dst   = (u8 *)dst_y;
+
+    for(y = 0; y < h; y++)
+    {
+        for(x = 0; x < w; x++)
+        {
+            k =  x << 1;
+            dst[x] = (src_t[k] + src_b[k] + src_t[k+1] + src_b[k+1] + 2) >> 2;
+        }
+
+        src_t += (s_s << 1);
+        src_b += (s_s << 1);
+        dst   += d_s;
+    }
+}
+
 
 int xeve_picbuf_signature(XEVE_PIC *pic, u8 signature[N_C][16])
 {
@@ -1738,7 +1754,7 @@ static void imgb_cpy_shift_left_8b(XEVE_IMGB * imgb_dst, XEVE_IMGB * imgb_src, i
     unsigned char * s;
     short         * d;
 
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < imgb_dst->np; i++)
     {
         s = imgb_src->a[i];
         d = imgb_dst->a[i];
@@ -1767,7 +1783,7 @@ static void imgb_cpy_shift_right_8b(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
     else
         add = 0;
 
-    for(i = 0; i < 3; i++)
+    for(i = 0; i < dst->np; i++)
     {
         s = src->a[i];
         d = dst->a[i];
@@ -1812,7 +1828,7 @@ static void imgb_cpy_shift_left(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
     unsigned short * s;
     unsigned short * d;
 
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < dst->np; i++)
     {
         s = src->a[i];
         d = dst->a[i];
@@ -1846,7 +1862,7 @@ static void imgb_cpy_shift_right(XEVE_IMGB * dst, XEVE_IMGB * src, int shift)
 
     clip_max = (1 << (XEVE_CS_GET_BIT_DEPTH(dst->cs))) - 1;
 
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < dst->np; i++)
     {
         s = src->a[i];
         d = dst->a[i];
@@ -1865,7 +1881,6 @@ static void imgb_cpy_shift_right(XEVE_IMGB * dst, XEVE_IMGB * src, int shift)
     }
 }
 
-#if 1
 void xeve_imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src)
 {
     int i, bd_src, bd_dst;
@@ -1907,22 +1922,23 @@ void xeve_imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src)
     }
 }
 
-XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt,
-    int pad[XEVE_IMGB_MAX_PLANE], int align[XEVE_IMGB_MAX_PLANE])
+XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt
+                           , int pad[XEVE_IMGB_MAX_PLANE], int align[XEVE_IMGB_MAX_PLANE])
 {
-    int i, p_size, a_size, bd;
+    int i, p_size, a_size;
     XEVE_IMGB * imgb;
+    int bd      = XEVE_CS_GET_BYTE_DEPTH(cs);
+    int cfi     = XEVE_CFI_FROM_CF(XEVE_CS_GET_FORMAT(cs));
+    int np      = (cfi == 0) ? 1 : 3;
+    int w_shift = XEVE_GET_CHROMA_W_SHIFT(cfi);
+    int h_shift = XEVE_GET_CHROMA_H_SHIFT(cfi);
 
     imgb = (XEVE_IMGB *)xeve_malloc(sizeof(XEVE_IMGB));
     xeve_assert_rv(imgb, NULL);
     xeve_mset(imgb, 0, sizeof(XEVE_IMGB));
 
-    if(XEVE_CS_GET_FORMAT(cs) == XEVE_CF_YCBCR420)
+    for(i = 0; i<np; i++)
     {
-        bd = XEVE_CS_GET_BYTE_DEPTH(cs); /* byteunit */
-
-        for(i=0; i<3; i++)
-        {
             imgb->w[i] = w;
             imgb->h[i] = h;
             imgb->x[i] = 0;
@@ -1945,16 +1961,20 @@ XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt,
             imgb->a[i] = ((u8*)imgb->baddr[i]) + imgb->padu[i]*imgb->s[i] +
                 imgb->padl[i]*bd;
 
-            if(i == 0) { w = (w+1)>>1; h = (h+1)>>1; }
+        if(i == 0 && cfi)
+        { 
+            if (w_shift)
+            {
+                w = (w + w_shift) >> w_shift;
+            }
+            if (h_shift)
+            {
+                h = (h + h_shift) >> h_shift;
+            }
         }
-        imgb->np = 3;
     }
-    else
-    {
-        xeve_trace("unsupported color space\n");
-        xeve_mfree(imgb);
-        return NULL;
-    }
+
+    imgb->np = np;
     imgb->addref = imgb_addref;
     imgb->getref = imgb_getref;
     imgb->release = imgb_release;
@@ -1963,7 +1983,6 @@ XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt,
 
     return imgb;
 }
-#endif
 
 void xeve_imgb_garbage_free(XEVE_IMGB * imgb)
 {

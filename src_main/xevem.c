@@ -44,6 +44,7 @@
 #include "xevem_mc_sse.h"
 #include "xevem_recon.h"
 #include "xevem_df.h"
+#include "xeve_fcst.h"
 //}}
 #include "xeve_rc.h"
 int last_intra_poc = INT_MAX;
@@ -162,7 +163,7 @@ static void ctx_free(XEVE_CTX * ctx)
     xeve_mfree_fast(ctx);
 }
 
-static XEVE_CORE * core_alloc(void)
+static XEVE_CORE * core_alloc(int chroma_format_idc)
 {
     XEVE_CORE * core;
     int i, j;
@@ -176,15 +177,15 @@ static XEVE_CORE * core_alloc(void)
     {
         for(j = 0; j < MAX_CU_LOG2; j++)
         {
-            xeve_create_cu_data(&core->cu_data_best[i][j], i, j);
-            xeve_create_cu_data(&core->cu_data_temp[i][j], i, j);
+            xeve_create_cu_data(&core->cu_data_best[i][j], i, j, chroma_format_idc);
+            xeve_create_cu_data(&core->cu_data_temp[i][j], i, j, chroma_format_idc);
         }
     }
 
     return core;
 }
 
-static XEVEM_CORE * core_alloc_main(void)
+static XEVEM_CORE * core_alloc_main(int chroma_format_idc)
 {
     XEVEM_CORE * mcore;
     XEVE_CORE  * core;
@@ -201,8 +202,8 @@ static XEVEM_CORE * core_alloc_main(void)
     {
         for(j = 0; j < MAX_CU_LOG2; j++)
         {
-            xeve_create_cu_data(&core->cu_data_best[i][j], i, j);
-            xeve_create_cu_data(&core->cu_data_temp[i][j], i, j);
+            xeve_create_cu_data(&core->cu_data_best[i][j], i, j, chroma_format_idc);
+            xeve_create_cu_data(&core->cu_data_temp[i][j], i, j, chroma_format_idc);
         }
     }
 
@@ -354,15 +355,19 @@ static int set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param)
     param->ibc_fast_method  = cdsc->ext->ibc_fast_method;
     param->use_hgop         = (cdsc->disable_hgop)? 0: 1;
     param->qp_incread_frame = cdsc->add_qp_frame;
-    param->use_dqp          = cdsc->use_dqp;
+    param->qpa              = cdsc->qpa;
     param->cu_qp_delta_area = cdsc->ext->cu_qp_delta_area;
     param->rc_type          = cdsc->rc_type;
+    param->use_fcst         = (cdsc->qpa  || cdsc->rc_type) ? 1:0;
     param->bps              = cdsc->bps;
     param->vbv_msec         = cdsc->vbv_msec;
     param->use_filler_flag  = cdsc->use_filler_flag;
     param->num_pre_analysis_frames = cdsc->num_pre_analysis_frames;
     param->vbv_enabled      = 1;
     param->vbv_buffer_size  = (int)((param->bps) *(param->vbv_msec / 1000.0));
+    param->chroma_format_idc = XEVE_CFI_FROM_CF(XEVE_CS_GET_FORMAT(cdsc->cs));
+    param->cs_w_shift        = XEVE_GET_CHROMA_W_SHIFT(param->chroma_format_idc);
+    param->cs_h_shift        = XEVE_GET_CHROMA_H_SHIFT(param->chroma_format_idc);
 
     if(cdsc->ext->tool_iqt == 0)
     {
@@ -413,7 +418,7 @@ static int set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param)
         }
     }
 
-    param->rdo_dbk_switch = param->preset->rdo_dbk;
+    param->rdo_dbk_switch = param->use_deblock? param->preset->rdo_dbk: 0;
 
     return XEVE_OK;
 }
@@ -502,7 +507,7 @@ static void set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
     sps->toolset_idc_l = 0;
     sps->bit_depth_luma_minus8 = ctx->cdsc.codec_bit_depth - 8;
     sps->bit_depth_chroma_minus8 = ctx->cdsc.codec_bit_depth - 8;
-    sps->chroma_format_idc = 1; // YCbCr 4:2:0
+    sps->chroma_format_idc = XEVE_CFI_FROM_CF(XEVE_CS_GET_FORMAT(ctx->cdsc.cs));
     sps->ibc_flag = (ctx->param.use_ibc_flag) ? 1 : 0;
     sps->ibc_log_max_size = IBC_MAX_CU_LOG2;
     sps->log2_max_pic_order_cnt_lsb_minus4 = POC_LSB_BIT - 4;
@@ -635,7 +640,7 @@ static void set_pps(XEVE_CTX * ctx, XEVE_PPS * pps)
     pps->loop_filter_across_tiles_enabled_flag = 0;
     pps->single_tile_in_pic_flag = 1;
     pps->constrained_intra_pred_flag = ctx->cdsc.constrained_intra_pred;
-    pps->cu_qp_delta_enabled_flag = XEVE_ABS(ctx->cdsc.use_dqp);
+    pps->cu_qp_delta_enabled_flag = XEVE_ABS(ctx->cdsc.qpa);
     pps->cu_qp_delta_area         = ctx->cdsc.ext->cu_qp_delta_area;
     tile_rows = ctx->cdsc.ext->tile_rows;
     tile_columns = ctx->cdsc.ext->tile_columns;
@@ -834,9 +839,9 @@ static void set_sh(XEVE_CTX *ctx, XEVE_SH *sh)
         }
     }
 
-    sh->dqp = XEVE_ABS(ctx->param.use_dqp);
+    sh->dqp = ctx->param.qpa != 0;
 
-    if(ctx->param.use_hgop)
+    if(ctx->param.use_hgop && ctx->param.rc_type == 0)
     {
         double dqp_offset;
         int qp_offset;
@@ -845,7 +850,7 @@ static void set_sh(XEVE_CTX *ctx, XEVE_SH *sh)
         dqp_offset = qp * qp_adapt_param[ctx->slice_depth].qp_offset_model_scale + qp_adapt_param[ctx->slice_depth].qp_offset_model_offset + 0.5;
 
         qp_offset = (int)floor(XEVE_CLIP3(0.0, 3.0, dqp_offset));
-        qp += qp_offset;  
+        qp += qp_offset;
     }
 
     sh->qp   = (u8)XEVE_CLIP3(0, MAX_QUANT, qp);
@@ -857,6 +862,7 @@ static void set_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     sh->sh_deblock_beta_offset = ctx->cdsc.ext->deblock_beta_offset;
 
     qp_l_i = sh->qp;
+
     ctx->lambda[0] = 0.57 * pow(2.0, (qp_l_i - 12.0) / 3.0);
     qp_c_i = xeve_qp_chroma_dynamic[0][sh->qp_u];
     ctx->dist_chroma_weight[0] = pow(2.0, (qp_l_i - qp_c_i) / 3.0);
@@ -1122,10 +1128,10 @@ static int xeve_eco_tree(XEVE_CTX * ctx, XEVE_CORE * core, int x0, int y0, int c
 
         if ( ctx->sps.sps_btt_flag && ctx->sps.tool_admvp )
         {
-            split_struct.tree_cons.changed = tree_cons.mode_cons == eAll && !xeve_is_chroma_split_allowed( cuw, cuh, split_mode );
+            split_struct.tree_cons.changed = tree_cons.mode_cons == eAll && ctx->sps.chroma_format_idc != 0 && !xeve_is_chroma_split_allowed(cuw, cuh, split_mode);
             mode_cons_changed = xeve_signal_mode_cons(&core->tree_cons ,&split_struct.tree_cons);
 
-            BOOL mode_cons_signal = mode_cons_changed && (ctx->sh.slice_type != SLICE_I) && (xeve_get_mode_cons_by_split(split_mode, cuw, cuh) == eAll);
+            BOOL mode_cons_signal = mode_cons_changed && (ctx->sh.slice_type != SLICE_I) && (xeve_get_mode_cons_by_split(split_mode, cuw, cuh) == eAll) && (ctx->sps.chroma_format_idc == 1);
             if (mode_cons_changed)
             {
                 MODE_CONS mode = xeve_derive_mode_cons(ctx, core->lcu_num, cup);
@@ -1189,20 +1195,21 @@ ERR:
     return ret;
 }
 
-int xeve_ready(XEVE_CTX * ctx)
+int xeve_ready(XEVE_CTX* ctx)
 {
-    XEVE_CORE * core = NULL;
-    int          w, h, ret, i;
+    XEVE_CORE* core = NULL;
+    int          w, h, ret, i, f_blk;
     s32          size;
+    XEVE_FCST* fcst = &ctx->fcst;
 
     xeve_assert(ctx);
-    if(ctx->core[0] == NULL)
+    if (ctx->core[0] == NULL)
     {
 
         /* set various value */
         for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
         {
-            core = core_alloc();
+            core = core_alloc(ctx->param.chroma_format_idc);
             xeve_assert_gv(core != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
             ctx->core[i] = core;
         }
@@ -1232,7 +1239,7 @@ int xeve_ready(XEVE_CTX * ctx)
         ctx->log2_cudim = ctx->log2_culine << 1;
     }
 
-    if (ctx->cdsc.rc_type != 0)
+    if (ctx->cdsc.rc_type != 0 || ctx->cdsc.qpa!=0)
     {
         xeve_rc_create(ctx);
     }
@@ -1265,21 +1272,21 @@ int xeve_ready(XEVE_CTX * ctx)
     }
 
     /*  allocate CU data map*/
-    if(ctx->map_cu_data == NULL)
+    if (ctx->map_cu_data == NULL)
     {
         size = sizeof(XEVE_CU_DATA) * ctx->f_lcu;
         ctx->map_cu_data = (XEVE_CU_DATA*)xeve_malloc_fast(size);
         xeve_assert_gv(ctx->map_cu_data, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
         xeve_mset_x64a(ctx->map_cu_data, 0, size);
 
-        for(i = 0; i < (int)ctx->f_lcu; i++)
+        for (i = 0; i < (int)ctx->f_lcu; i++)
         {
-            xeve_create_cu_data(ctx->map_cu_data + i, ctx->log2_max_cuwh - MIN_CU_LOG2, ctx->log2_max_cuwh - MIN_CU_LOG2);
+            xeve_create_cu_data(ctx->map_cu_data + i, ctx->log2_max_cuwh - MIN_CU_LOG2, ctx->log2_max_cuwh - MIN_CU_LOG2, ctx->param.chroma_format_idc);
         }
     }
 
     /* allocate maps */
-    if(ctx->map_scu == NULL)
+    if (ctx->map_scu == NULL)
     {
         size = sizeof(u32) * ctx->f_scu;
         ctx->map_scu = xeve_malloc_fast(size);
@@ -1287,7 +1294,7 @@ int xeve_ready(XEVE_CTX * ctx)
         xeve_mset_x64a(ctx->map_scu, 0, size);
     }
 
-    if(ctx->map_ipm == NULL)
+    if (ctx->map_ipm == NULL)
     {
         size = sizeof(s8) * ctx->f_scu;
         ctx->map_ipm = xeve_malloc_fast(size);
@@ -1301,7 +1308,7 @@ int xeve_ready(XEVE_CTX * ctx)
     xeve_mset(ctx->map_depth, -1, size);
 
 
-    if(ctx->map_cu_mode == NULL)
+    if (ctx->map_cu_mode == NULL)
     {
         size = sizeof(u32) * ctx->f_scu;
         ctx->map_cu_mode = xeve_malloc_fast(size);
@@ -1310,64 +1317,104 @@ int xeve_ready(XEVE_CTX * ctx)
     }
 
     /* initialize reference picture manager */
-    ctx->pa.fn_alloc  = xeve_pic_alloc;
-    ctx->pa.fn_free   = xeve_pic_free;
-    ctx->pa.w         = ctx->w;
-    ctx->pa.h         = ctx->h;
-    ctx->pa.pad_l     = PIC_PAD_SIZE_L;
-    ctx->pa.pad_c     = PIC_PAD_SIZE_C;
+    ctx->pa.fn_alloc = xeve_pic_alloc;
+    ctx->pa.fn_free = xeve_pic_free;
+    ctx->pa.w = ctx->w;
+    ctx->pa.h = ctx->h;
+    ctx->pa.pad_l = PIC_PAD_SIZE_L;
+    ctx->pa.pad_c = PIC_PAD_SIZE_L >> ctx->param.cs_h_shift;
     ctx->pa.bit_depth = ctx->cdsc.codec_bit_depth;
-    ctx->pic_cnt      = 0;
-    ctx->pic_icnt     = -1;
-    ctx->poc.poc_val  = 0;
+    ctx->pic_cnt = 0;
+    ctx->pic_icnt = -1;
+    ctx->poc.poc_val = 0;
+    ctx->pa.chroma_format_idc = ctx->param.chroma_format_idc;
 
     ret = xeve_picman_init(&ctx->rpm, MAX_PB_SIZE, MAX_NUM_REF_PICS, &ctx->pa);
     xeve_assert_g(XEVE_SUCCEEDED(ret), ERR);
 
-    ctx->pico_max_cnt = 1 + (ctx->param.max_b_frames << 1) ;
-    ctx->frm_rnum = ctx->param.max_b_frames;
+    if (ctx->param.gop_size == 1 && ctx->param.i_period!=1) //LD case
+    {
+        ctx->pico_max_cnt = 1; 
+    }
+    else //RA case
+    {
+        ctx->pico_max_cnt = 1 + (ctx->param.max_b_frames << 1);
+    }
+
+    if(ctx->param.max_b_frames)
+    {
+        ctx->frm_rnum = ctx->param.max_b_frames + 1;
+    }
+    else
+    {
+        ctx->frm_rnum = 0;
+    }
+
     ctx->qp = ctx->param.qp;
+    if (ctx->param.use_fcst)
+    {
+        fcst->log2_fcst_blk_spic = 4; /* 16x16 in half image*/
+        fcst->w_blk = ctx->w + (((1 <<(fcst->log2_fcst_blk_spic + 1))-1) >> (fcst->log2_fcst_blk_spic + 1));
+        fcst->h_blk = ctx->h + (((1 <<(fcst->log2_fcst_blk_spic + 1))-1) >> (fcst->log2_fcst_blk_spic + 1));
+        fcst->f_blk = fcst->w_blk * fcst->h_blk;
+    }
 
     for(i = 0; i < ctx->pico_max_cnt; i++)
     {
         ctx->pico_buf[i] = (XEVE_PICO*)xeve_malloc(sizeof(XEVE_PICO));
         xeve_assert_gv(ctx->pico_buf[i], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
         xeve_mset(ctx->pico_buf[i], 0, sizeof(XEVE_PICO));
-    
+   
         XEVE_PICO *pico;
         pico = ctx->pico_buf[i];
 
-        pico->spic = xeve_alloc_spic_l(ctx->w, ctx->h, 32, 0, &ret, 10);
+        pico->spic = xeve_alloc_spic_l(ctx->w, ctx->h);
         xeve_assert_g(pico->spic != NULL, ERR);
 
-        size = sizeof(u8) * ctx->f_lcu;
-        pico->map_pdir = xeve_malloc(size);
-        xeve_assert_g(pico->map_pdir != NULL, ERR);
-
-        size = sizeof(s16) * ctx->f_lcu * REFP_NUM * MV_D;
-        pico->map_mv = xeve_malloc(size);
-        xeve_assert_g(pico->map_mv != NULL, ERR);
-
-        size = sizeof(s16) * ctx->f_lcu * REFP_NUM * MV_D;
-        pico->map_mv_pga = xeve_malloc(size);
-        xeve_assert_g(pico->map_mv_pga != NULL, ERR);
-
-        size = sizeof(s32) * ctx->f_lcu * 4;
-        pico->map_lcu_cost_uni = xeve_malloc(size);
-        xeve_assert_g(pico->map_lcu_cost_uni != NULL, ERR);
-
-        size = sizeof(s32) * ctx->f_lcu;
-        pico->map_lcu_cost_bi = xeve_malloc(size);
-        xeve_assert_g(pico->map_lcu_cost_bi != NULL, ERR);
-
-        if (ctx->param.use_dqp)
+        if (ctx->param.use_fcst)
         {
-            pico->map_qp_offset = (s32 *)xeve_malloc(sizeof(s32) * ctx->f_lcu);
-            xeve_assert_g(pico->map_qp_offset != NULL, ERR);
+            ctx->pico_buf[i]->spic = xeve_alloc_spic_l(ctx->w, ctx->h);
 
-            size = sizeof(u16) * ctx->f_lcu;
-            pico->transfer_cost = xeve_malloc(size);
-            xeve_assert_g(pico->transfer_cost != NULL, ERR);
+            f_blk = ctx->fcst.f_blk;
+            size = sizeof(u8) * f_blk;
+            ctx->pico_buf[i]->sinfo.map_pdir = xeve_malloc(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.map_pdir, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+            size = sizeof(u8) * f_blk;
+            ctx->pico_buf[i]->sinfo.map_pdir_bi = xeve_malloc(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.map_pdir_bi, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+            size = sizeof(s16) * f_blk * PRED_BI * MV_D;
+            ctx->pico_buf[i]->sinfo.map_mv = xeve_malloc(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.map_mv, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+            size = sizeof(s16) * f_blk * PRED_BI * MV_D;
+            ctx->pico_buf[i]->sinfo.map_mv_bi = xeve_malloc(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.map_mv_bi, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+            size = sizeof(s16) * f_blk * PRED_BI * MV_D;
+            ctx->pico_buf[i]->sinfo.map_mv_pga = xeve_malloc(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.map_mv_pga, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+            size = sizeof(s32) * f_blk * 4;
+            ctx->pico_buf[i]->sinfo.map_uni_lcost = xeve_malloc(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.map_uni_lcost, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+            size = sizeof(s32) * f_blk;
+            ctx->pico_buf[i]->sinfo.map_bi_lcost = xeve_malloc(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.map_bi_lcost, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+            size = sizeof(s32) * f_blk;
+            ctx->pico_buf[i]->sinfo.map_qp_blk = xeve_malloc(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.map_qp_blk, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+            size = sizeof(s8) * ctx->f_scu;
+            ctx->pico_buf[i]->sinfo.map_qp_scu = xeve_malloc_fast(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.map_qp_scu, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+
+            size = sizeof(u16) * f_blk;
+            ctx->pico_buf[i]->sinfo.transfer_cost = xeve_malloc(size);
+            xeve_assert_gv(ctx->pico_buf[i]->sinfo.transfer_cost, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
         }
     }
 
@@ -1430,19 +1477,25 @@ ERR:
 
     xeve_mfree_fast((void*) ctx->sync_flag);
 
-    for(i = 0; i < ctx->pico_max_cnt; i++)
+    if (ctx->param.use_fcst)
     {
-        xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_pdir);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_mv);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_mv_pga);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_lcu_cost_uni);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_lcu_cost_bi);
-        if (ctx->param.use_dqp) {
-            xeve_mfree_fast(ctx->pico_buf[i]->map_qp_offset); 
-            xeve_mfree_fast(ctx->pico_buf[i]->transfer_cost);
+        for (i = 0; i < ctx->pico_max_cnt; i++)
+        {
+
+
+            xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir_bi);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv_bi);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv_pga);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_uni_lcost);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_bi_lcost);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_blk);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_scu);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.transfer_cost);
+            xeve_mfree_fast(ctx->pico_buf[i]);
         }
-        xeve_mfree_fast(ctx->pico_buf[i]);
     }
 
     if(core)
@@ -1450,7 +1503,7 @@ ERR:
         core_free(core);
     }
 
-    if (ctx->cdsc.rc_type != 0)
+    if (ctx->cdsc.rc_type != 0 ||  ctx->cdsc.qpa !=0)
     {
         xeve_rc_delete(ctx);
     }
@@ -1514,16 +1567,17 @@ void xeve_flush(XEVE_CTX * ctx)
     for(i = 0; i < ctx->pico_max_cnt; i++)
     {
         xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_pdir);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_mv);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_mv_pga);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_lcu_cost_uni);
-        xeve_mfree_fast(ctx->pico_buf[i]->map_lcu_cost_bi);
-        if (ctx->param.use_dqp)
-        {
-            xeve_mfree_fast(ctx->pico_buf[i]->map_qp_offset); 
-            xeve_mfree_fast(ctx->pico_buf[i]->transfer_cost);
-        }
+
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir);
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir_bi);
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv);
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv_bi);
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv_pga);
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_uni_lcost);
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_bi_lcost);
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_blk);
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_scu);
+        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.transfer_cost);
         xeve_mfree_fast(ctx->pico_buf[i]);
     }
 
@@ -1532,7 +1586,7 @@ void xeve_flush(XEVE_CTX * ctx)
         if(ctx->inbuf[i]) ctx->inbuf[i]->release(ctx->inbuf[i]);
     }
 
-    if (ctx->cdsc.rc_type != 0)
+    if (ctx->cdsc.rc_type != 0 ||  ctx->cdsc.qpa !=0)
     {
         xeve_rc_delete(ctx);
     }
@@ -1560,7 +1614,7 @@ int xeve_ready_main(XEVE_CTX * ctx)
         /* set various value */
         for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
         {
-            mcore = core_alloc_main();
+            mcore = core_alloc_main(ctx->param.chroma_format_idc);
             xeve_assert_gv(mcore != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
             core = (XEVE_CORE*)mcore;
             ctx->core[i] = core;
@@ -1605,7 +1659,7 @@ int xeve_ready_main(XEVE_CTX * ctx)
 
     ctx->cdsc.ext->framework_suco_max = XEVE_MIN(ctx->log2_max_cuwh, ctx->cdsc.ext->framework_suco_max);
     mctx->enc_alf = xeve_alf_create_buf(ctx->cdsc.codec_bit_depth);
-    xeve_alf_create(mctx->enc_alf, ctx->w, ctx->h, ctx->max_cuwh, ctx->max_cuwh, 5, 1 /* 4:2:0 */, ctx->cdsc.codec_bit_depth);
+    xeve_alf_create(mctx->enc_alf, ctx->w, ctx->h, ctx->max_cuwh, ctx->max_cuwh, 5, ctx->param.chroma_format_idc, ctx->cdsc.codec_bit_depth);
 
     if (xeve_ready(ctx) != XEVE_OK)
     {
@@ -1638,11 +1692,11 @@ int xeve_ready_main(XEVE_CTX * ctx)
         }
     }
 
-        size = ctx->f_lcu * sizeof(int);
-        ctx->sync_flag = (volatile s32 *)xeve_malloc(size);
-        for (int i = 0; i < (int)ctx->f_lcu; i++)
-        {
-            ctx->sync_flag[i] = 0;
+    size = ctx->f_lcu * sizeof(int);
+    ctx->sync_flag = (volatile s32 *)xeve_malloc(size);
+    for (int i = 0; i < (int)ctx->f_lcu; i++)
+    {
+        ctx->sync_flag[i] = 0;
     }
 
     if (mctx->map_affine == NULL)
@@ -1734,6 +1788,11 @@ int xeve_ready_main(XEVE_CTX * ctx)
         mctx->dra_control->dra_hist_norm = mctx->dra_control->dra_hist_norm == 0 ? 1 : mctx->dra_control->dra_hist_norm;
         mctx->dra_control->chroma_qp_model.cb_qp_scale = ctx->cdsc.ext->dra_cb_qp_scale;
         mctx->dra_control->chroma_qp_model.cr_qp_scale = ctx->cdsc.ext->dra_cr_qp_scale;
+        if(ctx->param.chroma_format_idc == 0)
+        {
+            mctx->dra_control->chroma_qp_model.cb_qp_scale = 1;
+            mctx->dra_control->chroma_qp_model.cr_qp_scale = 1;
+        }
         mctx->dra_control->chroma_qp_model.chroma_qp_scale = ctx->cdsc.ext->dra_chroma_qp_scale;
         mctx->dra_control->chroma_qp_model.chroma_qp_offset = ctx->cdsc.ext->dra_chroma_qp_offset;
         mctx->dra_control->chroma_qp_model.dra_table_idx = ctx->cdsc.qp;
@@ -1909,13 +1968,13 @@ void xeve_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, in
     {
         xeve_deblock_cu_hor(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->refp
                           , core->tree_cons, ctx->map_tidx, boundary_filtering
-                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
     }
     else
     {
         xeve_deblock_cu_ver(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu
                           , ctx->map_cu_mode, ctx->refp, core->tree_cons, ctx->map_tidx, boundary_filtering
-                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
     }
 }
 
@@ -1932,16 +1991,16 @@ void xevem_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, i
 
             xevem_deblock_cu_hor(pic, x, y, cuw, cuh >> 1, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh, ctx->refp, 0
                                , core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
             xevem_deblock_cu_hor(pic, x, y + MAX_TR_SIZE, cuw, cuh >> 1, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh, ctx->refp, 0
                                , core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
         }
         else
         {
             xevem_deblock_cu_hor(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh, ctx->refp, 0
                                , core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
         }
     }
     else
@@ -1950,16 +2009,16 @@ void xevem_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, i
         {
             xevem_deblock_cu_ver(pic, x, y, cuw >> 1, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh
                                , ctx->map_cu_mode, ctx->refp, 0, core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
             xevem_deblock_cu_ver(pic, x + MAX_TR_SIZE, y, cuw >> 1, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh
                                , ctx->map_cu_mode, ctx->refp, 0, core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
         }
         else
         {
             xevem_deblock_cu_ver(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh
                                , ctx->map_cu_mode, ctx->refp, 0, core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
         }
     }
 }
@@ -1996,7 +2055,7 @@ static void deblock_tree(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, 
 
         if ( ctx->sps.tool_admvp && ctx->sps.sps_btt_flag )
         {
-            split_struct.tree_cons.changed = tree_cons.mode_cons == eAll && !xeve_is_chroma_split_allowed( cuw, cuh, split_mode );
+            split_struct.tree_cons.changed = tree_cons.mode_cons == eAll && ctx->sps.chroma_format_idc != 0 && !xeve_is_chroma_split_allowed(cuw, cuh, split_mode);
             mode_cons_changed = xeve_signal_mode_cons(&core->tree_cons , &split_struct.tree_cons);
             if (mode_cons_changed)
             {
@@ -2213,7 +2272,9 @@ int xeve_picbuf_get_inbuf(XEVE_CTX * ctx, XEVE_IMGB ** imgb)
             pad[1] = 0;
             pad[2] = 0;
 
-            *imgb = xeve_imgb_create(ctx->param.w, ctx->param.h, XEVE_CS_YCBCR420_10LE, opt, pad, align);
+            int cs = ctx->param.chroma_format_idc == 0 ? XEVE_CS_YCBCR400_10LE : (ctx->param.chroma_format_idc == 1 ? XEVE_CS_YCBCR420_10LE :
+                (ctx->param.chroma_format_idc == 2 ? XEVE_CS_YCBCR422_10LE : XEVE_CS_YCBCR444_10LE));
+            *imgb = xeve_imgb_create(ctx->param.w, ctx->param.h, cs, opt, pad, align);
             xeve_assert_rv(*imgb != NULL, XEVE_ERR_OUT_OF_MEMORY);
 
             ctx->inbuf[i] = *imgb;
@@ -2461,6 +2522,7 @@ int xeve_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
     ctx->map_refi = PIC_CURR(ctx)->map_refi;
     ctx->map_mv = PIC_CURR(ctx)->map_mv;
     ctx->map_unrefined_mv = PIC_CURR(ctx)->map_unrefined_mv;
+    ctx->map_dqp_lah = ctx->pico->sinfo.map_qp_scu;
 
     PIC_MODE(ctx) = PIC_CURR(ctx);
     if(ctx->pic_dbk == NULL)
@@ -2506,7 +2568,6 @@ int xeve_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
     set_active_pps_info(ctx);
     if (ctx->param.rc_type != 0)
     {
-        xeve_rc_frame_est(ctx);
         ctx->qp = xeve_rc_get_qp(ctx);
     }
 
@@ -2586,7 +2647,7 @@ int xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat)
 
     if (ctx->cdsc.rc_type != 0)
     {
-        ctx->rcore->real_bits = stat->write << 3;
+        ctx->rcore->real_bits = (stat->write - stat->sei_size) << 3;
     }
 
     if (imgb_o)
@@ -2677,7 +2738,7 @@ static int ctu_mt_core(void * arg)
     ctb_cnt_in_row = ctx->tile[i].w_ctb; //Total LCUs in the current row
     update_core_loc_param1(ctx, core);
 
-    int bef_cu_qp = ctx->tile[i].qp_prev_eco;
+    int bef_cu_qp = ctx->tile[i].qp_prev_eco[core->thread_cnt];
 
     /* LCU decoding loop */
     while (ctx->tile[i].f_ctb > 0)
@@ -2704,7 +2765,7 @@ static int ctu_mt_core(void * arg)
         ret = ctx->fn_mode_post_lcu(ctx, core);
         xeve_assert_rv(ret == XEVE_OK, ret)
 
-        ctx->tile[i].qp_prev_eco = bef_cu_qp;
+        ctx->tile[i].qp_prev_eco[core->thread_cnt] = bef_cu_qp;
         if (ctx->param.preset->cabac_refine)
         {
             /* entropy coding ************************************************/
@@ -2712,7 +2773,7 @@ static int ctu_mt_core(void * arg)
             int split_allow[6] = { 0, 0, 0, 0, 0, 1 };
             ret = xeve_eco_tree(ctx, core, core->x_pel, core->y_pel, 0, ctx->max_cuwh, ctx->max_cuwh, 0, 1, NO_SPLIT
                               , split_mode_child, 0, split_allow, 0, 0, 0, xeve_get_default_tree_cons(), bs);
-            bef_cu_qp = ctx->tile[i].qp_prev_eco;
+            bef_cu_qp = ctx->tile[i].qp_prev_eco[core->thread_cnt];
         }
 #if GRAB_STAT
         xeve_stat_set_enc_state(FALSE);
@@ -2735,13 +2796,17 @@ static int tile_mt_core(void * arg)
 {
     XEVE_CORE * core = (XEVE_CORE *)arg;
     XEVE_CTX  * ctx = core->ctx;
+    int i;
     int res, ret;
     int temp_store_total_ctb = ctx->tile[core->tile_idx].f_ctb;
     int parallel_task = ctx->tile_cnt == 1 ? ((ctx->cdsc.parallel_task_cnt > ctx->tile[core->tile_idx].h_ctb) ? 
                                              ctx->tile[core->tile_idx].h_ctb : ctx->cdsc.parallel_task_cnt): 1;
     ctx->parallel_rows = parallel_task;
     ctx->tile[core->tile_idx].qp = ctx->sh.qp;
-    ctx->tile[core->tile_idx].qp_prev_eco = ctx->sh.qp;
+    for (i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    {
+        ctx->tile[core->tile_idx].qp_prev_eco[i] = ctx->sh.qp;
+    }
 
     for (int thread_cnt = 1; thread_cnt < parallel_task; thread_cnt++)
     {
@@ -2926,7 +2991,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
     XEVE_APS_GEN * aps_dra;
 
     int         ret;
-    u32         i;
+    u32         i, j;
     int         split_mode_child[4];
     int         split_allow[6] = { 0, 0, 0, 0, 0, 1 };
     int         ctb_cnt_in_tile = 0;
@@ -3147,8 +3212,12 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
                 i = tiles_in_slice[thread_cnt + task_completed];
 
                 ctx->tile[i].qp = ctx->sh.qp;
-                ctx->tile[i].qp_prev_eco = ctx->sh.qp;
+                for (j = 0; j < ctx->cdsc.parallel_task_cnt; j++)
+                {
+                    ctx->tile[i].qp_prev_eco[j] = ctx->sh.qp;
+                }
                 ctx->core[thread_cnt]->tile_idx = i;
+
 
                 initialize_tile(ctx, i, core, thread_cnt);
                 ctx->core[thread_cnt]->thread_cnt = thread_cnt;
@@ -3157,8 +3226,12 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             i = tiles_in_slice[thread_cnt + task_completed];
 
             ctx->tile[i].qp = ctx->sh.qp;
-            ctx->tile[i].qp_prev_eco = ctx->sh.qp;
             ctx->core[thread_cnt]->tile_idx = i;
+
+            for (j = 0; j < ctx->cdsc.parallel_task_cnt; j++)
+            {
+                ctx->tile[i].qp_prev_eco[j] = ctx->sh.qp;
+            }
 
             initialize_tile(ctx, i, core, thread_cnt);
             ctx->core[thread_cnt]->thread_cnt = thread_cnt;
@@ -3174,18 +3247,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             total_tiles_in_slice -= parallel_task;
             task_completed += parallel_task;
         }
-        total_tiles_in_slice = total_tiles_in_slice_copy;
 
-        ctx->fn_loop_filter(ctx, core);
-
-        core->x_lcu = core->y_lcu = 0;
-        core->x_pel = core->y_pel = 0;
-        core->lcu_num = 0;
-        ctx->lcu_cnt = ctx->f_lcu;
-        for (i = 0; i < ctx->f_scu; i++)
-        {
-            MCU_CLR_COD(ctx->map_scu[i]);
-        }
 
         ctx->sh.qp_prev_eco = ctx->sh.qp;
 #if GRAB_STAT
@@ -3197,7 +3259,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         {
             int i = tiles_in_slice[k++];
             ctx->tile[i].qp = ctx->sh.qp;
-            ctx->tile[i].qp_prev_eco = ctx->sh.qp;
+            ctx->tile[i].qp_prev_eco[core->thread_cnt] = ctx->sh.qp;
             core->tile_idx = i;
             ctx->fn_eco_sbac_reset(GET_SBAC_ENC(bs), ctx->sh.slice_type, ctx->sh.qp, ctx->sps.tool_cm_init);
             core->x_lcu = (ctx->tile[i].ctba_rs_first) % ctx->w_lcu; //entry point lcu's x location
@@ -3296,6 +3358,19 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         }
 #endif
 #endif
+        total_tiles_in_slice = total_tiles_in_slice_copy;
+
+        ctx->fn_loop_filter(ctx, core);
+
+        core->x_lcu = core->y_lcu = 0;
+        core->x_pel = core->y_pel = 0;
+        core->lcu_num = 0;
+        ctx->lcu_cnt = ctx->f_lcu;
+        for (i = 0; i < ctx->f_scu; i++)
+        {
+            MCU_CLR_COD(ctx->map_scu[i]);
+        }
+
         XEVE_SBAC* t_sbac;
         t_sbac = GET_SBAC_ENC(bs);
         t_sbac->bin_counter = 0;
@@ -3368,7 +3443,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         {
             int i = tiles_in_slice[k++];
             ctx->tile[i].qp = ctx->sh.qp;
-            ctx->tile[i].qp_prev_eco = ctx->sh.qp;
+            ctx->tile[i].qp_prev_eco[core->thread_cnt] = ctx->sh.qp;
             core->tile_idx = i;
 
             /* CABAC Initialize for each Tile */
@@ -3452,7 +3527,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         int min_cu_h = ctx->min_cuwh;
         int padded_w = ((ctx->w + min_cu_w - 1) / min_cu_w) * min_cu_w;
         int padded_h = ((ctx->h + min_cu_h - 1) / min_cu_h) * min_cu_h;
-        int raw_bits = padded_w * padded_h * ((ctx->sps.bit_depth_luma_minus8 + 8) + 2 * ((ctx->sps.bit_depth_chroma_minus8 + 8) >> log2_sub_widthC_subHeightC));
+        int raw_bits = padded_w * padded_h * ((ctx->sps.bit_depth_luma_minus8 + 8) + (ctx->sps.chroma_format_idc != 0 ? 2 * ((ctx->sps.bit_depth_chroma_minus8 + 8) >> log2_sub_widthC_subHeightC) : 0));
         unsigned int threshold = (CABAC_ZERO_PARAM / 3) * num_bytes_in_units + (raw_bits / 32);
 
         if (bin_counts_in_units >= threshold)
@@ -3491,7 +3566,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 void xeve_itdp(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM])
 {
     xeve_sub_block_itdq(coef, core->log2_cuw, core->log2_cuh, core->qp_y, core->qp_u, core->qp_v, core->nnz, nnz_sub
-                      , ctx->sps.bit_depth_luma_minus8 + 8);
+                      , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.chroma_format_idc);
 }
 
 void xeve_itdp_main(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM])
@@ -3499,7 +3574,7 @@ void xeve_itdp_main(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM],
     XEVEM_CORE *mcore = (XEVEM_CORE*)core;
     xeve_sub_block_itdq_main(coef, core->log2_cuw, core->log2_cuh, core->qp_y, core->qp_u, core->qp_v, core->nnz, nnz_sub, ctx->sps.tool_iqt
                            , mcore->ats_intra_cu, mcore->ats_mode, mcore->ats_inter_info
-                           , ctx->sps.bit_depth_luma_minus8 + 8);
+                           , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.chroma_format_idc);
 }
 
 void xeve_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth)
@@ -3546,7 +3621,7 @@ int xeve_enc(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 
 int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
 {
-    XEVE_PIC  * pic;
+    XEVE_PIC  * pic, * spic;
     XEVE_PICO * pico;
     XEVE_IMGB * imgb;
     XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
@@ -3555,7 +3630,7 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
     ret = ctx->fn_get_inbuf(ctx, &imgb);
     xeve_assert_rv(XEVE_OK == ret, ret);
 
-    imgb->cs = XEVE_CS_SET(XEVE_CF_YCBCR420, ctx->cdsc.codec_bit_depth, 0);
+    imgb->cs = ctx->cdsc.cs;
     xeve_imgb_cpy(imgb, img);
 
     if (ctx->cdsc.ext->tool_dra)
@@ -3593,25 +3668,24 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
     pic->s_c = STRIDE_IMGB2PIC(imgb->s[1]);
 
     pic->imgb = imgb;
-    XEVE_PIC *spic = NULL;
-
     /* generate sub-picture for RC and Forecast */
-    spic = pico->spic;
-    xeve_rc_gen_subpic(pic->y, spic->y, spic->w_l, spic->h_l, pic->s_l, spic->s_l, 10);
-
-    xeve_mset(pico->map_pdir, 0, sizeof(u8) * ctx->f_lcu);
-    xeve_mset(pico->map_mv, 0, sizeof(s16) * ctx->f_lcu * REFP_NUM * MV_D);
-    xeve_mset(pico->map_mv_pga, 0, sizeof(s16) * ctx->f_lcu * REFP_NUM * MV_D);
-    xeve_mset(pico->map_lcu_cost_uni, 0, sizeof(s32) * ctx->f_lcu * 4);
-    xeve_mset(pico->map_lcu_cost_bi, 0, sizeof(s32) * ctx->f_lcu);
-    if (ctx->param.use_dqp)
+    if (ctx->param.use_fcst)
     {
-        xeve_mset(pico->map_qp_offset, 0, sizeof(s32) * ctx->f_lcu);
-        xeve_mset(pico->transfer_cost, 0, sizeof(u16) * ctx->f_lcu);
-    }
-    /*********************************************************************/
-    xeve_picbuf_expand(spic, spic->pad_l, spic->pad_c);
+        spic = pico->spic;
+        xeve_gen_subpic(pic->y, spic->y, spic->w_l, spic->h_l, pic->s_l, spic->s_l, 10);
 
+        xeve_mset(pico->sinfo.map_pdir, 0, sizeof(u8) * ctx->fcst.f_blk);
+        xeve_mset(pico->sinfo.map_pdir_bi, 0, sizeof(u8) * ctx->fcst.f_blk);
+        xeve_mset(pico->sinfo.map_mv, 0, sizeof(s16) * ctx->fcst.f_blk * REFP_NUM * MV_D);
+        xeve_mset(pico->sinfo.map_mv_bi, 0, sizeof(s16) * ctx->fcst.f_blk * REFP_NUM * MV_D);
+        xeve_mset(pico->sinfo.map_mv_pga, 0, sizeof(s16) * ctx->fcst.f_blk * REFP_NUM * MV_D);
+        xeve_mset(pico->sinfo.map_uni_lcost, 0, sizeof(s32) * ctx->fcst.f_blk * 4);
+        xeve_mset(pico->sinfo.map_bi_lcost, 0, sizeof(s32) * ctx->fcst.f_blk);
+        xeve_mset(pico->sinfo.map_qp_blk, 0, sizeof(s32) * ctx->fcst.f_blk);
+        xeve_mset(pico->sinfo.map_qp_scu, 0, sizeof(s8) * ctx->f_scu);
+        xeve_mset(pico->sinfo.transfer_cost, 0, sizeof(u16) * ctx->fcst.f_blk);
+        xeve_picbuf_expand(spic, spic->pad_l, spic->pad_c, ctx->sps.chroma_format_idc);
+    }
     return XEVE_OK;
 }
 
@@ -4102,7 +4176,13 @@ int xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat)
     {
         return XEVE_OK_NO_MORE_FRM;
     }
-
+    if(!FORCE_OUT(ctx))
+    {
+        if (ctx->param.use_fcst)
+        {
+            xeve_forecast_fixed_gop(ctx);
+        }
+    }
     /* store input picture and return if needed */
     if(XEVE_OK_OUT_NOT_AVAILABLE == check_frame_delay(ctx))
     {
@@ -4239,7 +4319,8 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
 
             if (ctx->sps.picture_cropping_flag)
             {
-                for (int i = 0; i < N_C; i++)
+                int end_comp = ctx->sps.chroma_format_idc ? N_C : Y_C;
+                for (int i = 0; i < end_comp; i++)
                 {
                     int cs_offset = i == Y_C ? 2 : 1;
                     imgb->x[i] = ctx->sps.picture_crop_left_offset * cs_offset;
@@ -4313,11 +4394,13 @@ void xeve_malloc_2d(s8*** dst, int size_1d, int size_2d, int type_size)
     }
 }
 
-int xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh)
+int xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int chroma_format_idc)
 {
     int i, j;
     int cuw_scu, cuh_scu;
     int size_8b, size_16b, size_32b, cu_cnt, pixel_cnt;
+    int w_shift = XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc);
+    int h_shift = XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc);
 
     cuw_scu = 1 << log2_cuw;
     cuh_scu = 1 << log2_cuh;
@@ -4367,10 +4450,15 @@ int xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh)
     xeve_malloc_1d((void**)&cu_data->map_cu_mode, size_32b);
     xeve_malloc_1d((void**)&cu_data->depth, size_8b);
 
-    for(i = 0; i < N_C; i++)
+    for(i = Y_C; i < U_C; i++)
     {
-        xeve_malloc_1d((void**)&cu_data->coef[i], (pixel_cnt >> (!!(i)* 2)) * sizeof(s16));
-        xeve_malloc_1d((void**)&cu_data->reco[i], (pixel_cnt >> (!!(i)* 2)) * sizeof(pel));
+        xeve_malloc_1d((void**)&cu_data->coef[i], (pixel_cnt ) * sizeof(s16));
+        xeve_malloc_1d((void**)&cu_data->reco[i], (pixel_cnt) * sizeof(pel));
+    }
+    for(i = U_C; i < N_C; i++)
+    {
+        xeve_malloc_1d((void**)&cu_data->coef[i], (pixel_cnt >> (w_shift + h_shift)) * sizeof(s16));
+        xeve_malloc_1d((void**)&cu_data->reco[i], (pixel_cnt >> (w_shift + h_shift)) * sizeof(pel));
     }
 
     return XEVE_OK;

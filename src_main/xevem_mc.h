@@ -74,13 +74,13 @@ extern XEVE_MC_C      (*xevem_func_bl_mc_l)[2];
 void xeve_mc_main(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM]
                 , int poc_c, pel *dmvr_ref_pred_template, pel dmvr_ref_pred_interpolated[REFP_NUM][(MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT)) * (MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT))]
                 , pel dmvr_half_pred_interpolated[REFP_NUM][(MAX_CU_SIZE + 1) * (MAX_CU_SIZE + 1)], BOOL apply_DMVR, pel dmvr_padding_buf[REFP_NUM][N_C][PAD_BUFFER_STRIDE * PAD_BUFFER_STRIDE]
-                , u8 *cu_dmvr_flag, s16 dmvr_mv[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D], int sps_admvp_flag, int bit_depth_luma, int bit_depth_chroma);
+                , u8 *cu_dmvr_flag, s16 dmvr_mv[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D], int sps_admvp_flag, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc);
 
-void xeve_IBC_mc(int x, int y, int log2_cuw, int log2_cuh, s16 mv[MV_D], XEVE_PIC *ref_pic, pel pred[N_C][MAX_CU_DIM], TREE_CONS tree_cons);
+void xeve_IBC_mc(int x, int y, int log2_cuw, int log2_cuh, s16 mv[MV_D], XEVE_PIC *ref_pic, pel pred[N_C][MAX_CU_DIM], TREE_CONS tree_cons, int chroma_format_idc);
 void xeve_affine_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16 mv[REFP_NUM][VER_NUM][MV_D], XEVE_REFP(*refp)[REFP_NUM]
-                  , pel pred[2][N_C][MAX_CU_DIM], int vertex_num, pel* tmp_buffer, int bit_depth_luma, int bit_depth_chroma);
+                  , pel pred[2][N_C][MAX_CU_DIM], int vertex_num, pel* tmp_buffer, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc);
 void xeve_affine_mc_l(int x, int y, int pic_w, int pic_h, int cuw, int cuh, s16 ac_mv[VER_NUM][MV_D], XEVE_PIC* ref_pic, pel pred[MAX_CU_DIM]
-                    , int vertex_num, pel* tmp_buffer, int bit_depth_luma, int bit_depth_chroma);
+                    , int vertex_num, pel* tmp_buffer, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc);
 
 void xevem_scaled_horizontal_sobel_filter(pel *pred, int pred_stride, int *derivate, int derivate_buf_stride, int width, int height);
 void xevem_scaled_vertical_sobel_filter(pel *pred, int pred_stride, int *derivate, int derivate_buf_stride, int width, int height);

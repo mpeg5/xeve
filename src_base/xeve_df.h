@@ -33,11 +33,11 @@
 
 void xeve_deblock_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8 (*map_refi)[REFP_NUM], s16 (*map_mv)[REFP_NUM][MV_D]
                          , int w_scu, XEVE_REFP (*refp)[REFP_NUM], TREE_CONS tree_cons, u8* map_tidx, int boundary_filtering
-                         , int bit_depth_luma, int bit_depth_chroma
+                         , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc
 );
 void xeve_deblock_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8 (*map_refi)[REFP_NUM], s16 (*map_mv)[REFP_NUM][MV_D]
                          , int w_scu, u32 *map_cu, XEVE_REFP (*refp)[REFP_NUM], TREE_CONS tree_cons, u8 *map_tidx, int boundary_filtering
-                         , int bit_depth_luma, int bit_depth_chroma
+                         , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc
 );
 
 #endif /* _XEVE_DF_H_ */

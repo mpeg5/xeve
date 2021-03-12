@@ -50,6 +50,7 @@
 #define GET_QP(qp,dqp)                             ((qp + dqp + 52) % 52)
 #define GET_LUMA_QP(qp, qp_bd_offset)               (qp + 6 * qp_bd_offset)
 
+
 //fast algorithm
 #define ENC_ECU_DEPTH                                8 // for early CU termination
 #define ENC_ECU_ADAPTIVE                             1 // for early CU termination
@@ -860,6 +861,7 @@ typedef struct _XEVE_PIC
     s16            (*map_mv)[REFP_NUM][MV_D];
     s16            (*map_unrefined_mv)[REFP_NUM][MV_D];
     s8             (*map_refi)[REFP_NUM];
+    s8              *map_dqp_lah;
     u32              list_poc[MAX_NUM_REF_PICS];
     u8               m_alfCtuEnableFlag[3][510];
     int              pic_deblock_alpha_offset;
@@ -892,6 +894,7 @@ struct _PICBUF_ALLOCATOR
     /* arbitrary address, if needs */
     void            *pdata[4];
     int              bit_depth;
+    int              chroma_format_idc;
 };
 
 /*****************************************************************************
@@ -1243,7 +1246,7 @@ typedef struct _XEVE_TILE
     /* first ctb address in raster scan order */
     u16              ctba_rs_first;
     u8               qp;
-    u8               qp_prev_eco;
+    u8               qp_prev_eco[XEVE_MAX_TASK_CNT];
 } XEVE_TILE;
 
 /*****************************************************************************/

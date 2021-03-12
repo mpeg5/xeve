@@ -31,6 +31,8 @@
 #ifndef _XEVE_H_
 #define _XEVE_H_
 
+#include <xeve_exports.h>
+
 #define XEVE_MAX_TASK_CNT               8
 #define MAX_NUM_TILES_ROW               22
 #define MAX_NUM_TILES_COL               20
@@ -371,7 +373,7 @@ typedef struct _XEVE_CDSC
     int            codec_bit_depth;
     int            profile;
     int            level;
-    int            use_dqp;
+    int            qpa;
     int            constrained_intra_pred;
     int            use_deblock;
     int            parallel_task_cnt;
@@ -493,11 +495,11 @@ typedef struct _XEVE_STAT
 /* XEVE instance identifier */
 typedef void  * XEVE;
 
-XEVE xeve_create(XEVE_CDSC * cdsc, int * err);
-void xeve_delete(XEVE id);
-int  xeve_push(XEVE id, XEVE_IMGB * imgb);
-int  xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_config(XEVE id, int cfg, void * buf, int * size);
+XEVE XEVE_EXPORT xeve_create(XEVE_CDSC * cdsc, int * err);
+void XEVE_EXPORT xeve_delete(XEVE id);
+int  XEVE_EXPORT xeve_push(XEVE id, XEVE_IMGB * imgb);
+int  XEVE_EXPORT xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
+int  XEVE_EXPORT xeve_config(XEVE id, int cfg, void * buf, int * size);
 
 #endif /* _XEVE_H_ */
 

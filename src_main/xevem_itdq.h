@@ -39,7 +39,7 @@
 #include "xevem_type.h"
 
 void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, u8 qp_y, u8 qp_u, u8 qp_v, int flag[N_C], int nnz_sub[N_C][MAX_SUB_TB_NUM], int iqt_flag
-                            , u8 ats_intra_cu, u8 ats_mode, u8 ats_inter_info, int bit_depth);
+                            , u8 ats_intra_cu, u8 ats_mode, u8 ats_inter_info, int bit_depth, int chroma_format_idc);
 void xeve_init_multi_tbl();
 void xeve_init_multi_inv_tbl();
 

@@ -38,14 +38,14 @@ void       xeve_pic_free(PICBUF_ALLOCATOR *pa, XEVE_PIC *pic);
 void xeve_bsw_skip_slice_size(XEVE_BSW *bs);
 int  xeve_bsw_write_nalu_size(XEVE_BSW *bs);
 
-void xeve_diff_pred(int x, int y, int log2_cuw, int log2_cuh, XEVE_PIC *org, pel pred[N_C][MAX_CU_DIM], s16 diff[N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma);
+void xeve_diff_pred(int x, int y, int log2_cuw, int log2_cuh, XEVE_PIC *org, pel pred[N_C][MAX_CU_DIM], s16 diff[N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc);
 
 #define SBAC_STORE(dst, src) xeve_mcpy(&dst, &src, sizeof(XEVE_SBAC))
 #define SBAC_LOAD(dst, src)  xeve_mcpy(&dst, &src, sizeof(XEVE_SBAC))
 #define DQP_STORE(dst, src) xeve_mcpy(&dst, &src, sizeof(XEVE_DQP))
 #define DQP_LOAD(dst, src)  xeve_mcpy(&dst, &src, sizeof(XEVE_DQP))
 void xeve_set_qp(XEVE_CTX *ctx, XEVE_CORE *core, u8 qp);
-int  xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh);
+int  xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int chroma_format_idc);
 int  xeve_delete_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh);
 
 MODE_CONS xeve_derive_mode_cons(XEVE_CTX *ctx, int luc_num, int cup);
@@ -76,8 +76,9 @@ double mode_check_intra(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_c
 int check_nev_block(XEVE_CTX *ctx, int x0, int y0, int log2_cuw, int log2_cuh, int *do_curr, int *do_split, int cud, int *nbr_map_skip_flag, XEVE_CORE * core);
 int init_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int qp_y, int qp_u, int qp_v);
 void get_min_max_qp(XEVE_CTX * ctx, XEVE_CORE *core, s8 * min_qp, s8 * max_qp, int * is_dqp_set, SPLIT_MODE split_mode, int cuw, int cuh, u8 qp, int x0, int y0);
-int copy_cu_data(XEVE_CU_DATA *dst, XEVE_CU_DATA *src, int x, int y, int log2_cuw, int log2_cuh, int log2_cus, int cud, TREE_CONS tree_cons);
-void mode_cpy_rec_to_ref(XEVE_CORE *core, int x, int y, int w, int h, XEVE_PIC *pic, TREE_CONS tree_cons);
+void set_lambda(XEVE_CTX* ctx, XEVE_CORE * core, XEVE_SH* sh, s8 qp);
+int copy_cu_data(XEVE_CU_DATA *dst, XEVE_CU_DATA *src, int x, int y, int log2_cuw, int log2_cuh, int log2_cus, int cud, TREE_CONS tree_cons, int chroma_format_idc);
+void mode_cpy_rec_to_ref(XEVE_CORE *core, int x, int y, int w, int h, XEVE_PIC *pic, TREE_CONS tree_cons, int chroma_format_idc);
 int get_cu_pred_data(XEVE_CU_DATA *src, int x, int y, int log2_cuw, int log2_cuh, int log2_cus, int cud, XEVE_MODE *mi, XEVE_CTX *ctx, XEVE_CORE *core);
 
 int mode_init_tile(XEVE_CTX *ctx, int tile_idx);

@@ -1043,8 +1043,11 @@ void xeve_apply_dra_from_array(XEVE_IMGB * dst, XEVE_IMGB * src, SIG_PARAM_DRA *
     int bit_depth = XEVE_CS_GET_BIT_DEPTH(src->cs);
     xeve_construct_dra_from_array(dra_control_array, tmp_dra_mapping, dra_id, bit_depth);
 
-    xeve_apply_dra_chroma_plane(dst, src, tmp_dra_mapping, 1, backward_map);
-    xeve_apply_dra_chroma_plane(dst, src, tmp_dra_mapping, 2, backward_map);
+    if(XEVE_CFI_FROM_CF(XEVE_CS_GET_FORMAT(dst->cs)))
+    {
+        xeve_apply_dra_chroma_plane(dst, src, tmp_dra_mapping, 1, backward_map);
+        xeve_apply_dra_chroma_plane(dst, src, tmp_dra_mapping, 2, backward_map);
+    }
     xeve_apply_dra_luma_plane(dst, src, tmp_dra_mapping, 0, backward_map);
 }
 

@@ -1,0 +1,15 @@
+# --- xeveb.pc.in file ---
+prefix=@CMAKE_INSTALL_PREFIX@ 
+exec_prefix=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@
+libdir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@
+includedir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@/@LIB_NAME_BASE@
+
+Name: xeveb
+Description: eXtra-fast Essential Video Encoder (XEVE) (BASE profile)
+
+Version: @PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@
+
+Requires:
+Libs: -L${libdir} -lxeveb
+
+Cflags: -I${includedir}

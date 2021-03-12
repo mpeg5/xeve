@@ -77,13 +77,18 @@ operation: if(sign == 0) return val, else if(sign == 1) return -val */
 #define XEVE_LOG2(v)                (xeve_tbl_log2[v])
 #define XEVE_ALIGN_VAL(val, align)  ((((val)+(align)-1)/(align))*(align))
 
+#define XEVE_CFI_FROM_CF(cf) ((cf == XEVE_CF_YCBCR400) ? 0 : (cf == XEVE_CF_YCBCR420) ? 1 : (cf == XEVE_CF_YCBCR422) ? 2 : 3)
+#define XEVE_CF_FROM_CFI(chroma_format_idc)  ((chroma_format_idc == 0) ? XEVE_CF_YCBCR400 : (chroma_format_idc == 1) ? \
+                                        XEVE_CF_YCBCR420 : (chroma_format_idc == 2) ? XEVE_CF_YCBCR422 : XEVE_CF_YCBCR444)
+#define XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc) ((chroma_format_idc == 0) ? 1 : (chroma_format_idc == 1) ? 1 : (chroma_format_idc == 2) ? 1 : 0)
+#define XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc) ((chroma_format_idc == 0) ? 1 : (chroma_format_idc == 1) ? 1 : 0)
+
 u16  xeve_get_avail_inter(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int cuw, int cuh, u32 *map_scu, u8* map_tidx);
 u16  xeve_get_avail_intra(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int log2_cuw, int log2_cuh, u32 *map_scu, u8* map_tidx);
-XEVE_PIC* xeve_picbuf_alloc(int w, int h, int pad_l, int pad_c, int bit_depth, int *err);
+XEVE_PIC* xeve_picbuf_alloc(int w, int h, int pad_l, int pad_c, int bit_depth, int *err, int chroma_format_idc);
 void xeve_picbuf_free(XEVE_PIC *pic);
-void xeve_picbuf_expand(XEVE_PIC *pic, int exp_l, int exp_c);
+void xeve_picbuf_expand(XEVE_PIC *pic, int exp_l, int exp_c, int chroma_format_idc);
 void xeve_poc_derivation(XEVE_SPS sps, int tid, XEVE_POC *poc);
-XEVE_PIC* xeve_alloc_spic_l(int w, int h, int pad_l, int pad_c, int * err, u8 bit_depth);
 void xeve_picbuf_rc_free(XEVE_PIC *pic);
 void xeve_check_motion_availability(int scup, int cuw, int cuh, int w_scu, int h_scu, int neb_addr[MAX_NUM_POSSIBLE_SCAND], int valid_flag[MAX_NUM_POSSIBLE_SCAND], u32 *map_scu, u16 avail_lr, int num_mvp, int is_ibc, u8 * map_tidx);
 int  xeve_get_default_motion(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int valid_flag[MAX_NUM_POSSIBLE_SCAND], s8 cur_refi, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], s8 *refi, s16 mv[MV_D]
@@ -94,6 +99,7 @@ void xeve_get_motion(int scup, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[R
                    , XEVE_REFP(*refp)[REFP_NUM], int cuw, int cuh, int w_scu, u16 avail, s8 refi[MAX_NUM_MVP], s16 mvp[MAX_NUM_MVP][MV_D]);
 void xeve_get_motion_skip(int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM], int cuw, int cuh, int w_scu
                         , s8 refi[REFP_NUM][MAX_NUM_MVP], s16 mvp[REFP_NUM][MAX_NUM_MVP][MV_D], u16 avail_lr);
+XEVE_PIC* xeve_alloc_spic_l(int w, int h);
 
 enum
 {

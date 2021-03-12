@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.12)
 
 # Check input arguments.
 if(NOT SET_PROF)
@@ -11,8 +11,17 @@ else()
   message("SET_PORF should be BASE or MAIN [Input error: ${SET_PROF}]")
   return()
 endif()
+
+option(XEVE_APP_STATIC_BUILD "xeve_app will be statically linked against static xeve library" ON)
+if(XEVE_APP_STATIC_BUILD)
+    add_definitions(-DXEVE_STATIC_DEFINE)
+endif(XEVE_APP_STATIC_BUILD)
+
+cmake_policy(SET CMP0048 NEW)
+set(CMAKE_C_STANDARD 99)
+
 # Maps to a solution file (XEVE.sln).
-project (XEVE)
+project (XEVE VERSION 1.0.0)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Set compiler flags and options. 
@@ -46,3 +55,14 @@ if(("${SET_PROF}" STREQUAL "MAIN"))
    add_subdirectory(src_main)
 endif()
 add_subdirectory(app)
+
+# uninstall target
+if(NOT TARGET uninstall)
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+
+  add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+endif()

@@ -45,7 +45,7 @@ int xeve_pintra_create_main(XEVE_CTX * ctx, int complexity);
 int xeve_pinter_create_main(XEVE_CTX * ctx, int complexity);
 
 /* IBC prediction */
-#define GET_BV_COST(ctx, mv_bits)  ((u32)(ctx->sqrt_lambda[0] * mv_bits / 65536.0))
+#define GET_BV_COST(ctx, mv_bits)  ((u32)(core->sqrt_lambda[0] * mv_bits / 65536.0))
 
 u32 get_bv_cost_bits(int mv_x, int mv_y);
 int xeve_pibc_create(XEVE_CTX * ctx, int complexity);

@@ -517,7 +517,7 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
     s64 d64_best_cost = 0;
     s64 d64_base_cost = 0;
     s64 d64_coded_cost = 0;
-    s64 d64_uncoded_cost = 0;
+    s64 d64_uncoded_cost = 0;       
     s64 d64_block_uncoded_cost = 0;
     s64 err;
 
@@ -551,7 +551,7 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
     xeve_mset(dst_tmp, 0, sizeof(s16)*max_num_coef);
 
     if (sum_all == 0)
-    {
+    {       
         return nnz;
     }
 
@@ -732,12 +732,18 @@ int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM
     int log2_h_sub = (log2_cuh > MAX_TR_LOG2) ? MAX_TR_LOG2 : log2_cuh;
     int loop_w = (log2_cuw > MAX_TR_LOG2) ? (1 << (log2_cuw - MAX_TR_LOG2)) : 1;
     int loop_h = (log2_cuh > MAX_TR_LOG2) ? (1 << (log2_cuh - MAX_TR_LOG2)) : 1;
+    int w_shift = ctx->param.cs_w_shift;
+    int h_shift = ctx->param.cs_h_shift;
     int stride = (1 << log2_cuw);
     int sub_stride = (1 << log2_w_sub);
     u8 qp[N_C] = { core->qp_y, core->qp_u, core->qp_v };
-    double lambda[N_C] = { ctx->lambda[0], ctx->lambda[1], ctx->lambda[2] };
+    double lambda[N_C] = { core->lambda[0], core->lambda[1], core->lambda[2] };
     int nnz_temp[N_C] = {0};
     xeve_mset(core->nnz_sub, 0, sizeof(int) * N_C * MAX_SUB_TB_NUM);
+    if(!ctx->sps.chroma_format_idc)
+    {
+        run[1] = run[2] = 0;
+    }
 
     for(j = 0; j < loop_h; j++)
     {
@@ -747,12 +753,15 @@ int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM
             {
                 if(run[c])
                 {
-                    int pos_sub_x = i * (1 << (log2_w_sub - !!c));
-                    int pos_sub_y = j * (1 << (log2_h_sub - !!c)) * (stride >> (!!c));
+                    int pos_sub_x = c == 0 ? (i * (1 << (log2_w_sub))) : (i * (1 << (log2_w_sub - w_shift)));
+                    int pos_sub_y = c == 0 ? j * (1 << (log2_h_sub)) * (stride) : j * (1 << (log2_h_sub - h_shift)) * (stride >> w_shift);
 
                     if(loop_h + loop_w > 2)
                     {
-                        xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), coef_temp_buf[c], sub_stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
+                        if(c==0)
+                            xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride, coef_temp_buf[c], sub_stride, log2_w_sub, log2_h_sub);
+                        else
+                            xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, coef_temp_buf[c], sub_stride >> w_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
                         coef_temp[c] = coef_temp_buf[c];
                     }
                     else
@@ -761,12 +770,18 @@ int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM
                     }
 
                     int scale = xeve_quant_scale[qp[c] % 6];
-                    core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, slice_type, c, is_intra, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.preset->rdoq);
+                    if(c==0)
+                        core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub, log2_h_sub, scale, slice_type, c, is_intra, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.preset->rdoq);
+                    else
+                        core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale, slice_type, c, is_intra, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.preset->rdoq);
                     nnz_temp[c] += core->nnz_sub[c][(j << 1) | i];
 
                     if(loop_h + loop_w > 2)
                     {
-                        xeve_block_copy(coef_temp_buf[c], sub_stride >> (!!c), coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
+                        if(c==0)
+                            xeve_block_copy(coef_temp_buf[c], sub_stride, coef[c] + pos_sub_x + pos_sub_y, stride, log2_w_sub, log2_h_sub);
+                        else
+                            xeve_block_copy(coef_temp_buf[c], sub_stride >> w_shift, coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
                     }
                 }
             }

@@ -372,13 +372,17 @@ void xeve_average_16b_no_clip(s16 *src, s16 *ref, s16 *dst, int s_src, int s_ref
     }
 }
 
-void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma)
+void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc)
 {
-    XEVE_PIC    *ref_pic;
-    int          qpel_gmv_x, qpel_gmv_y;
-    int          bidx = 0;
-    s16          mv_t[REFP_NUM][MV_D];
-    s16          mv_before_clipping[REFP_NUM][MV_D]; //store it to pass it to interpolation function for deriving correct interpolation filter
+    XEVE_PIC  * ref_pic;
+    int         qpel_gmv_x, qpel_gmv_y;
+    int         bidx = 0;
+    s16         mv_t[REFP_NUM][MV_D];
+    s16         mv_before_clipping[REFP_NUM][MV_D]; //store it to pass it to interpolation function for deriving correct interpolation filter
+    int         w_shift = XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc);
+    int         h_shift = XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc);
+    int         chroma_w_fac = 2 / (w_shift + 1);
+    int         chroma_h_fac = 2 / (h_shift + 1);
 
     mv_before_clipping[REFP_0][MV_X] = mv[REFP_0][MV_X];
     mv_before_clipping[REFP_0][MV_Y] = mv[REFP_0][MV_Y];
@@ -398,8 +402,13 @@ void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM]
         qpel_gmv_y = (y << 2) + mv_t[REFP_0][MV_Y];
 
         xeve_mc_l(mv_before_clipping[REFP_0][MV_X] << 2, mv_before_clipping[REFP_0][MV_Y] << 2, ref_pic->y, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_l, w, pred[0][Y_C], w, h, bit_depth_luma);
-        xeve_mc_c(mv_before_clipping[REFP_0][MV_X] << 2, mv_before_clipping[REFP_0][MV_Y] << 2, ref_pic->u, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_c, w >> 1, pred[0][U_C], w >> 1, h >> 1, bit_depth_chroma);
-        xeve_mc_c(mv_before_clipping[REFP_0][MV_X] << 2, mv_before_clipping[REFP_0][MV_Y] << 2, ref_pic->v, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_c, w >> 1, pred[0][V_C], w >> 1, h >> 1, bit_depth_chroma);
+        if(chroma_format_idc)
+        {
+            xeve_mc_c(mv_before_clipping[REFP_0][MV_X] << 2, mv_before_clipping[REFP_0][MV_Y] << 2, ref_pic->u, (qpel_gmv_x << 2)*chroma_w_fac, (qpel_gmv_y << 2)*chroma_h_fac, ref_pic->s_c, w >> w_shift
+                    , pred[0][U_C], w >> w_shift, h >> h_shift, bit_depth_chroma);
+            xeve_mc_c(mv_before_clipping[REFP_0][MV_X] << 2, mv_before_clipping[REFP_0][MV_Y] << 2, ref_pic->v, (qpel_gmv_x << 2)*chroma_w_fac, (qpel_gmv_y << 2)*chroma_h_fac, ref_pic->s_c, w >> w_shift
+                    , pred[0][V_C], w >> w_shift, h >> h_shift, bit_depth_chroma);
+        }
 
         bidx++;
     }
@@ -421,8 +430,13 @@ void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM]
         qpel_gmv_y = (y << 2) + mv_t[REFP_1][MV_Y];
 
         xeve_mc_l(mv_before_clipping[REFP_1][MV_X] << 2, mv_before_clipping[REFP_1][MV_Y] << 2, ref_pic->y, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_l, w, pred[bidx][Y_C], w, h, bit_depth_luma);
-        xeve_mc_c(mv_before_clipping[REFP_1][MV_X] << 2, mv_before_clipping[REFP_1][MV_Y] << 2, ref_pic->u, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_c, w >> 1, pred[bidx][U_C], w >> 1, h >> 1, bit_depth_chroma);
-        xeve_mc_c(mv_before_clipping[REFP_1][MV_X] << 2, mv_before_clipping[REFP_1][MV_Y] << 2, ref_pic->v, (qpel_gmv_x << 2), (qpel_gmv_y << 2), ref_pic->s_c, w >> 1, pred[bidx][V_C], w >> 1, h >> 1, bit_depth_chroma);
+        if(chroma_format_idc)
+        {
+            xeve_mc_c(mv_before_clipping[REFP_1][MV_X] << 2, mv_before_clipping[REFP_1][MV_Y] << 2, ref_pic->u, (qpel_gmv_x << 2)*chroma_w_fac, (qpel_gmv_y << 2)*chroma_h_fac, ref_pic->s_c, w >> w_shift
+                    , pred[bidx][U_C], w >> w_shift, h >> h_shift, bit_depth_chroma);
+            xeve_mc_c(mv_before_clipping[REFP_1][MV_X] << 2, mv_before_clipping[REFP_1][MV_Y] << 2, ref_pic->v, (qpel_gmv_x << 2)*chroma_w_fac, (qpel_gmv_y << 2)*chroma_h_fac, ref_pic->s_c, w >> w_shift
+                    , pred[bidx][V_C], w >> w_shift, h >> h_shift, bit_depth_chroma);
+        }
 
         bidx++;
     }
@@ -430,9 +444,12 @@ void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM]
     if(bidx == 2)
     {
         xeve_func_average_no_clip(pred[0][Y_C], pred[1][Y_C], pred[0][Y_C], w, w, w, w, h);
-        w >>= 1;
-        h >>= 1;
-        xeve_func_average_no_clip(pred[0][U_C], pred[1][U_C], pred[0][U_C], w, w, w, w, h);
-        xeve_func_average_no_clip(pred[0][V_C], pred[1][V_C], pred[0][V_C], w, w, w, w, h);
+        w >>= w_shift;
+        h >>= h_shift;
+        if(chroma_format_idc)
+        {
+            xeve_func_average_no_clip(pred[0][U_C], pred[1][U_C], pred[0][U_C], w, w, w, w, h);
+            xeve_func_average_no_clip(pred[0][V_C], pred[1][V_C], pred[0][V_C], w, w, w, w, h);
+        }
     }
 }

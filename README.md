@@ -21,7 +21,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 
 ### Linux (64-bit)
 - Build Requirements
-  - CMake 3.5 or later (download from [https://cmake.org/](https://cmake.org/))
+  - CMake 3.12 or later (download from [https://cmake.org/](https://cmake.org/))
   - GCC 5.4.0 or later
   
 - Build Instructions for **Baseline Profile**
@@ -91,23 +91,24 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 ## How to use
 XEVE supports all profiles of EVC. Examples of configure file of coding structures are provided in **cfg** folder.
 
-| OPTION                | DEFAULT   | DESCRIPTION                                    |
-|-----------------------|-----------|------------------------------------------------|
-| -i, --input           | -         | file name of input video                       |
-| -o, --output          | -         | file name of output bitstream                  |
-| -w, --width           | -         | pixel width of input video                     |
-| -h, --height          | -         | pixel height of input video                    |
-| -z, --hz              | -         | frame rate (Hz)                                |
-| -f, --frames          | -         | maximum number of frames to be encoded         |
-| -q, --op_qp           | 32        | QP value (0~51)                                |
-| -d, --input_bit_depth | 8         | input bitdepth (8, 10)                         |
-| -m, --parallel_task   | 0         | mumber of threads to be created                |  
-| -\-profile            | baseline  | index of profile (baseline, main)              |
-| -\-config             | -         | file name of configuration                     | 
-| -\-rc_type            | -         | 0 (rc_off) / 1(rc_on)                          | 
-| -\-bps                | -         | bits per second                                | 
-| -\-vbv_msec           | -         | vbv size in msec                               | 
-| -\-preset             | reference | preset of xeve (fast, medium, slow, reference) | 
+| OPTION                | DEFAULT   | DESCRIPTION                                                 |
+|-----------------------|-----------|-------------------------------------------------------------|
+| -i, --input           | -         | file name of input video                                    |
+| -o, --output          | -         | file name of output bitstream                               |
+| -w, --width           | -         | pixel width of input video                                  |
+| -h, --height          | -         | pixel height of input video                                 |
+| -z, --hz              | -         | frame rate (Hz)                                             |
+| -f, --frames          | -         | maximum number of frames to be encoded                      |
+| -q, --op_qp           | 32        | QP value (0~51)                                             |
+| -d, --input_bit_depth | 8         | input bitdepth (8, 10)                                      |
+| -m, --parallel_task   | 0         | mumber of threads to be created                             |  
+| -\-profile            | baseline  | index of profile (baseline, main)                           |
+| -\-config             | none      | file name of configuration                                  | 
+| -\-rc_type            | 0         | 0(rc_off) / 1(CBR, fixed hierarchy bit) / 2 (CBR, equal bit)| 
+| -\-bps                | 0.1M      | bits per second (bps, Kbps(K,k), Mbps (M,m))                | 
+| -\-vbv_msec           | 2000      | vbv size in msec                                            | 
+| -\-preset             | reference | preset of xeve (fast, medium, slow, reference)              | 
+| -\-qpa                | 0         | block qp adaptaion 0(off) / 1(on)                           | 
 
 >More optins can be found when type **xeve_app** only.   
  

@@ -39,6 +39,7 @@ int xeve_pintra_set_complexity(XEVE_CTX * ctx, int complexity);
 int xeve_pintra_init_tile(XEVE_CTX * ctx, int tile_idx);
 int xeve_pintra_analyze_lcu(XEVE_CTX * ctx, XEVE_CORE * core);
 double xeve_pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
+double xeve_pintra_analyze_cu_simple(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, int log2_cuw, int log2_cuh, s16 coef[N_C][MAX_CU_DIM]);
 
 /* Inter prediction */
 extern XEVE_PRED_INTER_COMP tbl_inter_pred_comp[2];

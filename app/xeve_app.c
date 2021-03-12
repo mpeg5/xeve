@@ -99,10 +99,17 @@ static int get_conf(XEVE_CDSC * cdsc)
     cdsc->iperiod = op_iperiod;
     cdsc->max_b_frames = op_max_b_frames;
     cdsc->level = op_level;
-    cdsc->use_dqp = op_use_dqp;
+    cdsc->qpa= op_qpa;
     cdsc->ref_pic_gap_length = op_ref_pic_gap_length;
     cdsc->inp_bit_depth = op_inp_bit_depth;
     cdsc->codec_bit_depth = op_codec_bit_depth;
+    int color_format = op_chroma_format_idc == 0 ? XEVE_CF_YCBCR400 : (op_chroma_format_idc == 1 ? XEVE_CF_YCBCR420 :
+                      (op_chroma_format_idc == 2 ? XEVE_CF_YCBCR422 : (op_chroma_format_idc == 3 ? XEVE_CF_YCBCR444 : XEVE_CF_UNKNOWN)));
+    if (color_format == XEVE_CF_UNKNOWN)
+    {
+        return XEVE_ERR;
+    }
+    cdsc->cs = XEVE_CS_SET(color_format, op_codec_bit_depth, 0);
     cdsc->constrained_intra_pred = op_constrained_intra_pred;
     cdsc->use_deblock = op_tool_deblocking;
 
@@ -139,7 +146,23 @@ static int get_conf(XEVE_CDSC * cdsc)
     cdsc->inter_slice_type = op_inter_slice_type == 0 ? 0/*SLICE_B*/ : 1/*SLICE_P*/;
     cdsc->add_qp_frame = op_add_qp_frames;
     cdsc->rc_type = op_rc_type; //rc_off =0 , rc_cbr = 1
-    cdsc->bps = op_bps;
+
+    if (strchr(op_bps, 'K') || strchr(op_bps, 'k'))
+    {
+        char *tmp = strtok(op_bps, "Kk ");
+        cdsc->bps = atof(tmp) * 1000;
+    }
+    else if (strchr(op_bps, 'M') || strchr(op_bps, 'm'))
+    {
+        char *tmp = strtok(op_bps, "Mm ");
+        cdsc->bps = atof(tmp) * 1000000;
+    }
+    else
+    {
+        cdsc->bps = atoi(op_bps);
+    }
+    sprintf(op_bps, "%d", cdsc->bps);
+
     cdsc->vbv_msec = op_vbv_msec;
     cdsc->use_filler_flag = 0;
     cdsc->num_pre_analysis_frames = 0;
@@ -184,6 +207,7 @@ static int get_conf(XEVE_CDSC * cdsc)
         cdsc_ext->tile_array_in_slice[1] = (cdsc_ext->tile_columns * cdsc_ext->tile_rows) - 1;
         cdsc_ext->num_remaining_tiles_in_slice_minus1[0] = op_num_remaining_tiles_in_slice[0] - 1;
         cdsc_ext->num_slice_in_pic = op_num_slice_in_pic;
+        cdsc_ext->cu_qp_delta_area = op_cu_qp_delta_area;
     }
     else
     {
@@ -623,7 +647,7 @@ static void print_config(XEVE id)
 
     if(op_flag[OP_RC_TYPE])
     {
-    logv2("\tBit_Rate                 = %d\n", op_bps);
+    logv2("\tBit_Rate                 = %s\n", op_bps);
     }
 }
 
@@ -812,12 +836,12 @@ int main(int argc, const char **argv)
     }
 
     /* create image lists */
-    if(imgb_list_alloc(ilist_org, cdsc.w, cdsc.h, op_inp_bit_depth))
+    if(imgb_list_alloc(ilist_org, cdsc.w, cdsc.h, op_inp_bit_depth, XEVE_CS_GET_FORMAT(cdsc.cs)))
     {
         logv0("cannot allocate image list for original image\n");
         return -1;
     }
-    if(imgb_list_alloc(ilist_rec, cdsc.w, cdsc.h, op_out_bit_depth))
+    if(imgb_list_alloc(ilist_rec, cdsc.w, cdsc.h, op_out_bit_depth, XEVE_CS_GET_FORMAT(cdsc.cs)))
     {
         logv0("cannot allocate image list for reconstructed image\n");
         return -1;
@@ -973,13 +997,14 @@ int main(int argc, const char **argv)
             }
             else if (ret == XEVE_OK)
             {
-            /* release recon image */
-            imgb_list_make_unused(ilist_rec, pic_ocnt);
-            pic_ocnt++;
+                /* release recon image */
+                imgb_list_make_unused(ilist_rec, pic_ocnt);
+                pic_ocnt++;
             }
             bitrate += (stat.write - stat.sei_size);
 
-            if (op_verbose >= VERBOSE_SIMPLE) {
+            if (op_verbose >= VERBOSE_SIMPLE)
+            {
                 int total_time = ((int)xeve_clk_msec(clk_tot) / 1000);
                 int h = total_time / 3600;
                 total_time = total_time % 3600;
@@ -1032,9 +1057,9 @@ int main(int argc, const char **argv)
         }
         else if (ret == XEVE_OK)
         {
-        /* release recon image */
-        imgb_list_make_unused(ilist_rec, pic_ocnt);
-        pic_ocnt++;
+            /* release recon image */
+            imgb_list_make_unused(ilist_rec, pic_ocnt);
+            pic_ocnt++;
         }
     }
     if(pic_icnt != pic_ocnt)

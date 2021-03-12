@@ -145,6 +145,74 @@ typedef struct _XEVE_ALF XEVE_ALF;
 typedef struct _XEVE_CORE XEVE_CORE;
 typedef struct _XEVE_IBC_HASH XEVE_IBC_HASH;
 typedef struct _XEVE_RC_PARAM XEVE_RC_PARAM;
+typedef struct _XEVE_RCORE XEVE_RCORE;
+typedef struct _XEVE_RC XEVE_RC;
+
+/* forecast information */
+typedef struct _XEVE_FCST
+{
+    /*block size of sub(half) image*/
+    int                   log2_fcst_blk_spic;
+    int                   w_blk;
+    int                   h_blk;
+    int                   f_blk;
+
+}XEVE_FCST;
+
+typedef struct _XEVE_SPIC_INFO
+{
+
+    /* number of sra unit ([0]: ICNT_P1 /[1]: ICNT_P2 / [2]: ICNT_PGA) */
+    u16                  icnt[3];
+
+    /* pred direction map (PRED_L0, PRED_L1, PRED_BI) */
+    u8                 * map_pdir;
+
+    /* pred direction map for map_mv_bi (PRED_L0, PRED_L1, PRED_BI) */
+    u8                 * map_pdir_bi;
+
+    /* pred direction map for b refrenced (PRED_L0, PRED_L1, PRED_BI) */
+    s8                   ref_pic[REFP_NUM];
+
+    /* sub-picture motion vector map for every 32x32 unit */
+    s16                (* map_mv)[REFP_NUM][MV_D];
+    s16                (* map_mv_bi)[REFP_NUM][MV_D];
+    s16                (* map_mv_pga)[REFP_NUM][MV_D];
+
+    /* decided slice type by forecast */
+    s32                     slice_type;
+
+    /* decided slice depth by forecast */
+    s32                     slice_depth;
+
+    /* complexity type
+       0 : normal
+       1 : slow scene  (ex: close up, outpocusing scene)
+       2 : blank scene (ex: blank screen or stopped screen) */
+    s32                     scene_type;
+
+    /*[0] sra [1]: P1 / [2]: P2 / [3]: PGA */
+    s32                   uni_est_cost[4];
+    s32                   bi_fcost;
+
+    /* uni direction lcu cost
+        [0] : sra lcu cost
+        [1] : ser lcu cost with -1 picture
+        [2] : ser lcu cost with -2 picture
+        [3] : ser lcu cost with the previous gop anchor */
+    s32                 (* map_uni_lcost)[4];
+
+    /* bi-ser lcu cost */
+    s32                 * map_bi_lcost;
+    /* adaptive quantization qp offset */
+    s32                   * map_qp_blk;
+    /* adaptive quantization qp offset in scu map*/
+    s8                    * map_qp_scu;
+    /* lcu-tree transfer cost */
+    u16                  * transfer_cost;
+
+
+}XEVE_SPIC_INFO;
 
 /*****************************************************************************
  * original picture buffer structure
@@ -157,33 +225,14 @@ typedef struct _XEVE_PICO
     u32                 pic_icnt;
     /* be used for encoding input */
     u8                  is_used;
-    /* address of sub-picture */
+
+    /* spic for mode */
+    XEVE_PIC          * spicm;
+    /* spic information for forecast and RC*/
+    XEVE_SPIC_INFO      sinfo;
+    /* address of sub-picture org */
     XEVE_PIC          * spic;
-    s32                 slice_type;
-    s32                 slice_depth;
-    s32                 scene_type;
-    /* adaptive quantization qp offset */
-    s32               * map_qp_offset;
-    /*[0] intra [1]: Uni_1 / [2]: Uni_2 / [3]: Uni_3 */
-    s32                 uni_est_cost[4];
-    s32                 bi_fcost;
-    /* number of intra unit ([0]: ICNT_P1 /[1]: ICNT_P2 / [2]: ICNT_PGA) */
-    u16                 icnt[3];
-    /* pred direction map (PRED_L0, PRED_L1, PRED_BI) */
-    u8                * map_pdir;
-    /* lcu-tree transfer cost */
-    u16               * transfer_cost;
-    /* sub-picture motion vector map for every 32x32 unit */
-    s16              (* map_mv)[REFP_NUM][MV_D];
-    s16              (* map_mv_pga)[REFP_NUM][MV_D];
-    /* uni direction lcu cost
-    [0] : intra lcu cost
-    [1] : inter lcu cost with -1 picture
-    [2] : inter lcu cost with -2 picture
-    [3] : inter lcu cost with the previous gop anchor */
-    s32              (* map_lcu_cost_uni)[4];
-    /* bi-inter lcu cost */
-    s32               * map_lcu_cost_bi;
+
 } XEVE_PICO;
 
 /*****************************************************************************
@@ -366,7 +415,7 @@ struct _XEVE_PINTER
     /* ME function (Full-ME or Fast-ME) */
     u32 (*fn_me)(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2_cuh, s8 *refi, int lidx, s16 mvp[MV_D], s16 mv[MV_D], int bi, int bit_depth_luma);
     /* AFFINE ME function (Gradient-ME) */
-    u32 (*fn_affine_me)(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2_cuh, s8 *refi, int lidx, s16 mvp[VER_NUM][MV_D], s16 mv[VER_NUM][MV_D], int bi, int vertex_num, pel *tmp, int bit_depth_luma, int bit_depth_chroma);
+    u32 (*fn_affine_me)(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2_cuh, s8 *refi, int lidx, s16 mvp[VER_NUM][MV_D], s16 mv[VER_NUM][MV_D], int bi, int vertex_num, pel *tmp, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc);
     s8 (*fn_get_first_refi)(XEVE_CTX *ctx, XEVE_CORE *core, int ref_idx, int pidx, int cuw, int cuh);
     void (*fn_save_best_info)(XEVE_CTX *ctx, XEVE_CORE *core, int pidx);
     void (*fn_load_best_info)(XEVE_CTX *ctx, XEVE_CORE *core, int pidx);
@@ -467,7 +516,8 @@ typedef struct _XEVE_PARAM
     /* start bumping process if force_output is on */
     int                 force_output;
     int                 gop_size;
-    int                 use_dqp;
+    int                 qpa;
+    int                 use_fcst;
     int                 use_closed_gop;
     int                 use_ibc_flag;
     int                 ibc_search_range_x;
@@ -506,7 +556,9 @@ typedef struct _XEVE_PARAM
     /* vbv parameters */
     int                 vbv_buffer_size;
     /* vbv buffer size */
-
+    int                 chroma_format_idc;
+    int                 cs_w_shift;
+    int                 cs_h_shift;
 } XEVE_PARAM;
 
 /*****************************************************************************
@@ -521,97 +573,6 @@ typedef struct _XEVE_RCBE
     double       offset;
     double       decayed;
 } XEVE_RCBE;
-
-/*****************************************************************************
-* rate control structure for encoding
-*****************************************************************************/
-typedef struct _XEVE_RCORE
-{
-    u16        * pred;
-
-    /* qf value limitation parameter */
-    double       qf_limit;
-    /* offset btw I and P frame */
-    double       offset_ip;
-    /* minimum qfactor by frame type */
-    double       qf_min[RC_NUM_SLICE_TYPE];
-    /* maximum qfactor by frame type */
-    double       qf_max[RC_NUM_SLICE_TYPE];
-    /* current frame scene_type which is inherited from frame analysis */
-    int          scene_type;
-    /* current frame qp */
-    double       qp;
-    /* complexity for current frame (mad) */
-    s32          cpx_frm;
-    /* complexity for rc model update */
-    double       cpx_pow;
-    /* estimated bits (restore for update) */
-    double       est_bits;
-    /* real bits (restore for update) */
-    double       real_bits;
-    /* slice type    (restore for update) */
-    int          stype;
-    /* slice dpeth   (restore for update) */
-    int          sdepth;
-    int          avg_dqp;
-    /* use filler for write extra byte */
-    int          filler_byte;
-} XEVE_RCORE;
-
-/*****************************************************************************
-* rate control structure
-*****************************************************************************/
-typedef struct _XEVE_RC
-{
-    /* frame per second */
-    double       fps;
-    /* bit per second */
-    double       bitrate;
-    /* allocated bits per frame (bitrate/fps)*/
-    double       bpf;
-    /* maximum bit size for one frame encoding */
-    double       max_frm_bits;
-    /* vbv enabled flag */
-    int          vbv_enabled;
-    /* total vbv buffer size (bitrate * vbv_msec /1000) (constant) */
-    double       vbv_buf_size;
-    double       lambda[4];
-
-    /* sum of k_param (bits*qfactor/rc_avg_cpx) */
-    double       k_param;
-    /* accumulated target bitrate * window */
-    double       target_bits;
-    /* accumulated frame size for each slice type */
-    s64          frame_bits;
-    /* sum of qp to get I frame qfactor */
-    double       qp_sum;
-    /* count of qp to get I frame qfactor */
-    double       qp_cnt;
-    /* sum of complexity */
-    double       cpx_sum;
-    /* count of complexity */
-    double       cpx_cnt;
-    /* bpf decayed weight factor */
-    double       bpf_decayed;
-    /* Rate Control Bits Predictor structure */
-    XEVE_RCBE    bit_estimator[RC_NUM_SLICE_TYPE];
-    /* amount of vbv buffer fullness */
-    double       vbv_buf_fullness;
-    /* store slice type of last and previous of last picture I, P slice type
-    0 : last picture
-    1 : previous of last picture                                           */
-    int          prev_st[2];
-    /* store qf of last and previous of last picture forI, P slice type
-    0 : last picture
-    1 : previous of last picture                                           */
-    double       prev_qf[2][RC_NUM_SLICE_TYPE];
-    /* store poc of last and previous of last picture for I, P slice type
-    0 : last picture
-    1 : previous of last picture                                           */
-    int          prev_picnt[2][RC_NUM_SLICE_TYPE];
-
-    XEVE_RC_PARAM * param;
-} XEVE_RC;
 
 typedef struct _XEVE_SBAC
 {
@@ -716,6 +677,11 @@ struct _XEVE_CORE
     /* QP for chroma of current encoding CU */
     u8                 qp_u;
     u8                 qp_v;
+
+    /* Lambda for chroma of current encoding CU  */
+    double             lambda[3];
+    double             sqrt_lambda[3];
+    double             dist_chroma_weight[2];
     /* X address of current LCU */
     u16                x_lcu;
     /* Y address of current LCU */
@@ -948,6 +914,8 @@ struct _XEVE_CTX
     s16             (* map_unrefined_mv)[REFP_NUM][MV_D];
     /* map for reference indices */
     s8              (* map_refi)[REFP_NUM];
+    XEVE_FCST         fcst;
+    s8                * map_dqp_lah;
     /* map for intra pred mode */
     s8               * map_ipm;
     s8               * map_depth;

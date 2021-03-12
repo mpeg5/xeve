@@ -28,15 +28,76 @@
    POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _XEVE_IPRED_H_
-#define _XEVE_IPRED_H_
+#ifndef _XEVE_FCST_H_
+#define _XEVE_FCST_H_
 
 #include "xeve_def.h"
+#include "xeve_type.h"
 
-void xeve_get_nbr(int x, int y, int cuw, int cuh, pel *src, int s_src, u16 avail_cu, pel nb[N_C][N_REF][MAX_CU_SIZE * 3], int scup, u32 *map_scu
-                  , int w_scu, int h_scu, int ch_type, int constrained_intra_pred, u8* map_tidx, int bit_depth, int chroma_format_idc);
-void xeve_ipred(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int ipm, int w, int h);
-void xeve_ipred_uv(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int ipm_c, int ipm, int w, int h);
-void xeve_get_mpm(int x_scu, int y_scu, int cuw, int cuh, u32 * map_scu, s8 * map_ipm, int scup, int w_scu, u8 ** mpm, u8 * map_tidx);
+#define LOG2_AQ_BLK_SIZE               4
 
-#endif /* _XEVE_IPRED_H_ */
+/* constant for AQ strength */ 
+#define AQ_STR_CONST                   0.75
+#define AQ_STRENGTH                    0.5
+/* blk-tree strength */
+#define LCU_STRENGTH                   0.75
+
+/* clipping transfer cost */
+#define CLIP_ADD(a,b)                  (XEVE_MIN((a)+(b),0xffff))
+
+/* modulo pico idx in pico_buf */
+#define MOD_PICO_IDX(num, mod)       (((num) + (mod)) % (mod))
+
+#define SEARCH_RANGE_IPEL            64
+#define INIT_SDS_PTS                 4
+/* initial direction of diamond searhc pattern */
+#define RC_INIT_QP                   28
+
+/* foracast calculation unit depth
+0: same as lcu (depth 0)
+1: 1/4 size of lcu (depth 1)
+*/
+
+enum PREV_PIC
+{
+    PREV0,
+    PREV1
+};
+
+enum PRED_TYPE
+{
+    INTRA,
+    INTER_UNI0,
+    INTER_UNI1,
+    INTER_UNI2,
+    INTER_L0 = 1,
+    INTER_L1 = 2,
+    INTER_BI = 3,
+};
+
+enum SCENE_TYPE
+{
+    SCENE_NORMAL,
+    SCENE_HIGH,
+    SCENE_LOW,
+    SCENE_EX_LOW,
+};
+
+enum QPA_TYPE 
+{
+    QPA_OFF, 
+    QPA_AQ_TREE, /* turn on adaptive qantization  + block tree */
+    QPA_AQ,      /* turn on adaptive qantization only */
+    QPA_TREE,    /* turn on block tree only */
+};
+
+
+/* check whether B picture could be exist or not */
+#define B_PIC_ENABLED(ctx)           (ctx->param.max_b_frames > 0)
+/* complexity threthold */
+
+int  xeve_forecast_fixed_gop(XEVE_CTX* ctx);
+void xeve_gen_subpic(pel* src_y, pel* dst_y, int w, int h, int s_s, int d_s, int bit_depth);
+s32  xeve_fcst_get_scene_type(XEVE_CTX * ctx, XEVE_PICO * pico);
+
+#endif /* _XEVE_FCST_H_ */

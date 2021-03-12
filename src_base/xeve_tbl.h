@@ -63,8 +63,10 @@ extern const u8   xeve_tbl_refi_bits[17][16];
 extern const u8   xeve_tbl_mvp_idx_bits[5][4];
 extern const int  xeve_quant_scale[6];
 
+
 #define RATE_TO_COST_LAMBDA(l, r)       ((double)r * l)
 #define RATE_TO_COST_SQRT_LAMBDA(l, r)  ((double)r * l)
+
 
 extern const XEVE_PRESET xeve_tbl_preset[ENC_PRESET_NUM];
 

@@ -411,8 +411,11 @@ void alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_h
     alf_init_filter_shape(&alf->filter_shapes[CHROMA_CH][0], 5);
 
     alf->temp_buf = (pel*)malloc((pic_width + (7 * alf->num_ctu_in_widht))*(pic_height + (7 * alf->num_ctu_in_height)) * sizeof(pel)); // +7 is of filter diameter //todo: check this
+    if(alf->chroma_format)
+    {
     alf->temp_buf1 = (pel*)malloc(((pic_width >> 1) + (7 * alf->num_ctu_in_widht))*((pic_height >> 1) + (7 * alf->num_ctu_in_height)) * sizeof(pel)); // for chroma just left for unification
     alf->temp_buf2 = (pel*)malloc(((pic_width >> 1) + (7 * alf->num_ctu_in_widht))*((pic_height >> 1) + (7 * alf->num_ctu_in_height)) * sizeof(pel));
+    }
     alf->classifier_mt = (ALF_CLASSIFIER**)malloc(MAX_CU_SIZE * XEVE_MAX_TASK_CNT * sizeof(ALF_CLASSIFIER*));
     if (alf->classifier_mt)
     {
@@ -1608,8 +1611,11 @@ void xeve_alf_process(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, const double *l
     }
 
     alf_copy_and_extend(rec_tmp_y, s, rec_y, rec_stride, w, h, m);
-    alf_copy_and_extend(rec_tmp_u, s1, rec_u, pir_rec->s_c, (w >> 1), (h >> 1), m);
-    alf_copy_and_extend(ref_tmp_v, s1, rec_v, pir_rec->s_c, (w >> 1), (h >> 1), m);
+    if(ctx->sps.chroma_format_idc)
+    {
+        alf_copy_and_extend(rec_tmp_u, s1, rec_u, pir_rec->s_c, (w >> 1), (h >> 1), m);
+        alf_copy_and_extend(ref_tmp_v, s1, rec_v, pir_rec->s_c, (w >> 1), (h >> 1), m);
+    }
 
     // get CTB stats for filtering
     xeve_alf_derive_stats_filtering(enc_alf, &org_yuv, &rec_temp);
@@ -1688,19 +1694,22 @@ void xeve_alf_process(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, const double *l
         pel * rec_v_tile = rec_v + (x_l >> 1) + (y_l >> 1) * pir_rec->s_c;
 
         alf_copy_and_extend_tile(rec_temp_y_tile, s, rec_y_tile, rec_stride, w_tile, h_tile, m);
-        alf_copy_and_extend_tile(rec_temp_u_tile, s1, rec_u_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
-        alf_copy_and_extend_tile(rec_temp_v_tile, s1, rec_v_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
+        if(ctx->sps.chroma_format_idc)
+        {
+            alf_copy_and_extend_tile(rec_temp_u_tile, s1, rec_u_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
+            alf_copy_and_extend_tile(rec_temp_v_tile, s1, rec_v_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
+        }
 
         // reconstruct
         if (alf_slice_param->enable_flag[Y_C])
         {
             xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[0], org_yuv.s[0], rec_temp.yuv[0], rec_temp.s[0], Y_C, tile_idx, col_bd);
         }
-        if (alf_slice_param->enable_flag[U_C])
+        if (alf_slice_param->enable_flag[U_C] && ctx->sps.chroma_format_idc)
         {
             xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[1], org_yuv.s[1], rec_temp.yuv[1], rec_temp.s[1], U_C, tile_idx, col_bd);
         }
-        if (alf_slice_param->enable_flag[V_C])
+        if (alf_slice_param->enable_flag[V_C] && ctx->sps.chroma_format_idc)
         {
             xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[2], org_yuv.s[2], rec_temp.yuv[2], rec_temp.s[2], V_C, tile_idx, col_bd);
         }
@@ -2124,7 +2133,7 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                             memcpy(tmp_buffer + dst_pos, tmp_buffer + dst_pos - (2 * (i - height - m) + 2) * l_stride, sizeof(pel) * stride);
                     }
                 }
-                else if (comp_id == U_C)
+                else if (comp_id == U_C && ctx->sps.chroma_format_idc)
                 {
                     for (int i = m; i < ((height >> 1) + m); i++)
                     {
@@ -2167,7 +2176,7 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                             memcpy(tmp_buffer_cb + dst_pos, tmp_buffer_cb + dst_pos - (2 * (i - (height >> 1) - m) + 2) * l_stride_chroma, sizeof(pel) * stride);
                     }
                 }
-                else
+                else if(ctx->sps.chroma_format_idc)
                 {
                     for (int i = m; i < ((height >> 1) + m); i++)
                     {

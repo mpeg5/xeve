@@ -39,7 +39,7 @@
 *****************************************************************************/
 struct _XEVE_RC_PARAM
 {
-    float rc_blk_wh;
+    int   rc_blk_wh;
     int   lcu_depth;
     int   intra_depth;
     int   init_qp;
@@ -68,31 +68,122 @@ struct _XEVE_RC_PARAM
     float lcu_tree_str;
 };
 
+/*****************************************************************************
+* rate control structure for encoding
+*****************************************************************************/
+struct _XEVE_RCORE
+{
+    u16        * pred;
+
+    /* qf value limitation parameter */
+    double       qf_limit;
+    /* offset btw I and P frame */
+    double       offset_ip;
+    /* minimum qfactor by frame type */
+    double       qf_min[RC_NUM_SLICE_TYPE];
+    /* maximum qfactor by frame type */
+    double       qf_max[RC_NUM_SLICE_TYPE];
+    /* current frame scene_type which is inherited from frame analysis */
+    int          scene_type;
+    /* current frame qp */
+    double       qp;
+    /* complexity for current frame (mad) */
+    s32          cpx_frm;
+    /* complexity for rc model update */
+    double       cpx_pow;
+    /* estimated bits (restore for update) */
+    double       est_bits;
+    /* real bits (restore for update) */
+    double       real_bits;
+    /* slice type    (restore for update) */
+    int          stype;
+    /* slice dpeth   (restore for update) */
+    int          sdepth;
+    int          avg_dqp;
+    /* use filler for write extra byte */
+    int          filler_byte;
+};
+
+/*****************************************************************************
+*rate control model structure
+*****************************************************************************/
+typedef struct _XEVE_RCM
+{
+    /* bit per second */
+    double       bitrate;
+    /* sum of k_param (bits*qfactor/rc_avg_cpx) */
+    double       k_param;
+    /* accumulated target bitrate * window */
+    double       target_bits;
+    /* sum of qp to get I frame qfactor */
+    double       qp_sum;
+    /* count of qp to get I frame qfactor */
+    double       qp_cnt;
+    /* sum of complexity */
+    double       cpx_sum;
+    /* count of complexity */
+    double       cpx_cnt;
+    /* bpf decayed weight factor */
+    double       bpf_decayed;
+}XEVE_RCM;
+
+/*****************************************************************************
+* rate control structure
+*****************************************************************************/
+struct _XEVE_RC
+{
+    /* frame per second */
+    double       fps;
+    /* bit per second */
+    double       bitrate;
+    /* allocated bits per frame (bitrate/fps)*/
+    double       bpf;
+    /* allocated bits per frame as TID (bitrate/fps)*/
+    double       bpf_tid[10];
+    /* maximum bit size for one frame encoding */
+    double       max_frm_bits;
+    /* vbv enabled flag */
+    int          vbv_enabled;
+    /* total vbv buffer size (bitrate * vbv_msec /1000) (constant) */
+    double       vbv_buf_size;
+    double       lambda[4];
+    /* accumulated frame size for each slice type */
+    s64          frame_bits;
+    XEVE_RCM   * rcm;
+    XEVE_RCM     rc_model[RC_NUM_SLICE_TYPE];
+    /* Rate Control Bits Predictor structure */
+    XEVE_RCBE    bit_estimator[RC_NUM_SLICE_TYPE];
+    /* amount of vbv buffer fullness */
+    double       vbv_buf_fullness;
+    /* store slice type of last and previous of last picture I, P slice type
+    0 : last picture
+    1 : previous of last picture                                           */
+    int          prev_st[2];
+    /* store qf of last and previous of last picture forI, P slice type
+    0 : last picture
+    1 : previous of last picture                                           */
+    double       prev_qf[2][RC_NUM_SLICE_TYPE];
+    /* store poc of last and previous of last picture for I, P slice type
+    0 : last picture
+    1 : previous of last picture                                           */
+    int          prev_picnt[2][RC_NUM_SLICE_TYPE];
+
+    s64          total_frames;
+    int          fps_idx;
+    double       prev_bpf;
+    int          st_idx;
+    int          prev_adpt;
+
+    XEVE_RC_PARAM * param;
+};
+
 extern XEVE_RC_PARAM tbl_rc_param;
 
-enum SCENE_TYPE
+enum RC_TYPE
 {
-    SCENE_NORMAL,
-    SCENE_HIGH,
-    SCENE_LOW,
-    SCENE_EX_LOW,
-};
-
-enum PREV_PIC
-{
-    PREV0,
-    PREV1
-};
-
-enum PRED_TYPE
-{
-    INTRA,
-    INTER_UNI0,
-    INTER_UNI1,
-    INTER_UNI2,
-    INTER_L0 = 1,
-    INTER_L1 = 2,
-    INTER_BI = 3,
+    RC_OFF,
+    RC_CBR_FIXED_HIERARCHY,
+    RC_CBR_EQUAL,
 };
 
 /* modulo pico idx in pico_buf */
@@ -114,14 +205,17 @@ enum PRED_TYPE
 #define FIRST_SEARCH_NUM        4
 #define NEXT_SEARCH_NUM         3
 #define MAX_COST_RC             1<<30
+#define MAX_INTRA_PERIOD_RC     1<<30
+
+/* Max. and min. QP for Rate control clipping */
+#define RC_QP_MAX                   (MAX_QUANT - 1)
+#define RC_QP_MIN                   (MIN_QUANT + 1)
 
 int  xeve_rc_create(XEVE_CTX * ctx);
 int  xeve_rc_delete(XEVE_CTX * ctx);
 s32  xeve_rc_set(XEVE_CTX *ctx);
 s32  xeve_rc_rcore_set(XEVE_CTX * ctx);
-s32  xeve_rc_frame_est(XEVE_CTX * ctx);
 void xeve_rc_update_frame(XEVE_CTX *ctx, XEVE_RC * rc, XEVE_RCORE * rcore);
 s32  xeve_rc_get_frame_qp(XEVE_CTX *ctx);
-void xeve_rc_gen_subpic(pel * src_y, pel * dst_y, int w, int h, int s_s, int d_s, int bit_depth);
 int  xeve_rc_get_qp(XEVE_CTX *ctx);
 #endif
