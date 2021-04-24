@@ -101,7 +101,10 @@ XEVE supports all profiles of EVC. Examples of configure file of coding structur
 | -f, --frames          | -         | maximum number of frames to be encoded                      |
 | -q, --op_qp           | 32        | QP value (0~51)                                             |
 | -d, --input_bit_depth | 8         | input bitdepth (8, 10)                                      |
-| -m, --parallel_task   | 0         | mumber of threads to be created                             |  
+| -m, --parallel_task   | 0         | mumber of threads to be created                             |
+| -g, --max_b_frames    | 15        | Number of maximum B frames (1,3,7,15)                       |
+| -p, --iperiod         | 0 (inf)   | I-picture period. Must be a multiple of (max_b_frames + 1). |
+| -r, --recon           | none      | Filename of a raw-video version of the output               |
 | -\-profile            | baseline  | index of profile (baseline, main)                           |
 | -\-config             | none      | file name of configuration                                  | 
 | -\-rc_type            | 0         | 0(rc_off) / 1(CBR, fixed hierarchy bit) / 2 (CBR, equal bit)| 
@@ -110,7 +113,7 @@ XEVE supports all profiles of EVC. Examples of configure file of coding structur
 | -\-preset             | reference | preset of xeve (fast, medium, slow, reference)              | 
 | -\-qpa                | 0         | block qp adaptaion 0(off) / 1(on)                           | 
 
->More optins can be found when type **xeve_app** only.   
+>More options can be found when type **xeve_app** only.   
  
 ### Example
 	$xeve_app -i RaceHorses_416x240_30.yuv -w 416 -h 240 -z 30 --rc_type 0 -o xeve.bin
