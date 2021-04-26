@@ -101,10 +101,10 @@ XEVE supports all profiles of EVC. Examples of configure file of coding structur
 | -f, --frames          | -         | maximum number of frames to be encoded                      |
 | -q, --op_qp           | 32        | QP value (0~51)                                             |
 | -d, --input_bit_depth | 8         | input bitdepth (8, 10)                                      |
-| -m, --parallel_task   | 0         | mumber of threads to be created                             |
-| -g, --max_b_frames    | 15        | Number of maximum B frames (1,3,7,15)                       |
+| -m, --parallel_task   | 0         | number of threads to be created                             |
+| -g, --max_b_frames    | 15        | number of maximum B frames (1,3,7,15)                       |
 | -p, --iperiod         | 0 (inf)   | I-picture period. Must be a multiple of (max_b_frames + 1). |
-| -r, --recon           | none      | Filename of a raw-video version of the output               |
+| -r, --recon           | none      | file name of a raw-video version of the output              |
 | -\-profile            | baseline  | index of profile (baseline, main)                           |
 | -\-config             | none      | file name of configuration                                  | 
 | -\-rc_type            | 0         | 0(rc_off) / 1(CBR, fixed hierarchy bit) / 2 (CBR, equal bit)| 
