@@ -37,7 +37,6 @@
 #include <limits.h>
 
 #include <math.h>
-#include "xeve_util.h"
 
 #if GRAB_STAT
 #include "xevem_stat.h"
@@ -87,56 +86,56 @@ void xevem_sbac_reset(XEVE_SBAC *sbac, u8 slice_type, u8 slice_qp, int sps_cm_in
     /* Initialization of the context models */
     if(sps_cm_init_flag == 1)
     {
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->cbf_luma, (s16*)init_cbf_luma, NUM_CTX_CBF_LUMA, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->cbf_cb, (s16*)init_cbf_cb, NUM_CTX_CBF_CB, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->cbf_cr, (s16*)init_cbf_cr, NUM_CTX_CBF_CR, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->cbf_all, (s16*)init_cbf_all, NUM_CTX_CBF_ALL, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->delta_qp, (s16*)init_dqp, NUM_CTX_DELTA_QP, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->sig_coeff_flag, (s16*)init_sig_coeff_flag, NUM_CTX_SIG_COEFF_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->coeff_abs_level_greaterAB_flag, (s16*)init_coeff_abs_level_greaterAB_flag, NUM_CTX_GTX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->last_sig_coeff_x_prefix, (s16*)init_last_sig_coeff_x_prefix, NUM_CTX_LAST_SIG_COEFF, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->last_sig_coeff_y_prefix, (s16*)init_last_sig_coeff_y_prefix, NUM_CTX_LAST_SIG_COEFF, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->pred_mode, (s16*)init_pred_mode, NUM_CTX_PRED_MODE, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->mode_cons, (s16*)init_mode_cons, NUM_CTX_MODE_CONS, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->direct_mode_flag, (s16*)init_direct_mode_flag, NUM_CTX_DIRECT_MODE_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->merge_mode_flag, (s16*)init_merge_mode_flag, NUM_CTX_MERGE_MODE_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->inter_dir, (s16*)init_inter_dir, NUM_CTX_INTER_PRED_IDC, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->intra_dir, (s16*)init_intra_dir, NUM_CTX_INTRA_PRED_MODE, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->intra_luma_pred_mpm_flag, (s16*)init_intra_luma_pred_mpm_flag, NUM_CTX_INTRA_LUMA_PRED_MPM_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->intra_luma_pred_mpm_idx, (s16*)init_intra_luma_pred_mpm_idx, NUM_CTX_INTRA_LUMA_PRED_MPM_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->intra_chroma_pred_mode, (s16*)init_intra_chroma_pred_mode, NUM_CTX_INTRA_CHROMA_PRED_MODE, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->run, (s16*)init_run, NUM_CTX_CC_RUN, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->last, (s16*)init_last, NUM_CTX_CC_LAST, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->level, (s16*)init_level, NUM_CTX_CC_LEVEL, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_flag, (s16*)init_mmvd_flag, NUM_CTX_MMVD_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_merge_idx, (s16*)init_mmvd_merge_idx, NUM_CTX_MMVD_MERGE_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_distance_idx, (s16*)init_mmvd_distance_idx, NUM_CTX_MMVD_DIST_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_direction_idx, (s16*)init_mmvd_direction_idx, NUM_CTX_MMVD_DIRECTION_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_group_idx, (s16*)init_mmvd_group_idx, NUM_CTX_MMVD_GROUP_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->merge_idx, (s16*)init_merge_idx, NUM_CTX_MERGE_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->mvp_idx, (s16*)init_mvp_idx, NUM_CTX_MVP_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_mvp_idx, (s16*)init_affine_mvp_idx, NUM_CTX_AFFINE_MVP_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->mvr_idx, (s16*)init_mvr_idx, NUM_CTX_AMVR_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->bi_idx, (s16*)init_bi_idx, NUM_CTX_BI_PRED_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->mvd, (s16*)init_mvd, NUM_CTX_MVD, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->refi, (s16*)init_refi, NUM_CTX_REF_IDX, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->btt_split_flag, (s16*)init_btt_split_flag, NUM_CTX_BTT_SPLIT_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->btt_split_dir, (s16*)init_btt_split_dir, NUM_CTX_BTT_SPLIT_DIR, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->btt_split_type, (s16*)init_btt_split_type, NUM_CTX_BTT_SPLIT_TYPE, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->suco_flag, (s16*)init_suco_flag, NUM_CTX_SUCO_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->alf_ctb_flag, (s16*)init_alf_ctb_flag, NUM_CTX_ALF_CTB_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->split_cu_flag, (s16*)init_split_cu_flag, NUM_CTX_SPLIT_CU_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_flag, (s16*)init_affine_flag, NUM_CTX_AFFINE_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_mode, (s16*)init_affine_mode, NUM_CTX_AFFINE_MODE, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_mrg, (s16*)init_affine_mrg, NUM_CTX_AFFINE_MRG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_mvd_flag, (s16*)init_affine_mvd_flag, NUM_CTX_AFFINE_MVD_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->skip_flag, (s16*)init_skip_flag, NUM_CTX_SKIP_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->ibc_flag, (s16*)init_ibc_flag, NUM_CTX_IBC_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_mode, (s16*)init_ats_mode, NUM_CTX_ATS_MODE_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_cu_inter_flag, (s16*)init_ats_cu_inter_flag, NUM_CTX_ATS_INTER_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_cu_inter_quad_flag, (s16*)init_ats_cu_inter_quad_flag, NUM_CTX_ATS_INTER_QUAD_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_cu_inter_hor_flag, (s16*)init_ats_cu_inter_hor_flag, NUM_CTX_ATS_INTER_HOR_FLAG, slice_type, slice_qp);
-        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_cu_inter_pos_flag, (s16*)init_ats_cu_inter_pos_flag, NUM_CTX_ATS_INTER_POS_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->cbf_luma, (s16*)xevem_init_cbf_luma, NUM_CTX_CBF_LUMA, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->cbf_cb, (s16*)xevem_init_cbf_cb, NUM_CTX_CBF_CB, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->cbf_cr, (s16*)xevem_init_cbf_cr, NUM_CTX_CBF_CR, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->cbf_all, (s16*)xevem_init_cbf_all, NUM_CTX_CBF_ALL, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->delta_qp, (s16*)xevem_init_dqp, NUM_CTX_DELTA_QP, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->sig_coeff_flag, (s16*)xevem_init_sig_coeff_flag, NUM_CTX_SIG_COEFF_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->coeff_abs_level_greaterAB_flag, (s16*)xevem_init_coeff_abs_level_greaterAB_flag, NUM_CTX_GTX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->last_sig_coeff_x_prefix, (s16*)xevem_init_last_sig_coeff_x_prefix, NUM_CTX_LAST_SIG_COEFF, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->last_sig_coeff_y_prefix, (s16*)xevem_init_last_sig_coeff_y_prefix, NUM_CTX_LAST_SIG_COEFF, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->pred_mode, (s16*)xevem_init_pred_mode, NUM_CTX_PRED_MODE, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->mode_cons, (s16*)xevem_init_mode_cons, NUM_CTX_MODE_CONS, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->direct_mode_flag, (s16*)xevem_init_direct_mode_flag, NUM_CTX_DIRECT_MODE_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->merge_mode_flag, (s16*)xevem_init_merge_mode_flag, NUM_CTX_MERGE_MODE_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->inter_dir, (s16*)xevem_init_inter_dir, NUM_CTX_INTER_PRED_IDC, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->intra_dir, (s16*)xevem_init_intra_dir, NUM_CTX_INTRA_PRED_MODE, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->intra_luma_pred_mpm_flag, (s16*)xevem_init_intra_luma_pred_mpm_flag, NUM_CTX_INTRA_LUMA_PRED_MPM_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->intra_luma_pred_mpm_idx, (s16*)xevem_init_intra_luma_pred_mpm_idx, NUM_CTX_INTRA_LUMA_PRED_MPM_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->intra_chroma_pred_mode, (s16*)xevem_init_intra_chroma_pred_mode, NUM_CTX_INTRA_CHROMA_PRED_MODE, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->run, (s16*)xevem_init_run, NUM_CTX_CC_RUN, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->last, (s16*)xevem_init_last, NUM_CTX_CC_LAST, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->level, (s16*)xevem_init_level, NUM_CTX_CC_LEVEL, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_flag, (s16*)xevem_init_mmvd_flag, NUM_CTX_MMVD_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_merge_idx, (s16*)xevem_init_mmvd_merge_idx, NUM_CTX_MMVD_MERGE_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_distance_idx, (s16*)xevem_init_mmvd_distance_idx, NUM_CTX_MMVD_DIST_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_direction_idx, (s16*)xevem_init_mmvd_direction_idx, NUM_CTX_MMVD_DIRECTION_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->mmvd_group_idx, (s16*)xevem_init_mmvd_group_idx, NUM_CTX_MMVD_GROUP_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->merge_idx, (s16*)xevem_init_merge_idx, NUM_CTX_MERGE_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->mvp_idx, (s16*)xevem_init_mvp_idx, NUM_CTX_MVP_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_mvp_idx, (s16*)xevem_init_affine_mvp_idx, NUM_CTX_AFFINE_MVP_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->mvr_idx, (s16*)xevem_init_mvr_idx, NUM_CTX_AMVR_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->bi_idx, (s16*)xevem_init_bi_idx, NUM_CTX_BI_PRED_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->mvd, (s16*)xevem_init_mvd, NUM_CTX_MVD, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->refi, (s16*)xevem_init_refi, NUM_CTX_REF_IDX, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->btt_split_flag, (s16*)xevem_init_btt_split_flag, NUM_CTX_BTT_SPLIT_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->btt_split_dir, (s16*)xevem_init_btt_split_dir, NUM_CTX_BTT_SPLIT_DIR, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->btt_split_type, (s16*)xevem_init_btt_split_type, NUM_CTX_BTT_SPLIT_TYPE, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->suco_flag, (s16*)xevem_init_suco_flag, NUM_CTX_SUCO_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->alf_ctb_flag, (s16*)xevem_init_alf_ctb_flag, NUM_CTX_ALF_CTB_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->split_cu_flag, (s16*)xevem_init_split_cu_flag, NUM_CTX_SPLIT_CU_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_flag, (s16*)xevem_init_affine_flag, NUM_CTX_AFFINE_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_mode, (s16*)xevem_init_affine_mode, NUM_CTX_AFFINE_MODE, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_mrg, (s16*)xevem_init_affine_mrg, NUM_CTX_AFFINE_MRG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->affine_mvd_flag, (s16*)xevem_init_affine_mvd_flag, NUM_CTX_AFFINE_MVD_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->skip_flag, (s16*)xevem_init_skip_flag, NUM_CTX_SKIP_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->ibc_flag, (s16*)xevem_init_ibc_flag, NUM_CTX_IBC_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_mode, (s16*)xevem_init_ats_mode, NUM_CTX_ATS_MODE_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_cu_inter_flag, (s16*)xevem_init_ats_cu_inter_flag, NUM_CTX_ATS_INTER_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_cu_inter_quad_flag, (s16*)xevem_init_ats_cu_inter_quad_flag, NUM_CTX_ATS_INTER_QUAD_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_cu_inter_hor_flag, (s16*)xevem_init_ats_cu_inter_hor_flag, NUM_CTX_ATS_INTER_HOR_FLAG, slice_type, slice_qp);
+        xeve_eco_sbac_ctx_initialize(sbac_ctx->ats_cu_inter_pos_flag, (s16*)xevem_init_ats_cu_inter_pos_flag, NUM_CTX_ATS_INTER_POS_FLAG, slice_type, slice_qp);
     }
     else // (sps_cm_init_flag == 0)
     {
@@ -212,7 +211,7 @@ int xevem_eco_aps_gen(XEVE_BSW * bs, XEVE_APS_GEN * aps, int bit_depth)
     {
         XEVE_APS local_aps;
         XEVE_ALF_SLICE_PARAM * p_aps_dataDst = (XEVE_ALF_SLICE_PARAM *)aps->aps_data;
-        memcpy(&(local_aps.alf_aps_param), p_aps_dataDst, sizeof(XEVE_ALF_SLICE_PARAM));
+        xeve_mcpy(&(local_aps.alf_aps_param), p_aps_dataDst, sizeof(XEVE_ALF_SLICE_PARAM));
         xevem_eco_alf_aps_param(bs, aps); // signal ALF filter parameter except ALF map
     }
     else if (aps->aps_type_id == 1)
@@ -852,7 +851,7 @@ int xevem_eco_split_mode(XEVE_BSW *bs, XEVE_CTX *c, XEVE_CORE *core, int cud, in
                 }
             }
             ctx = XEVE_MIN(smaller[0] + smaller[1] + smaller[2], 2);
-            ctx = ctx + 3 * xeve_tbl_split_flag_ctx[log2_cuw - 2][log2_cuh - 2];
+            ctx = ctx + 3 * xevem_tbl_split_flag_ctx[log2_cuw - 2][log2_cuh - 2];
         }
         else
         {
@@ -1399,8 +1398,8 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
     int stride = (1 << log2_cuw);
     int sub_stride = (1 << log2_w_sub);
     int is_sub = loop_h + loop_w > 2 ? 1 : 0;
-    int w_shift = ctx->param.cs_w_shift;
-    int h_shift = ctx->param.cs_h_shift;
+    int w_shift = (XEVE_GET_CHROMA_W_SHIFT(ctx->sps.chroma_format_idc));
+    int h_shift = (XEVE_GET_CHROMA_H_SHIFT(ctx->sps.chroma_format_idc));
 
     if (!xeve_check_luma(tree_cons))
     {
@@ -1441,7 +1440,12 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
     {
         for (i = 0; i < loop_w; i++)
         {
-            xeve_eco_cbf(bs, !!nnz_sub[Y_C][(j << 1) | i], !!nnz_sub[U_C][(j << 1) | i], !!nnz_sub[V_C][(j << 1) | i], pred_mode, b_no_cbf, is_sub, j + i, cbf_all, run, tree_cons, ctx->sps.chroma_format_idc);
+            int is_cbf_all_coded_zero = xeve_eco_cbf(bs, !!nnz_sub[Y_C][(j << 1) | i], !!nnz_sub[U_C][(j << 1) | i], !!nnz_sub[V_C][(j << 1) | i], pred_mode, b_no_cbf, is_sub, j + i, cbf_all, run, tree_cons, ctx->sps.chroma_format_idc);
+
+            if (is_cbf_all_coded_zero)
+            {
+                return XEVE_OK;
+            }
 
             if(ctx->pps.cu_qp_delta_enabled_flag)
             {
@@ -2115,7 +2119,7 @@ void xeve_eco_alf_filter(XEVE_BSW * bs, XEVE_ALF_SLICE_PARAM asp, const BOOL is_
     alf_init_filter_shape( &alf_shape, is_chroma ? 5 : ( alf_slice_param->luma_filter_type == ALF_FILTER_5 ? 5 : 7 ) );
 
     int bits_coef_scan[MAX_SCAN_VAL][MAX_EXP_GOLOMB];
-    memset(bits_coef_scan, 0, MAX_SCAN_VAL*MAX_EXP_GOLOMB * sizeof(int));
+    xeve_mset(bits_coef_scan, 0, MAX_SCAN_VAL*MAX_EXP_GOLOMB * sizeof(int));
 
     const int maxGolombIdx = alf_shape.filter_type == 0 ? 2 : 3;
     const short* coeff = is_chroma ? alf_slice_param->chroma_coef : alf_slice_param->luma_coef;
@@ -2474,16 +2478,13 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
                 }
 
                 {
-                    if(ctx->sps.tool_admvp == 0)
+                    if(slice_type == SLICE_B && ctx->sps.tool_admvp == 0)
                     {
                         xeve_eco_direct_mode_flag(bs, cu_data->pred_mode[cup] == MODE_DIR);
                     }
-                    else
+                    else if(ctx->sps.tool_admvp && cu_data->mvr_idx[cup] == 0 )
                     {
-                        if(cu_data->mvr_idx[cup] == 0)
-                        {
-                            xevem_eco_merge_mode_flag(bs, cu_data->pred_mode[cup] == MODE_DIR || cu_data->pred_mode[cup] == MODE_DIR_MMVD);
-                        }
+                        xevem_eco_merge_mode_flag(bs, cu_data->pred_mode[cup] == MODE_DIR || cu_data->pred_mode[cup] == MODE_DIR_MMVD);
                     }
 
                     if(ctx->sps.tool_mmvd)
@@ -2515,7 +2516,10 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
 
                 if(((cu_data->pred_mode[cup] % ORG_PRED_NUM) != MODE_DIR) && ((cu_data->pred_mode[cup] % ORG_PRED_NUM) != MODE_DIR_MMVD))
                 {
-                    xeve_eco_inter_pred_idc(bs, cu_data->refi[cup], slice_type, cuw, cuh, ctx->sps.tool_admvp);
+                    if (slice_type == SLICE_B)
+                    {
+                        xeve_eco_inter_pred_idc(bs, cu_data->refi[cup], slice_type, cuw, cuh, ctx->sps.tool_admvp);
+                    }
 
                     // affine inter mode
                     if(cuw >= 16 && cuh >= 16 && cu_data->mvr_idx[cup] == 0 && ctx->sps.tool_affine)

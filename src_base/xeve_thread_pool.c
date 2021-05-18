@@ -64,7 +64,7 @@ typedef struct _syncobject
     pthread_mutex_t lmutex;
 }THREAD_MUTEX;
 
-void * run_worker_thread(void * arg)
+void * xeve_run_worker_thread(void * arg)
 {
     /********************* main routine for thread pool worker thread *************************
     ********************** worker thread can remain in suspended or running state *************
@@ -115,7 +115,7 @@ void * run_worker_thread(void * arg)
 }
 
 
-POOL_THREAD  create_worker_thread(THREAD_CONTROLLER * tc, int thread_id)
+POOL_THREAD  xeve_create_worker_thread(THREAD_CONTROLLER * tc, int thread_id)
 {
     if (!tc)
     {
@@ -171,7 +171,7 @@ POOL_THREAD  create_worker_thread(THREAD_CONTROLLER * tc, int thread_id)
     thread_context->thread_id = thread_id;
     
     //create the worker thread
-    result = pthread_create(&thread_context->t_handle, &thread_context->tAttribute, run_worker_thread, (void*)(thread_context));
+    result = pthread_create(&thread_context->t_handle, &thread_context->tAttribute, xeve_run_worker_thread, (void*)(thread_context));
     if (result)
     {
         goto TERROR;
@@ -192,7 +192,7 @@ TERROR:
 }
 
 
-THREAD_RESULT assign_task_thread(POOL_THREAD thread_id, THREAD_ENTRY entry, void * arg)
+THREAD_RESULT xeve_assign_task_thread(POOL_THREAD thread_id, THREAD_ENTRY entry, void * arg)
 {
     //assign the task function and argument
     //worker thread may be in running state or suspended state
@@ -224,7 +224,7 @@ THREAD_RESULT assign_task_thread(POOL_THREAD thread_id, THREAD_ENTRY entry, void
     return THREAD_SUCCESS;
 }
 
-THREAD_RESULT  retrieve_thread_result(POOL_THREAD thread_id, int * res)
+THREAD_RESULT  xeve_retrieve_thread_result(POOL_THREAD thread_id, int * res)
 {
     //whatever task has been assigned to worker thread
     //wait for it to finish get the result
@@ -250,7 +250,7 @@ THREAD_RESULT  retrieve_thread_result(POOL_THREAD thread_id, int * res)
 }
 
 
-THREAD_RESULT terminate_worker_thread(POOL_THREAD * thread_id)
+THREAD_RESULT xeve_terminate_worker_thread(POOL_THREAD * thread_id)
 {
     //handler to close the thread
     //close the thread handle
@@ -369,7 +369,7 @@ typedef struct _THREAD_MUTEX
 
 }THREAD_MUTEX;
 
-unsigned int __stdcall run_worker_thread(void * arg)
+unsigned int __stdcall xeve_run_worker_thread(void * arg)
 {
     /********************* main routine for thread pool worker thread *************************
     ********************** worker thread can remain in suspended or running state *************
@@ -415,7 +415,7 @@ unsigned int __stdcall run_worker_thread(void * arg)
     return 0;
 }
 
-POOL_THREAD  create_worker_thread(THREAD_CONTROLLER * tc, int thread_id)
+POOL_THREAD  xeve_create_worker_thread(THREAD_CONTROLLER * tc, int thread_id)
 {
     if (!tc)
     {
@@ -454,7 +454,7 @@ POOL_THREAD  create_worker_thread(THREAD_CONTROLLER * tc, int thread_id)
     thread_context->task_result = THREAD_INVALID_STATE;
     thread_context->thread_id = thread_id;
 
-    thread_context->t_handle = (HANDLE)_beginthreadex(NULL, 0, run_worker_thread, (void *)thread_context,0, NULL); //create a thread store the handle and pass the handle to context
+    thread_context->t_handle = (HANDLE)_beginthreadex(NULL, 0, xeve_run_worker_thread, (void *)thread_context,0, NULL); //create a thread store the handle and pass the handle to context
     if (!thread_context->t_handle)
     {
         goto TERROR;
@@ -482,7 +482,7 @@ TERROR:
     return NULL; //error handling, can't create a worker thread with proper initialization
 }
 
-THREAD_RESULT assign_task_thread(POOL_THREAD thread_id, THREAD_ENTRY entry, void * arg)
+THREAD_RESULT xeve_assign_task_thread(POOL_THREAD thread_id, THREAD_ENTRY entry, void * arg)
 {
     //assign the task function and argument
     //worker thread may be in running state or suspended state
@@ -511,7 +511,7 @@ THREAD_RESULT assign_task_thread(POOL_THREAD thread_id, THREAD_ENTRY entry, void
     return THREAD_SUCCESS;
 }
 
-THREAD_RESULT  retrieve_thread_result(POOL_THREAD thread_id, int * res)
+THREAD_RESULT  xeve_retrieve_thread_result(POOL_THREAD thread_id, int * res)
 {
     //whatever task has been assigned to worker thread
     //wait for it to finish get the result
@@ -534,7 +534,7 @@ THREAD_RESULT  retrieve_thread_result(POOL_THREAD thread_id, int * res)
     return result;
 }
 
-THREAD_RESULT terminate_worker_thread(POOL_THREAD * thread_id)
+THREAD_RESULT xeve_terminate_worker_thread(POOL_THREAD * thread_id)
 {
     //handler to close the thread
     //close the thread handle
@@ -662,10 +662,10 @@ THREAD_RESULT init_thread_controller(THREAD_CONTROLLER * tc, int maxtask)
     //assign handles to threadcontroller object
     //handles for create, run, join and terminate will be given to controller  object
 
-    tc->create = create_worker_thread;
-    tc->run = assign_task_thread;
-    tc->join = retrieve_thread_result;
-    tc->release = terminate_worker_thread;
+    tc->create = xeve_create_worker_thread;
+    tc->run = xeve_assign_task_thread;
+    tc->join = xeve_retrieve_thread_result;
+    tc->release = xeve_terminate_worker_thread;
     tc->max_task_cnt = maxtask;
 
     return THREAD_SUCCESS;

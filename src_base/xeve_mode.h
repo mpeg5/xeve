@@ -45,8 +45,6 @@ void xeve_diff_pred(int x, int y, int log2_cuw, int log2_cuh, XEVE_PIC *org, pel
 #define DQP_STORE(dst, src) xeve_mcpy(&dst, &src, sizeof(XEVE_DQP))
 #define DQP_LOAD(dst, src)  xeve_mcpy(&dst, &src, sizeof(XEVE_DQP))
 void xeve_set_qp(XEVE_CTX *ctx, XEVE_CORE *core, u8 qp);
-int  xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int chroma_format_idc);
-int  xeve_delete_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh);
 
 MODE_CONS xeve_derive_mode_cons(XEVE_CTX *ctx, int luc_num, int cup);
 
@@ -81,7 +79,7 @@ int copy_cu_data(XEVE_CU_DATA *dst, XEVE_CU_DATA *src, int x, int y, int log2_cu
 void mode_cpy_rec_to_ref(XEVE_CORE *core, int x, int y, int w, int h, XEVE_PIC *pic, TREE_CONS tree_cons, int chroma_format_idc);
 int get_cu_pred_data(XEVE_CU_DATA *src, int x, int y, int log2_cuw, int log2_cuh, int log2_cus, int cud, XEVE_MODE *mi, XEVE_CTX *ctx, XEVE_CORE *core);
 
-int mode_init_tile(XEVE_CTX *ctx, int tile_idx);
+int xeve_mode_init_mt(XEVE_CTX *ctx, int tile_idx);
 int mode_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core);
 void update_to_ctx_map(XEVE_CTX *ctx, XEVE_CORE *core);
 

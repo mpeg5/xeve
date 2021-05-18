@@ -170,14 +170,22 @@
 /*****************************************************************************
  * Encoder optimization level control
  *****************************************************************************/
-enum ENC_PRESET
+enum XEVE_PRESET
 {
-    FAST,
-    MEDIUM,
-    SLOW,
-    REFERENCE,
+    XEVE_PRESET_FAST,
+    XEVE_PRESET_MEDIUM,
+    XEVE_PRESET_SLOW,
+    XEVE_PRESET_PLACEBO,
+    XEVE_PRESET_MAX /* number of PRESETs */
 };
-#define ENC_PRESET_NUM 4
+
+enum XEVE_TUNE
+{
+    XEVE_TUNE_NONE,
+    XEVE_TUNE_ZEROLATENCY,
+    XEVE_TUNE_PSNR,
+    XEVE_TUNE_MAX /* number of TUNEs*/
+};
 
 /*****************************************************************************
  * type and macro for media time
@@ -297,12 +305,6 @@ typedef struct _XEVE_BITB
 
 } XEVE_BITB;
 
-typedef struct _XEVED_OPL
-{
-    int              poc;
-    char             digest[3][16];
-} XEVED_OPL;
-
 #define MAX_NUM_REF_PICS                   21
 #define MAX_NUM_ACTIVE_REF_FRAME           5
 #define MAX_NUM_RPLS                       32
@@ -349,11 +351,16 @@ typedef struct _XEVE_CDSC
     int            iperiod;
     /* quantization parameter */
     int            qp;
-    int            cb_qp_offset;
-    int            cr_qp_offset;
+	/* quantization parameter offset for CB */
+    int            qp_cb_offset;
+	/* quantization parameter offset for CR */
+    int            qp_cr_offset;
+	/* Rate control type */
     int            rc_type;
+	/* bitrate */
     int            bps;
-    int            vbv_msec;
+	/* VBV buffer size for rate control*/
+    int            vbv_buf_size;
     int            use_filler_flag;
     int            num_pre_analysis_frames;
     XEVE_CHROMA_TABLE chroma_qp_table_struct;
@@ -366,14 +373,12 @@ typedef struct _XEVE_CDSC
        - 0 : use open GOP (default)
        - 1 : use closed GOP */
     int            closed_gop;
-    /* bit depth of input video */
-    int            inp_bit_depth;
-    /* bit depth of output video */
-    int            out_bit_depth;
     int            codec_bit_depth;
     int            profile;
     int            level;
-    int            qpa;
+    int            aq_mode;
+    int            lookahead;
+    int            cutree;
     int            constrained_intra_pred;
     int            use_deblock;
     int            parallel_task_cnt;
@@ -387,6 +392,7 @@ typedef struct _XEVE_CDSC
     int            add_qp_frame;
     int            bitstream_buf_size;
     int            preset;
+    int            tune;
 
     XEVE_CDSC_EXT * ext;
 } XEVE_CDSC;

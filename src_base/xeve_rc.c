@@ -35,7 +35,7 @@
 
 XEVE_RC_PARAM tbl_rc_param =
 {
-    32, 0, 1, 28, 1.1, 1.13, 0.4, 1.4983, 0.95, 0.5, 0.4, 0.4, 0.6, 0.1,
+    32, 0, 1, 28, 1.3, 1.13, 0.4, 1.4983, 0.95, 0.5, 0.4, 0.4, 0.6, 0.1,
     0.15, 0.3, 1.85, 26, 14, 38, 0.04, 0.5, 4, 1.0397, 4, 1.5, 1.5
 };
 
@@ -201,7 +201,12 @@ void xeve_set_rc_bpf(XEVE_CTX * ctx)
     XEVE_PARAM    * param = &ctx->param;
     XEVE_RC       * rc = ctx->rc;
 
+    /*
+    RC_CBR_EQUAL should be deprecated
     if (param->rc_type == RC_CBR_EQUAL ||   param->i_period == 1) // AI
+    */
+
+    if (param->i_period == 1) // AI
     {
         for (int i = 0; i < 6; i++)
         {

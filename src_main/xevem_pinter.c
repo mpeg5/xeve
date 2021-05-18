@@ -73,7 +73,7 @@ static s8 tbl_search_pattern_hpel_partial[8][2] =
 };
 
 
-static int pinter_init_tile(XEVE_CTX *ctx, int tile_idx)
+static int pinter_init_mt(XEVE_CTX *ctx, int tile_idx)
 {
     XEVE_PINTER * pi = &ctx->pinter[tile_idx];
     XEVE_PIC    * pic;
@@ -205,21 +205,6 @@ static int pinter_init_tile(XEVE_CTX *ctx, int tile_idx)
     size = sizeof(pel) * REFP_NUM * (MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT)) *
         (MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT));
     xeve_mset(pi->dmvr_ref_pred_interpolated, 0, size);
-
-    return XEVE_OK;
-}
-
-/* For Main profile */
-static int pinter_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
-{
-    XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
-
-    pi->lambda_mv = (u32)floor(65536.0 * core->sqrt_lambda[0]);
-    pi->qp_y = core->qp_y;
-    pi->qp_u = core->qp_u;
-    pi->qp_v = core->qp_v;
-    pi->poc = ctx->poc.poc_val;
-    pi->gop_size = ctx->param.gop_size;
 
     return XEVE_OK;
 }
@@ -1458,7 +1443,7 @@ static void copy_tu_from_cu(s16 tu_resi[N_C][MAX_CU_DIM], s16 cu_resi[N_C][MAX_C
     //Y
     for(j = tu_offset_y; j < tu_offset_y + tuh; j++)
     {
-        memcpy(tu_resi[Y_C] + (j - tu_offset_y) * tuw, cu_resi[Y_C] + tu_offset_x + j * cuw, sizeof(s16)*tuw);
+        xeve_mcpy(tu_resi[Y_C] + (j - tu_offset_y) * tuw, cu_resi[Y_C] + tu_offset_x + j * cuw, sizeof(s16)*tuw);
     }
 
     //UV
@@ -1469,10 +1454,11 @@ static void copy_tu_from_cu(s16 tu_resi[N_C][MAX_CU_DIM], s16 cu_resi[N_C][MAX_C
         tuw >>= w_shift;
         tuh >>= h_shift;
         cuw >>= w_shift;
-    for(j = tu_offset_y; j < tu_offset_y + tuh; j++)
-    {
-        memcpy(tu_resi[U_C] + (j - tu_offset_y) * tuw, cu_resi[U_C] + tu_offset_x + j * cuw, sizeof(s16)*tuw);
-        memcpy(tu_resi[V_C] + (j - tu_offset_y) * tuw, cu_resi[V_C] + tu_offset_x + j * cuw, sizeof(s16)*tuw);
+
+        for(j = tu_offset_y; j < tu_offset_y + tuh; j++)
+        {
+            xeve_mcpy(tu_resi[U_C] + (j - tu_offset_y) * tuw, cu_resi[U_C] + tu_offset_x + j * cuw, sizeof(s16)*tuw);
+            xeve_mcpy(tu_resi[V_C] + (j - tu_offset_y) * tuw, cu_resi[V_C] + tu_offset_x + j * cuw, sizeof(s16)*tuw);
         }
     }
 }
@@ -1541,7 +1527,7 @@ void calc_min_cost_ats_inter(XEVE_CTX *ctx, XEVE_CORE *core, pel pred[N_C][MAX_C
 
     int bit_depth_tbl[3] = {ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8 , ctx->sps.bit_depth_chroma_minus8 + 8};
     //ATS_INTER fast algorithm 1.2: derive estimated minDist of ATS_INTER = zero-residual part distortion + non-zero residual part distortion / 16
-    memset(dist, 0, sizeof(s64) * 16);
+    xeve_mset(dist, 0, sizeof(s64) * 16);
     for(comp = Y_C; comp < N_C; comp++)
     {
         int blk_w, blk_h;
@@ -1593,7 +1579,7 @@ void calc_min_cost_ats_inter(XEVE_CTX *ctx, XEVE_CORE *core, pel pred[N_C][MAX_C
         ats_inter_est_dist[idx] = (dist_tu / 16) + (sum_dist - dist_tu);
     }
     //try 2 half ATS_INTER modes with the lowest distortion
-    memcpy(dist_temp, ats_inter_est_dist, sizeof(s64) * 9);
+    xeve_mcpy(dist_temp, ats_inter_est_dist, sizeof(s64) * 9);
     if(num_half_ats_inter > 0)
     {
         for(i = ats_inter_rdo_idx_num; i < ats_inter_rdo_idx_num + 2; i++)
@@ -1629,8 +1615,8 @@ void calc_min_cost_ats_inter(XEVE_CTX *ctx, XEVE_CORE *core, pel pred[N_C][MAX_C
         ats_inter_rdo_idx_num += 2;
     }
 
-    memcpy(dist_temp, ats_inter_est_dist, sizeof(s64) * 9);
-    memcpy(ats_inter_info_list_temp, ats_inter_info_list, sizeof(u8) * 9);
+    xeve_mcpy(dist_temp, ats_inter_est_dist, sizeof(s64) * 9);
+    xeve_mcpy(ats_inter_info_list_temp, ats_inter_info_list, sizeof(u8) * 9);
     for(idx = 1; idx < 1 + ats_inter_rdo_idx_num; idx++)
     {
         ats_inter_info_list[idx] = ats_inter_info_list_temp[ats_inter_rdo_idx_list[idx - 1]];
@@ -1781,6 +1767,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     s64    dist_idx = -1;
     int    w_shift = ctx->param.cs_w_shift;
     int    h_shift = ctx->param.cs_h_shift;
+
     get_ats_inter_info_rdo_order(core, ats_inter_avail, &num_rdo, ats_inter_info_list);
     mcore->ats_inter_info = 0;
 
@@ -2234,7 +2221,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
                     nnz_best[i] = nnz[i];
                     if(nnz[i] > 0)
                     {
-                        memcpy(pi->coff_save[i], coef[i], sizeof(s16) * ((cuw * cuh) >> (i == 0 ? 0 : w_shift + h_shift)));
+                        xeve_mcpy(pi->coff_save[i], coef[i], sizeof(s16) * ((cuw * cuh) >> (i == 0 ? 0 : w_shift + h_shift)));
                     }
                 }
             }
@@ -2359,7 +2346,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             core->nnz_sub[i][0] = nnz[i] = nnz_best[i];
             if(nnz[i] > 0)
             {
-                memcpy(coef[i], pi->coff_save[i], sizeof(s16) * ((tuw * tuh) >> (i == 0 ? 0 : (i == 0 ? 0 : w_shift + h_shift))));
+                xeve_mcpy(coef[i], pi->coff_save[i], sizeof(s16) * ((tuw * tuh) >> (i == 0 ? 0 : (i == 0 ? 0 : w_shift + h_shift))));
             }
             else
             {
@@ -2375,6 +2362,408 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     }
 
     return cost_best;
+}
+
+static void get_mmvd_mvp_list(s8(*map_refi)[REFP_NUM], XEVE_REFP refp[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int w_scu, int h_scu, int scup, u16 avail, int log2_cuw, int log2_cuh, int slice_t
+                            , int real_mv[][2][3], u32 *map_scu, int REF_SET[][MAX_NUM_ACTIVE_REF_FRAME], u16 avail_lr
+                            , u32 curr_ptr, u8 num_refp[REFP_NUM]
+                            , XEVE_HISTORY_BUFFER history_buffer, int admvp_flag, XEVE_SH* sh, int log2_max_cuwh, u8* map_tidx, int mmvd_idx)
+{
+    int ref_mvd = 0;
+    int ref_mvd1 = 0;
+    int list0_weight;
+    int list1_weight;
+    int ref_sign = 0;
+    int ref_sign1 = 0;
+    int ref_mvd_cands[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
+    int hor0var[MMVD_MAX_REFINE_NUM] = { 0 };
+    int ver0var[MMVD_MAX_REFINE_NUM] = { 0 };
+    int hor1var[MMVD_MAX_REFINE_NUM] = { 0 };
+    int ver1Var[MMVD_MAX_REFINE_NUM] = { 0 };
+    int base_mv_idx = 0;
+    int base_mv[25][2][3];
+    s16 smvp[REFP_NUM][MAX_NUM_MVP][MV_D];
+    s8 srefi[REFP_NUM][MAX_NUM_MVP];
+    int base_mv_t[25][2][3];
+    int base_type[3][MAX_NUM_MVP];
+    int cur_set;
+    int total_num = MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM;
+    int k;
+    int cuw = (1 << log2_cuw);
+    int cuh = (1 << log2_cuh);
+    int list0_r;
+    int list1_r;
+    int poc0, poc1, poc_c;
+
+    int base_mv_p[25][3][3];
+    int small_cu = (cuw*cuh <= NUM_SAMPLES_BLOCK) ? 1 : 0;
+
+    int base_st = mmvd_idx == -1 ? 0 : (mmvd_idx & 127) >> 5;
+    int base_ed = mmvd_idx == -1 ? MMVD_BASE_MV_NUM : base_st + 1;
+
+    int group_st = mmvd_idx == -1 ? 0 : mmvd_idx >> 7;
+    int group_ed = mmvd_idx == -1 ? (small_cu ? 1 : 3) : group_st + 1;
+
+    int mmvd_v_st = mmvd_idx == -1 ? 0 : (mmvd_idx & 31);
+    int mmvd_v_ed = mmvd_idx == -1 ? MMVD_MAX_REFINE_NUM : mmvd_v_st + 1;
+
+    if (admvp_flag == 0)
+    {
+        xeve_get_motion_skip(slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, srefi, smvp, avail);
+    }
+    else
+    {
+        xevem_get_motion_merge(curr_ptr, slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, h_scu, srefi, smvp, map_scu, avail_lr
+                                 , NULL, history_buffer, 0, (XEVE_REFP(*)[2])refp, sh, log2_max_cuwh, map_tidx);
+    }
+
+    if (slice_t == SLICE_B)
+    {
+        for (k = base_st; k < base_ed; k++)
+        {
+            base_mv[k][REFP_0][MV_X] = smvp[REFP_0][k][MV_X];
+            base_mv[k][REFP_0][MV_Y] = smvp[REFP_0][k][MV_Y];
+            base_mv[k][REFP_1][MV_X] = smvp[REFP_1][k][MV_X];
+            base_mv[k][REFP_1][MV_Y] = smvp[REFP_1][k][MV_Y];
+            base_mv[k][REFP_0][REFI] = srefi[REFP_0][k];
+            base_mv[k][REFP_1][REFI] = srefi[REFP_1][k];
+        }
+    }
+    else
+    {
+        for (k = base_st; k < base_ed; k++)
+        {
+            base_mv[k][REFP_0][MV_X] = smvp[REFP_0][k][MV_X];
+            base_mv[k][REFP_0][MV_Y] = smvp[REFP_0][k][MV_Y];
+            base_mv[k][REFP_1][MV_X] = smvp[REFP_1][0][MV_X];
+            base_mv[k][REFP_1][MV_Y] = smvp[REFP_1][0][MV_Y];
+            base_mv[k][REFP_0][REFI] = srefi[REFP_0][k];
+            base_mv[k][REFP_1][REFI] = srefi[REFP_1][0];
+        }
+    }
+
+    for (k = base_st; k < base_ed; k++)
+    {
+        ref_sign = 1;
+        ref_sign1 = 1;
+
+        base_mv_t[k][REFP_0][MV_X] = base_mv[k][REFP_0][MV_X];
+        base_mv_t[k][REFP_0][MV_Y] = base_mv[k][REFP_0][MV_Y];
+        base_mv_t[k][REFP_0][REFI] = base_mv[k][REFP_0][REFI];
+
+        base_mv_t[k][REFP_1][MV_X] = base_mv[k][REFP_1][MV_X];
+        base_mv_t[k][REFP_1][MV_Y] = base_mv[k][REFP_1][MV_Y];
+        base_mv_t[k][REFP_1][REFI] = base_mv[k][REFP_1][REFI];
+
+        list0_r = base_mv_t[k][REFP_0][REFI];
+        list1_r = base_mv_t[k][REFP_1][REFI];
+
+        if ((base_mv_t[k][REFP_0][REFI] != REFI_INVALID) && (base_mv_t[k][REFP_1][REFI] != REFI_INVALID))
+        {
+            base_type[0][k] = 0;
+            base_type[1][k] = 1;
+            base_type[2][k] = 2;
+        }
+        else if ((base_mv_t[k][REFP_0][REFI] != REFI_INVALID) && (base_mv_t[k][REFP_1][REFI] == REFI_INVALID))
+        {
+            if (slice_t == SLICE_P)
+            {
+                int cur_ref_num = num_refp[REFP_0];
+                base_type[0][k] = 1;
+                base_type[1][k] = 1;
+                base_type[2][k] = 1;
+
+                if (cur_ref_num == 1)
+                {
+                    base_mv_p[k][0][REFI] = base_mv_t[k][REFP_0][REFI];
+                    base_mv_p[k][1][REFI] = base_mv_t[k][REFP_0][REFI];
+                    base_mv_p[k][2][REFI] = base_mv_t[k][REFP_0][REFI];
+                }
+                else
+                {
+                    base_mv_p[k][0][REFI] = base_mv_t[k][REFP_0][REFI];
+                    base_mv_p[k][1][REFI] = !base_mv_t[k][REFP_0][REFI];
+                    if (cur_ref_num < 3)
+                    {
+                        base_mv_p[k][2][REFI] = base_mv_t[k][REFP_0][REFI];
+                    }
+                    else
+                    {
+                        base_mv_p[k][2][REFI] = base_mv_t[k][REFP_0][REFI] < 2 ? 2 : 1;
+                    }
+                }
+
+                if (cur_ref_num == 1)
+                {
+                    base_mv_p[k][0][MV_X] = base_mv_t[k][REFP_0][MV_X];
+                    base_mv_p[k][0][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
+
+                    base_mv_p[k][1][MV_X] = base_mv_t[k][REFP_0][MV_X] + 3;
+                    base_mv_p[k][1][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
+
+                    base_mv_p[k][2][MV_X] = base_mv_t[k][REFP_0][MV_X] - 3;
+                    base_mv_p[k][2][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
+                }
+                else if (cur_ref_num == 2)
+                {
+                    base_mv_p[k][0][MV_X] = base_mv_t[k][REFP_0][MV_X];
+                    base_mv_p[k][0][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
+
+                    poc0 = REF_SET[0][base_mv_p[k][0][REFI]];
+                    poc_c = curr_ptr;
+                    poc1 = REF_SET[0][base_mv_p[k][1][REFI]];
+
+                    list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
+                    ref_sign = 1;
+                    base_mv_p[k][1][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign  * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+                    base_mv_p[k][1][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+                    base_mv_p[k][2][MV_X] = base_mv_t[k][REFP_0][MV_X] - 3;
+                    base_mv_p[k][2][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
+                }
+                else if (cur_ref_num >= 3)
+                {
+                    base_mv_p[k][0][MV_X] = base_mv_t[k][REFP_0][MV_X];
+                    base_mv_p[k][0][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
+                    base_mv_p[k][0][REFI] = base_mv_p[k][REFP_0][REFI];
+
+                    poc0 = REF_SET[0][base_mv_p[k][0][REFI]];
+                    poc_c = curr_ptr;
+                    poc1 = REF_SET[0][base_mv_p[k][1][REFI]];
+
+                    list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
+                    ref_sign = 1;
+                    base_mv_p[k][1][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign  * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+                    base_mv_p[k][1][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+
+                    poc0 = REF_SET[0][base_mv_p[k][0][2]];
+                    poc_c = curr_ptr;
+                    poc1 = REF_SET[0][base_mv_p[k][2][2]];
+
+                    list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
+                    ref_sign = 1;
+                    base_mv_p[k][2][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign  * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+                    base_mv_p[k][2][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+                }
+            }
+            else
+            {
+                base_type[0][k] = 1;
+                base_type[1][k] = 0;
+                base_type[2][k] = 2;
+
+                list0_weight = 1 << MVP_SCALING_PRECISION;
+                list1_weight = 1 << MVP_SCALING_PRECISION;
+                poc0 = REF_SET[REFP_0][list0_r];
+                poc_c = curr_ptr;
+                if ((num_refp[REFP_1] > 1) && ((REF_SET[REFP_1][1] - poc_c) == (poc_c - poc0)))
+                {
+                    base_mv_t[k][REFP_1][REFI] = 1;
+                }
+                else
+                {
+                    base_mv_t[k][REFP_1][REFI] = 0;
+                }
+                poc1 = REF_SET[REFP_1][base_mv_t[k][REFP_1][REFI]];
+
+                list1_weight = ((poc_c - poc1) << MVP_SCALING_PRECISION) / ((poc_c - poc0));
+                if ((list1_weight * base_mv_t[k][0][0]) < 0)
+                {
+                    ref_sign = -1;
+                }
+
+                base_mv_t[k][REFP_1][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign * ((XEVE_ABS(list1_weight * base_mv_t[k][REFP_0][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+
+                list1_weight = ((poc_c - poc1) << MVP_SCALING_PRECISION) / ((poc_c - poc0));
+                if ((list1_weight * base_mv_t[k][0][1]) < 0)
+                {
+                    ref_sign1 = -1;
+                }
+
+                base_mv_t[k][REFP_1][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list1_weight * base_mv_t[k][REFP_0][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+            }
+        }
+        else if ((base_mv_t[k][REFP_0][REFI] == REFI_INVALID) && (base_mv_t[k][REFP_1][REFI] != REFI_INVALID))
+        {
+            base_type[0][k] = 2;
+            base_type[1][k] = 0;
+            base_type[2][k] = 1;
+
+            list0_weight = 1 << MVP_SCALING_PRECISION;
+            list1_weight = 1 << MVP_SCALING_PRECISION;
+            poc1 = REF_SET[1][list1_r];
+            poc_c = curr_ptr;
+            if ((num_refp[REFP_0] > 1) && ((REF_SET[REFP_0][1] - poc_c) == (poc_c - poc1)))
+            {
+                base_mv_t[k][REFP_0][REFI] = 1;
+            }
+            else
+            {
+                base_mv_t[k][REFP_0][REFI] = 0;
+            }
+            poc0 = REF_SET[REFP_0][base_mv_t[k][REFP_0][REFI]];
+
+            list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
+            if ((list0_weight * base_mv_t[k][REFP_1][MV_X]) < 0)
+            {
+                ref_sign = -1;
+            }
+            base_mv_t[k][REFP_0][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_1][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+
+            list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
+            if ((list0_weight * base_mv_t[k][REFP_1][MV_Y]) < 0)
+            {
+                ref_sign1 = -1;
+            }
+            base_mv_t[k][REFP_0][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_1][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
+        }
+        else
+        {
+            base_type[0][k] = 3;
+            base_type[1][k] = 3;
+            base_type[2][k] = 3;
+        }
+    }
+
+    for (base_mv_idx = base_st; base_mv_idx < base_ed; base_mv_idx++)
+    {
+        int list0_r, list1_r;
+        int poc0, poc1, poc_c;
+
+        if (small_cu)
+        {
+            base_type[0][base_mv_idx] = 1;
+        }
+
+        for (cur_set = group_st; cur_set < group_ed; cur_set++)
+        {
+            if (base_type[cur_set][base_mv_idx] == 0)
+            {
+                base_mv[base_mv_idx][REFP_0][MV_X] = base_mv_t[base_mv_idx][REFP_0][MV_X];
+                base_mv[base_mv_idx][REFP_0][MV_Y] = base_mv_t[base_mv_idx][REFP_0][MV_Y];
+                base_mv[base_mv_idx][REFP_0][REFI] = base_mv_t[base_mv_idx][REFP_0][REFI];
+
+                base_mv[base_mv_idx][REFP_1][MV_X] = base_mv_t[base_mv_idx][REFP_1][MV_X];
+                base_mv[base_mv_idx][REFP_1][MV_Y] = base_mv_t[base_mv_idx][REFP_1][MV_Y];
+                base_mv[base_mv_idx][REFP_1][REFI] = base_mv_t[base_mv_idx][REFP_1][REFI];
+            }
+            else if (base_type[cur_set][base_mv_idx] == 1)
+            {
+                if (slice_t == SLICE_P)
+                {
+                    base_mv[base_mv_idx][REFP_0][REFI] = base_mv_p[base_mv_idx][cur_set][REFI];
+                    base_mv[base_mv_idx][REFP_1][REFI] = -1;
+
+                    base_mv[base_mv_idx][REFP_0][MV_X] = base_mv_p[base_mv_idx][cur_set][MV_X];
+                    base_mv[base_mv_idx][REFP_0][MV_Y] = base_mv_p[base_mv_idx][cur_set][MV_Y];
+                }
+                else
+                {
+                    base_mv[base_mv_idx][REFP_0][REFI] = base_mv_t[base_mv_idx][REFP_0][REFI];
+                    base_mv[base_mv_idx][REFP_1][REFI] = -1;
+
+                    base_mv[base_mv_idx][REFP_0][MV_X] = base_mv_t[base_mv_idx][REFP_0][MV_X];
+                    base_mv[base_mv_idx][REFP_0][MV_Y] = base_mv_t[base_mv_idx][REFP_0][MV_Y];
+                }
+            }
+            else if (base_type[cur_set][base_mv_idx] == 2)
+            {
+                base_mv[base_mv_idx][REFP_0][REFI] = -1;
+                base_mv[base_mv_idx][REFP_1][REFI] = base_mv_t[base_mv_idx][REFP_1][REFI];
+
+                base_mv[base_mv_idx][REFP_1][MV_X] = base_mv_t[base_mv_idx][REFP_1][MV_X];
+                base_mv[base_mv_idx][REFP_1][MV_Y] = base_mv_t[base_mv_idx][REFP_1][MV_Y];
+            }
+            else if (base_type[cur_set][base_mv_idx] == 3)
+            {
+                base_mv[base_mv_idx][REFP_0][REFI] = -1;
+                base_mv[base_mv_idx][REFP_1][REFI] = -1;
+            }
+
+            list0_r = base_mv[base_mv_idx][REFP_0][REFI];
+            list1_r = base_mv[base_mv_idx][REFP_1][REFI];
+
+            ref_sign = 1;
+            if (slice_t == SLICE_B)
+            {
+                if ((list0_r != -1) && (list1_r != -1))
+                {
+                    poc0 = REF_SET[0][list0_r];
+                    poc1 = REF_SET[1][list1_r];
+                    poc_c = curr_ptr;
+                    if ((poc0 - poc_c) * (poc_c - poc1) > 0)
+                    {
+                        ref_sign = -1;
+                    }
+                }
+            }
+
+            for (k = mmvd_v_st; k < mmvd_v_ed; k++)
+            {
+                list0_weight = 1 << MVP_SCALING_PRECISION;
+                list1_weight = 1 << MVP_SCALING_PRECISION;
+                ref_mvd = ref_mvd_cands[(int)(k / 4)];
+                ref_mvd1 = ref_mvd_cands[(int)(k / 4)];
+
+                if ((list0_r != -1) && (list1_r != -1))
+                {
+                    poc0 = REF_SET[0][list0_r];
+                    poc1 = REF_SET[1][list1_r];
+                    poc_c = curr_ptr;
+
+                    if (XEVE_ABS(poc1 - poc_c) >= XEVE_ABS(poc0 - poc_c))
+                    {
+                        list0_weight = (XEVE_ABS(poc0 - poc_c) << MVP_SCALING_PRECISION) / (XEVE_ABS(poc1 - poc_c));
+                        ref_mvd = XEVE_CLIP3(-32768, 32767, (list0_weight * ref_mvd_cands[(int)(k / 4)] + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION);
+                    }
+                    else
+                    {
+                        list1_weight = (XEVE_ABS(poc1 - poc_c) << MVP_SCALING_PRECISION) / (XEVE_ABS(poc0 - poc_c));
+                        ref_mvd1 = XEVE_CLIP3(-32768, 32767, (list1_weight * ref_mvd_cands[(int)(k / 4)] + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION);
+                    }
+
+                    ref_mvd = XEVE_CLIP3(-(1 << 15), (1 << 15) - 1, ref_mvd);
+                    ref_mvd1 = XEVE_CLIP3(-(1 << 15), (1 << 15) - 1, ref_mvd1);
+                }
+
+                if ((k % 4) == 0)
+                {
+                    hor0var[k] = ref_mvd;
+                    hor1var[k] = ref_mvd1 * ref_sign;
+                    ver0var[k] = 0;
+                    ver1Var[k] = 0;
+                }
+                else if ((k % 4) == 1)
+                {
+                    hor0var[k] = ref_mvd * -1;
+                    hor1var[k] = ref_mvd1 * -1 * ref_sign;
+                    ver0var[k] = 0;
+                    ver1Var[k] = 0;
+                }
+                else if ((k % 4) == 2)
+                {
+                    hor0var[k] = 0;
+                    hor1var[k] = 0;
+                    ver0var[k] = ref_mvd;
+                    ver1Var[k] = ref_mvd1 * ref_sign;
+                }
+                else
+                {
+                    hor0var[k] = 0;
+                    hor1var[k] = 0;
+                    ver0var[k] = ref_mvd * -1;
+                    ver1Var[k] = ref_mvd1 * -1 * ref_sign;
+                }
+
+                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_0][MV_X] = base_mv[base_mv_idx][REFP_0][MV_X] + hor0var[k];
+                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_0][MV_Y] = base_mv[base_mv_idx][REFP_0][MV_Y] + ver0var[k];
+                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_1][MV_X] = base_mv[base_mv_idx][REFP_1][MV_X] + hor1var[k];
+                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_1][MV_Y] = base_mv[base_mv_idx][REFP_1][MV_Y] + ver1Var[k];
+
+                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_0][REFI] = base_mv[base_mv_idx][REFP_0][REFI];
+                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_1][REFI] = base_mv[base_mv_idx][REFP_1][REFI];
+            }
+        }
+    }
 }
 
 static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], int log2_cuw, int log2_cuh, int slice_t, int scup
@@ -2395,7 +2784,7 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
     s8 refi[MAX_NUM_MVP];
     s8 refi1[MAX_NUM_MVP];
     int sld[MMVD_BASE_MV_NUM*MMVD_BASE_MV_NUM][2];
-    int idx0, idx1, cnt;
+    int idx0, idx1;
     int s, z, a;
     int sld1[MMVD_BASE_MV_NUM];
     int sld2[MMVD_BASE_MV_NUM];
@@ -2440,7 +2829,7 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
     }
     else
     {
-        xeve_get_motion_merge_main(curr_ptr, slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, h_scu, srefi, smvp, map_scu, avail_lr
+        xevem_get_motion_merge(curr_ptr, slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, h_scu, srefi, smvp, map_scu, avail_lr
                                    , NULL, history_buffer, 0, (XEVE_REFP(*)[2])refp, sh, log2_max_cuwh, ctx->map_tidx);
     }
 
@@ -2472,9 +2861,7 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
     {
         for(idx0 = 0; idx0 < ORG_MAX_NUM_MVP; idx0++)
         {
-            cnt = (slice_t == SLICE_B ? ORG_MAX_NUM_MVP : 1);
-
-            for(idx1 = 0; idx1 < cnt; idx1++)
+            idx1 = idx0;
             {
                 base_mv[c_num][0][MV_X] = mvp[idx0][MV_X];
                 base_mv[c_num][0][MV_Y] = mvp[idx0][MV_Y];
@@ -2575,7 +2962,7 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
     double            cost, cost_best = MAX_COST;
     double            ad_best_costs[MAX_NUM_MVP];
     int               j;
-    int               cuw, cuh, idx0, idx1, cnt, bit_cnt;
+    int               cuw, cuh, idx0, idx1, bit_cnt;
     s64               cy, cu, cv;
     int               w_shift = ctx->param.cs_w_shift;
     int               h_shift = ctx->param.cs_h_shift;
@@ -2603,7 +2990,7 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
     }
     else
     {
-        xeve_get_motion_merge_main(ctx->poc.poc_val, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, pi->refp[0], cuw, cuh, ctx->w_scu, ctx->h_scu, pi->refi_pred, pi->mvp, ctx->map_scu, core->avail_lr
+        xevem_get_motion_merge(ctx->poc.poc_val, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, pi->refp[0], cuw, cuh, ctx->w_scu, ctx->h_scu, pi->refi_pred, pi->mvp, ctx->map_scu, core->avail_lr
                                    , ctx->map_unrefined_mv, mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], &ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
     }
 
@@ -2618,14 +3005,8 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
     pi->mvp_idx[PRED_SKIP][REFP_1] = 0;
     for(idx0 = 0; idx0 < (cuw*cuh <= NUM_SAMPLES_BLOCK ? MAX_NUM_MVP_SMALL_CU : MAX_NUM_MVP); idx0++)
     {
-        cnt = (ctx->slice_type == SLICE_B ? (cuw * cuh <= NUM_SAMPLES_BLOCK ? MAX_NUM_MVP_SMALL_CU : MAX_NUM_MVP) : 1);
-
-        for(idx1 = 0; idx1 < cnt; idx1++)
+        idx1 = idx0;
         {
-            if(idx0 != idx1)
-            {
-                continue;
-            }
 
             mvp[REFP_0][MV_X] = pi->mvp[REFP_0][idx0][MV_X];
             mvp[REFP_0][MV_Y] = pi->mvp[REFP_0][idx0][MV_Y];
@@ -2809,13 +3190,13 @@ static double analyze_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int lo
     }
     else
     {
-        xeve_get_motion_merge_main(ctx->poc.poc_val, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, pi->refp[0], cuw, cuh, ctx->w_scu, ctx->h_scu, pi->refi_pred, pi->mvp, ctx->map_scu, core->avail_lr
+        xevem_get_motion_merge(ctx->poc.poc_val, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, pi->refp[0], cuw, cuh, ctx->w_scu, ctx->h_scu, pi->refi_pred, pi->mvp, ctx->map_scu, core->avail_lr
                                    , ctx->map_unrefined_mv, mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], &ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
     }
 
     for(idx0 = 0; idx0 < (cuw*cuh <= NUM_SAMPLES_BLOCK ? MAX_NUM_MVP_SMALL_CU : MAX_NUM_MVP); idx0++)
     {
-        if(0 == mcore->eval_mvp_idx[idx0])
+        if(ctx->sh.slice_type == SLICE_B && 0 == mcore->eval_mvp_idx[idx0])
         {
             continue;
         }
@@ -3290,12 +3671,36 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     return min_cost;
 }
 
+static s8 get_first_refi_main(int scup, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int cuw, int cuh, int w_scu, int h_scu, u32 *map_scu, u8 mvr_idx, u16 avail_lr
+                            , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER history_buffer, int hmvp_flag, u8* map_tidx)
+{
+    int neb_addr[MAX_NUM_POSSIBLE_SCAND], valid_flag[MAX_NUM_POSSIBLE_SCAND];
+    s8  refi = 0, default_refi;
+    s16 default_mv[MV_D];
+
+    xeve_check_motion_availability(scup, cuw, cuh, w_scu, h_scu, neb_addr, valid_flag, map_scu, avail_lr, 1, 0, map_tidx);
+    xeve_get_default_motion_main(neb_addr, valid_flag, 0, lidx, map_refi, map_mv, &default_refi, default_mv, map_scu, map_unrefined_mv, scup, w_scu, history_buffer, hmvp_flag);
+
+    assert(mvr_idx < 5);
+    //neb-position is coupled with mvr index
+    if(valid_flag[mvr_idx])
+    {
+        refi = REFI_IS_VALID(map_refi[neb_addr[mvr_idx]][lidx]) ? map_refi[neb_addr[mvr_idx]][lidx] : default_refi;
+    }
+    else
+    {
+        refi = default_refi;
+    }
+
+    return refi;
+}
+
 s8 pinter_get_first_refi_main(XEVE_CTX *ctx, XEVE_CORE *core, int ref_idx, int pidx, int cuw, int cuh)
 {
     XEVEM_CORE *mcore = (XEVEM_CORE*)core;
     XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
-    return xeve_get_first_refi_main(core->scup, ref_idx, ctx->map_refi, ctx->map_mv, cuw, cuh, ctx->w_scu, ctx->h_scu, ctx->map_scu, pi->mvr_idx[pidx], core->avail_lr
+    return get_first_refi_main(core->scup, ref_idx, ctx->map_refi, ctx->map_mv, cuw, cuh, ctx->w_scu, ctx->h_scu, ctx->map_scu, pi->mvr_idx[pidx], core->avail_lr
                                     , ctx->map_unrefined_mv, mcore->history_buffer, ctx->sps.tool_hmvp, ctx->map_tidx);
 }
 
@@ -4320,7 +4725,7 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
             REF_SET[1][k] = ctx->refp[k][1].poc;
         }
 
-        xeve_get_mmvd_mvp_list(ctx->map_refi, ctx->refp[0], ctx->map_mv, ctx->w_scu, ctx->h_scu, core->scup, core->avail_cu, log2_cuw, log2_cuh, ctx->slice_type, real_mv, ctx->map_scu, REF_SET, core->avail_lr
+        get_mmvd_mvp_list(ctx->map_refi, ctx->refp[0], ctx->map_mv, ctx->w_scu, ctx->h_scu, core->scup, core->avail_cu, log2_cuw, log2_cuh, ctx->slice_type, real_mv, ctx->map_scu, REF_SET, core->avail_lr
                                , ctx->poc.poc_val, ctx->rpm.num_refp
                                , mcore->history_buffer, ctx->sps.tool_admvp, &ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx, -1);
     }
@@ -5214,7 +5619,7 @@ void pinter_mc_main(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int w, int h, 
     XEVEM_CORE *mcore = (XEVEM_CORE *)core;
     XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
-    xeve_mc_main(x, y, ctx->w, ctx->h, w, h, refi, mv, refp, pred, poc_c, pi->dmvr_template, pi->dmvr_ref_pred_interpolated
+    xevem_mc(x, y, ctx->w, ctx->h, w, h, refi, mv, refp, pred, poc_c, pi->dmvr_template, pi->dmvr_ref_pred_interpolated
                , pi->dmvr_half_pred_interpolated, apply_dmvr && ctx->sps.tool_dmvr, pi->dmvr_padding_buf, &(mcore->dmvr_flag)
                , dmvr_mv, ctx->sps.tool_admvp, ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
 }
@@ -5276,22 +5681,22 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
     return XEVE_OK;
 }
 
-int xeve_pinter_create_main(XEVE_CTX *ctx, int complexity)
+int xevem_pinter_create(XEVE_CTX *ctx, int complexity)
 {
     /* set function addresses */
-    ctx->fn_pinter_init_tile = pinter_init_tile;
-    ctx->fn_pinter_init_lcu = pinter_init_lcu;
+    ctx->fn_pinter_init_mt = pinter_init_mt;
+    ctx->fn_pinter_init_lcu = xeve_pinter_init_lcu;
     ctx->fn_pinter_set_complexity = pinter_set_complexity;
 
     if(ctx->cdsc.ext->tool_admvp == 0)
     {
-        tbl_mc_l_coeff = xeve_tbl_mc_l_coeff;
-        tbl_mc_c_coeff = xeve_tbl_mc_c_coeff;
+        xeve_mc_l_coeff = xeve_tbl_mc_l_coeff;
+        xeve_mc_c_coeff = xeve_tbl_mc_c_coeff;
     }
     else
     {
-        tbl_mc_l_coeff = tbl_mc_l_coeff_main;
-        tbl_mc_c_coeff = tbl_mc_c_coeff_main;
+        xeve_mc_l_coeff = xevem_tbl_mc_l_coeff;
+        xeve_mc_c_coeff = xevem_tbl_mc_c_coeff;
     }
 
     XEVE_PINTER * pi;

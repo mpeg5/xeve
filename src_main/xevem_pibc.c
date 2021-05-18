@@ -288,8 +288,8 @@ __inline u32 get_exp_golomb_bits(u32 abs_mvd)
     return bits;
 }
 
-static double pibc_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh,
-    pel pred[2][N_C][MAX_CU_DIM], s16 coef[N_C][MAX_CU_DIM], u8 mvp_idx, s16 match_pos[MV_D])
+static double pibc_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh
+                             , pel pred[2][N_C][MAX_CU_DIM], s16 coef[N_C][MAX_CU_DIM], u8 mvp_idx, s16 match_pos[MV_D])
 {
     XEVEM_CTX  *mctx = (XEVEM_CTX *)ctx;
     XEVEM_CORE *mcore = (XEVEM_CORE *)core;
@@ -507,23 +507,6 @@ static void ibc_set_search_range(XEVE_CTX *ctx, XEVE_CORE *core, int cu_pel_x, i
         cu_pel_x, cu_pel_y);
     clip_ibc_mv(mv_search_range_right, pic_width, pic_height, ctx->max_cuwh, ctx->max_cuwh,
         cu_pel_x, cu_pel_y);
-}
-
-static void init_log_lut(XEVE_PIBC *pi)
-{
-    int size = sizeof(s8) * (MAX_CU_SIZE + 1);
-    xeve_mset(pi->ctu_log2_tbl, 0, size);
-    int c = 0;
-    for (int i = 0, n = 0; i <= MAX_CU_SIZE; i++)
-    {
-        if (i == (1 << n))
-        {
-            c = n;
-            n++;
-        }
-
-        pi->ctu_log2_tbl[i] = c;
-    }
 }
 
 static void update_ibc_mv_cand(u32 sad, int x, int y, u32 *sad_best_cand, s16 mv_cand[CHROMA_REFINEMENT_CANDIDATES][MV_D])
@@ -1114,6 +1097,23 @@ static double pibc_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int 
     }
 }
 
+static void init_log_lut(XEVE_PIBC *pi)
+{
+    int size = sizeof(s8) * (MAX_CU_SIZE + 1);
+    xeve_mset(pi->ctu_log2_tbl, 0, size);
+    int c = 0;
+    for (int i = 0, n = 0; i <= MAX_CU_SIZE; i++)
+    {
+        if (i == (1 << n))
+        {
+            c = n;
+            n++;
+        }
+
+        pi->ctu_log2_tbl[i] = c;
+    }
+}
+
 static int pibc_init_tile(XEVE_CTX *ctx, int tile_idx)
 {
     XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
@@ -1213,7 +1213,7 @@ static int pibc_set_complexity(XEVE_CTX *ctx, int complexity)
     return XEVE_OK;
 }
 
-int xeve_pibc_create(XEVE_CTX *ctx, int complexity)
+int xevem_pibc_create(XEVE_CTX *ctx, int complexity)
 {
     XEVE_PIBC * pi;
     XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;

@@ -33,8 +33,7 @@
    POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "xeve_tbl.h"
-#include "xeve_util.h"
+#include "xeve_def.h"
 #include "xevem_mc.h"
 #include "xevem_mc_sse.h"
 #include <assert.h>
@@ -686,7 +685,7 @@ void xeve_mc_dmvr_l_n0_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_l_8pel_horz_clip_sse(ref, s_ref, pred, s_pred, tbl_mc_l_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0);
+    mc_filter_l_8pel_horz_clip_sse(ref, s_ref, pred, s_pred, xeve_mc_l_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0);
 }
 
 void xeve_mc_dmvr_l_0n_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth)
@@ -697,7 +696,7 @@ void xeve_mc_dmvr_l_0n_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_l_8pel_vert_clip_sse(ref, s_ref, pred, s_pred, tbl_mc_l_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N);
+    mc_filter_l_8pel_vert_clip_sse(ref, s_ref, pred, s_pred, xeve_mc_l_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N);
 }
 
 void xeve_mc_dmvr_l_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
@@ -717,8 +716,8 @@ void xeve_mc_dmvr_l_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
 
     int min = 0;
 
-    mc_filter_l_8pel_horz_no_clip_sse(ref, s_ref, buf, w, tbl_mc_l_coeff[dx], w, (h + 7), offset1, shift1);
-    mc_filter_l_8pel_vert_clip_sse(buf, w, pred, s_pred, tbl_mc_l_coeff[dy], w, h, min, max, offset2, shift2);
+    mc_filter_l_8pel_horz_no_clip_sse(ref, s_ref, buf, w, xeve_mc_l_coeff[dx], w, (h + 7), offset1, shift1);
+    mc_filter_l_8pel_vert_clip_sse(buf, w, pred, s_pred, xeve_mc_l_coeff[dy], w, h, min, max, offset2, shift2);
 }
 
 void xeve_bl_mc_l_00_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth)
@@ -884,7 +883,7 @@ void xeve_mc_dmvr_c_n0_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_c_4pel_horz_sse(ref, s_ref, pred, s_pred, tbl_mc_c_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0, 1);
+    mc_filter_c_4pel_horz_sse(ref, s_ref, pred, s_pred, xeve_mc_c_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0, 1);
 }
 
 void xeve_mc_dmvr_c_0n_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
@@ -895,7 +894,7 @@ void xeve_mc_dmvr_c_0n_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_c_4pel_vert_sse(ref, s_ref, pred, s_pred, tbl_mc_c_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N, 1);
+    mc_filter_c_4pel_vert_sse(ref, s_ref, pred, s_pred, xeve_mc_c_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N, 1);
 }
 
 void xeve_mc_dmvr_c_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
@@ -914,8 +913,8 @@ void xeve_mc_dmvr_c_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_c_4pel_horz_sse(ref, s_ref, buf, w, tbl_mc_c_coeff[dx], w, (h + 3), min, max, offset1, shift1, 0);
-    mc_filter_c_4pel_vert_sse(buf, w, pred, s_pred, tbl_mc_c_coeff[dy], w, h, min, max, offset2, shift2, 1);
+    mc_filter_c_4pel_horz_sse(ref, s_ref, buf, w, xeve_mc_c_coeff[dx], w, (h + 3), min, max, offset1, shift1, 0);
+    mc_filter_c_4pel_vert_sse(buf, w, pred, s_pred, xeve_mc_c_coeff[dy], w, h, min, max, offset2, shift2, 1);
 }
 
 XEVE_MC_L xeve_tbl_dmvr_mc_l_sse[2][2] =

@@ -232,7 +232,7 @@ void filter_block_luma(pel *block, const u8 HTDF_table[HTDF_LUT_QP_NUM][1 << HTD
 {
     pel acc_block[(MAX_CU_SIZE + 2)*(MAX_CU_SIZE + 2)];
 
-    memset(acc_block, 0, stride*height * sizeof(*acc_block));
+    xeve_mset(acc_block, 0, stride*height * sizeof(*acc_block));
 
     int idx = (qp - HTDF_LUT_MIN_QP + (1 << (HTDF_LUT_STEP_QP_LOG2 - 1))) >> HTDF_LUT_STEP_QP_LOG2;
     idx = XEVE_MAX(idx, 0);
@@ -283,7 +283,7 @@ void xeve_htdf(s16* rec, int qp, int w, int h, int s, BOOL intra_block_flag, pel
 
     for (int i = 0; i < h; ++i)
     {
-        memcpy(temp_block + (i + 1) * width_ext + 1, rec + i * s, w * sizeof(rec[0]));
+        xeve_mcpy(temp_block + (i + 1) * width_ext + 1, rec + i * s, w * sizeof(rec[0]));
     }
 
     if(IS_AVAIL(avail_cu, AVAIL_LE))
@@ -344,10 +344,10 @@ void xeve_htdf(s16* rec, int qp, int w, int h, int s, BOOL intra_block_flag, pel
     }
     else
     {
-        memcpy(temp_block + 1, rec, w * sizeof(rec[0]));
+        xeve_mcpy(temp_block + 1, rec, w * sizeof(rec[0]));
     }
 
-    memcpy(temp_block + 1 + (height_ext - 1) * width_ext, rec + (h - 1) * s, w * sizeof(rec[0]));
+    xeve_mcpy(temp_block + 1 + (height_ext - 1) * width_ext, rec + (h - 1) * s, w * sizeof(rec[0]));
 
     temp_block[0] = IS_AVAIL(avail_cu, AVAIL_UP_LE) ? rec_pic[-1 - 1 * s_pic] : rec[0];
     temp_block[width_ext - 1] = IS_AVAIL(avail_cu, AVAIL_UP_RI) ? rec_pic[w - 1 * s_pic] : rec[w - 1];
@@ -357,5 +357,5 @@ void xeve_htdf(s16* rec, int qp, int w, int h, int s, BOOL intra_block_flag, pel
     filter_block_luma(temp_block, HTDF_table, width_ext, height_ext, width_ext, qp,  bit_depth);
 
     for (int i = 0; i < h; ++i)
-        memcpy(rec + i * s, temp_block + (i + 1) * width_ext + 1, w * sizeof(rec[0]));
+        xeve_mcpy(rec + i * s, temp_block + (i + 1) * width_ext + 1, w * sizeof(rec[0]));
 }

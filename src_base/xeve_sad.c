@@ -395,7 +395,7 @@ int xeve_had_2x2(pel *org, pel *cur, int s_org, int s_cur, int step)
 {
     int satd = 0;
     int sub[4], interm[4];
-	pel *orgn = org, *curn = cur;
+    pel *orgn = org, *curn = cur;
 
     sub[0] = orgn[0        ] - curn[0        ];
     sub[1] = orgn[1        ] - curn[1        ];
@@ -418,7 +418,7 @@ int xeve_had_4x4(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_dep
 int k;
     int satd = 0;
     int sub[16], interm1[16], interm2[16];
-	pel * orgn = org, *curn = cur;
+    pel * orgn = org, *curn = cur;
 
     for( k = 0; k < 16; k+=4 )
     {
@@ -514,7 +514,7 @@ int xeve_had_8x8(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_dep
     int k, i, j, jj;
     int satd = 0;
     int sub[64], interm1[8][8], interm2[8][8], interm3[8][8];
-	pel * orgn = org, *curn = cur;
+    pel * orgn = org, *curn = cur;
 
     for(k = 0; k < 64; k += 8)
     {
@@ -617,7 +617,7 @@ int xeve_had_16x8(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_de
     int k, i, j, jj;
     int satd = 0;
     int sub[128], interm1[8][16], interm2[8][16];
-	pel * orgn = org, *curn = cur;
+    pel * orgn = org, *curn = cur;
 
     for(k = 0; k < 128; k += 16)
     {
@@ -769,7 +769,7 @@ int xeve_had_8x16(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_de
     int k, i, j, jj;
     int satd = 0;
     int sub[128], interm1[16][8], interm2[16][8];
-	pel * curn = cur, *orgn = org;
+    pel * curn = cur, *orgn = org;
 
     for(k = 0; k < 128; k += 8)
     {
@@ -912,7 +912,7 @@ int xeve_had_8x4(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_dep
     int k, i, j, jj;
     int satd = 0;
     int sub[32], interm1[4][8], interm2[4][8];
-	pel *orgn = org, *curn=cur;
+    pel *orgn = org, *curn=cur;
 
     for(k = 0; k < 32; k += 8)
     {
@@ -997,7 +997,7 @@ int xeve_had_4x8(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_dep
     int k, i, j, jj;
     int satd = 0;
     int sub[32], interm1[8][4], interm2[8][4];
-	pel *curn =cur, *orgn = org;
+    pel *curn =cur, *orgn = org;
 
     for(k = 0; k < 32; k += 4)
     {

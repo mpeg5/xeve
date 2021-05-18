@@ -41,13 +41,13 @@
 
  /*Declaration for ref pic marking and ref pic list construction functions */
 int xeve_picman_refp_init(XEVE_PM *pm, int max_num_ref_pics, int slice_type, u32 poc, u8 layer_id, int last_intra, XEVE_REFP (*refp)[REFP_NUM]);
-void picman_update_pic_ref(XEVE_PM * pm);
+void xeve_picman_update_pic_ref(XEVE_PM * pm);
 XEVE_PIC * xeve_picman_get_empty_pic(XEVE_PM *pm, int *err);
 int xeve_picman_put_pic(XEVE_PM *pm, XEVE_PIC *pic, int is_idr, u32 poc, u8 layer_id, int need_for_output, XEVE_REFP (*refp)[REFP_NUM], int ref_pic, int pnpf, int ref_pic_gap_length);
 XEVE_PIC * xeve_picman_out_pic(XEVE_PM *pm, int *err);
 int xeve_picman_deinit(XEVE_PM *pm);
 int xeve_picman_init(XEVE_PM *pm, int max_pb_size, int max_num_ref_pics, PICBUF_ALLOCATOR *pa);
-void set_refp(XEVE_REFP * refp, XEVE_PIC  * pic_ref);
-int picman_move_pic(XEVE_PM *pm, int from, int to);
+void xeve_set_refp(XEVE_REFP * refp, XEVE_PIC  * pic_ref);
+int xeve_picman_move_pic(XEVE_PM *pm, int from, int to);
 
 #endif /* _XEVE_PICMAN_H_ */

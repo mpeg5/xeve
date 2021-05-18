@@ -31,7 +31,7 @@
 #include "xeve_type.h"
 #include <math.h>
 
-int xeve_pintra_init_tile(XEVE_CTX * ctx, int tile_idx)
+int xeve_pintra_init_mt(XEVE_CTX * ctx, int tile_idx)
 {
     XEVE_PINTRA * pi;
     XEVE_PIC    * pic;
@@ -266,9 +266,9 @@ static int make_ipred_list(XEVE_CTX * ctx, XEVE_CORE * core, int log2_cuw, int l
     }
 
     pred_cnt = ipd_rdo_cnt;
-    for(i = ipd_rdo_cnt - 1; i >= 0; i--)
+    for(i = ipd_rdo_cnt - 1; i >= 1; i--)
     {
-        if(cand_satd_cost[i] > core->inter_satd * (1.1))
+        if(cand_satd_cost[i] > core->inter_satd * (1.2))
         {
             pred_cnt--;
         }
@@ -547,7 +547,7 @@ int xeve_pintra_create(XEVE_CTX * ctx, int complexity)
 {
     /* set function addresses */
     ctx->fn_pintra_set_complexity = xeve_pintra_set_complexity;
-    ctx->fn_pintra_init_tile = xeve_pintra_init_tile;
+    ctx->fn_pintra_init_mt = xeve_pintra_init_mt;
     ctx->fn_pintra_init_lcu = xeve_pintra_analyze_lcu;
     ctx->fn_pintra_analyze_cu = pintra_analyze_cu;
 

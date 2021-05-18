@@ -39,16 +39,16 @@
 #include "xevem_type.h"
 
 /* Intra prediction */
-int xeve_pintra_create_main(XEVE_CTX * ctx, int complexity);
+int xevem_pintra_create(XEVE_CTX * ctx, int complexity);
 
 /* Inter prediction */
-int xeve_pinter_create_main(XEVE_CTX * ctx, int complexity);
+int xevem_pinter_create(XEVE_CTX * ctx, int complexity);
 
 /* IBC prediction */
 #define GET_BV_COST(ctx, mv_bits)  ((u32)(core->sqrt_lambda[0] * mv_bits / 65536.0))
 
 u32 get_bv_cost_bits(int mv_x, int mv_y);
-int xeve_pibc_create(XEVE_CTX * ctx, int complexity);
+int xevem_pibc_create(XEVE_CTX * ctx, int complexity);
 
 void reset_ibc_search_range(XEVE_CTX *ctx, int cu_x, int cu_y, int log2_cuw, int log2_cuh, XEVE_CORE * core);
 int is_bv_valid(XEVE_CTX *ctx, int x, int y, int width, int height, int log2_cuw, int log2_cuh

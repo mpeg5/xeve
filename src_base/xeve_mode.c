@@ -29,14 +29,9 @@
 */
 
 #include "xeve_type.h"
-#include "xeve_type.h"
 #include "xeve_mode.h"
 #include "xeve_ipred.h"
-#include "xeve_ipred.h"
-#include "xeve_tbl.h"
-#include "xeve_df.h"
 #include <math.h>
-#include "xeve_util.h"
 
 typedef int(*LOSSY_ES_FUNC)(XEVE_CU_DATA *, int, double, int, int, int, int, int, int);
 static s32 entropy_bits[1024];
@@ -679,7 +674,7 @@ void get_min_max_qp(XEVE_CTX * ctx, XEVE_CORE *core, s8 * min_qp, s8 * max_qp, i
     }
     else
     {
-        if (ctx->param.qpa)
+        if (ctx->param.aq_mode != 0 || ctx->param.cutree != 0)
         {
 
             dqp = get_averaged_qp(ctx->map_dqp_lah, x_scu, y_scu, ctx->w_scu, ctx->h_scu, cuw, cuh);
@@ -788,8 +783,8 @@ void mode_cpy_rec_to_ref(XEVE_CORE *core, int x, int y, int w, int h, XEVE_PIC *
     int            j, s_pic, off, size;
     int            log2_w, log2_h;
     int            stride;
-    int w_shift = (XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc));
-    int h_shift = (XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc));
+    int            w_shift = (XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc));
+    int            h_shift = (XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc));
 
     log2_w = XEVE_LOG2(w);
     log2_h = XEVE_LOG2(h);
@@ -1504,25 +1499,25 @@ void calc_delta_dist_filter_boundary(XEVE_CTX* ctx, XEVE_PIC *pic_rec, XEVE_PIC 
     int i, j;
     int log2_cuw = XEVE_LOG2(cuw);
     int log2_cuh = XEVE_LOG2(cuh);
-    int x_offset = 8; //for preparing deblocking filter taps
-    int y_offset = 8;
-    int x_tm = 4; //for calculating template dist
-    int y_tm = 4; //must be the same as x_tm
+    int x_offset = 4; //for preparing deblocking filter taps
+    int y_offset = 4;
+    int x_tm = ctx->sps.tool_addb ? 4 : 2; //for calculating template dist
+    int y_tm = ctx->sps.tool_addb ? 4 : 2; //must be the same as x_tm
     int log2_x_tm = XEVE_LOG2(x_tm);
     int log2_y_tm = XEVE_LOG2(y_tm);
-    XEVE_PIC *pic_dbk = ctx->pic_dbk;
+    XEVE_PIC * pic_dbk = ctx->pic_dbk;
     int s_l_dbk = pic_dbk->s_l;
     int s_c_dbk = pic_dbk->s_c;
     int s_l_org = pic_org->s_l;
     int s_c_org = pic_org->s_c;
     int w_shift = ctx->param.cs_w_shift;
     int h_shift = ctx->param.cs_h_shift;
-    pel* dst_y = pic_dbk->y + y * s_l_dbk + x;
-    pel* dst_u = pic_dbk->u + (y >> h_shift) * s_c_dbk + (x >> w_shift);
-    pel* dst_v = pic_dbk->v + (y >> h_shift) * s_c_dbk + (x >> w_shift);
-    pel* org_y = pic_org->y + y * s_l_org + x;
-    pel* org_u = pic_org->u + (y >> h_shift) * s_c_org + (x >> w_shift);
-    pel* org_v = pic_org->v + (y >> h_shift) * s_c_org + (x >> w_shift);
+    pel * dst_y = pic_dbk->y + y * s_l_dbk + x;
+    pel * dst_u = pic_dbk->u + (y >> h_shift) * s_c_dbk + (x >> w_shift);
+    pel * dst_v = pic_dbk->v + (y >> h_shift) * s_c_dbk + (x >> w_shift);
+    pel * org_y = pic_org->y + y * s_l_org + x;
+    pel * org_u = pic_org->u + (y >> h_shift) * s_c_org + (x >> w_shift);
+    pel * org_v = pic_org->v + (y >> h_shift) * s_c_org + (x >> w_shift);
     int x_scu = x >> MIN_CU_LOG2;
     int y_scu = y >> MIN_CU_LOG2;
     int t = x_scu + y_scu * ctx->w_scu;
@@ -1936,7 +1931,7 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
             {
                 core->qp = GET_QP((s8)qp, dqp - (s8)qp);
 
-                if (ctx->param.qpa)
+                if (ctx->param.aq_mode != 0 || ctx->param.cutree != 0)
                 {
                     set_lambda(ctx, core, &ctx->sh, core->qp);
                 }
@@ -2046,7 +2041,7 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
             clear_map_scu(ctx, core, x0, y0, cuw, cuh);
             cost_temp = 0.0;
 
-            if (x0 + cuw <= ctx->w && y0 + cuh <= ctx->h)
+            /* When BTT is disabled, split_cu_flag should always be considered although CU is on the picture boundary */
             {
                 /* consider CU split flag */
                 SBAC_LOAD(core->s_temp_run, core->s_curr_before_split[log2_cuw - 2][log2_cuh - 2]);
@@ -2144,7 +2139,7 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
             {
                 /* backup the current best data */
                 copy_cu_data(&core->cu_data_best[log2_cuw - 2][log2_cuh - 2], &core->cu_data_temp[log2_cuw - 2][log2_cuh - 2]
-                            , 0, 0, log2_cuw, log2_cuh, log2_cuw, cud, core->tree_cons, ctx->sps.chroma_format_idc);
+                           , 0, 0, log2_cuw, log2_cuh, log2_cuw, cud, core->tree_cons, ctx->sps.chroma_format_idc);
                 cost_best = cost_temp;
                 best_dqp = core->dqp_data[prev_log2_sub_cuw - 2][prev_log2_sub_cuh - 2].prev_qp;
                 DQP_STORE(dqp_temp_depth, core->dqp_next_best[prev_log2_sub_cuw - 2][prev_log2_sub_cuh - 2]);
@@ -2185,27 +2180,27 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
     return (cost_best > MAX_COST) ? MAX_COST : cost_best;
 }
 
-int mode_init_tile(XEVE_CTX *ctx, int tile_idx)
+int xeve_mode_init_mt(XEVE_CTX *ctx, int thread_idx)
 {
     XEVE_MODE *mi;
     int ret;
 
-    mi = &ctx->mode[tile_idx];
+    mi = &ctx->mode[thread_idx];
 
     /* set default values to mode information */
     mi->log2_culine = ctx->log2_max_cuwh - MIN_CU_LOG2;
 
     /* initialize pintra */
-    if (ctx->fn_pintra_init_tile)
+    if (ctx->fn_pintra_init_mt)
     {
-        ret = ctx->fn_pintra_init_tile(ctx, tile_idx);
+        ret = ctx->fn_pintra_init_mt(ctx, thread_idx);
         xeve_assert_rv(ret == XEVE_OK, ret);
     }
 
     /* initialize pinter */
-    if (ctx->fn_pinter_init_tile)
+    if (ctx->fn_pinter_init_mt)
     {
-        ret = ctx->fn_pinter_init_tile(ctx, tile_idx);
+        ret = ctx->fn_pinter_init_mt(ctx, thread_idx);
         xeve_assert_rv(ret == XEVE_OK, ret);
     }
 
@@ -2362,7 +2357,7 @@ static int mode_analyze_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
 
     update_to_ctx_map(ctx, core);
     copy_cu_data(&ctx->map_cu_data[core->lcu_num], &core->cu_data_best[ctx->log2_max_cuwh - 2][ctx->log2_max_cuwh - 2]
-	           , 0, 0, ctx->log2_max_cuwh, ctx->log2_max_cuwh, ctx->log2_max_cuwh, 0, xeve_get_default_tree_cons(), ctx->sps.chroma_format_idc);
+               , 0, 0, ctx->log2_max_cuwh, ctx->log2_max_cuwh, ctx->log2_max_cuwh, 0, xeve_get_default_tree_cons(), ctx->sps.chroma_format_idc);
 
 #if TRACE_ENC_CU_DATA_CHECK
     h = w = 1 << (ctx->log2_max_cuwh - MIN_CU_LOG2);
@@ -2429,7 +2424,7 @@ int xeve_mode_create(XEVE_CTX *ctx, int complexity)
     xeve_mset(mi, 0, sizeof(XEVE_MODE));
 
     /* set function addresses */
-    ctx->fn_mode_init_tile = mode_init_tile;
+    ctx->fn_mode_init_mt = xeve_mode_init_mt;
     ctx->fn_mode_init_lcu = mode_init_lcu;
     ctx->fn_mode_analyze_frame = mode_analyze_frame;
     ctx->fn_mode_analyze_lcu = mode_analyze_lcu;

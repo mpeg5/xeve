@@ -829,7 +829,7 @@ static void copy_tu_from_cu(s16 tu_resi[N_C][MAX_CU_DIM], s16 cu_resi[N_C][MAX_C
     //Y
     for(j = 0; j < tuh; j++)
     {
-        memcpy(tu_resi[Y_C] + j * tuw, cu_resi[Y_C] + j * cuw, sizeof(s16)*tuw);
+        xeve_mcpy(tu_resi[Y_C] + j * tuw, cu_resi[Y_C] + j * cuw, sizeof(s16)*tuw);
     }
     if(chroma_format_idc)
     {
@@ -840,8 +840,8 @@ static void copy_tu_from_cu(s16 tu_resi[N_C][MAX_CU_DIM], s16 cu_resi[N_C][MAX_C
 
         for(j = 0; j < tuh; j++)
         {
-            memcpy(tu_resi[U_C] + j * tuw, cu_resi[U_C] + j * cuw, sizeof(s16)*tuw);
-            memcpy(tu_resi[V_C] + j * tuw, cu_resi[V_C] + j * cuw, sizeof(s16)*tuw);
+            xeve_mcpy(tu_resi[U_C] + j * tuw, cu_resi[U_C] + j * cuw, sizeof(s16)*tuw);
+            xeve_mcpy(tu_resi[V_C] + j * tuw, cu_resi[V_C] + j * cuw, sizeof(s16)*tuw);
         }
     }
 }
@@ -857,12 +857,12 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     s64     dist[2][N_C];
     double  cost, cost_best = MAX_COST;
     int     cbf_idx[N_C], nnz_store[N_C];
-    int     nnz_sub_store[N_C][MAX_SUB_TB_NUM] = {{0},};
+    int     nnz_sub_store[N_C][MAX_SUB_TB_NUM] = { {0}, };
     int     bit_cnt;
     int     i, idx_y, idx_u, idx_v;
     pel   * org[N_C];
     double  cost_comp_best = MAX_COST;
-    int     idx_best[N_C] = {0, };
+    int     idx_best[N_C] = { 0, };
     int     j;
     u8      is_from_mv_field = 0;
     s64     dist_no_resi[N_C];
@@ -943,7 +943,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         if(ctx->param.rdo_dbk_switch)
         {
             calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pred[0], cuw, x, y, core->avail_lr, 0, 0, pi->refi[pidx]
-                                            , pi->mv[pidx], is_from_mv_field, core);
+                                          , pi->mv[pidx], is_from_mv_field, core);
         }
 
         for(i = 0; i < N_C; i++)
@@ -1253,14 +1253,45 @@ static double xeve_analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
 
     for (idx0 = 0; idx0 < pi->skip_merge_cand_num; idx0++)
     {
-        cnt = (ctx->slice_type == SLICE_B ? pi->skip_merge_cand_num : 1);
-        for(idx1 = 0; idx1 < cnt; idx1++)
+        if (idx0)
         {
-            if(idx0 != idx1)
+            /* encoder side pruning */
+            int found_same_mvp = 0;
+            for(int tmp_idx = idx0 - 1; tmp_idx >= 0; tmp_idx--)
+            {
+                if (pi->mvp[REFP_0][tmp_idx][MV_X] == pi->mvp[REFP_0][idx0][MV_X] &&
+                    pi->mvp[REFP_0][tmp_idx][MV_Y] == pi->mvp[REFP_0][idx0][MV_Y])
+                {
+                    found_same_mvp = 1;
+                    break;
+                }
+            }
+            if(found_same_mvp)
             {
                 continue;
             }
-
+        }
+        cnt = (ctx->slice_type == SLICE_B ? pi->skip_merge_cand_num : 1);
+        for(idx1 = 0; idx1 < cnt; idx1++)
+        {
+            if (idx1)
+            {
+                /* encoder side pruning */
+                int found_same_mvp = 0;
+                for (int tmp_idx = idx1 - 1; tmp_idx >= 0; tmp_idx--)
+                {
+                    if(pi->mvp[REFP_1][tmp_idx][MV_X] == pi->mvp[REFP_1][idx1][MV_X] &&
+                       pi->mvp[REFP_1][tmp_idx][MV_Y] == pi->mvp[REFP_1][idx1][MV_Y])
+                    {
+                        found_same_mvp = 1;
+                        break;
+                    }
+                }
+                if (found_same_mvp)
+                {
+                    continue;
+                }
+            }
             mvp[REFP_0][MV_X] = pi->mvp[REFP_0][idx0][MV_X];
             mvp[REFP_0][MV_Y] = pi->mvp[REFP_0][idx0][MV_Y];
             mvp[REFP_1][MV_X] = pi->mvp[REFP_1][idx1][MV_X];
@@ -1477,10 +1508,10 @@ static double analyze_bi(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_
     return cost;
 }
 
-static int pinter_init_tile(XEVE_CTX *ctx, int tile_idx)
+static int pinter_init_mt(XEVE_CTX *ctx, int thread_idx)
 {
     XEVE_PIC    * pic;
-    XEVE_PINTER * pi = &ctx->pinter[tile_idx];
+    XEVE_PINTER * pi = &ctx->pinter[thread_idx];
     int           size;
 
     pic            = pi->pic_o = PIC_ORIG(ctx);
@@ -1551,7 +1582,7 @@ static int pinter_init_tile(XEVE_CTX *ctx, int tile_idx)
     return XEVE_OK;
 }
 
-static int pinter_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
+int xeve_pinter_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
 {
     XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
@@ -1589,9 +1620,23 @@ static void check_best_mvp(XEVE_CTX *ctx, XEVE_CORE *core, s32 slice_type, s8 re
 
     for(idx = 0; idx < ORG_MAX_NUM_MVP; idx++)
     {
-        if(idx == *mvp_idx)
+        if(idx)
         {
-            continue;
+            int found_same_mvp = 0;
+            for (int tmp_idx = idx - 1; tmp_idx >= 0; tmp_idx--)
+            {
+                /* encoder side pruning */
+                if (mvp[idx][MV_X] == mvp[tmp_idx][MV_X] &&
+                    mvp[idx][MV_Y] == mvp[tmp_idx][MV_Y])
+                {
+                    found_same_mvp = 1;
+                    break;
+                }
+            }
+            if (found_same_mvp)
+            {
+                continue;
+            }
         }
 
         SBAC_LOAD(core->s_temp_run, core->s_curr_best[core->log2_cuw - 2][core->log2_cuh - 2]);
@@ -1816,7 +1861,7 @@ double xeve_pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int 
 }
 
 static void pinter_mc(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM]
-                      , pel pred[REFP_NUM][N_C][MAX_CU_DIM], int tmp_val1, int tmp_val2, s16 tmp_buf[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D])
+                    , pel pred[REFP_NUM][N_C][MAX_CU_DIM], int tmp_val1, int tmp_val2, s16 tmp_buf[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D])
 {
     xeve_mc(x, y, ctx->w, ctx->h, w, h, refi, mv, refp, pred, ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
 }
@@ -1851,11 +1896,11 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
 int xeve_pinter_create(XEVE_CTX *ctx, int complexity)
 {
     /* set function addresses */
-    ctx->fn_pinter_init_tile = pinter_init_tile;
-    ctx->fn_pinter_init_lcu = pinter_init_lcu;
+    ctx->fn_pinter_init_mt = pinter_init_mt;
+    ctx->fn_pinter_init_lcu = xeve_pinter_init_lcu;
     ctx->fn_pinter_set_complexity = pinter_set_complexity;
-    tbl_mc_l_coeff = xeve_tbl_mc_l_coeff;
-    tbl_mc_c_coeff = xeve_tbl_mc_c_coeff;
+    xeve_mc_l_coeff = xeve_tbl_mc_l_coeff;
+    xeve_mc_c_coeff = xeve_tbl_mc_c_coeff;
 
     XEVE_PINTER * pi;
     for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)

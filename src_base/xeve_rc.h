@@ -144,7 +144,7 @@ struct _XEVE_RC
     double       max_frm_bits;
     /* vbv enabled flag */
     int          vbv_enabled;
-    /* total vbv buffer size (bitrate * vbv_msec /1000) (constant) */
+    /* total vbv buffer size */
     double       vbv_buf_size;
     double       lambda[4];
     /* accumulated frame size for each slice type */

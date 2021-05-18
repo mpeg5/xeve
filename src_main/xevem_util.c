@@ -197,434 +197,6 @@ u16 xeve_get_avail_ibc(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int
     return avail;
 }
 
-
-void xeve_get_mmvd_mvp_list(s8(*map_refi)[REFP_NUM], XEVE_REFP refp[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int w_scu, int h_scu, int scup, u16 avail, int log2_cuw, int log2_cuh, int slice_t
-    , int real_mv[][2][3], u32 *map_scu, int REF_SET[][MAX_NUM_ACTIVE_REF_FRAME], u16 avail_lr
-    , u32 curr_ptr, u8 num_refp[REFP_NUM]
-    , XEVE_HISTORY_BUFFER history_buffer, int admvp_flag, XEVE_SH* sh, int log2_max_cuwh, u8* map_tidx, int mmvd_idx)
-{
-    int ref_mvd = 0;
-    int ref_mvd1 = 0;
-    int list0_weight;
-    int list1_weight;
-    int ref_sign = 0;
-    int ref_sign1 = 0;
-    int ref_mvd_cands[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
-    int hor0var[MMVD_MAX_REFINE_NUM] = { 0 };
-    int ver0var[MMVD_MAX_REFINE_NUM] = { 0 };
-    int hor1var[MMVD_MAX_REFINE_NUM] = { 0 };
-    int ver1Var[MMVD_MAX_REFINE_NUM] = { 0 };
-    int base_mv_idx = 0;
-    int base_mv[25][2][3];
-    s16 smvp[REFP_NUM][MAX_NUM_MVP][MV_D];
-    s8 srefi[REFP_NUM][MAX_NUM_MVP];
-    int base_mv_t[25][2][3];
-    int base_type[3][MAX_NUM_MVP];
-    int cur_set;
-    int total_num = MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM;
-    int k;
-    int cuw = (1 << log2_cuw);
-    int cuh = (1 << log2_cuh);
-    int list0_r;
-    int list1_r;
-    int poc0, poc1, poc_c;
-
-    int base_mv_p[25][3][3];
-    int small_cu = (cuw*cuh <= NUM_SAMPLES_BLOCK) ? 1 : 0;
-
-    int base_st = mmvd_idx == -1 ? 0 : (mmvd_idx & 127) >> 5;
-    int base_ed = mmvd_idx == -1 ? MMVD_BASE_MV_NUM : base_st + 1;
-
-    int group_st = mmvd_idx == -1 ? 0 : mmvd_idx >> 7;
-    int group_ed = mmvd_idx == -1 ? (small_cu ? 1 : 3) : group_st + 1;
-
-    int mmvd_v_st = mmvd_idx == -1 ? 0 : (mmvd_idx & 31);
-    int mmvd_v_ed = mmvd_idx == -1 ? MMVD_MAX_REFINE_NUM : mmvd_v_st + 1;
-
-    if (admvp_flag == 0)
-    {
-        xeve_get_motion_skip(slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, srefi, smvp, avail);
-    }
-    else
-    {
-        xeve_get_motion_merge_main(curr_ptr, slice_t, scup, map_refi, map_mv, refp, cuw, cuh, w_scu, h_scu, srefi, smvp, map_scu, avail_lr
-                                 , NULL, history_buffer, 0, (XEVE_REFP(*)[2])refp, sh, log2_max_cuwh, map_tidx);
-    }
-
-    if (slice_t == SLICE_B)
-    {
-        for (k = base_st; k < base_ed; k++)
-        {
-            base_mv[k][REFP_0][MV_X] = smvp[REFP_0][k][MV_X];
-            base_mv[k][REFP_0][MV_Y] = smvp[REFP_0][k][MV_Y];
-            base_mv[k][REFP_1][MV_X] = smvp[REFP_1][k][MV_X];
-            base_mv[k][REFP_1][MV_Y] = smvp[REFP_1][k][MV_Y];
-            base_mv[k][REFP_0][REFI] = srefi[REFP_0][k];
-            base_mv[k][REFP_1][REFI] = srefi[REFP_1][k];
-        }
-    }
-    else
-    {
-        for (k = base_st; k < base_ed; k++)
-        {
-            base_mv[k][REFP_0][MV_X] = smvp[REFP_0][k][MV_X];
-            base_mv[k][REFP_0][MV_Y] = smvp[REFP_0][k][MV_Y];
-            base_mv[k][REFP_1][MV_X] = smvp[REFP_1][0][MV_X];
-            base_mv[k][REFP_1][MV_Y] = smvp[REFP_1][0][MV_Y];
-            base_mv[k][REFP_0][REFI] = srefi[REFP_0][k];
-            base_mv[k][REFP_1][REFI] = srefi[REFP_1][0];
-        }
-    }
-
-    for (k = base_st; k < base_ed; k++)
-    {
-        ref_sign = 1;
-        ref_sign1 = 1;
-
-        base_mv_t[k][REFP_0][MV_X] = base_mv[k][REFP_0][MV_X];
-        base_mv_t[k][REFP_0][MV_Y] = base_mv[k][REFP_0][MV_Y];
-        base_mv_t[k][REFP_0][REFI] = base_mv[k][REFP_0][REFI];
-
-        base_mv_t[k][REFP_1][MV_X] = base_mv[k][REFP_1][MV_X];
-        base_mv_t[k][REFP_1][MV_Y] = base_mv[k][REFP_1][MV_Y];
-        base_mv_t[k][REFP_1][REFI] = base_mv[k][REFP_1][REFI];
-
-        list0_r = base_mv_t[k][REFP_0][REFI];
-        list1_r = base_mv_t[k][REFP_1][REFI];
-
-        if ((base_mv_t[k][REFP_0][REFI] != REFI_INVALID) && (base_mv_t[k][REFP_1][REFI] != REFI_INVALID))
-        {
-            base_type[0][k] = 0;
-            base_type[1][k] = 1;
-            base_type[2][k] = 2;
-        }
-        else if ((base_mv_t[k][REFP_0][REFI] != REFI_INVALID) && (base_mv_t[k][REFP_1][REFI] == REFI_INVALID))
-        {
-            if (slice_t == SLICE_P)
-            {
-                int cur_ref_num = num_refp[REFP_0];
-                base_type[0][k] = 1;
-                base_type[1][k] = 1;
-                base_type[2][k] = 1;
-
-                if (cur_ref_num == 1)
-                {
-                    base_mv_p[k][0][REFI] = base_mv_t[k][REFP_0][REFI];
-                    base_mv_p[k][1][REFI] = base_mv_t[k][REFP_0][REFI];
-                    base_mv_p[k][2][REFI] = base_mv_t[k][REFP_0][REFI];
-                }
-                else
-                {
-                    base_mv_p[k][0][REFI] = base_mv_t[k][REFP_0][REFI];
-                    base_mv_p[k][1][REFI] = !base_mv_t[k][REFP_0][REFI];
-                    if (cur_ref_num < 3)
-                    {
-                        base_mv_p[k][2][REFI] = base_mv_t[k][REFP_0][REFI];
-                    }
-                    else
-                    {
-                        base_mv_p[k][2][REFI] = base_mv_t[k][REFP_0][REFI] < 2 ? 2 : 1;
-                    }
-                }
-
-                if (cur_ref_num == 1)
-                {
-                    base_mv_p[k][0][MV_X] = base_mv_t[k][REFP_0][MV_X];
-                    base_mv_p[k][0][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
-
-                    base_mv_p[k][1][MV_X] = base_mv_t[k][REFP_0][MV_X] + 3;
-                    base_mv_p[k][1][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
-
-                    base_mv_p[k][2][MV_X] = base_mv_t[k][REFP_0][MV_X] - 3;
-                    base_mv_p[k][2][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
-                }
-                else if (cur_ref_num == 2)
-                {
-                    base_mv_p[k][0][MV_X] = base_mv_t[k][REFP_0][MV_X];
-                    base_mv_p[k][0][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
-
-                    poc0 = REF_SET[0][base_mv_p[k][0][REFI]];
-                    poc_c = curr_ptr;
-                    poc1 = REF_SET[0][base_mv_p[k][1][REFI]];
-
-                    list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
-                    ref_sign = 1;
-                    base_mv_p[k][1][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign  * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-                    base_mv_p[k][1][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-                    base_mv_p[k][2][MV_X] = base_mv_t[k][REFP_0][MV_X] - 3;
-                    base_mv_p[k][2][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
-                }
-                else if (cur_ref_num >= 3)
-                {
-                    base_mv_p[k][0][MV_X] = base_mv_t[k][REFP_0][MV_X];
-                    base_mv_p[k][0][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
-                    base_mv_p[k][0][REFI] = base_mv_p[k][REFP_0][REFI];
-
-                    poc0 = REF_SET[0][base_mv_p[k][0][REFI]];
-                    poc_c = curr_ptr;
-                    poc1 = REF_SET[0][base_mv_p[k][1][REFI]];
-
-                    list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
-                    ref_sign = 1;
-                    base_mv_p[k][1][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign  * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-                    base_mv_p[k][1][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-
-                    poc0 = REF_SET[0][base_mv_p[k][0][2]];
-                    poc_c = curr_ptr;
-                    poc1 = REF_SET[0][base_mv_p[k][2][2]];
-
-                    list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
-                    ref_sign = 1;
-                    base_mv_p[k][2][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign  * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-                    base_mv_p[k][2][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_0][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-                }
-            }
-            else
-            {
-                base_type[0][k] = 1;
-                base_type[1][k] = 0;
-                base_type[2][k] = 2;
-
-                list0_weight = 1 << MVP_SCALING_PRECISION;
-                list1_weight = 1 << MVP_SCALING_PRECISION;
-                poc0 = REF_SET[REFP_0][list0_r];
-                poc_c = curr_ptr;
-                if ((num_refp[REFP_1] > 1) && ((REF_SET[REFP_1][1] - poc_c) == (poc_c - poc0)))
-                {
-                    base_mv_t[k][REFP_1][REFI] = 1;
-                }
-                else
-                {
-                    base_mv_t[k][REFP_1][REFI] = 0;
-                }
-                poc1 = REF_SET[REFP_1][base_mv_t[k][REFP_1][REFI]];
-
-                list1_weight = ((poc_c - poc1) << MVP_SCALING_PRECISION) / ((poc_c - poc0));
-                if ((list1_weight * base_mv_t[k][0][0]) < 0)
-                {
-                    ref_sign = -1;
-                }
-
-                base_mv_t[k][REFP_1][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign * ((XEVE_ABS(list1_weight * base_mv_t[k][REFP_0][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-
-                list1_weight = ((poc_c - poc1) << MVP_SCALING_PRECISION) / ((poc_c - poc0));
-                if ((list1_weight * base_mv_t[k][0][1]) < 0)
-                {
-                    ref_sign1 = -1;
-                }
-
-                base_mv_t[k][REFP_1][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list1_weight * base_mv_t[k][REFP_0][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-            }
-        }
-        else if ((base_mv_t[k][REFP_0][REFI] == REFI_INVALID) && (base_mv_t[k][REFP_1][REFI] != REFI_INVALID))
-        {
-            base_type[0][k] = 2;
-            base_type[1][k] = 0;
-            base_type[2][k] = 1;
-
-            list0_weight = 1 << MVP_SCALING_PRECISION;
-            list1_weight = 1 << MVP_SCALING_PRECISION;
-            poc1 = REF_SET[1][list1_r];
-            poc_c = curr_ptr;
-            if ((num_refp[REFP_0] > 1) && ((REF_SET[REFP_0][1] - poc_c) == (poc_c - poc1)))
-            {
-                base_mv_t[k][REFP_0][REFI] = 1;
-            }
-            else
-            {
-                base_mv_t[k][REFP_0][REFI] = 0;
-            }
-            poc0 = REF_SET[REFP_0][base_mv_t[k][REFP_0][REFI]];
-
-            list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
-            if ((list0_weight * base_mv_t[k][REFP_1][MV_X]) < 0)
-            {
-                ref_sign = -1;
-            }
-            base_mv_t[k][REFP_0][MV_X] = XEVE_CLIP3(-32768, 32767, ref_sign * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_1][MV_X]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-
-            list0_weight = ((poc_c - poc0) << MVP_SCALING_PRECISION) / ((poc_c - poc1));
-            if ((list0_weight * base_mv_t[k][REFP_1][MV_Y]) < 0)
-            {
-                ref_sign1 = -1;
-            }
-            base_mv_t[k][REFP_0][MV_Y] = XEVE_CLIP3(-32768, 32767, ref_sign1 * ((XEVE_ABS(list0_weight * base_mv_t[k][REFP_1][MV_Y]) + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION));
-        }
-        else
-        {
-            base_type[0][k] = 3;
-            base_type[1][k] = 3;
-            base_type[2][k] = 3;
-        }
-    }
-
-    for (base_mv_idx = base_st; base_mv_idx < base_ed; base_mv_idx++)
-    {
-        int list0_r, list1_r;
-        int poc0, poc1, poc_c;
-
-        if (small_cu)
-        {
-            base_type[0][base_mv_idx] = 1;
-        }
-
-        for (cur_set = group_st; cur_set < group_ed; cur_set++)
-        {
-            if (base_type[cur_set][base_mv_idx] == 0)
-            {
-                base_mv[base_mv_idx][REFP_0][MV_X] = base_mv_t[base_mv_idx][REFP_0][MV_X];
-                base_mv[base_mv_idx][REFP_0][MV_Y] = base_mv_t[base_mv_idx][REFP_0][MV_Y];
-                base_mv[base_mv_idx][REFP_0][REFI] = base_mv_t[base_mv_idx][REFP_0][REFI];
-
-                base_mv[base_mv_idx][REFP_1][MV_X] = base_mv_t[base_mv_idx][REFP_1][MV_X];
-                base_mv[base_mv_idx][REFP_1][MV_Y] = base_mv_t[base_mv_idx][REFP_1][MV_Y];
-                base_mv[base_mv_idx][REFP_1][REFI] = base_mv_t[base_mv_idx][REFP_1][REFI];
-            }
-            else if (base_type[cur_set][base_mv_idx] == 1)
-            {
-                if (slice_t == SLICE_P)
-                {
-                    base_mv[base_mv_idx][REFP_0][REFI] = base_mv_p[base_mv_idx][cur_set][REFI];
-                    base_mv[base_mv_idx][REFP_1][REFI] = -1;
-
-                    base_mv[base_mv_idx][REFP_0][MV_X] = base_mv_p[base_mv_idx][cur_set][MV_X];
-                    base_mv[base_mv_idx][REFP_0][MV_Y] = base_mv_p[base_mv_idx][cur_set][MV_Y];
-                }
-                else
-                {
-                    base_mv[base_mv_idx][REFP_0][REFI] = base_mv_t[base_mv_idx][REFP_0][REFI];
-                    base_mv[base_mv_idx][REFP_1][REFI] = -1;
-
-                    base_mv[base_mv_idx][REFP_0][MV_X] = base_mv_t[base_mv_idx][REFP_0][MV_X];
-                    base_mv[base_mv_idx][REFP_0][MV_Y] = base_mv_t[base_mv_idx][REFP_0][MV_Y];
-                }
-            }
-            else if (base_type[cur_set][base_mv_idx] == 2)
-            {
-                base_mv[base_mv_idx][REFP_0][REFI] = -1;
-                base_mv[base_mv_idx][REFP_1][REFI] = base_mv_t[base_mv_idx][REFP_1][REFI];
-
-                base_mv[base_mv_idx][REFP_1][MV_X] = base_mv_t[base_mv_idx][REFP_1][MV_X];
-                base_mv[base_mv_idx][REFP_1][MV_Y] = base_mv_t[base_mv_idx][REFP_1][MV_Y];
-            }
-            else if (base_type[cur_set][base_mv_idx] == 3)
-            {
-                base_mv[base_mv_idx][REFP_0][REFI] = -1;
-                base_mv[base_mv_idx][REFP_1][REFI] = -1;
-            }
-
-            list0_r = base_mv[base_mv_idx][REFP_0][REFI];
-            list1_r = base_mv[base_mv_idx][REFP_1][REFI];
-
-            ref_sign = 1;
-            if (slice_t == SLICE_B)
-            {
-                if ((list0_r != -1) && (list1_r != -1))
-                {
-                    poc0 = REF_SET[0][list0_r];
-                    poc1 = REF_SET[1][list1_r];
-                    poc_c = curr_ptr;
-                    if ((poc0 - poc_c) * (poc_c - poc1) > 0)
-                    {
-                        ref_sign = -1;
-                    }
-                }
-            }
-
-            for (k = mmvd_v_st; k < mmvd_v_ed; k++)
-            {
-                list0_weight = 1 << MVP_SCALING_PRECISION;
-                list1_weight = 1 << MVP_SCALING_PRECISION;
-                ref_mvd = ref_mvd_cands[(int)(k / 4)];
-                ref_mvd1 = ref_mvd_cands[(int)(k / 4)];
-
-                if ((list0_r != -1) && (list1_r != -1))
-                {
-                    poc0 = REF_SET[0][list0_r];
-                    poc1 = REF_SET[1][list1_r];
-                    poc_c = curr_ptr;
-
-                    if (XEVE_ABS(poc1 - poc_c) >= XEVE_ABS(poc0 - poc_c))
-                    {
-                        list0_weight = (XEVE_ABS(poc0 - poc_c) << MVP_SCALING_PRECISION) / (XEVE_ABS(poc1 - poc_c));
-                        ref_mvd = XEVE_CLIP3(-32768, 32767, (list0_weight * ref_mvd_cands[(int)(k / 4)] + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION);
-                    }
-                    else
-                    {
-                        list1_weight = (XEVE_ABS(poc1 - poc_c) << MVP_SCALING_PRECISION) / (XEVE_ABS(poc0 - poc_c));
-                        ref_mvd1 = XEVE_CLIP3(-32768, 32767, (list1_weight * ref_mvd_cands[(int)(k / 4)] + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION);
-                    }
-
-                    ref_mvd = XEVE_CLIP3(-(1 << 15), (1 << 15) - 1, ref_mvd);
-                    ref_mvd1 = XEVE_CLIP3(-(1 << 15), (1 << 15) - 1, ref_mvd1);
-                }
-
-                if ((k % 4) == 0)
-                {
-                    hor0var[k] = ref_mvd;
-                    hor1var[k] = ref_mvd1 * ref_sign;
-                    ver0var[k] = 0;
-                    ver1Var[k] = 0;
-                }
-                else if ((k % 4) == 1)
-                {
-                    hor0var[k] = ref_mvd * -1;
-                    hor1var[k] = ref_mvd1 * -1 * ref_sign;
-                    ver0var[k] = 0;
-                    ver1Var[k] = 0;
-                }
-                else if ((k % 4) == 2)
-                {
-                    hor0var[k] = 0;
-                    hor1var[k] = 0;
-                    ver0var[k] = ref_mvd;
-                    ver1Var[k] = ref_mvd1 * ref_sign;
-                }
-                else
-                {
-                    hor0var[k] = 0;
-                    hor1var[k] = 0;
-                    ver0var[k] = ref_mvd * -1;
-                    ver1Var[k] = ref_mvd1 * -1 * ref_sign;
-                }
-
-                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_0][MV_X] = base_mv[base_mv_idx][REFP_0][MV_X] + hor0var[k];
-                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_0][MV_Y] = base_mv[base_mv_idx][REFP_0][MV_Y] + ver0var[k];
-                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_1][MV_X] = base_mv[base_mv_idx][REFP_1][MV_X] + hor1var[k];
-                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_1][MV_Y] = base_mv[base_mv_idx][REFP_1][MV_Y] + ver1Var[k];
-
-                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_0][REFI] = base_mv[base_mv_idx][REFP_0][REFI];
-                real_mv[cur_set*total_num + base_mv_idx * MMVD_MAX_REFINE_NUM + k][REFP_1][REFI] = base_mv[base_mv_idx][REFP_1][REFI];
-            }
-        }
-    }
-}
-
-s8 xeve_get_first_refi_main(int scup, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int cuw, int cuh, int w_scu, int h_scu, u32 *map_scu, u8 mvr_idx, u16 avail_lr
-                     , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER history_buffer, int hmvp_flag, u8* map_tidx)
-{
-    int neb_addr[MAX_NUM_POSSIBLE_SCAND], valid_flag[MAX_NUM_POSSIBLE_SCAND];
-    s8  refi = 0, default_refi;
-    s16 default_mv[MV_D];
-
-    xeve_check_motion_availability(scup, cuw, cuh, w_scu, h_scu, neb_addr, valid_flag, map_scu, avail_lr, 1, 0, map_tidx);
-    xeve_get_default_motion_main(neb_addr, valid_flag, 0, lidx, map_refi, map_mv, &default_refi, default_mv, map_scu, map_unrefined_mv, scup, w_scu, history_buffer, hmvp_flag);
-
-    assert(mvr_idx < 5);
-    //neb-position is coupled with mvr index
-    if(valid_flag[mvr_idx])
-    {
-        refi = REFI_IS_VALID(map_refi[neb_addr[mvr_idx]][lidx]) ? map_refi[neb_addr[mvr_idx]][lidx] : default_refi;
-    }
-    else
-    {
-        refi = default_refi;
-    }
-
-    return refi;
-}
-
-
 void xeve_get_default_motion_main(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int valid_flag[MAX_NUM_POSSIBLE_SCAND], s8 cur_refi, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], s8 *refi, s16 mv[MV_D]
     , u32 *map_scu, s16(*map_unrefined_mv)[REFP_NUM][MV_D], int scup, int w_scu, XEVE_HISTORY_BUFFER history_buffer, int hmvp_flag)
 {
@@ -798,7 +370,7 @@ static int xeve_get_right_below_scup(int scup, int cuw, int cuh, int w_scu, int 
     }
 }
 
-void xeve_clip_mv_pic(int x, int y, int maxX, int maxY, s16 mvp[REFP_NUM][MV_D])
+static void clip_mv_pic(int x, int y, int maxX, int maxY, s16 mvp[REFP_NUM][MV_D])
 {
     int minXY = -PIC_PAD_SIZE_L;
     mvp[REFP_0][MV_X] = (x + mvp[REFP_0][MV_X]) < minXY ? -(x + minXY) : mvp[REFP_0][MV_X];
@@ -812,7 +384,19 @@ void xeve_clip_mv_pic(int x, int y, int maxX, int maxY, s16 mvp[REFP_NUM][MV_D])
     mvp[REFP_1][MV_Y] = (y + mvp[REFP_1][MV_Y]) > maxY ? (maxY - y) : mvp[REFP_1][MV_Y];
 }
 
-void xeve_get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int c_scu, u16 w_scu, u16 h_scu, s16 mvp[REFP_NUM][MV_D], s8 *available_pred_idx, XEVE_SH* sh)
+static void scaling_mv(int ratio, s16 mvp[MV_D], s16 mv[MV_D])
+{
+    int tmp_mv;
+    tmp_mv = mvp[MV_X] * ratio;
+    tmp_mv = tmp_mv == 0 ? 0 : tmp_mv > 0 ? (tmp_mv + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION : -((-tmp_mv + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION);
+    mv[MV_X] = XEVE_CLIP3(-(1 << 15), (1 << 15) - 1, tmp_mv);
+
+    tmp_mv = mvp[MV_Y] * ratio;
+    tmp_mv = tmp_mv == 0 ? 0 : tmp_mv > 0 ? (tmp_mv + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION : -((-tmp_mv + (1 << (MVP_SCALING_PRECISION - 1))) >> MVP_SCALING_PRECISION);
+    mv[MV_Y] = XEVE_CLIP3(-(1 << 15), (1 << 15) - 1, tmp_mv);
+}
+
+static void get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int c_scu, u16 w_scu, u16 h_scu, s16 mvp[REFP_NUM][MV_D], s8 *available_pred_idx, XEVE_SH* sh)
 {
     *available_pred_idx = 0;
 
@@ -834,7 +418,7 @@ void xeve_get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int c
     int dpoc_co[REFP_NUM] = {0, 0};
     int dpoc[REFP_NUM] = {0, 0};
     int ver_refi[REFP_NUM] = {-1, -1};
-    memset(mvp, 0, sizeof(s16) * REFP_NUM * MV_D);
+    xeve_mset(mvp, 0, sizeof(s16) * REFP_NUM * MV_D);
 
     s8(*map_refi_co)[REFP_NUM] = colPic.map_refi;
     dpoc[REFP_0] = poc - refp[0][REFP_0].poc;
@@ -894,14 +478,43 @@ void xeve_get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int c
         int maxY = PIC_PAD_SIZE_L + (h_scu << MIN_CU_LOG2) - 1;
         int x = (c_scu % w_scu) << MIN_CU_LOG2;
         int y = (c_scu / w_scu) << MIN_CU_LOG2;
-        xeve_clip_mv_pic(x, y, maxX, maxY, mvp);
+        clip_mv_pic(x, y, maxX, maxY, mvp);
     }
 
     int flag = REFI_IS_VALID(ver_refi[REFP_0]) + (REFI_IS_VALID(ver_refi[REFP_1]) << 1);
     *available_pred_idx = flag; // combines flag and indication on what type of prediction is ( 0 - not available, 1 = uniL0, 2 = uniL1, 3 = Bi)
 }
 
-void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM]
+static void get_merge_insert_mv(s8* refi_dst, s16 *mvp_dst_L0, s16 *mvp_dst_L1, s8* map_refi_src, s16* map_mv_src, int slice_type, int cuw, int cuh, int is_sps_admvp)
+{
+    refi_dst[REFP_0 * MAX_NUM_MVP] = REFI_IS_VALID(map_refi_src[REFP_0]) ? map_refi_src[REFP_0] : REFI_INVALID;
+    mvp_dst_L0[MV_X] = map_mv_src[REFP_0 * REFP_NUM + MV_X];
+    mvp_dst_L0[MV_Y] = map_mv_src[REFP_0 * REFP_NUM + MV_Y];
+
+    if (slice_type == SLICE_B)
+    {
+        if (!REFI_IS_VALID(map_refi_src[REFP_0]))
+        {
+            refi_dst[REFP_1 * MAX_NUM_MVP] = REFI_IS_VALID(map_refi_src[REFP_1]) ? map_refi_src[REFP_1] : REFI_INVALID;
+            mvp_dst_L1[MV_X] = map_mv_src[REFP_1 * REFP_NUM + MV_X];
+            mvp_dst_L1[MV_Y] = map_mv_src[REFP_1 * REFP_NUM + MV_Y];
+        }
+        else if (!check_bi_applicability(slice_type, cuw, cuh, is_sps_admvp))
+        {
+            refi_dst[REFP_1 * MAX_NUM_MVP] = REFI_INVALID; // TBD: gcc10 triggers stringop-overflow at this line
+            mvp_dst_L1[MV_X] = 0;
+            mvp_dst_L1[MV_Y] = 0;
+        }
+        else
+        {
+            refi_dst[REFP_1 * MAX_NUM_MVP] = REFI_IS_VALID(map_refi_src[REFP_1]) ? map_refi_src[REFP_1] : REFI_INVALID;
+            mvp_dst_L1[MV_X] = map_mv_src[REFP_1 * REFP_NUM + MV_X];
+            mvp_dst_L1[MV_Y] = map_mv_src[REFP_1 * REFP_NUM + MV_Y];
+        }
+    }
+}
+
+void xevem_get_motion_merge(int ptr, int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM]
                               , int cuw, int cuh, int w_scu, int h_scu, s8 refi[REFP_NUM][MAX_NUM_MVP], s16 mvp[REFP_NUM][MAX_NUM_MVP][MV_D], u32 *map_scu, u16 avail_lr
                               , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER history_buffer, u8 ibc_flag, XEVE_REFP(*refplx)[REFP_NUM]
                               , XEVE_SH* sh, int log2_max_cuwh, u8* map_tidx)
@@ -950,7 +563,7 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
                 ref_src = map_refi[neb_addr[k]];
                 map_mv_src = &(map_unrefined_mv[neb_addr[k]][0][0]);
             }
-            xeve_get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
+            get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
             check_redundancy(slice_type, mvp, refi, &cnt);
             cnt++;
         }
@@ -970,7 +583,7 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
         int x_scu = (scup % w_scu);
         int y_scu = (scup / w_scu);
         int scu_col = ((x_scu + (cuw >> 1 >> MIN_CU_LOG2)) >> 1 << 1) + ((y_scu + (cuh >> 1 >> MIN_CU_LOG2)) >> 1 << 1) * w_scu; // 8x8 grid
-        xeve_get_mv_collocated(refplx,ptr, scu_col, scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
+        get_mv_collocated(refplx,ptr, scu_col, scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
 
         tmvp_cnt_pos0 = cnt;
         if (available_pred_idx != 0)
@@ -983,7 +596,7 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
             refs[1] = (available_pred_idx == 2 || available_pred_idx == 3) ? 0 : -1;
             ref_src = refs;
             map_mv_src = &(tmvp[0][0]);
-            xeve_get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
+            get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
 
             check_redundancy(slice_type, mvp, refi, &cnt);
             cnt++;
@@ -1006,7 +619,7 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
             scup_tmp = xeve_get_right_below_scup_merge(scup, cuw, cuh, w_scu, h_scu, tmp_bottom_right, log2_max_cuwh);
         if (scup_tmp != -1)  // if available, add it to candidate list
         {
-            xeve_get_mv_collocated(refplx, ptr, scup_tmp, scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
+            get_mv_collocated(refplx, ptr, scup_tmp, scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
             tmvp_cnt_pos0 = cnt;
             if (available_pred_idx != 0)
             {
@@ -1018,7 +631,7 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
                 refs[1] = (available_pred_idx == 2 || available_pred_idx == 3) ? 0 : -1;
                 ref_src = refs;
                 map_mv_src = &(tmvp[0][0]);
-                xeve_get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
+                get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
                 check_redundancy(slice_type, mvp, refi, &cnt);
                 cnt++;
                 tmvp_cnt_pos1 = cnt;
@@ -1040,7 +653,7 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
             scup_tmp = xeve_get_right_below_scup_merge(scup, cuw, cuh, w_scu, h_scu, !tmp_bottom_right, log2_max_cuwh);
         if (scup_tmp != -1)  // if available, add it to candidate list
         {
-            xeve_get_mv_collocated(refplx, ptr, scup_tmp, scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
+            get_mv_collocated(refplx, ptr, scup_tmp, scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
 
             tmvp_cnt_pos0 = cnt;
             if (available_pred_idx != 0)
@@ -1053,7 +666,7 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
                 refs[1] = (available_pred_idx == 2 || available_pred_idx == 3) ? 0 : -1;
                 ref_src = refs;
                 map_mv_src = &(tmvp[0][0]);
-                xeve_get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
+                get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
                 check_redundancy(slice_type, mvp, refi, &cnt);
                 cnt++;
                 tmvp_cnt_pos1 = cnt;
@@ -1077,7 +690,7 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
             map_mv_dst_L1 = mvp[REFP_1][cnt];
             ref_src = history_buffer.history_refi_table[history_buffer.currCnt - k];
             map_mv_src = &(history_buffer.history_mv_table[history_buffer.currCnt - k][0][0]);
-            xeve_get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
+            get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
             check_redundancy(slice_type, mvp, refi, &cnt);
             cnt++;
             if (cnt >= (small_cu ? MAX_NUM_MVP_SMALL_CU : MAX_NUM_MVP))
@@ -1132,35 +745,6 @@ void xeve_get_motion_merge_main(int ptr, int slice_type, int scup, s8(*map_refi)
             refi[REFP_1][k] = 0;
             mvp[REFP_1][k][MV_X] = 0;
             mvp[REFP_1][k][MV_Y] = 0;
-        }
-    }
-}
-
-void xeve_get_merge_insert_mv(s8* refi_dst, s16 *mvp_dst_L0, s16 *mvp_dst_L1, s8* map_refi_src, s16* map_mv_src, int slice_type, int cuw, int cuh, int is_sps_admvp)
-{
-    refi_dst[REFP_0 * MAX_NUM_MVP] = REFI_IS_VALID(map_refi_src[REFP_0]) ? map_refi_src[REFP_0] : REFI_INVALID;
-    mvp_dst_L0[MV_X] = map_mv_src[REFP_0 * REFP_NUM + MV_X];
-    mvp_dst_L0[MV_Y] = map_mv_src[REFP_0 * REFP_NUM + MV_Y];
-
-    if (slice_type == SLICE_B)
-    {
-        if (!REFI_IS_VALID(map_refi_src[REFP_0]))
-        {
-            refi_dst[REFP_1 * MAX_NUM_MVP] = REFI_IS_VALID(map_refi_src[REFP_1]) ? map_refi_src[REFP_1] : REFI_INVALID;
-            mvp_dst_L1[MV_X] = map_mv_src[REFP_1 * REFP_NUM + MV_X];
-            mvp_dst_L1[MV_Y] = map_mv_src[REFP_1 * REFP_NUM + MV_Y];
-        }
-        else if (!check_bi_applicability(slice_type, cuw, cuh, is_sps_admvp))
-        {
-            refi_dst[REFP_1 * MAX_NUM_MVP] = REFI_INVALID; // TBD: gcc10 triggers stringop-overflow at this line
-            mvp_dst_L1[MV_X] = 0;
-            mvp_dst_L1[MV_Y] = 0;
-        }
-        else
-        {
-            refi_dst[REFP_1 * MAX_NUM_MVP] = REFI_IS_VALID(map_refi_src[REFP_1]) ? map_refi_src[REFP_1] : REFI_INVALID;
-            mvp_dst_L1[MV_X] = map_mv_src[REFP_1 * REFP_NUM + MV_X];
-            mvp_dst_L1[MV_Y] = map_mv_src[REFP_1 * REFP_NUM + MV_Y];
         }
     }
 }
@@ -2701,7 +2285,7 @@ int xeve_get_affine_merge_candidate(int poc, int slice_type, int scup, s8(*map_r
             if (valid_flag_lb[0])
             {
                 neb_addr_lb[0] = ((x_scu - 1) >> 1 << 1) + ((y_scu + scuh) >> 1 << 1) * w_scu; // 8x8 grid
-                xeve_get_mv_collocated(refp, poc, neb_addr_lb[0], scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
+                get_mv_collocated(refp, poc, neb_addr_lb[0], scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
 
                 if ((available_pred_idx == 1) || (available_pred_idx == 3))
                 {
@@ -2784,7 +2368,7 @@ int xeve_get_affine_merge_candidate(int poc, int slice_type, int scup, s8(*map_r
                 s8 available_pred_idx = 0;
 
                 neb_addr_rb[0] = ((x_scu + scuw) >> 1 << 1) + ((y_scu + scuh) >> 1 << 1) * w_scu; // 8x8 grid
-                xeve_get_mv_collocated(refp, poc, neb_addr_rb[0], scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
+                get_mv_collocated(refp, poc, neb_addr_rb[0], scup, w_scu, h_scu, tmvp, &available_pred_idx, sh);
 
                 if ((available_pred_idx == 1) || (available_pred_idx == 3))
                 {
@@ -3288,6 +2872,1184 @@ void set_cu_cbf_flags(u8 cbf_y, u8 ats_inter_info, int log2_cuw, int log2_cuh, u
     }
 }
 
+XEVEM_CTX * xevem_ctx_alloc(void)
+{
+    XEVEM_CTX * ctx;
+
+    ctx = (XEVEM_CTX*)xeve_malloc_fast(sizeof(XEVEM_CTX));
+    xeve_assert_rv(ctx, NULL);
+    xeve_mset_x64a(ctx, 0, sizeof(XEVEM_CTX));
+    return ctx;
+}
+
+XEVEM_CORE * xevem_core_alloc(int chroma_format_idc)
+{
+    XEVEM_CORE * mcore;
+    XEVE_CORE  * core;
+    int i, j;
+
+    mcore = (XEVEM_CORE *)xeve_malloc_fast(sizeof(XEVEM_CORE));
+
+    xeve_assert_rv(mcore, NULL);
+    xeve_mset_x64a(mcore, 0, sizeof(XEVEM_CORE));
+
+    core = (XEVE_CORE *)mcore;
+
+    for (i = 0; i < MAX_CU_LOG2; i++)
+    {
+        for (j = 0; j < MAX_CU_LOG2; j++)
+        {
+            xeve_create_cu_data(&core->cu_data_best[i][j], i, j, chroma_format_idc);
+            xeve_create_cu_data(&core->cu_data_temp[i][j], i, j, chroma_format_idc);
+        }
+    }
+
+    return mcore;
+}
+
+int xevem_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param)
+{
+    int ret;
+    ret = xeve_set_init_param(cdsc, param);
+    xeve_assert_rv(ret == XEVE_OK, ret);
+
+    if (cdsc->profile == PROFILE_MAIN)
+    {
+        param->preset = (XEVE_PRESET *)(&xevem_tbl_preset[cdsc->preset]);
+    }
+    else /* cdsc->profile == PROFILE_BASELINE */
+    {
+        param->preset = &xeve_tbl_preset[cdsc->preset];
+    }
+    
+    param->rdo_dbk_switch = param->use_deblock ? param->preset->rdo_dbk : 0;
+
+    /* check input parameters */
+    int pic_m = XEVE_MAX(1 << cdsc->ext->framework_cb_min, 8);
+    xeve_assert_rv(cdsc->w > 0 && cdsc->h > 0, XEVE_ERR_INVALID_ARGUMENT);
+    xeve_assert_rv((cdsc->w & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
+    xeve_assert_rv((cdsc->h & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
+
+    if (!cdsc->chroma_qp_table_struct.chroma_qp_table_present_flag)
+    {
+        int * qp_chroma_ajudst;
+        if (cdsc->ext->tool_iqt == 0)
+        {
+            qp_chroma_ajudst = xeve_tbl_qp_chroma_ajudst;
+        }
+        else
+        {
+            qp_chroma_ajudst = xevem_tbl_qp_chroma_ajudst;
+        }
+        xeve_mcpy(&(xeve_tbl_qp_chroma_dynamic_ext[0][6 *( cdsc->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
+        xeve_mcpy(&(xeve_tbl_qp_chroma_dynamic_ext[1][6 * (cdsc->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
+    }
+
+    param->deblock_alpha_offset = cdsc->ext->deblock_aplha_offset;
+    param->deblock_beta_offset  = cdsc->ext->deblock_beta_offset;
+    param->cu_qp_delta_area = cdsc->ext->cu_qp_delta_area;
+    param->use_ibc_flag = cdsc->ext->ibc_flag;
+    param->ibc_search_range_x = cdsc->ext->ibc_search_range_x;
+    param->ibc_search_range_y = cdsc->ext->ibc_search_range_y;
+    param->ibc_hash_search_flag = cdsc->ext->ibc_hash_search_flag;
+    param->ibc_hash_search_max_cand = cdsc->ext->ibc_hash_search_max_cand;
+    param->ibc_hash_search_range_4smallblk = cdsc->ext->ibc_hash_search_range_4smallblk;
+    param->ibc_fast_method  = cdsc->ext->ibc_fast_method;
+
+    param->tile_columns = cdsc->ext->tile_columns;
+    param->tile_rows = cdsc->ext->tile_rows;
+    param->uniform_spacing_tiles = cdsc->ext->tile_uniform_spacing_flag; //To be udpated when non-uniform tiles is implemeneted
+    param->num_slice_in_pic = cdsc->ext->num_slice_in_pic;
+    param->arbitrary_slice_flag = cdsc->ext->arbitrary_slice_flag;
+
+    if (param->arbitrary_slice_flag)
+    {
+        int cnt = 0;
+        for (int s = 0; s < param->num_slice_in_pic; s++)
+        {
+            param->num_remaining_tiles_in_slice_minus1[s] = cdsc->ext->num_remaining_tiles_in_slice_minus1[s];
+            for (u32 i = 0; i < param->num_remaining_tiles_in_slice_minus1[s] + 2 ; i++)
+            {
+                param->tile_array_in_slice[cnt] = cdsc->ext->tile_array_in_slice[cnt];
+                cnt++;
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < (2 * param->num_slice_in_pic); i++)
+        {
+            param->slice_boundary_array[i] = cdsc->ext->tile_array_in_slice[i];
+        }
+    }
+
+    return XEVE_OK;
+}
+
+void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
+{
+    xeve_set_sps(ctx, sps);
+
+    if(sps->profile_idc == PROFILE_BASELINE)
+    {
+        sps->toolset_idc_h = 0;
+    }
+    else if(sps->profile_idc == PROFILE_MAIN)
+    {
+        sps->toolset_idc_h = 0x1FFFFF;
+    }
+
+    if(ctx->param.max_b_frames > 0)
+    {
+        sps->max_num_ref_pics = ctx->param.preset->me_ref_num;
+    }
+    else
+    {
+        sps->max_num_ref_pics = MAX_NUM_ACTIVE_REF_FRAME_LDB;
+    }
+
+    if(sps->profile_idc == PROFILE_MAIN)
+    {
+        sps->sps_btt_flag = ctx->cdsc.ext->btt;
+        sps->sps_suco_flag = ctx->cdsc.ext->suco;
+    }
+    else
+    {
+        sps->sps_btt_flag = 0;
+        sps->sps_suco_flag = 0;
+    }
+
+    if(sps->profile_idc == PROFILE_MAIN)
+    {
+        sps->log2_min_cb_size_minus2 = xevem_tbl_split[BLOCK_11][IDX_MIN] - 2;
+        sps->log2_diff_ctu_max_14_cb_size = XEVE_MIN(ctx->log2_max_cuwh - xevem_tbl_split[BLOCK_14][IDX_MAX], 6);
+        sps->log2_diff_ctu_max_tt_cb_size = XEVE_MIN(ctx->log2_max_cuwh - xevem_tbl_split[BLOCK_TT][IDX_MAX], 6);
+        sps->log2_diff_min_cb_min_tt_cb_size_minus2 = xevem_tbl_split[BLOCK_TT][IDX_MIN] - xevem_tbl_split[BLOCK_11][IDX_MIN] - 2;
+        sps->log2_diff_ctu_size_max_suco_cb_size = ctx->log2_max_cuwh - XEVE_MIN(ctx->cdsc.ext->framework_suco_max, XEVE_MIN(6, ctx->log2_max_cuwh));
+        sps->log2_diff_max_suco_min_suco_cb_size = XEVE_MAX(ctx->log2_max_cuwh - sps->log2_diff_ctu_size_max_suco_cb_size - XEVE_MAX(ctx->cdsc.ext->framework_suco_min, XEVE_MAX(4, xevem_tbl_split[BLOCK_11][IDX_MIN])), 0);
+    }
+
+    sps->tool_amvr = ctx->cdsc.ext->tool_amvr;
+    sps->tool_mmvd = ctx->cdsc.ext->tool_mmvd;
+    sps->tool_affine = ctx->cdsc.ext->tool_affine;
+    sps->tool_dmvr = ctx->cdsc.ext->tool_dmvr;
+    sps->tool_addb = ctx->cdsc.ext->tool_addb;
+    sps->tool_dra = ctx->cdsc.ext->tool_dra;
+    sps->tool_alf = ctx->cdsc.ext->tool_alf;
+    sps->tool_htdf = ctx->cdsc.ext->tool_htdf;
+    sps->tool_admvp = ctx->cdsc.ext->tool_admvp;
+    sps->tool_hmvp = ctx->cdsc.ext->tool_hmvp;
+    sps->tool_eipd = ctx->cdsc.ext->tool_eipd;
+    sps->tool_iqt = ctx->cdsc.ext->tool_iqt;
+    sps->tool_adcc = ctx->cdsc.ext->tool_adcc;
+    sps->tool_cm_init = ctx->cdsc.ext->tool_cm_init;
+    sps->tool_ats = ctx->cdsc.ext->tool_ats;
+    sps->tool_rpl = ctx->cdsc.ext->tool_rpl;
+    sps->tool_pocs = ctx->cdsc.ext->tool_pocs;
+    sps->dquant_flag = ctx->cdsc.profile == 0 ? 0 : 1;
+    sps->ibc_flag = ctx->cdsc.ext->ibc_flag;
+    sps->ibc_log_max_size = IBC_MAX_CU_LOG2;
+
+    if(sps->profile_idc == PROFILE_MAIN)
+    {
+        sps->log2_ctu_size_minus5 = ctx->log2_max_cuwh - 5;
+    }
+
+    if (!sps->tool_rpl)
+    {
+        sps->num_ref_pic_lists_in_sps0 = 0;
+        sps->num_ref_pic_lists_in_sps1 = 0;
+        sps->rpl1_same_as_rpl0_flag = 0;
+    }
+    else
+    {
+        sps->num_ref_pic_lists_in_sps0 = ctx->cdsc.ext->rpls_l0_cfg_num;
+        sps->num_ref_pic_lists_in_sps1 = ctx->cdsc.ext->rpls_l1_cfg_num;
+        sps->rpl1_same_as_rpl0_flag = 0;
+
+        if (ctx->cdsc.ext->rpl_extern)
+        {
+            xeve_mcpy(sps->rpls_l0, ctx->cdsc.ext->rpls_l0, ctx->cdsc.ext->rpls_l0_cfg_num * sizeof(sps->rpls_l0[0]));
+            xeve_mcpy(sps->rpls_l1, ctx->cdsc.ext->rpls_l1, ctx->cdsc.ext->rpls_l1_cfg_num * sizeof(sps->rpls_l1[0]));
+        }
+        else
+        {
+            int is_enable_reorder = ctx->cdsc.max_b_frames > 1 ? 1 : 0;
+            int gop_idx = is_enable_reorder ? XEVE_LOG2(ctx->param.gop_size) - 2 : XEVE_LOG2(ctx->ref_pic_gap_length) - 2;
+            ctx->cdsc.ext->rpls_l0_cfg_num = 0;
+            for (int i = 0; i < MAX_NUM_RPLS; i++)
+            {
+                if (pre_define_rpls[is_enable_reorder][gop_idx][0][i].poc != 0)
+                {
+                    ctx->cdsc.ext->rpls_l0_cfg_num++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            ctx->cdsc.ext->rpls_l1_cfg_num = ctx->cdsc.ext->rpls_l0_cfg_num;
+
+            xeve_mcpy(sps->rpls_l0, pre_define_rpls[is_enable_reorder][gop_idx][0], ctx->cdsc.ext->rpls_l0_cfg_num * sizeof(sps->rpls_l0[0]));
+            xeve_mcpy(sps->rpls_l1, pre_define_rpls[is_enable_reorder][gop_idx][1], ctx->cdsc.ext->rpls_l1_cfg_num * sizeof(sps->rpls_l1[0]));
+
+            sps->num_ref_pic_lists_in_sps0 = ctx->cdsc.ext->rpls_l0_cfg_num;
+            sps->num_ref_pic_lists_in_sps1 = ctx->cdsc.ext->rpls_l1_cfg_num;
+        }
+    }
+}
+
+void xevem_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps)
+{
+    xeve_set_pps(ctx, pps);
+
+    int tile_columns, tile_rows, num_tiles;
+
+    pps->cu_qp_delta_area         = ctx->cdsc.ext->cu_qp_delta_area;
+    tile_rows = ctx->cdsc.ext->tile_rows;
+    tile_columns = ctx->cdsc.ext->tile_columns;
+
+    if (tile_rows > 1 || tile_columns > 1)
+    {
+        pps->single_tile_in_pic_flag = 0;
+    }
+    pps->num_tile_rows_minus1 = tile_rows - 1;
+    pps->num_tile_columns_minus1 = tile_columns - 1;
+    pps->uniform_tile_spacing_flag = ctx->cdsc.ext->tile_uniform_spacing_flag;
+    pps->loop_filter_across_tiles_enabled_flag = ctx->cdsc.ext->loop_filter_across_tiles_enabled_flag;
+    pps->tile_offset_lens_minus1 = 31;
+    pps->arbitrary_slice_present_flag = ctx->cdsc.ext->arbitrary_slice_flag;
+    num_tiles = tile_rows * tile_columns;
+    pps->tile_id_len_minus1 = 0;
+    while (num_tiles > (1 << pps->tile_id_len_minus1))
+    {
+        pps->tile_id_len_minus1++; //Ceil(log2(MAX_NUM_TILES_ROW * MAX_NUM_TILES_COLUMN)) - 1
+    }
+
+    if (!pps->uniform_tile_spacing_flag)
+    {
+        pps->tile_column_width_minus1[pps->num_tile_columns_minus1] = ctx->w_lcu - 1;
+        pps->tile_row_height_minus1[pps->num_tile_rows_minus1] = ctx->h_lcu - 1;
+
+        for (int i = 0; i < pps->num_tile_columns_minus1; i++)
+        {
+            pps->tile_column_width_minus1[i] = ctx->cdsc.ext->tile_column_width_array[i] - 1;
+            pps->tile_column_width_minus1[pps->num_tile_columns_minus1] -= (pps->tile_column_width_minus1[i] + 1);
+
+        }
+        for (int i = 0; i < pps->num_tile_rows_minus1; i++)
+        {
+            pps->tile_row_height_minus1[i] = ctx->cdsc.ext->tile_row_height_array[i] - 1;
+            pps->tile_row_height_minus1[pps->num_tile_rows_minus1] -= (pps->tile_row_height_minus1[i] + 1);
+        }
+    }
+
+    if(ctx->sps.tool_rpl)
+    {
+        int hist[REFP_NUM][MAX_NUM_RPLS + 1];
+        int tmp_num_ref_idx_default_active[REFP_NUM] = {0, 0};
+        int max_val[REFP_NUM] = {0, 0};
+
+        for(int i = 0; i < (MAX_NUM_RPLS + 1); i++)
+        {
+            hist[REFP_0][i] = 0;
+            hist[REFP_1][i] = 0;
+        }
+
+        for(int i = 0; i < ctx->sps.num_ref_pic_lists_in_sps0; i++)
+        {
+            hist[REFP_0][ctx->sps.rpls_l0->ref_pic_active_num]++;
+            hist[REFP_1][ctx->sps.rpls_l1->ref_pic_active_num]++;
+        }
+
+        for(int i = 0; i < (MAX_NUM_RPLS + 1); i++)
+        {
+            for(int j = 0; j < REFP_NUM; j++)
+            {
+                if(hist[j][i] > max_val[j])
+                {
+                    max_val[j] = hist[j][i];
+                    tmp_num_ref_idx_default_active[j] = i;
+                }
+            }
+        }
+
+        pps->num_ref_idx_default_active_minus1[REFP_0] = tmp_num_ref_idx_default_active[REFP_0] - 1;
+        pps->num_ref_idx_default_active_minus1[REFP_1] = tmp_num_ref_idx_default_active[REFP_1] - 1;
+    }
+    else
+    {
+        pps->num_ref_idx_default_active_minus1[REFP_0] = 0;
+        pps->num_ref_idx_default_active_minus1[REFP_1] = 0;
+    }
+
+    if (ctx->sps.tool_dra)
+    {
+        ctx->pps.pic_dra_enabled_flag = 1;
+        ctx->pps.pic_dra_aps_id = 0;
+    }
+
+    ctx->pps.pps_pic_parameter_set_id = 0;
+    xeve_mcpy(&ctx->pps_array[ctx->pps.pps_pic_parameter_set_id], &ctx->pps, sizeof(XEVE_PPS));
+}
+
+void xevem_pocs(XEVE_CTX * ctx, u32 pic_imcnt, int gop_size, int pos)
+{
+    ctx->slice_depth = xevem_tbl_slice_depth_orig[gop_size >> 2][pos];
+    ctx->poc.poc_val = ((pic_imcnt / gop_size) * gop_size) + xevem_tbl_poc_gop_offset[gop_size >> 2][pos];
+}
+
+void xevem_set_sh(XEVE_CTX *ctx, XEVE_SH *sh)
+{
+    xeve_set_sh(ctx, sh);
+
+    sh->sh_deblock_alpha_offset = ctx->cdsc.ext->deblock_aplha_offset;
+    sh->sh_deblock_beta_offset = ctx->cdsc.ext->deblock_beta_offset;
+
+    if (ctx->sps.tool_pocs)
+    {
+      sh->poc_lsb = (ctx->poc.poc_val - ctx->poc.prev_idr_poc + (1 << (ctx->sps.log2_max_pic_order_cnt_lsb_minus4 + 4))) &
+                    ((1 << (ctx->sps.log2_max_pic_order_cnt_lsb_minus4 + 4)) - 1);
+    }
+
+    if (ctx->sps.tool_rpl)
+    {
+        select_assign_rpl_for_sh(ctx, sh);
+        sh->num_ref_idx_active_override_flag = 1;
+    }
+
+    if (ctx->param.arbitrary_slice_flag == 1)
+    {
+        ctx->sh.arbitrary_slice_flag = 1;
+        sh->num_remaining_tiles_in_slice_minus1 = ctx->param.num_remaining_tiles_in_slice_minus1[ctx->slice_num];
+        if (ctx->tile_cnt > 1)
+        {
+            sh->single_tile_in_slice_flag = 0;
+            int bef_tile_num = 0;
+            for (int i = 0; i < ctx->slice_num; ++i)
+            {
+                bef_tile_num += ctx->param.num_remaining_tiles_in_slice_minus1[i] + 2;
+            }
+
+            sh->first_tile_id = ctx->param.tile_array_in_slice[bef_tile_num];
+            for (int i = 0; i < sh->num_remaining_tiles_in_slice_minus1 + 1; ++i)
+            {
+                sh->delta_tile_id_minus1[i] = ctx->param.tile_array_in_slice[bef_tile_num + i + 1] -
+                                              ctx->param.tile_array_in_slice[bef_tile_num + i    ] - 1;
+            }
+        }
+    }
+    else
+    {
+        if (ctx->tile_cnt > 1)
+        {
+            sh->single_tile_in_slice_flag = 0;
+            sh->first_tile_id = ctx->param.slice_boundary_array[2 * ctx->slice_num];
+            sh->last_tile_id = ctx->param.slice_boundary_array[2 * ctx->slice_num + 1];
+        }
+    }
+}
+
+int xevem_set_tile_info(XEVE_CTX * ctx)
+{
+    XEVE_TILE  * tile;
+    int          i, j, size, x, y, w, h, w_tile, h_tile, w_lcu, h_lcu, tidx, t0;
+    int          col_w[MAX_NUM_TILES_COL], row_h[MAX_NUM_TILES_ROW], f_tile;
+    u8         * map_tidx;
+    u32        * map_scu;
+    u8         * tile_to_slice_map = ctx->tile_to_slice_map;
+    u8         * tile_order = ctx->tile_order;
+    int          num_slice_in_pic;
+    int          first_tile_in_slice, last_tile_in_slice, w_tile_slice, h_tile_slice;
+    int          slice_num = 0;
+    int          tmp1, tmp2, tmp3;
+    int          first_tile_col_idx, last_tile_col_idx, delta_tile_idx;
+
+    ctx->tile_cnt = ctx->param.tile_columns * ctx->param.tile_rows;
+    w_tile = ctx->param.tile_columns;
+    h_tile = ctx->param.tile_rows;
+    f_tile = w_tile * h_tile;
+    w_lcu = ctx->w_lcu;
+    h_lcu = ctx->h_lcu;
+    num_slice_in_pic = ctx->param.num_slice_in_pic;
+
+    tmp3 = 0;
+
+    for (i = 0; i < (2 * num_slice_in_pic); i = i + 2)
+    {
+        first_tile_in_slice = ctx->param.slice_boundary_array[i];
+        last_tile_in_slice = ctx->param.slice_boundary_array[i + 1];
+
+        first_tile_col_idx = first_tile_in_slice % w_tile;
+        last_tile_col_idx = last_tile_in_slice % w_tile;
+        delta_tile_idx = last_tile_in_slice - first_tile_in_slice;
+
+        if (last_tile_in_slice < first_tile_in_slice)
+        {
+            if (first_tile_col_idx > last_tile_col_idx)
+            {
+                delta_tile_idx += ctx->tile_cnt + w_tile;
+            }
+            else
+            {
+                delta_tile_idx += ctx->tile_cnt;
+            }
+        }
+        else if (first_tile_col_idx > last_tile_col_idx)
+        {
+            delta_tile_idx += w_tile;
+        }
+
+        w_tile_slice = (delta_tile_idx % w_tile) + 1; //Number of tiles in slice width
+        h_tile_slice = (delta_tile_idx / w_tile) + 1; //Number of tiles in slice height
+
+        int st_row_slice = first_tile_in_slice / w_tile;
+        int st_col_slice = first_tile_in_slice % w_tile;
+
+        for (tmp1 = 0 ; tmp1 < h_tile_slice ; tmp1++)
+        {
+            for(tmp2 = 0 ; tmp2 < w_tile_slice ; tmp2++)
+            {
+                int curr_col_slice = (st_col_slice + tmp2) % w_tile;
+                int curr_row_slice = (st_row_slice + tmp1) % h_tile;
+                tile_to_slice_map[curr_row_slice * w_tile + curr_col_slice] = slice_num;
+                tile_order[tmp3++] = curr_row_slice * w_tile + curr_col_slice;
+            }
+        }
+        slice_num++;
+    }
+
+    /* alloc tile information */
+    size = sizeof(XEVE_TILE) * f_tile;
+    ctx->tile = xeve_malloc(size);
+    xeve_assert_rv(ctx->tile, XEVE_ERR_OUT_OF_MEMORY);
+    xeve_mset(ctx->tile, 0, size);
+
+    /* set tile information */
+    if (ctx->param.uniform_spacing_tiles)
+    {
+        for (i = 0; i<w_tile; i++)
+        {
+            col_w[i] = ((i + 1) * w_lcu) / w_tile - (i * w_lcu) / w_tile;
+            if (col_w[i] < 1 )
+                xeve_assert_rv(0, XEVE_ERR_UNSUPPORTED);
+        }
+        for (j = 0; j<h_tile; j++)
+        {
+            row_h[j] = ((j + 1) * h_lcu) / h_tile - (j * h_lcu) / h_tile;
+            if (row_h[j] < 1 )
+                xeve_assert_rv(0, XEVE_ERR_UNSUPPORTED);
+        }
+    }
+    else
+    {
+        //Non-uniform tile case
+        for (i = 0, t0 = 0; i<(w_tile - 1); i++)
+        {
+            col_w[i] = ctx->cdsc.ext->tile_column_width_array[i];
+            t0 += col_w[i];
+            if (col_w[i] < 1 )
+                xeve_assert_rv(0, XEVE_ERR_UNSUPPORTED);
+        }
+        col_w[i] = w_lcu - t0;
+        if (col_w[i] < 1)
+            xeve_assert_rv(0, XEVE_ERR_UNSUPPORTED);
+
+        for (j = 0, t0 = 0; j<(h_tile - 1); j++)
+        {
+            row_h[j] = ctx->cdsc.ext->tile_row_height_array[j];
+            if (row_h[j] < 1 )
+                xeve_assert_rv(0, XEVE_ERR_UNSUPPORTED);
+            t0 += row_h[j];
+        }
+        row_h[j] = h_lcu - t0;
+        if (row_h[j] < 1)
+            xeve_assert_rv(0, XEVE_ERR_UNSUPPORTED);
+    }
+
+    /* update tile information - Tile width, height, First ctb address */
+    tidx = 0;
+    for (y = 0; y<h_tile; y++)
+    {
+        for (x = 0; x<w_tile; x++)
+        {
+            tile = &ctx->tile[tidx];
+            tile->w_ctb = col_w[x];
+            tile->h_ctb = row_h[y];
+            tile->f_ctb = tile->w_ctb * tile->h_ctb;
+            tile->ctba_rs_first = 0;
+
+            for (i = 0; i<x; i++)
+            {
+                tile->ctba_rs_first += col_w[i];
+            }
+            for (j = 0; j<y; j++)
+            {
+                tile->ctba_rs_first += w_lcu * row_h[j];
+            }
+            tidx++;
+        }
+    }
+
+    /* set tile map - SCU level mapping to tile index */
+    for (tidx = 0; tidx<(w_tile * h_tile); tidx++)
+    {
+        slice_num = tile_to_slice_map[tidx];
+        tile = ctx->tile + tidx;
+        x = PEL2SCU((tile->ctba_rs_first % w_lcu) << ctx->log2_max_cuwh);
+        y = PEL2SCU((tile->ctba_rs_first / w_lcu) << ctx->log2_max_cuwh);
+        t0 = PEL2SCU(tile->w_ctb << ctx->log2_max_cuwh);
+        w = XEVE_MIN((ctx->w_scu - x), t0);
+        t0 = PEL2SCU(tile->h_ctb << ctx->log2_max_cuwh);
+        h = XEVE_MIN((ctx->h_scu - y), t0);
+
+        map_tidx = ctx->map_tidx + x + y * ctx->w_scu;
+        map_scu = ctx->map_scu + x + y * ctx->w_scu;
+        for (j = 0; j<h; j++)
+        {
+            for (i = 0; i<w; i++)
+            {
+                map_tidx[i] = tidx;
+                MCU_SET_SN(map_scu[i], slice_num);  //Mapping CUs to the slices
+            }
+            map_tidx += ctx->w_scu;
+            map_scu += ctx->w_scu;
+        }
+    }
+    return XEVE_OK;
+}
+
+int xevem_ready(XEVE_CTX * ctx)
+{
+    XEVE_CORE  * core = NULL;
+    XEVEM_CORE * mcore = NULL;
+    int          ret;
+    s32          size;
+    XEVEM_CTX  * mctx = (XEVEM_CTX *)ctx;
+
+    mctx->map_ats_inter = NULL;
+
+    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    {
+        mctx->ats_inter_info_pred[i] = NULL;
+        mctx->ats_inter_num_pred[i] = NULL;
+        mctx->ats_inter_pred_dist[i] = NULL;
+    }
+    if(ctx->core[0] == NULL)
+    {
+
+        /* set various value */
+        for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+        {
+            mcore = xevem_core_alloc(ctx->param.chroma_format_idc);
+            xeve_assert_gv(mcore != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+            core = (XEVE_CORE*)mcore;
+            ctx->core[i] = core;
+        }
+    }
+
+    ctx->w = ctx->param.w;
+    ctx->h = ctx->param.h;
+    ctx->f = ctx->w * ctx->h;
+
+    if (ctx->cdsc.ext->btt)
+    {
+        ctx->max_cuwh = 1 << xevem_tbl_split[BLOCK_11][IDX_MAX];
+        if (ctx->w < ctx->max_cuwh * 2 && ctx->h < ctx->max_cuwh * 2)
+        {
+            ctx->max_cuwh = ctx->max_cuwh >> 1;
+        }
+        else
+        {
+            ctx->max_cuwh = ctx->max_cuwh;
+        }
+        ctx->min_cuwh = 1 << xevem_tbl_split[BLOCK_11][IDX_MIN];
+        ctx->log2_min_cuwh = (u8)xevem_tbl_split[BLOCK_11][IDX_MIN];
+    }
+    else
+    {
+        ctx->max_cuwh = 64;
+        ctx->min_cuwh = 4;
+        ctx->log2_min_cuwh = 2;
+    }
+
+    ctx->log2_max_cuwh = XEVE_LOG2(ctx->max_cuwh);
+    ctx->max_cud = ctx->log2_max_cuwh - MIN_CU_LOG2;
+    ctx->w_lcu = (ctx->w + ctx->max_cuwh - 1) >> ctx->log2_max_cuwh;
+    ctx->h_lcu = (ctx->h + ctx->max_cuwh - 1) >> ctx->log2_max_cuwh;
+    ctx->f_lcu = ctx->w_lcu * ctx->h_lcu;
+    ctx->w_scu = (ctx->w + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
+    ctx->h_scu = (ctx->h + ((1 << MIN_CU_LOG2) - 1)) >> MIN_CU_LOG2;
+    ctx->f_scu = ctx->w_scu * ctx->h_scu;
+    ctx->log2_culine = ctx->log2_max_cuwh - MIN_CU_LOG2;
+    ctx->log2_cudim = ctx->log2_culine << 1;
+
+    ctx->cdsc.ext->framework_suco_max = XEVE_MIN(ctx->log2_max_cuwh, ctx->cdsc.ext->framework_suco_max);
+    mctx->enc_alf = xeve_alf_create_buf(ctx->cdsc.codec_bit_depth);
+    xeve_alf_create(mctx->enc_alf, ctx->w, ctx->h, ctx->max_cuwh, ctx->max_cuwh, 5, ctx->param.chroma_format_idc, ctx->cdsc.codec_bit_depth);
+
+    if (xeve_ready(ctx) != XEVE_OK)
+    {
+        goto ERR;
+    }
+
+    if (ctx->param.ibc_hash_search_flag)
+    {
+      mctx->ibc_hash = xeve_ibc_hash_create(ctx, ctx->w, ctx->h);
+    }
+
+    //initialize the threads to NULL
+    for (int i = 0; i < XEVE_MAX_TASK_CNT; i++)
+    {
+        ctx->thread_pool[i] = 0;
+    }
+
+    //get the context synchronization handle
+    ctx->sync_block = get_synchronized_object();
+    xeve_assert_gv(ctx->sync_block != NULL, ret, XEVE_ERR_UNKNOWN, ERR);
+
+    if (ctx->cdsc.parallel_task_cnt >= 1)
+    {
+        ctx->tc = xeve_malloc(sizeof(THREAD_CONTROLLER));
+        init_thread_controller(ctx->tc, ctx->cdsc.parallel_task_cnt);
+        for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+        {
+            ctx->thread_pool[i] = ctx->tc->create(ctx->tc, i);
+            xeve_assert_gv(ctx->thread_pool[i] != NULL, ret, XEVE_ERR_UNKNOWN, ERR);
+        }
+    }
+
+    if (mctx->map_affine == NULL)
+    {
+        size = sizeof(u32) * ctx->f_scu;
+        mctx->map_affine = xeve_malloc_fast(size);
+        xeve_assert_gv(mctx->map_affine, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        xeve_mset_x64a(mctx->map_affine, 0, size);
+    }
+
+    if (mctx->map_ats_intra_cu == NULL)
+    {
+        size = sizeof(u8) * ctx->f_scu;
+        mctx->map_ats_intra_cu = xeve_malloc_fast(size);
+        xeve_assert_gv(mctx->map_ats_intra_cu, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        xeve_mset(mctx->map_ats_intra_cu, 0, size);
+    }
+
+    if (mctx->map_ats_mode_h == NULL)
+    {
+        size = sizeof(u8) * ctx->f_scu;
+        mctx->map_ats_mode_h = xeve_malloc_fast(size);
+        xeve_assert_gv(mctx->map_ats_mode_h, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        xeve_mset(mctx->map_ats_mode_h, 0, size);
+    }
+    if (mctx->map_ats_mode_v == NULL)
+    {
+        size = sizeof(u8) * ctx->f_scu;
+        mctx->map_ats_mode_v = xeve_malloc_fast(size);
+        xeve_assert_gv(mctx->map_ats_mode_v, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        xeve_mset(mctx->map_ats_mode_v, 0, size);
+    }
+
+    if (mctx->map_ats_inter == NULL)
+    {
+        size = sizeof(u8) * ctx->f_scu;
+        mctx->map_ats_inter = xeve_malloc_fast(size);
+        xeve_assert_gv(mctx->map_ats_inter, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        xeve_mset(mctx->map_ats_inter, -1, size);
+    }
+
+    int num_tiles = (ctx->cdsc.ext->tile_columns) * (ctx->cdsc.ext->tile_rows);
+    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    {
+        if (mctx->ats_inter_info_pred[i] == NULL)
+        {
+            int num_route = ATS_INTER_SL_NUM;
+            int num_size_idx = MAX_TR_LOG2 - MIN_CU_LOG2 + 1;
+            size = sizeof(u32) * num_size_idx * num_size_idx * (ctx->max_cuwh >> MIN_CU_LOG2) * (ctx->max_cuwh >> MIN_CU_LOG2) * num_route; //only correct when the largest cu is <=128
+            mctx->ats_inter_pred_dist[i] = xeve_malloc_fast(size);
+            xeve_assert_gv(mctx->ats_inter_pred_dist[i], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+            size = sizeof(u8)  * num_size_idx * num_size_idx * (ctx->max_cuwh >> MIN_CU_LOG2) * (ctx->max_cuwh >> MIN_CU_LOG2) * num_route;
+            mctx->ats_inter_info_pred[i] = xeve_malloc_fast(size);
+            xeve_assert_gv(mctx->ats_inter_info_pred[i], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+            size = sizeof(u8)  * num_size_idx * num_size_idx * (ctx->max_cuwh >> MIN_CU_LOG2) * (ctx->max_cuwh >> MIN_CU_LOG2);
+            mctx->ats_inter_num_pred[i] = xeve_malloc_fast(size);
+            xeve_assert_gv(mctx->ats_inter_num_pred[i], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        }
+    }
+
+
+    ctx->deblock_alpha_offset = ctx->param.deblock_alpha_offset;
+    ctx->deblock_beta_offset = ctx->param.deblock_beta_offset;
+
+    if (ctx->cdsc.ext->tool_alf || ctx->cdsc.ext->tool_dra)
+    {
+        ctx->aps_gen_array = (XEVE_APS_GEN*)xeve_malloc(sizeof(XEVE_APS_GEN) * 2);
+        xeve_assert_gv(ctx->aps_gen_array, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        xeve_mset(ctx->aps_gen_array, 0, sizeof(XEVE_APS_GEN) * 2);
+        xeve_reset_aps_gen_read_buffer(ctx->aps_gen_array);
+
+        if (ctx->cdsc.ext->tool_alf)
+        {
+            ctx->aps_gen_array[0].aps_data = (XEVE_ALF_SLICE_PARAM*)xeve_malloc(sizeof(XEVE_ALF_SLICE_PARAM));
+            xeve_assert_gv(ctx->aps_gen_array[0].aps_data, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+            xeve_mset(ctx->aps_gen_array[0].aps_data, 0, sizeof(XEVE_ALF_SLICE_PARAM));
+        }
+    }
+
+    if (ctx->cdsc.ext->tool_dra)
+    {
+        mctx->dra_control = (DRA_CONTROL*)xeve_malloc(sizeof(DRA_CONTROL));
+        xeve_assert_gv(mctx->dra_control, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        xeve_mset(mctx->dra_control, 0, sizeof(DRA_CONTROL));
+
+        mctx->dra_control->dra_hist_norm = ctx->cdsc.ext->dra_hist_norm;
+        mctx->dra_control->num_ranges = ctx->cdsc.ext->dra_num_ranges;
+        xeve_mcpy(mctx->dra_control->dra_scale_map.dra_scale_map_y, ctx->cdsc.ext->dra_scale_map_y, sizeof(double) * 256 * 2);
+        mctx->dra_control->dra_hist_norm = mctx->dra_control->dra_hist_norm == 0 ? 1 : mctx->dra_control->dra_hist_norm;
+        mctx->dra_control->chroma_qp_model.cb_qp_scale = ctx->cdsc.ext->dra_cb_qp_scale;
+        mctx->dra_control->chroma_qp_model.cr_qp_scale = ctx->cdsc.ext->dra_cr_qp_scale;
+        if(ctx->param.chroma_format_idc == 0)
+        {
+            mctx->dra_control->chroma_qp_model.cb_qp_scale = 1;
+            mctx->dra_control->chroma_qp_model.cr_qp_scale = 1;
+        }
+        mctx->dra_control->chroma_qp_model.chroma_qp_scale = ctx->cdsc.ext->dra_chroma_qp_scale;
+        mctx->dra_control->chroma_qp_model.chroma_qp_offset = ctx->cdsc.ext->dra_chroma_qp_offset;
+        mctx->dra_control->chroma_qp_model.dra_table_idx = ctx->cdsc.qp;
+        mctx->dra_control->chroma_qp_model.dra_cb_qp_offset = ctx->cdsc.qp_cb_offset;
+        mctx->dra_control->chroma_qp_model.dra_cr_qp_offset = ctx->cdsc.qp_cr_offset;
+        mctx->dra_control->chroma_qp_model.enabled = 1;
+        mctx->dra_control->dra_descriptor2 = DRA_SCALE_NUMFBITS;
+        mctx->dra_control->dra_descriptor1 = 4;
+
+        xeve_init_dra(mctx->dra_control, 0, NULL, NULL, ctx->sps.bit_depth_luma_minus8 + 8);
+        xeve_analyze_input_pic(mctx->dra_control, ctx->sps.bit_depth_luma_minus8 + 8);
+
+        mctx->dra_array = (SIG_PARAM_DRA*)xeve_malloc(sizeof(SIG_PARAM_DRA) * APS_MAX_NUM);
+        xeve_assert_gv(mctx->dra_array, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        xeve_mset(mctx->dra_array, 0, sizeof(SIG_PARAM_DRA) * APS_MAX_NUM);
+
+        for (int i = 0; i < APS_MAX_NUM; i++)
+        {
+            mctx->dra_array[i].signal_dra_flag = -1;
+        }
+
+        xeve_generate_dra_array(mctx->dra_array, mctx->dra_control, 1, ctx->sps.bit_depth_luma_minus8 + 8);
+
+        if (ctx->cdsc.ext->tool_dra)
+        {
+            ctx->aps_gen_array[1].aps_data = (void*)(&mctx->dra_control->signalled_dra);
+
+            ctx->aps_gen_array[1].signal_flag = 1;
+            ctx->aps_gen_array[1].aps_id = 0;   // initial DRA APS
+        }
+    }
+    else
+    {
+        mctx->dra_control = NULL;
+    }
+
+    return XEVE_OK;
+ERR:
+    xeve_mfree_fast(mctx->map_affine);
+    xeve_mfree_fast(mctx->map_ats_intra_cu);
+    xeve_mfree_fast(mctx->map_ats_mode_h);
+    xeve_mfree_fast(mctx->map_ats_mode_v);
+    xeve_mfree_fast(mctx->map_ats_inter);
+
+    num_tiles = (ctx->cdsc.ext->tile_columns) * (ctx->cdsc.ext->tile_rows);
+    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    {
+        xeve_mfree_fast(mctx->ats_inter_pred_dist[i]);
+        xeve_mfree_fast(mctx->ats_inter_info_pred[i]);
+        xeve_mfree_fast(mctx->ats_inter_num_pred[i]);
+    }
+
+    xeve_mfree_fast(ctx->map_tidx);
+    xeve_mfree_fast((void*) ctx->sync_flag);
+
+    if (ctx->cdsc.ext->tool_dra)
+    {
+        if (mctx->dra_control)
+        {
+            xeve_mfree(mctx->dra_control);
+        }
+        if (mctx->dra_array)
+        {
+            xeve_mfree(mctx->dra_array);
+        }
+    }
+
+    if (ctx->cdsc.ext->tool_alf || ctx->cdsc.ext->tool_dra)
+    {
+        if (ctx->aps_gen_array)
+        {
+            xeve_mfree(ctx->aps_gen_array);
+        }
+
+        if (ctx->cdsc.ext->tool_alf)
+        {
+            if (ctx->aps_gen_array[0].aps_data)
+            {
+                xeve_mfree(ctx->aps_gen_array[0].aps_data);
+            }
+        }
+    }
+
+    if (ctx->param.ibc_hash_search_flag && mctx->ibc_hash)
+    {
+        xeve_ibc_hash_destroy(mctx->ibc_hash);
+        mctx->ibc_hash = NULL;
+    }
+
+    if (ctx->cdsc.ext->tool_alf)
+    {
+        xeve_alf_destroy(mctx->enc_alf);
+        xeve_alf_delete_buf(mctx->enc_alf);
+    }
+
+    return ret;
+}
+
+
+void xevem_flush(XEVE_CTX * ctx)
+{
+    XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
+
+    xeve_assert(ctx);
+
+    xeve_flush(ctx);
+
+    xeve_mfree_fast(mctx->map_affine);
+    xeve_mfree_fast(mctx->map_ats_intra_cu);
+    xeve_mfree_fast(mctx->map_ats_mode_h);
+    xeve_mfree_fast(mctx->map_ats_mode_v);
+    xeve_mfree_fast(mctx->map_ats_inter);
+
+    int num_tiles = (ctx->cdsc.ext->tile_columns) * (ctx->cdsc.ext->tile_rows);
+    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    {
+        xeve_mfree_fast(mctx->ats_inter_pred_dist[i]);
+        xeve_mfree_fast(mctx->ats_inter_info_pred[i]);
+        xeve_mfree_fast(mctx->ats_inter_num_pred[i]);
+    }
+
+    xeve_mfree_fast(ctx->map_tidx);
+
+    if (ctx->cdsc.ext->tool_dra)
+    {
+        if (mctx->dra_control)
+        {
+            xeve_mfree(mctx->dra_control);
+        }
+        if (mctx->dra_array)
+        {
+            xeve_mfree(mctx->dra_array);
+        }
+    }
+
+    if (ctx->cdsc.ext->tool_alf || ctx->cdsc.ext->tool_dra)
+    {
+
+        if (ctx->cdsc.ext->tool_alf)
+        {
+            if (ctx->aps_gen_array[0].aps_data)
+            {
+                xeve_mfree(ctx->aps_gen_array[0].aps_data);
+            }
+        }
+        if (ctx->aps_gen_array)
+        {
+            xeve_mfree(ctx->aps_gen_array);
+        }
+    }
+
+    if (ctx->param.ibc_hash_search_flag && mctx->ibc_hash)
+    {
+        xeve_ibc_hash_destroy(mctx->ibc_hash);
+        mctx->ibc_hash = NULL;
+    }
+
+    if (ctx->cdsc.ext->tool_alf)
+    {
+        xeve_alf_destroy(mctx->enc_alf);
+        xeve_alf_delete_buf(mctx->enc_alf);
+    }
+}
+
+int xevem_header(XEVE_CTX * ctx)
+{
+    int ret = XEVE_OK;
+
+    ret = xeve_header(ctx);
+    xeve_assert_rv(ret == XEVE_OK, ret);
+
+    /* encode parameter sets */
+    if (ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.use_closed_gop)) /* if nalu_type is IDR */
+    {
+        if (ctx->sps.tool_dra)
+        {
+            xevem_set_active_dra_info(ctx);
+
+            ret = xevem_encode_aps(ctx, &ctx->aps_gen_array[1]);
+            xeve_assert_rv(ret == XEVE_OK, ret);
+
+            ctx->aps_gen_array[1].signal_flag = 0;
+        }
+    }
+
+    return ret;
+}
+
+int xevem_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
+{
+    XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
+
+    xeve_pic_prepare(ctx, bitb, stat);
+    xeve_mset_x64a(mctx->map_affine, 0, sizeof(u32) * ctx->f_scu);
+    xeve_mset_x64a(mctx->map_ats_inter, 0, sizeof(u8) * ctx->f_scu);
+
+    return XEVE_OK;
+}
+
+int xevem_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int thread_cnt)
+{
+    xeve_init_core_mt(ctx, tile_num, core, thread_cnt);
+
+    ctx->core[thread_cnt]->ctx = ctx;
+
+    if (ctx->sps.tool_hmvp && (core->x_lcu == (ctx->tile[tile_num].ctba_rs_first) % ctx->w_lcu))
+    {
+        int ret = xeve_hmvp_init(&(((XEVEM_CORE*)ctx->core[thread_cnt])->history_buffer));
+        xeve_assert_rv(ret == XEVE_OK, ret);
+    }
+    ctx->core[thread_cnt]->bs_temp.pdata[1] = &ctx->core[thread_cnt]->s_temp_run;
+
+    return XEVE_OK;
+}
+
+int xevem_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core)
+{
+    int ret = XEVE_OK;
+
+    xeve_loop_filter(ctx, core);
+
+    XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
+    /* adaptive loop filter */
+    ctx->sh.alf_on = ctx->sps.tool_alf;
+    if (ctx->sh.alf_on)
+    {
+        ret = mctx->fn_alf(ctx, PIC_MODE(ctx), &ctx->sh, &ctx->aps);
+        xeve_assert_rv(ret == XEVE_OK, ret);
+    }
+
+    return ret;
+}
+
+void xevem_itdq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM])
+{
+    XEVEM_CORE *mcore = (XEVEM_CORE*)core;
+    xeve_sub_block_itdq_main(coef, core->log2_cuw, core->log2_cuh, core->qp_y, core->qp_u, core->qp_v, core->nnz, nnz_sub, ctx->sps.tool_iqt
+                           , mcore->ats_intra_cu, mcore->ats_mode, mcore->ats_inter_info
+                           , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.chroma_format_idc);
+}
+
+void xevem_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth)
+{
+    XEVEM_CORE *mcore = (XEVEM_CORE*)core;
+    xeve_recon_w_ats(coef, pred, is_coef, cuw, cuh, s_rec, rec, mcore->ats_inter_info, bit_depth);
+}
+
+void xevem_pic_filt(XEVE_CTX * ctx, XEVE_IMGB * img)
+{
+    XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
+    if (ctx->cdsc.ext->tool_dra)
+    {
+        xeve_apply_dra_from_array(img, img, mctx->dra_array, ctx->aps_gen_array[1].aps_id, 0);
+    }
+}
+
+void xevem_platform_init_func()
+{
+#if X86_SSE
+    int check_cpu, support_sse, support_avx, support_avx2;
+    check_cpu = xeve_check_cpu_info();
+
+    support_sse = (check_cpu >> 1) & 1;
+    support_avx = check_cpu & 1;
+    support_avx2 = (check_cpu >> 2) & 1;
+
+    if (support_avx2)
+    {
+        xeve_func_itrans = xeve_itrans_map_tbl_sse;
+        xevem_func_dmvr_mc_l = xeve_tbl_dmvr_mc_l_sse;
+        xevem_func_dmvr_mc_c = xeve_tbl_dmvr_mc_c_sse;
+        xevem_func_bl_mc_l = xeve_tbl_bl_mc_l_sse;
+        xevem_func_aff_h_sobel_flt = &xevem_scaled_horizontal_sobel_filter_sse;
+        xevem_func_aff_v_sobel_flt = &xevem_scaled_vertical_sobel_filter_sse;
+        xevem_func_aff_eq_coef_comp = &xevem_equal_coeff_computer_sse;
+        xeve_func_intra_pred_ang = xeve_tbl_intra_pred_ang; /* to be updated */
+    }
+    else if (support_sse)
+    {
+        xeve_func_itrans = xeve_itrans_map_tbl_sse;
+        xevem_func_dmvr_mc_l = xeve_tbl_dmvr_mc_l_sse;
+        xevem_func_dmvr_mc_c = xeve_tbl_dmvr_mc_c_sse;
+        xevem_func_bl_mc_l = xeve_tbl_bl_mc_l_sse;
+        xevem_func_aff_h_sobel_flt = &xevem_scaled_horizontal_sobel_filter_sse;
+        xevem_func_aff_v_sobel_flt = &xevem_scaled_vertical_sobel_filter_sse;
+        xevem_func_aff_eq_coef_comp = &xevem_equal_coeff_computer_sse;
+        xeve_func_intra_pred_ang = xeve_tbl_intra_pred_ang; /* to be updated */
+    }
+    else
+#endif
+    {
+        xeve_func_itrans = xeve_itrans_map_tbl;
+        xevem_func_dmvr_mc_l = xevem_tbl_dmvr_mc_l;
+        xevem_func_dmvr_mc_c = xevem_tbl_dmvr_mc_c;
+        xevem_func_bl_mc_l = xevem_tbl_bl_mc_l;
+        xevem_func_aff_h_sobel_flt = &xevem_scaled_horizontal_sobel_filter;
+        xevem_func_aff_v_sobel_flt = &xevem_scaled_vertical_sobel_filter;
+        xevem_func_aff_eq_coef_comp = &xevem_equal_coeff_computer;
+        xeve_func_intra_pred_ang = xeve_tbl_intra_pred_ang;
+    }
+}
+
+int xevem_platform_init(XEVE_CTX * ctx)
+{
+    XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
+    int         ret = XEVE_ERR_UNKNOWN;
+
+    ret = xeve_platform_init(ctx);
+    xeve_assert_rv(XEVE_OK == ret, ret);
+
+    ret = xevem_pintra_create(ctx, 0);
+    xeve_assert_rv(XEVE_OK == ret, ret);
+
+
+    if (ctx->cdsc.profile == PROFILE_MAIN)
+    {
+        ret = xevem_pinter_create(ctx, 0);
+        xeve_assert_rv(XEVE_OK == ret, ret);
+    }
+
+    if (ctx->param.use_ibc_flag)
+    {
+        /* create ibc prediction analyzer */
+        ret = xevem_pibc_create(ctx, 0);
+        xeve_assert_rv(XEVE_OK == ret, ret);
+    }
+
+    ctx->fn_ready           = xevem_ready;
+    ctx->fn_flush           = xevem_flush;
+    ctx->fn_enc_header      = xevem_header;
+    ctx->fn_enc_pic_prepare = xevem_pic_prepare;
+    ctx->fn_loop_filter     = xevem_loop_filter;
+    ctx->fn_encode_pps      = xevem_encode_pps;
+    ctx->fn_encode_sps      = xevem_encode_sps;
+    ctx->fn_eco_sh          = xevem_eco_sh;
+    ctx->fn_eco_split_mode  = xevem_eco_split_mode;
+    ctx->fn_eco_coef        = xevem_eco_coef_main;
+    ctx->fn_eco_sbac_reset  = xevem_sbac_reset;
+    ctx->fn_rdo_intra_ext   = xevem_rdo_bit_cnt_intra_ext;
+    ctx->fn_rdo_intra_ext_c = xevem_rdo_bit_cnt_intra_ext_c;
+    ctx->fn_tq              = xevem_sub_block_tq;
+    ctx->fn_rdoq_set_ctx_cc = xevem_rdoq_set_ctx_cc;
+    ctx->fn_itdp            = xevem_itdq;
+    ctx->fn_recon           = xevem_recon;
+    ctx->fn_pocs            = xevem_pocs;
+    ctx->fn_set_tile_info   = xevem_set_tile_info;
+    ctx->fn_deblock_tree    = xevem_deblock_tree;
+    ctx->fn_deblock_unit    = xevem_deblock_unit;
+    ctx->fn_pic_flt         = xevem_pic_filt;
+    ctx->fn_deblock         = xevem_deblock;
+    mctx->fn_alf            = xevem_alf_aps;
+
+    xeve_mode_create_main(ctx);
+    xevem_platform_init_func();
+    return XEVE_OK;
+}
+
+void xevem_platform_deinit(XEVE_CTX * ctx)
+{
+    XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
+
+    xeve_platform_deinit(ctx);
+    mctx->fn_alf = NULL;
+}
+
+int xevem_encode_sps(XEVE_CTX * ctx)
+{
+    XEVE_BSW * bs = &ctx->bs[0];
+    XEVE_SPS * sps = &ctx->sps;
+    XEVE_NALU  nalu;
+
+    int* size_field = (int*)(*(&bs->cur));
+    u8* cur_tmp = bs->cur;
+
+    /* nalu header */
+    xeve_set_nalu(&nalu, XEVE_SPS_NUT, 0);
+    xeve_eco_nalu(bs, &nalu);
+
+    /* sequence parameter set*/
+    xevem_set_sps(ctx, &ctx->sps);
+    xeve_assert_rv(xevem_eco_sps(bs, sps) == XEVE_OK, XEVE_ERR_INVALID_ARGUMENT);
+
+    /* de-init BSW */
+    xeve_bsw_deinit(bs);
+
+    /* write the bitstream size */
+    *size_field = (int)(bs->cur - cur_tmp) - 4;
+
+    return XEVE_OK;
+}
+
+int xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps)
+{
+    XEVE_BSW     * bs = &ctx->bs[0];
+    XEVE_NALU      nalu;
+    int          * size_field = (int*)(*(&bs->cur));
+    u8           * cur_tmp = bs->cur;
+
+    /* nalu header */
+    xeve_set_nalu(&nalu, XEVE_APS_NUT, ctx->nalu.nuh_temporal_id);
+    xeve_eco_nalu(bs, &nalu);
+
+    /* adaptation parameter set*/
+    xeve_assert_rv(xevem_eco_aps_gen(bs, aps, ctx->sps.bit_depth_luma_minus8 + 8) == XEVE_OK, XEVE_ERR_INVALID_ARGUMENT);
+
+    xeve_bsw_deinit(bs);
+    *size_field = (int)(bs->cur - cur_tmp) - 4;
+
+    return XEVE_OK;
+}
+
+
+int xevem_encode_pps(XEVE_CTX * ctx)
+{
+    XEVE_BSW * bs = &ctx->bs[0];
+    XEVE_SPS * sps = &ctx->sps;
+    XEVE_PPS * pps = &ctx->pps;
+    XEVE_NALU  nalu;
+    int      * size_field = (int*)(*(&bs->cur));
+    u8       * cur_tmp = bs->cur;
+
+    /* nalu header */
+    xeve_set_nalu(&nalu, XEVE_PPS_NUT, ctx->nalu.nuh_temporal_id);
+    xeve_eco_nalu(bs, &nalu);
+
+    /* sequence parameter set*/
+    xevem_set_pps(ctx, &ctx->pps);
+    xeve_assert_rv(xevem_eco_pps(bs, sps, pps) == XEVE_OK, XEVE_ERR_INVALID_ARGUMENT);
+
+    /* de-init BSW */
+    xeve_bsw_deinit(bs);
+
+    /* write the bitstream size */
+    *size_field = (int)(bs->cur - cur_tmp) - 4;
+
+    return XEVE_OK;
+}
 #if GRAB_STAT
 void enc_stat_header(int pic_w, int pic_h)
 {

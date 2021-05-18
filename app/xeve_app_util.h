@@ -151,55 +151,74 @@ static XEVE_CLK xeve_clk_from(XEVE_CLK from) \
 
 #define XEVEA_CLIP(n,min,max) (((n)>(max))? (max) : (((n)<(min))? (min) : (n)))
 
-static int imgb_read(FILE * fp, XEVE_IMGB * img)
+static int imgb_read(FILE * fp, XEVE_IMGB * img, int is_y4m)
 {
     int f_w, f_h;
     int y_size, u_size, v_size;
+    
+    /************Handling Y4M files ********************/
+    char t_buf[10];
+    if (is_y4m)
+    {
+        if (6 != fread(t_buf, 1, 6, fp)) return -1;
+        if (memcmp(t_buf, "FRAME", 5))
+        {
+            logerr("Loss of framing in Y4M input data\n");
+            return -1;
+        }
+        if (t_buf[5] != '\n')
+        {
+            logerr("Error parsing Y4M frame header\n");
+            return -1;
+        }
+    }
+
+    /************Handling Y4M files ********************/
 
     int chroma_format = XEVE_CS_GET_FORMAT(img->cs);
     int bit_depth = XEVE_CS_GET_BIT_DEPTH(img->cs);
-    int w_shift = (chroma_format == XEVE_CF_YCBCR420) || (chroma_format == XEVE_CF_YCBCR422)  ? 1 : 0;
+    int w_shift = (chroma_format == XEVE_CF_YCBCR420) || (chroma_format == XEVE_CF_YCBCR422) ? 1 : 0;
     int h_shift = chroma_format == XEVE_CF_YCBCR420 ? 1 : 0;
 
     f_w = img->w[0];
     f_h = img->h[0];
 
-    if(bit_depth == 8)
+    if (bit_depth == 8)
     {
         y_size = f_w * f_h;
 
-        if(fread(img->a[0], 1, y_size, fp) != (unsigned)y_size)
+        if (fread(img->a[0], 1, y_size, fp) != (unsigned)y_size)
         {
             return -1;
         }
-        if(chroma_format != XEVE_CF_YCBCR400)
+        if (chroma_format != XEVE_CF_YCBCR400)
         {
             u_size = v_size = (f_w >> w_shift) * (f_h >> h_shift);
-            if(fread(img->a[1], 1, u_size, fp) != (unsigned)u_size)
+            if (fread(img->a[1], 1, u_size, fp) != (unsigned)u_size)
             {
                 return -1;
             }
-            if(fread(img->a[2], 1, v_size, fp) != (unsigned)v_size)
+            if (fread(img->a[2], 1, v_size, fp) != (unsigned)v_size)
             {
                 return -1;
             }
         }
     }
-    else if(bit_depth >= 10 && bit_depth <= 14)
+    else if (bit_depth >= 10 && bit_depth <= 14)
     {
         y_size = f_w * f_h * sizeof(short);
-        if(fread(img->a[0], 1, y_size, fp) != (unsigned)y_size)
+        if (fread(img->a[0], 1, y_size, fp) != (unsigned)y_size)
         {
             return -1;
         }
-        if(chroma_format != XEVE_CF_YCBCR400)
+        if (chroma_format != XEVE_CF_YCBCR400)
         {
             u_size = v_size = (f_w >> w_shift) * (f_h >> h_shift) * sizeof(short);
-            if(fread(img->a[1], 1, u_size, fp) != (unsigned)u_size)
+            if (fread(img->a[1], 1, u_size, fp) != (unsigned)u_size)
             {
                 return -1;
             }
-            if(fread(img->a[2], 1, v_size, fp) != (unsigned)v_size)
+            if (fread(img->a[2], 1, v_size, fp) != (unsigned)v_size)
             {
                 return -1;
             }
@@ -512,7 +531,7 @@ ERR:
     return NULL;
 }
 
-#define MAX_BUMP_FRM_CNT           (16 <<1)
+#define MAX_BUMP_FRM_CNT           (16 <<2)
 
 typedef struct _IMGB_LIST {
     XEVE_IMGB  * imgb;
@@ -555,7 +574,7 @@ static IMGB_LIST *imgb_list_put(IMGB_LIST *list, XEVE_IMGB *imgb, XEVE_MTIME ts)
 {
     int i;
 
-    /* store original imgb for PSNR */
+    /* store original imgb for XEVE_TUNE_PSNR */
     for(i=0; i<MAX_BUMP_FRM_CNT; i++)
     {
         if(list[i].used == 0)
@@ -573,7 +592,7 @@ static IMGB_LIST *imgb_list_get_empty(IMGB_LIST *list)
 {
     int i;
 
-    /* store original imgb for PSNR */
+    /* store original imgb for XEVE_TUNE_PSNR */
     for(i=0; i<MAX_BUMP_FRM_CNT; i++)
     {
         if(list[i].used == 0)
@@ -659,7 +678,7 @@ static int cal_psnr(IMGB_LIST * imgblist_inp, XEVE_IMGB * rec, XEVE_MTIME ts,
     int i;
     XEVE_IMGB     *img = NULL;
 
-    /* calculate PSNR */
+    /* calculate XEVE_TUNE_PSNR */
     psnr[0] = psnr[1] = psnr[2] = 0.0f;
 
     for(i = 0; i < MAX_BUMP_FRM_CNT; i++)
@@ -681,7 +700,7 @@ static int cal_psnr(IMGB_LIST * imgblist_inp, XEVE_IMGB * rec, XEVE_MTIME ts,
             {
                 if (out_bit_depth == 8)
                 {
-                    img = imgb_alloc(rec->aw[0], rec->ah[0], XEVE_CS_SET(XEVE_CS_GET_FORMAT(rec->cs), out_bit_depth,0));
+                    img = imgb_alloc(rec->aw[0], rec->ah[0], XEVE_CS_SET(XEVE_CS_GET_FORMAT(rec->cs), out_bit_depth, 0));
                     imgb_cpy(img, imgblist_inp[i].imgb);
                     find_psnr_8bit(img, rec, psnr);
                     imgb_free(img);

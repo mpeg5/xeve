@@ -29,7 +29,6 @@
 */
 
 #include "xeve_type.h"
-#include "xeve_util.h"
 #include "xeve_rc.h"
 #include "xeve_fcst.h"
 #include <math.h>
@@ -322,7 +321,7 @@ static void adaptive_quantization(XEVE_CTX * ctx)
     w_blk = fcst->w_blk;
     f_blk = fcst->f_blk;
 
-    aq_bd_const  = ((ctx->param.bit_depth - 8) + 7.2135) * 2;
+    aq_bd_const  = (ctx->sps.bit_depth_luma_minus8 + 7.2135) * 2;
     s_l = ctx->pico->pic.s_l;
     s_c = ctx->pico->pic.s_c;
 
@@ -1612,13 +1611,13 @@ int xeve_forecast_fixed_gop(XEVE_CTX* ctx)
         get_fcost_fixed_gop(ctx, is_intra_pic);
     }
 
-    if (ctx->param.qpa == QPA_AQ || ctx->param.qpa == QPA_AQ_TREE)
+    if (ctx->param.aq_mode != 0)
     {
         adaptive_quantization(ctx);
     }
 
     if ((pic_icnt % gop_size == 0) && (pic_icnt != 0) && \
-        (ctx->param.qpa == QPA_TREE || ctx->param.qpa == QPA_AQ_TREE))
+        (ctx->param.cutree != 0))
     {
         blk_tree_fixed_gop(ctx);
     }

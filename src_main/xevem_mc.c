@@ -44,7 +44,7 @@ XEVE_AFFINE_H_SOBEL_FLT xevem_func_aff_h_sobel_flt;
 XEVE_AFFINE_V_SOBEL_FLT xevem_func_aff_v_sobel_flt;
 XEVE_AFFINE_EQUAL_COEF  xevem_func_aff_eq_coef_comp;
 
-s16 tbl_mc_l_coeff_main[16][8] =
+s16 xevem_tbl_mc_l_coeff[16][8] =
 {
     {  0, 0,   0, 64,  0,   0,  0,  0 },
     {  0, 1,  -3, 63,  4,  -2,  1,  0 },
@@ -64,7 +64,7 @@ s16 tbl_mc_l_coeff_main[16][8] =
     {  0, 1,  -2,  4, 63,  -3,  1,  0 },
 };
 
-s16 tbl_mc_c_coeff_main[32][4] =
+s16 xevem_tbl_mc_c_coeff[32][4] =
 {
     {  0, 64,  0,  0 },
     { -1, 63,  2,  0 },
@@ -192,7 +192,7 @@ void xeve_mc_dmvr_l_n0(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pe
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_8TAP_N0(tbl_mc_l_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7]);
+            pt = MAC_8TAP_N0(xeve_mc_l_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         ref += s_ref;
@@ -212,7 +212,7 @@ void xeve_mc_dmvr_l_0n(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pe
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_8TAP_0N(tbl_mc_l_coeff[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j], ref[s_ref * 4 + j], ref[s_ref * 5 + j], ref[s_ref * 6 + j], ref[s_ref * 7 + j]);
+            pt = MAC_8TAP_0N(xeve_mc_l_coeff[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j], ref[s_ref * 4 + j], ref[s_ref * 5 + j], ref[s_ref * 6 + j], ref[s_ref * 7 + j]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         ref += s_ref;
@@ -241,7 +241,7 @@ void xeve_mc_dmvr_l_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            b[j] = MAC_8TAP_NN_S1(tbl_mc_l_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7], offset1, shift1);
+            b[j] = MAC_8TAP_NN_S1(xeve_mc_l_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], ref[j + 4], ref[j + 5], ref[j + 6], ref[j + 7], offset1, shift1);
         }
         ref += s_ref;
         b += w;
@@ -252,7 +252,7 @@ void xeve_mc_dmvr_l_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_8TAP_NN_S2(tbl_mc_l_coeff[dy], b[j], b[j + w], b[j + w * 2], b[j + w * 3], b[j + w * 4], b[j + w * 5], b[j + w * 6], b[j + w * 7], offset2, shift2);
+            pt = MAC_8TAP_NN_S2(xeve_mc_l_coeff[dy], b[j], b[j + w], b[j + w * 2], b[j + w * 3], b[j + w * 4], b[j + w * 5], b[j + w * 6], b[j + w * 7], offset2, shift2);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -393,7 +393,7 @@ void xeve_mc_dmvr_c_n0(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_4TAP_N0(tbl_mc_c_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3]);
+            pt = MAC_4TAP_N0(xeve_mc_c_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -413,7 +413,7 @@ void xeve_mc_dmvr_c_0n(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_4TAP_0N(tbl_mc_c_coeff[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j]);
+            pt = MAC_4TAP_0N(xeve_mc_c_coeff[dy], ref[j], ref[s_ref + j], ref[s_ref * 2 + j], ref[s_ref * 3 + j]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -443,7 +443,7 @@ void xeve_mc_dmvr_c_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            b[j] = MAC_4TAP_NN_S1(tbl_mc_c_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], offset1, shift1);
+            b[j] = MAC_4TAP_NN_S1(xeve_mc_c_coeff[dx], ref[j], ref[j + 1], ref[j + 2], ref[j + 3], offset1, shift1);
         }
         ref += s_ref;
         b += w;
@@ -454,7 +454,7 @@ void xeve_mc_dmvr_c_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s1
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_4TAP_NN_S2(tbl_mc_c_coeff[dy], b[j], b[j + w], b[j + 2 * w], b[j + 3 * w], offset2, shift2);
+            pt = MAC_4TAP_NN_S2(xeve_mc_c_coeff[dy], b[j], b[j + w], b[j + 2 * w], b[j + 3 * w], offset2, shift2);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -702,7 +702,7 @@ void copy_buffer(pel *src, int src_stride, pel *dst, int dst_stride, int width, 
     int num_bytes = width * sizeof(pel);
     for(int i = 0; i < height; i++)
     {
-        memcpy(dst + i * dst_stride, src + i * src_stride, num_bytes);
+        xeve_mcpy(dst + i * dst_stride, src + i * src_stride, num_bytes);
     }
 }
 
@@ -734,20 +734,20 @@ void padding(pel *ptr, int stride, int width, int height, int pad_left_size, int
     ptr_temp = (ptr - pad_left_size);
     for(int i = 1; i <= pad_top_size; i++)
     {
-        memcpy(ptr_temp - (i * stride), (ptr_temp), num_bytes);
+        xeve_mcpy(ptr_temp - (i * stride), (ptr_temp), num_bytes);
     }
     /*Bottom padding*/
     num_bytes = (width + pad_left_size + pad_right_size) * sizeof(pel);
     ptr_temp = (ptr + (stride * (height - 1)) - pad_left_size);
     for(int i = 1; i <= pad_bottom_size; i++)
     {
-        memcpy(ptr_temp + (i * stride), (ptr_temp), num_bytes);
+        xeve_mcpy(ptr_temp + (i * stride), (ptr_temp), num_bytes);
     }
 }
 
-void prefetch_for_mc(int x, int y, int pu_x, int pu_y, int pu_w, int pu_h,
-                     int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM]
-                     , int iteration, pel dmvr_padding_buf[REFP_NUM][N_C][PAD_BUFFER_STRIDE * PAD_BUFFER_STRIDE], int chroma_format_idc)
+void prefetch_for_mc(int x, int y, int pu_x, int pu_y, int pu_w, int pu_h
+                   , int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM]
+                   , int iteration, pel dmvr_padding_buf[REFP_NUM][N_C][PAD_BUFFER_STRIDE * PAD_BUFFER_STRIDE], int chroma_format_idc)
 {
     s16 mv_temp[REFP_NUM][MV_D];
     int w_shift = XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc);
@@ -809,13 +809,14 @@ void padded_mc_dmvr(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[RE
                   , int sub_pred_offset_x, int sub_pred_offset_y, int cu_pred_stride, pel dmvr_padding_buf[REFP_NUM][N_C][PAD_BUFFER_STRIDE * PAD_BUFFER_STRIDE]
                   , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc)
 {
-    int i;
-    XEVE_PIC    *ref_pic;
-    s16          mv_temp[REFP_NUM][MV_D];
-    int         w_shift = XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc);
-    int         h_shift = XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc);
-    int         chroma_w_fac = 2 / (w_shift + 1);
-    int         chroma_h_fac = 2 / (h_shift + 1);
+    int        i;
+    XEVE_PIC * ref_pic;
+    s16        mv_temp[REFP_NUM][MV_D];
+    int        w_shift = XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc);
+    int        h_shift = XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc);
+    int        chroma_w_fac = 2 / (w_shift + 1);
+    int        chroma_h_fac = 2 / (h_shift + 1);
+
     for(i = 0; i < REFP_NUM; ++i)
     {
         int          qpel_gmv_x, qpel_gmv_y;
@@ -1055,17 +1056,17 @@ void processDMVR(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_
     }
 }
 
-void xeve_mc_main(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM]
+void xevem_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM]
                 , int poc_c, pel *dmvr_current_template, pel dmvr_ref_pred_interpolated[REFP_NUM][(MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT)) * (MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT))]
                 , pel dmvr_half_pred_interpolated[REFP_NUM][(MAX_CU_SIZE + 1) * (MAX_CU_SIZE + 1)], BOOL apply_DMVR, pel dmvr_padding_buf[REFP_NUM][N_C][PAD_BUFFER_STRIDE * PAD_BUFFER_STRIDE]
                 , u8 *cu_dmvr_flag, s16 dmvr_mv[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D], int sps_admvp_flag
                 , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc)
 {
-    XEVE_PIC    *ref_pic;
-    int          qpel_gmv_x, qpel_gmv_y;
-    int          bidx = 0;
-    s16          mv_t[REFP_NUM][MV_D];
-    s16          mv_before_clipping[REFP_NUM][MV_D]; //store it to pass it to interpolation function for deriving correct interpolation filter
+    XEVE_PIC   *ref_pic;
+    int         qpel_gmv_x, qpel_gmv_y;
+    int         bidx = 0;
+    s16         mv_t[REFP_NUM][MV_D];
+    s16         mv_before_clipping[REFP_NUM][MV_D]; //store it to pass it to interpolation function for deriving correct interpolation filter
     int         w_shift = XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc);
     int         h_shift = XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc);
     int         chroma_w_fac = 2 / (w_shift + 1);
@@ -1113,13 +1114,13 @@ void xeve_mc_main(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP
 
     if(sps_admvp_flag == 1)
     {
-        tbl_mc_l_coeff = tbl_mc_l_coeff_main;
-        tbl_mc_c_coeff = tbl_mc_c_coeff_main;
+        xeve_mc_l_coeff = xevem_tbl_mc_l_coeff;
+        xeve_mc_c_coeff = xevem_tbl_mc_c_coeff;
     }
     else
     {
-        tbl_mc_l_coeff = xeve_tbl_mc_l_coeff;
-        tbl_mc_c_coeff = xeve_tbl_mc_c_coeff;
+        xeve_mc_l_coeff = xeve_tbl_mc_l_coeff;
+        xeve_mc_c_coeff = xeve_tbl_mc_c_coeff;
     }
 
     if(REFI_IS_VALID(refi[REFP_0]))
@@ -1509,10 +1510,10 @@ void xeve_affine_mc_lc(int x, int y, int pic_w, int pic_h, int cuw, int cuh, s16
 #if (AFFINE_MIN_BLOCK_SIZE == 1)
                 if((w & 1) == 0 && (h & 1) == 0)
                 {
-                        xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->u, qpel_gmv_x, qpel_gmv_y, ref_pic->s_c
-                                , cuw >> w_shift, pred_u + (w >> w_shift), XEVE_MAX((sub_w >> w_shift), 1), XEVE_MAX((sub_h >> h_shift), 1), bit_depth_chroma);
-                        xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->v, qpel_gmv_x, qpel_gmv_y, ref_pic->s_c
-                                , cuw >> w_shift, pred_v + (w >> w_shift), XEVE_MAX((sub_w >> w_shift), 1), XEVE_MAX((sub_h >> h_shift), 1), bit_depth_chroma);
+                    xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->u, qpel_gmv_x, qpel_gmv_y, ref_pic->s_c
+                            , cuw >> w_shift, pred_u + (w >> w_shift), XEVE_MAX((sub_w >> w_shift), 1), XEVE_MAX((sub_h >> h_shift), 1), bit_depth_chroma);
+                    xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->v, qpel_gmv_x, qpel_gmv_y, ref_pic->s_c
+                            , cuw >> w_shift, pred_v + (w >> w_shift), XEVE_MAX((sub_w >> w_shift), 1), XEVE_MAX((sub_h >> h_shift), 1), bit_depth_chroma);
                 }
 #else
                 xeve_mc_c(mv_scale_tmp_hor_ori, mv_scale_tmp_ver_ori, ref_pic->u, qpel_gmv_x*chroma_w_fac, qpel_gmv_y*chroma_h_fac
@@ -1764,7 +1765,7 @@ void xeve_affine_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[RE
 {
     XEVE_PIC * ref_pic;
     pel      * p0, *p1, *p2, *p3;
-    int        i, j, bidx = 0;    
+    int        i, j, bidx = 0;
     int        sub_w = 4, sub_h = 4; // derive sub-block size
     BOOL       mem_band_conditions_for_eif_are_satisfied = FALSE;
     int        w_shift = XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc);

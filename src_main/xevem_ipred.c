@@ -484,7 +484,7 @@ void ipred_ang_less_ver_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avai
     const int * filter;
     const int(*tbl_filt)[4];
     int filter_offset, filter_bits;
-    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    const int * mt = xevem_tbl_ipred_dxdy[ipm];
     pel * src_ch = NULL;
     int num_selections = 0;
     int p, pn, pn_n1, pn_p2;
@@ -494,7 +494,7 @@ void ipred_ang_less_ver_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avai
     const int pos_max = w + h - 1;
     const int pos_min = -1;
 
-    tbl_filt = xeve_tbl_ipred_adi;
+    tbl_filt = xevem_tbl_ipred_adi;
     filter_offset = ADI_4T_FILTER_OFFSET;
     filter_bits = ADI_4T_FILTER_BITS;
 
@@ -537,7 +537,7 @@ void ipred_ang_less_ver_on_right(pel *src_le, pel *src_up, pel *src_ri, u16 avai
     const int * filter;
     const int(*tbl_filt)[4];
     int filter_offset, filter_bits;
-    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    const int * mt = xevem_tbl_ipred_dxdy[ipm];
     pel * src_ch = NULL;
     int num_selections = 0;
     int p, pn, pn_n1, pn_p2;
@@ -547,7 +547,7 @@ void ipred_ang_less_ver_on_right(pel *src_le, pel *src_up, pel *src_ri, u16 avai
     const int pos_max = w + h - 1;
     const int pos_min = -1;
 
-    tbl_filt = xeve_tbl_ipred_adi;
+    tbl_filt = xevem_tbl_ipred_adi;
     filter_offset = ADI_4T_FILTER_OFFSET;
     filter_bits = ADI_4T_FILTER_BITS;
 
@@ -612,7 +612,7 @@ void ipred_ang_gt_hor_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_
     const int * filter;
     const int(*tbl_filt)[4];
     int filter_offset, filter_bits;
-    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    const int * mt = xevem_tbl_ipred_dxdy[ipm];
     pel * src_ch = NULL;
     int num_selections = 0;
     int p, pn, pn_n1, pn_p2;
@@ -622,7 +622,7 @@ void ipred_ang_gt_hor_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_
     const int pos_max = w + h - 1;
     const int pos_min = -1;
 
-    tbl_filt = xeve_tbl_ipred_adi;
+    tbl_filt = xevem_tbl_ipred_adi;
     filter_offset = ADI_4T_FILTER_OFFSET;
     filter_bits = ADI_4T_FILTER_BITS;
 
@@ -664,7 +664,7 @@ void ipred_ang_gt_hor_on_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_
     const int * filter;
     const int(*tbl_filt)[4];
     int filter_offset, filter_bits;
-    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    const int * mt = xevem_tbl_ipred_dxdy[ipm];
     pel * src_ch = NULL;
     int num_selections = 0;
     int p, pn, pn_n1, pn_p2;
@@ -674,7 +674,7 @@ void ipred_ang_gt_hor_on_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_
     const int pos_max = w + h - 1;
     const int pos_min = -1;
 
-    tbl_filt = xeve_tbl_ipred_adi;
+    tbl_filt = xevem_tbl_ipred_adi;
     filter_offset = ADI_4T_FILTER_OFFSET;
     filter_bits = ADI_4T_FILTER_BITS;
 
@@ -733,7 +733,7 @@ void ipred_ang_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel
     const int * filter;
     const int(*tbl_filt)[4];
     int filter_offset, filter_bits;
-    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    const int * mt = xevem_tbl_ipred_dxdy[ipm];
     pel * src_ch = NULL;
     int num_selections = 0;
     int p, pn, pn_n1, pn_p2;
@@ -743,7 +743,7 @@ void ipred_ang_no_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel
     const int pos_max = w + h - 1;
     const int pos_min = -1;
 
-    tbl_filt = xeve_tbl_ipred_adi;
+    tbl_filt = xevem_tbl_ipred_adi;
     filter_offset = ADI_4T_FILTER_OFFSET;
     filter_bits = ADI_4T_FILTER_BITS;
 
@@ -802,7 +802,7 @@ void ipred_ang_only_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, p
     const int * filter;
     const int(*tbl_filt)[4];
     int filter_offset, filter_bits;
-    const int * mt = xeve_tbl_ipred_dxdy[ipm];
+    const int * mt = xevem_tbl_ipred_dxdy[ipm];
     pel * src_ch = NULL;
     int num_selections = 0;
     int p, pn, pn_n1, pn_p2;
@@ -812,7 +812,7 @@ void ipred_ang_only_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, p
     const int pos_max = w + h - 1;
     const int pos_min = -1;
 
-    tbl_filt = xeve_tbl_ipred_adi;
+    tbl_filt = xevem_tbl_ipred_adi;
     filter_offset = ADI_4T_FILTER_OFFSET;
     filter_bits = ADI_4T_FILTER_BITS;
 

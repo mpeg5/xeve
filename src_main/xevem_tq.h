@@ -38,7 +38,7 @@
 
 #include "xeve_type.h"
 
-int xeve_rdoq_set_ctx_cc_main(XEVE_CORE * core, int ch_type, int prev_level);
-int xeve_sub_block_tq_main(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, int slice_type, int nnz[N_C], int is_intra, int run_stats);
+int xevem_rdoq_set_ctx_cc(XEVE_CORE * core, int ch_type, int prev_level);
+int xevem_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, int slice_type, int nnz[N_C], int is_intra, int run_stats);
 
 #endif /* _XEVE_TQ_H_ */

@@ -159,6 +159,13 @@ typedef struct _XEVE_FCST
 
 }XEVE_FCST;
 
+typedef struct _QP_ADAPT_PARAM
+{
+    int                   qp_offset_layer;
+    double                qp_offset_model_offset;
+    double                qp_offset_model_scale;
+} QP_ADAPT_PARAM;
+
 typedef struct _XEVE_SPIC_INFO
 {
 
@@ -488,8 +495,6 @@ typedef struct _XEVE_PARAM
     int                 w;
     /* picture size of input sequence (height) */
     int                 h;
-    /* picture bit depth*/
-    int                 bit_depth;
     /* qp value for I- and P- slice */
     int                 qp;
     /* frame per second */
@@ -516,7 +521,9 @@ typedef struct _XEVE_PARAM
     /* start bumping process if force_output is on */
     int                 force_output;
     int                 gop_size;
-    int                 qpa;
+    int                 aq_mode;
+    int                 cutree;
+    int                 lookahead;
     int                 use_fcst;
     int                 use_closed_gop;
     int                 use_ibc_flag;
@@ -548,7 +555,6 @@ typedef struct _XEVE_PARAM
     const XEVE_PRESET * preset;
     int                 rc_type;
     int                 bps;
-    int                 vbv_msec;
     int                 use_filler_flag;
     int                 num_pre_analysis_frames;
     /* Rate control type (Off CBR ABR) */
@@ -957,7 +963,7 @@ struct _XEVE_CTX
     void  (*fn_picbuf_expand)(XEVE_CTX * ctx, XEVE_PIC * pic);
     int   (*fn_get_inbuf)(XEVE_CTX * ctx, XEVE_IMGB ** img);
     /* mode decision functions */
-    int   (*fn_mode_init_tile)(XEVE_CTX * ctx, int tile_idx);
+    int   (*fn_mode_init_mt)(XEVE_CTX * ctx, int tile_idx);
     int   (*fn_mode_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
     int   (*fn_mode_analyze_frame)(XEVE_CTX * ctx);
     int   (*fn_mode_analyze_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
@@ -968,12 +974,12 @@ struct _XEVE_CTX
     void  (*fn_mode_rdo_dbk_map_set)(XEVE_CTX * ctx, XEVE_CORE *core, int log2_cuw, int log2_cuh, int cbf_l, int scup);
     void  (*fn_mode_rdo_bit_cnt_intra_dir)(XEVE_CTX * ctx, XEVE_CORE * core, int ipm);
     /* intra prediction functions */
-    int   (*fn_pintra_init_tile)(XEVE_CTX * ctx, int tile_idx);
+    int   (*fn_pintra_init_mt)(XEVE_CTX * ctx, int tile_idx);
     int   (*fn_pintra_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
     double(*fn_pintra_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
     int   (*fn_pintra_set_complexity)(XEVE_CTX * ctx, int complexity);
     /* inter prediction functions */
-    int   (*fn_pinter_init_tile)(XEVE_CTX * ctx, int tile_idx);
+    int   (*fn_pinter_init_mt)(XEVE_CTX * ctx, int tile_idx);
     int   (*fn_pinter_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
     double(*fn_pinter_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
     int   (*fn_pinter_set_complexity)(XEVE_CTX * ctx, int complexity);
@@ -983,8 +989,8 @@ struct _XEVE_CTX
     void  (*fn_rdo_intra_ext)(XEVE_CTX * ctx, XEVE_CORE * core);
     void  (*fn_rdo_intra_ext_c)(XEVE_CTX * ctx, XEVE_CORE * core);
     int   (*fn_eco_pic_signature)(XEVE_CTX * ctx, XEVE_BSW * bs, u8 pic_sign[N_C][16]);
-    int   (*fn_eco_sps)(XEVE_BSW * bs, XEVE_SPS * sps);
-    int   (*fn_eco_pps)(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps);
+    int   (*fn_encode_sps)(XEVE_CTX * ctx);
+    int   (*fn_encode_pps)(XEVE_CTX * ctx);
     int   (*fn_eco_sh)(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps, XEVE_SH * sh, int nut);
     int   (*fn_eco_split_mode)(XEVE_BSW *bs, XEVE_CTX *c, XEVE_CORE *core, int cud, int cup, int cuw, int cuh, int lcu_s, int x, int y);
     void  (*fn_eco_sbac_reset)(XEVE_SBAC *sbac, u8 slice_type, u8 slice_qp, int sps_cm_init_flag);
@@ -993,6 +999,11 @@ struct _XEVE_CTX
     int   (*fn_rdoq_set_ctx_cc)(XEVE_CORE * core, int ch_type, int prev_level);
     void  (*fn_recon)(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
     void  (*fn_deblock_unit)(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int is_hor_edge, XEVE_CORE * core, int boundary_filtering);
+    void  (*fn_pocs)(XEVE_CTX * ctx, u32 pic_imcnt, int gop_size, int pos);
+    int   (*fn_set_tile_info)(XEVE_CTX * ctx);
+    void  (*fn_deblock_tree)(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int cud, int cup, int is_hor_edge, TREE_CONS tree_cons, XEVE_CORE * core, int boundary_filtering);
+    void  (*fn_pic_flt)(XEVE_CTX * ctx, XEVE_IMGB * img);
+
     /* platform specific data, if needed */
     void             * pf;
 
@@ -1014,26 +1025,18 @@ struct _XEVE_CTX
 #define PIC_ORIG(ctx)             ((ctx)->pic[PIC_IDX_ORIG])
 #define PIC_MODE(ctx)             ((ctx)->pic[PIC_IDX_MODE])
 
-int  xeve_platform_init(XEVE_CTX * ctx);
-void xeve_platform_deinit(XEVE_CTX * ctx);
-int  xeve_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_pic_finish(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_deblock(XEVE_CTX * ctx, XEVE_PIC * pic, int tile_idx, int filter_across_boundary, XEVE_CORE * core);
-int  xeve_enc(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img);
-int  xeve_ready(XEVE_CTX * ctx);
-void xeve_flush(XEVE_CTX * ctx);
-int  xeve_picbuf_get_inbuf(XEVE_CTX * ctx, XEVE_IMGB ** img);
-
 typedef struct _ADAPTIVE_LOOP_FILTER ADAPTIVE_LOOP_FILTER;
 typedef struct _ALF_FILTER_SHAPE ALF_FILTER_SHAPE;
 typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 
 #include "xeve_eco.h"
+#include "xeve_fcst.h"
 #include "xeve_mode.h"
-#include "xeve_tq.h"
 #include "xeve_pred.h"
+#include "xeve_rc.h"
+#include "xeve_tq.h"
 #include "xeve_df.h"
+#include "xeve_util.h"
+#include "xeve_tbl.h"
 
 #endif /* _XEVE_TYPE_H_ */

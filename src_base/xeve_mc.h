@@ -77,10 +77,10 @@
 #define MC_IBUF_PAD_L          8
 #define MC_IBUF_PAD_BL         2
 
-extern s16 (*tbl_mc_l_coeff)[8];
+extern s16 (*xeve_mc_l_coeff)[8];
 extern s16 xeve_tbl_mc_l_coeff[16][8];
 
-extern s16 (*tbl_mc_c_coeff)[4];
+extern s16 (*xeve_mc_c_coeff)[4];
 extern s16 xeve_tbl_mc_c_coeff[32][4];
 
 typedef void (*XEVE_MC_L) (pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth);

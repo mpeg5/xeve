@@ -52,6 +52,17 @@ typedef enum _STATES {
 } STATES;
 
 
+typedef struct _Y4M_PARAMS
+{
+    int w;
+    int h;
+    int fps;
+    int cs;
+    int bit_depth;
+
+
+}Y4M_PARAMS;
+
 static void print_usage(void)
 {
     int i;
@@ -85,31 +96,44 @@ static char get_pic_type(char * in)
     return type;
 }
 
-static int get_conf(XEVE_CDSC * cdsc)
+static int get_conf(XEVE_CDSC * cdsc, Y4M_PARAMS * y4m, int is_y4m)
 {
     int result = 0;
-    memset(cdsc, 0, sizeof(XEVE_CDSC));
-
-    cdsc->w = op_w;
-    cdsc->h = op_h;
+    int color_format = 0;
+    
+    if (!is_y4m)
+    {
+        cdsc->w = op_w;
+        cdsc->h = op_h;
+        cdsc->fps = op_fps;
+        color_format = op_chroma_format_idc == 0 ? XEVE_CF_YCBCR400 : (op_chroma_format_idc == 1 ? XEVE_CF_YCBCR420 :
+            (op_chroma_format_idc == 2 ? XEVE_CF_YCBCR422 : (op_chroma_format_idc == 3 ? XEVE_CF_YCBCR444 : XEVE_CF_UNKNOWN)));
+        if (color_format == XEVE_CF_UNKNOWN)
+        {
+            return XEVE_ERR;
+        }
+        cdsc->cs = XEVE_CS_SET(color_format, op_codec_bit_depth, 0);
+    }
+    else
+    {
+        cdsc->w = y4m->w;
+        cdsc->h = y4m->h;
+        cdsc->fps = y4m->fps;
+        cdsc->cs = y4m->cs;
+        op_inp_bit_depth = y4m->bit_depth;
+    }
+    
     cdsc->qp = op_qp;
-    cdsc->cb_qp_offset = op_cb_qp_offset;
-    cdsc->cr_qp_offset = op_cr_qp_offset;
-    cdsc->fps = op_fps;
+    cdsc->qp_cb_offset = op_qp_cb_offset;
+    cdsc->qp_cr_offset = op_qp_cr_offset;
     cdsc->iperiod = op_iperiod;
     cdsc->max_b_frames = op_max_b_frames;
     cdsc->level = op_level;
-    cdsc->qpa= op_qpa;
+    cdsc->aq_mode = op_aq_mode;
+    cdsc->lookahead= op_num_pre_analysis_frames;
+    cdsc->cutree= op_cutree;
     cdsc->ref_pic_gap_length = op_ref_pic_gap_length;
-    cdsc->inp_bit_depth = op_inp_bit_depth;
     cdsc->codec_bit_depth = op_codec_bit_depth;
-    int color_format = op_chroma_format_idc == 0 ? XEVE_CF_YCBCR400 : (op_chroma_format_idc == 1 ? XEVE_CF_YCBCR420 :
-                      (op_chroma_format_idc == 2 ? XEVE_CF_YCBCR422 : (op_chroma_format_idc == 3 ? XEVE_CF_YCBCR444 : XEVE_CF_UNKNOWN)));
-    if (color_format == XEVE_CF_UNKNOWN)
-    {
-        return XEVE_ERR;
-    }
-    cdsc->cs = XEVE_CS_SET(color_format, op_codec_bit_depth, 0);
     cdsc->constrained_intra_pred = op_constrained_intra_pred;
     cdsc->use_deblock = op_tool_deblocking;
 
@@ -119,7 +143,7 @@ static int get_conf(XEVE_CDSC * cdsc)
     }
     else if (strcmp(op_profile, "baseline") == 0)
     {
-        cdsc->preset = 0;
+        cdsc->profile = 0;
     }
     else
     {
@@ -130,7 +154,6 @@ static int get_conf(XEVE_CDSC * cdsc)
     {
         op_out_bit_depth = op_codec_bit_depth;
     }
-    cdsc->out_bit_depth = op_out_bit_depth;
 
     if(op_disable_hgop)
     {
@@ -159,11 +182,31 @@ static int get_conf(XEVE_CDSC * cdsc)
     }
     else
     {
-        cdsc->bps = atoi(op_bps);
+        cdsc->bps = atoi(op_bps) * 1000;
     }
     sprintf(op_bps, "%d", cdsc->bps);
 
-    cdsc->vbv_msec = op_vbv_msec;
+    if (strchr(op_vbv_buf_size, 'K') || strchr(op_vbv_buf_size, 'k'))
+    {
+        char *tmp = strtok(op_vbv_buf_size, "Kk ");
+        cdsc->vbv_buf_size = atof(tmp) * 1000;
+    }
+    else if (strchr(op_vbv_buf_size, 'M') || strchr(op_vbv_buf_size, 'm'))
+    {
+        char *tmp = strtok(op_vbv_buf_size, "Mm ");
+        cdsc->vbv_buf_size = atof(tmp) * 1000000;
+    }
+    else
+    {
+        cdsc->vbv_buf_size = atoi(op_vbv_buf_size) * 1000;
+    }
+
+    if (cdsc->vbv_buf_size < 0)
+    {
+        cdsc->vbv_buf_size =   (int)((cdsc->bps) *(op_vbv_msec/ 1000.0));
+    }
+    sprintf(op_vbv_buf_size, "%d", cdsc->vbv_buf_size);
+
     cdsc->use_filler_flag = 0;
     cdsc->num_pre_analysis_frames = 0;
     cdsc->picture_cropping_flag = op_picture_cropping_flag;
@@ -175,19 +218,36 @@ static int get_conf(XEVE_CDSC * cdsc)
 
     if (strcmp(op_preset, "fast") == 0)
     {
-        cdsc->preset = FAST;
+        cdsc->preset = XEVE_PRESET_FAST;
     }
     else if (strcmp(op_preset, "medium") == 0)
     {
-        cdsc->preset = MEDIUM;
+        cdsc->preset = XEVE_PRESET_MEDIUM;
     }
     else if (strcmp(op_preset, "slow") == 0)
     {
-        cdsc->preset = SLOW;
+        cdsc->preset = XEVE_PRESET_SLOW;
     }
-    else if (strcmp(op_preset, "reference") == 0)
+    else if (strcmp(op_preset, "placebo") == 0)
     {
-        cdsc->preset = REFERENCE;
+        cdsc->preset = XEVE_PRESET_PLACEBO;
+    }
+    else
+    {
+        return XEVE_ERR_INVALID_ARGUMENT;
+    }
+
+    if (strcmp(op_tune, "none") == 0)
+    {
+        cdsc->tune = XEVE_TUNE_NONE;
+    }
+    else if (strcmp(op_tune, "psnr") == 0)
+    {
+        cdsc->tune = XEVE_TUNE_PSNR;
+    }
+    else if (strcmp(op_tune, "zerolatency") == 0)
+    {
+        cdsc->tune = XEVE_TUNE_ZEROLATENCY;
     }
     else
     {
@@ -527,9 +587,6 @@ int check_conf(XEVE_CDSC* cdsc)
         if (cdsc->ext->tool_eipd    == 0 && cdsc->ext->ibc_flag    == 1) { logv0("IBC cannot be on when EIPD is off\n"); success = 0; }
         if (cdsc->ext->tool_iqt     == 0 && cdsc->ext->tool_ats    == 1) { logv0("ATS cannot be on when IQT is off\n"); success = 0; }
         if (cdsc->ext->tool_cm_init == 0 && cdsc->ext->tool_adcc   == 1) { logv0("ADCC cannot be on when CM_INIT is off\n"); success = 0; }
-        if (cdsc->ext->tool_eipd    == 0) { logv0("EIPD cannot be off in main profile\n"); success = 0; }
-        if (cdsc->ext->tool_iqt     == 0) { logv0("IQT cannot be off in main profile\n"); success = 0; }
-        if (cdsc->ext->tool_cm_init == 0) { logv0("CM_INIT cannot be off in main profile\n"); success = 0; }
     }
 
     if (cdsc->ext->btt == 1)
@@ -589,8 +646,7 @@ static int set_extra_config(XEVE id)
 static void print_stat_init(void)
 {
     if(op_verbose < VERBOSE_FRAME) return;
-
-    logv2("---------------------------------------------------------------------------------------\n");
+	logv2_line("");
     logv2("  Input YUV file          : %s \n", op_fname_inp);
     if(op_flag[OP_FLAG_FNAME_OUT])
     {
@@ -604,12 +660,12 @@ static void print_stat_init(void)
     {
         logv2("  PSNR is calculated as 10-bit (Input YUV bitdepth: %d)\n", op_inp_bit_depth);
     }
-    logv2("---------------------------------------------------------------------------------------\n");
+	logv2_line("Stat");
 
     logv2("POC   Tid   Ftype   QP   PSNR-Y    PSNR-U    PSNR-V    Bits      EncT(ms)  ");
     logv2("Ref. List\n");
 
-    logv2("---------------------------------------------------------------------------------------\n");
+	logv2_line("");
 }
 
 static void print_config(XEVE id)
@@ -618,12 +674,12 @@ static void print_config(XEVE id)
 
     if(op_verbose < VERBOSE_FRAME) return;
 
-    logv2("---------------------------------------------------------------------------------------\n");
-    logv2("< Configurations >\n");
+	logv2_line("Configurations");
     if(op_flag[OP_FLAG_FNAME_CFG])
     {
     logv2("\tconfig file name         = %s\n", op_fname_cfg);
     }
+    logv2("\tpreset                   = %s\n", op_preset);
     s = sizeof(int);
     xeve_config(id, XEVE_CFG_GET_WIDTH, (void *)(&v), &s);
     logv2("\twidth                    = %d\n", v);
@@ -729,6 +785,184 @@ int setup_bumping(XEVE id)
     return 0;
 }
 
+static int y4m_test(FILE * ip_y4m)
+{
+
+    char buffer[9] = { 0 };
+         
+    /*Peek to check if y4m header is present*/
+    if (!fread(buffer, 1, 8, ip_y4m)) return -1;
+    fseek( ip_y4m, 0, SEEK_SET );
+    buffer[8] = '\0';
+    if (memcmp(buffer, "YUV4MPEG", 8)) 
+    {
+        
+        return 0;
+    }
+    return 1;
+
+
+}
+
+
+static int y4m_parse_tags(Y4M_PARAMS * y4m, char *_tags) 
+{
+      
+    char *p;
+    char *q;
+    char t_buff[10];
+    int found_w = 0, found_h = 0, found_cs = 0;
+    int fps_n, fps_d, pix_ratio_n, pix_ratio_d, interlace;
+
+    for (p = _tags;; p = q)
+    {
+
+        /*Skip any leading spaces.*/
+        while (*p == ' ') p++;
+
+        /*If that's all we have, stop.*/
+        if (p[0] == '\0') break;
+
+        /*Find the end of this tag.*/
+        for (q = p + 1; *q != '\0' && *q != ' '; q++) {
+        }
+       
+        
+        /*Process the tag.*/
+        switch (p[0])
+        {
+        case 'W':
+        {
+            if (sscanf(p + 1, "%d", &y4m->w) != 1) return XEVE_ERR;
+            found_w = 1;
+            break;
+        }
+        case 'H':
+        {
+            if (sscanf(p + 1, "%d", &y4m->h) != 1) return XEVE_ERR;
+            found_h = 1;
+            break;
+        }
+        case 'F':
+        {
+            if (sscanf(p + 1, "%d:%d", &fps_n, &fps_d) != 2) return XEVE_ERR;
+             y4m->fps = (int)((fps_n /fps_d*1.0) + 0.5);
+            break;
+        }
+        case 'I':
+        {
+           interlace = p[1];
+           break;
+        }
+        case 'A':
+        {
+            if (sscanf(p + 1, "%d:%d", &pix_ratio_n, & pix_ratio_d) != 2) return XEVE_ERR;
+            break;
+        }
+        case 'C':
+        {
+            if (q - p > 16) return XEVE_ERR;
+            memcpy(t_buff, p + 1, q - p - 1);
+            t_buff[q - p - 1] = '\0';
+            found_cs = 1;
+            break;
+        }
+        /*Ignore unknown tags.*/
+        }
+    }
+
+    if (!(found_w == 1 && found_h == 1 && found_cs == 1))
+    {
+        logerr("Mandatory arugments are not found in y4m header");
+        return XEVE_ERR;
+    }
+
+    if (strcmp(t_buff, "420jpeg") == 0 || strcmp(t_buff, "420") == 0 || \
+        strcmp(t_buff, "420mpeg2") == 0 || strcmp(t_buff, "420paidv") == 0)
+    {
+         y4m->cs = XEVE_CF_YCBCR420;
+         y4m->bit_depth = 8;
+    }
+    else if (strcmp(t_buff, "422") == 0)
+    {
+         y4m->cs = XEVE_CF_YCBCR422;
+         y4m->bit_depth  = 8;
+    }
+    else if (strcmp(t_buff, "444") == 0)
+    {
+         y4m->cs= XEVE_CF_YCBCR444;
+         y4m->bit_depth  = 8;
+    }
+    else if (strcmp(t_buff, "420p10") == 0)
+    {
+        y4m->cs = XEVE_CF_YCBCR420;
+        y4m->bit_depth  = 10;
+    }
+    else if (strcmp(t_buff, "422p10") == 0)
+    {
+        y4m->cs = XEVE_CF_YCBCR422;
+        y4m->bit_depth  = 10;
+    }
+    else if (strcmp(t_buff, "444p10") == 0)
+    {
+        y4m->cs = XEVE_CF_YCBCR444;
+        y4m->bit_depth  = 10;
+    }
+    else if (strcmp(t_buff, "mono") == 0)
+    {
+        y4m->cs = XEVE_CF_YCBCR400;
+        y4m->bit_depth  = 8;
+    }
+    else
+    {
+        logerr("can not support this colorspace ", op_fname_inp);
+        return XEVE_ERR;
+    }
+    y4m->cs = XEVE_CS_SET(y4m->cs, op_codec_bit_depth, 0);
+    return XEVE_OK;
+}
+
+
+int y4m_header_parser(FILE * ip_y4m, Y4M_PARAMS * y4m)
+{
+    char buffer[80] = { 0 };
+    int ret;
+    int i;
+       
+    /*Read until newline, or 80 cols, whichever happens first.*/
+    for (i = 0; i < 79; i++) 
+    {
+       
+        if (!fread(buffer + i, 1, 1, ip_y4m)) return -1;
+        
+        if (buffer[i] == '\n') break;
+    }
+    /*We skipped too much header data.*/
+   if (i == 79) {
+        logerr("Error parsing header; not a YUV2MPEG2 file?\n");
+        return -1;
+    }
+    buffer[i] = '\0';
+    if (memcmp(buffer, "YUV4MPEG", 8)) 
+    {
+        logerr("Incomplete magic for YUV4MPEG file.\n");
+        return -1;
+    }
+    if (buffer[8] != '2') 
+    {
+        logerr("Incorrect YUV input file version; YUV4MPEG2 required.\n");
+    }
+    ret = y4m_parse_tags(y4m, buffer + 5);
+    if (ret < 0) 
+    {
+        logerr("Error parsing YUV4MPEG2 header.\n");
+        return ret;
+    }
+
+    return XEVE_OK;
+}
+
+
 int main(int argc, const char **argv)
 {
     STATES             state = STATE_ENCODING;
@@ -750,16 +984,54 @@ int main(int argc, const char **argv)
     IMGB_LIST          ilist_rec[MAX_BUMP_FRM_CNT];
     IMGB_LIST        * ilist_t = NULL;
     static int         is_first_enc = 1;
+    int                is_y4m = 0;
+    Y4M_PARAMS         y4m;
 
     /* parse options */
     ret = args_parse_all(argc, argv, options);
-    if(ret != 0)
+    if (ret != 0)
     {
-        if(ret > 0) logerr("-%c argument should be set\n", ret);
-        if(ret < 0) logerr("config error\n");
+        if (ret > 0)
+        {
+            logerr("-%c argument should be set\n", ret);
+        }
+        if (ret < 0) logerr("config error\n");
         print_usage();
         return -1;
     }
+
+     /* open input file */
+    fp_inp = fopen(op_fname_inp, "rb");
+    if(fp_inp == NULL)
+    {
+        logerr("cannot open original file (%s)\n", op_fname_inp);
+        print_usage();
+        return -1;
+    }
+
+    is_y4m = y4m_test(fp_inp);
+    if (is_y4m == 0)
+    {
+        if (op_w == 0)
+        {
+            logerr("-w argument should be set\n");
+            print_usage();
+            return -1;
+        }
+        if (op_h == 0)
+        {
+            logerr("-h argument should be set\n");
+            print_usage();
+            return -1;
+        }
+        if (op_fps == 0)
+        {
+            logerr("-z argument should be set\n");
+            print_usage();
+            return -1;
+        }
+    }
+
     logv1("eXtra-fast Essential Video Encoder\n");
 
     if(op_flag[OP_FLAG_FNAME_OUT])
@@ -788,15 +1060,7 @@ int main(int argc, const char **argv)
         fclose(fp);
     }
 
-    /* open input file */
-    fp_inp = fopen(op_fname_inp, "rb");
-    if(fp_inp == NULL)
-    {
-        logerr("cannot open original file (%s)\n", op_fname_inp);
-        print_usage();
-        return -1;
-    }
-
+    
     /* allocate bitstream buffer */
     bs_buf = (unsigned char*)malloc(MAX_BS_BUF);
     if(bs_buf == NULL)
@@ -805,8 +1069,25 @@ int main(int argc, const char **argv)
         return -1;
     }
 
+    
+    int val = 0;
+    memset(&cdsc, 0, sizeof(XEVE_CDSC));
+    
+
+    /***********************y4m header parsing *********************/
+    if (is_y4m)
+    {
+        val = y4m_header_parser(fp_inp, &y4m);
+       
+
+    }
+    if (val != XEVE_OK)
+    {
+         logerr("This y4m is not supported (%s)\n", op_fname_inp);
+        return -1;
+    }
     /* read configurations and set values for create descriptor */
-    int val = get_conf(&cdsc);
+    val = get_conf(&cdsc, &y4m, is_y4m);
     if (val != XEVE_OK)
     {
         print_usage();
@@ -877,7 +1158,7 @@ int main(int argc, const char **argv)
                     logerr("cannot get empty orignal buffer\n");
                     goto ERR;
                 }
-                if(imgb_read(fp_inp, ilist_t->imgb))
+                if(imgb_read(fp_inp, ilist_t->imgb, is_y4m))
                 {
                     logv2("reached end of original file (or reading error)\n");
                     goto ERR;
@@ -902,7 +1183,7 @@ int main(int argc, const char **argv)
             }
 
             /* read original image */
-            if ((op_max_frm_num && pic_icnt >= op_max_frm_num) || imgb_read(fp_inp, ilist_t->imgb))
+            if ((op_max_frm_num && pic_icnt >= op_max_frm_num) || imgb_read(fp_inp, ilist_t->imgb, is_y4m))
             {
                 logv2("reached end of original file (or reading error)\n");
                 state = STATE_BUMPING;
@@ -1095,7 +1376,7 @@ int main(int argc, const char **argv)
         ((float)pic_ocnt * 1000) / ((float)xeve_clk_msec(clk_tot)));
     logv1_line(NULL);
 
-    if (pic_ocnt != op_max_frm_num)
+    if (op_max_frm_num != 0 && pic_ocnt != op_max_frm_num)
     {
         logv2("Wrong frames count: should be %d was %d\n", op_max_frm_num, (int)pic_ocnt);
     }

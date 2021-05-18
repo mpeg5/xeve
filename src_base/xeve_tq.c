@@ -678,7 +678,7 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
 
         if(!is_coded)
         {
-            memset(coef, 0, sizeof(coef[0])*((s64)1 << (log2_cuw + log2_cuh)));
+            xeve_mset(coef, 0, sizeof(coef[0])*((s64)1 << (log2_cuw + log2_cuh)));
             return nnz;
         }
     }

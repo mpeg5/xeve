@@ -30,9 +30,8 @@
 
 #include "xeve_def.h"
 #include "xeve_df.h"
-#include "xeve_tbl.h"
 
-const u8 * get_tbl_qp_to_st(u32 mcu0, u32 mcu1, s8 *refi0, s8 *refi1, s16 (*mv0)[MV_D], s16 (*mv1)[MV_D])
+static const u8 * get_tbl_qp_to_st(u32 mcu0, u32 mcu1, s8 *refi0, s8 *refi1, s16 (*mv0)[MV_D], s16 (*mv1)[MV_D])
 {
     int idx = 3;
 
@@ -486,4 +485,139 @@ void xeve_deblock_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, 
 )
 {
     deblock_cu_ver(pic, x_pel, y_pel, cuw, cuh, map_scu, map_refi, map_mv, w_scu, map_cu, tree_cons, map_tidx, boundary_filtering, bit_depth_luma, bit_depth_chroma, chroma_format_idc);
+}
+
+void xeve_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int is_hor_edge, XEVE_CORE * core, int boundary_filtering)
+{
+    if(is_hor_edge)
+    {
+        xeve_deblock_cu_hor(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->refp
+                          , core->tree_cons, ctx->map_tidx, boundary_filtering
+                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
+    }
+    else
+    {
+        xeve_deblock_cu_ver(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu
+                          , ctx->map_cu_mode, ctx->refp, core->tree_cons, ctx->map_tidx, boundary_filtering
+                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
+    }
+}
+
+int xeve_deblock(XEVE_CTX * ctx, XEVE_PIC * pic, int tile_idx, int filter_across_boundary , XEVE_CORE * core)
+{
+    int i, j;
+    int x_l, x_r, y_l, y_r, l_scu, r_scu, t_scu, b_scu;
+    u32 k1;
+    int scu_in_lcu_wh = 1 << (ctx->log2_max_cuwh - MIN_CU_LOG2);
+    int boundary_filtering = 0;
+    x_l = (ctx->tile[tile_idx].ctba_rs_first) % ctx->w_lcu; //entry point lcu's x location
+    y_l = (ctx->tile[tile_idx].ctba_rs_first) / ctx->w_lcu; // entry point lcu's y location
+    x_r = x_l + ctx->tile[tile_idx].w_ctb;
+    y_r = y_l + ctx->tile[tile_idx].h_ctb;
+    l_scu = x_l * scu_in_lcu_wh;
+    r_scu = XEVE_CLIP3(0, ctx->w_scu, x_r*scu_in_lcu_wh);
+    t_scu = y_l * scu_in_lcu_wh;
+    b_scu = XEVE_CLIP3(0, ctx->h_scu, y_r*scu_in_lcu_wh);
+
+    xeve_assert(!filter_across_boundary);
+ 
+    for (j = t_scu; j < b_scu; j++)
+    {
+        for (i = l_scu; i < r_scu; i++)
+        {
+            k1 = i + j * ctx->w_scu;
+            MCU_CLR_COD(ctx->map_scu[k1]);
+
+            if (!MCU_GET_DMVRF(ctx->map_scu[k1]))
+            {
+                ctx->map_unrefined_mv[k1][REFP_0][MV_X] = ctx->map_mv[k1][REFP_0][MV_X];
+                ctx->map_unrefined_mv[k1][REFP_0][MV_Y] = ctx->map_mv[k1][REFP_0][MV_Y];
+                ctx->map_unrefined_mv[k1][REFP_1][MV_X] = ctx->map_mv[k1][REFP_1][MV_X];
+                ctx->map_unrefined_mv[k1][REFP_1][MV_Y] = ctx->map_mv[k1][REFP_1][MV_Y];
+            }
+        }
+    }
+
+    /* horizontal filtering */
+    for (j = y_l; j < y_r; j++)
+    {
+        for (i = x_l; i < x_r; i++)
+        {
+            ctx->fn_deblock_tree(ctx, pic, (i << ctx->log2_max_cuwh), (j << ctx->log2_max_cuwh), ctx->max_cuwh, ctx->max_cuwh, 0, 0, 0/*0 - horizontal filtering of vertical edge*/
+                                , xeve_get_default_tree_cons(), core, boundary_filtering);
+        }
+    }
+
+    for (j = t_scu; j < b_scu; j++)
+    {
+        for (i = l_scu; i < r_scu; i++)
+        {
+            MCU_CLR_COD(ctx->map_scu[i + j * ctx->w_scu]);
+        }
+    }
+
+    /* vertical filtering */
+    for (j = y_l; j < y_r; j++)
+    {
+        for (i = x_l; i < x_r; i++)
+        {
+
+            ctx->fn_deblock_tree(ctx, pic, (i << ctx->log2_max_cuwh), (j << ctx->log2_max_cuwh), ctx->max_cuwh, ctx->max_cuwh, 0, 0, 1/*1 - vertical filtering of horizontal edge*/
+                                , xeve_get_default_tree_cons(), core, boundary_filtering);
+        }
+    }
+
+    return XEVE_OK;
+}
+
+void xeve_deblock_tree(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int cud, int cup, int is_hor_edge
+                     , TREE_CONS tree_cons, XEVE_CORE * core, int boundary_filtering)
+{
+    s8  split_mode;
+    int lcu_num;
+
+    core->tree_cons = tree_cons;
+    pic->pic_deblock_alpha_offset = ctx->sh.sh_deblock_alpha_offset;
+    pic->pic_deblock_beta_offset = ctx->sh.sh_deblock_beta_offset;
+    pic->pic_qp_u_offset = ctx->sh.qp_u_offset;
+    pic->pic_qp_v_offset = ctx->sh.qp_v_offset;
+
+    lcu_num = (x >> ctx->log2_max_cuwh) + (y >> ctx->log2_max_cuwh) * ctx->w_lcu;
+    xeve_get_split_mode(&split_mode, cud, cup, cuw, cuh, ctx->max_cuwh, ctx->map_cu_data[lcu_num].split_mode);
+
+    if(split_mode != NO_SPLIT)
+    {
+        XEVE_SPLIT_STRUCT split_struct;
+        xeve_split_get_part_structure( split_mode, x, y, cuw, cuh, cup, cud, ctx->log2_culine, &split_struct );
+
+        split_struct.tree_cons = tree_cons;
+
+        BOOL mode_cons_changed = FALSE;
+        split_struct.tree_cons = xeve_get_default_tree_cons();
+
+        for(int part_num = 0; part_num < split_struct.part_count; ++part_num)
+        {
+            int cur_part_num = part_num;
+            int sub_cuw = split_struct.width[cur_part_num];
+            int sub_cuh = split_struct.height[cur_part_num];
+            int x_pos = split_struct.x_pos[cur_part_num];
+            int y_pos = split_struct.y_pos[cur_part_num];
+
+            if(x_pos < ctx->w && y_pos < ctx->h)
+            {
+                xeve_deblock_tree(ctx, pic, x_pos, y_pos, sub_cuw, sub_cuh, split_struct.cud[cur_part_num], split_struct.cup[cur_part_num], is_hor_edge
+                                , split_struct.tree_cons, core, boundary_filtering);
+            }
+
+            core->tree_cons = tree_cons;
+        }
+
+    }
+
+    if (split_mode == NO_SPLIT)
+    {
+        ctx->fn_deblock_unit(ctx, pic, x, y, cuw, cuh, is_hor_edge, core, boundary_filtering);
+    }
+
+    core->tree_cons = tree_cons;
 }

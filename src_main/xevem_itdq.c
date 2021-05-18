@@ -59,13 +59,13 @@ void xeve_init_multi_tbl()
 
         switch (i)
         {
-        case 0: tm = xeve_tbl_tr2[0][0]; break;
-        case 1: tm = xeve_tbl_tr4[0][0]; break;
-        case 2: tm = xeve_tbl_tr8[0][0]; break;
-        case 3: tm = xeve_tbl_tr16[0][0]; break;
-        case 4: tm = xeve_tbl_tr32[0][0]; break;
-        case 5: tm = xeve_tbl_tr64[0][0]; break;
-        case 6: tm = xeve_tbl_tr128[0][0]; break;
+        case 0: tm = xevem_tbl_tr2[0][0]; break;
+        case 1: tm = xevem_tbl_tr4[0][0]; break;
+        case 2: tm = xevem_tbl_tr8[0][0]; break;
+        case 3: tm = xevem_tbl_tr16[0][0]; break;
+        case 4: tm = xevem_tbl_tr32[0][0]; break;
+        case 5: tm = xevem_tbl_tr64[0][0]; break;
+        case 6: tm = xevem_tbl_tr128[0][0]; break;
         case 7: exit(0); break;
         }
 
@@ -100,13 +100,13 @@ void xeve_init_multi_inv_tbl()
 
         switch (i)
         {
-        case 0: tm = xeve_tbl_inv_tr2[0][0]; break;
-        case 1: tm = xeve_tbl_inv_tr4[0][0]; break;
-        case 2: tm = xeve_tbl_inv_tr8[0][0]; break;
-        case 3: tm = xeve_tbl_inv_tr16[0][0]; break;
-        case 4: tm = xeve_tbl_inv_tr32[0][0]; break;
-        case 5: tm = xeve_tbl_inv_tr64[0][0]; break;
-        case 6: tm = xeve_tbl_inv_tr128[0][0]; break;
+        case 0: tm = xevem_tbl_inv_tr2[0][0]; break;
+        case 1: tm = xevem_tbl_inv_tr4[0][0]; break;
+        case 2: tm = xevem_tbl_inv_tr8[0][0]; break;
+        case 3: tm = xevem_tbl_inv_tr16[0][0]; break;
+        case 4: tm = xevem_tbl_inv_tr32[0][0]; break;
+        case 5: tm = xevem_tbl_inv_tr64[0][0]; break;
+        case 6: tm = xevem_tbl_inv_tr128[0][0]; break;
         case 7: exit(0); break;
         }
 
@@ -133,7 +133,7 @@ void xeve_itrans_ats_intra_DST7_B4(s16 *coef, s16 *block, int shift, int line, i
 {
     int i, c[4];
     int rnd_factor = 1 << (shift - 1);
-    const s16 *tm = xeve_tbl_tr4[DST7][0];
+    const s16 *tm = xevem_tbl_tr4[DST7][0];
     const int reduced_line = line - skip_line;
 
     for (i = 0; i < reduced_line; i++)
@@ -164,7 +164,7 @@ void xeve_itrans_ats_intra_DST7_B8(s16 *coef, s16 *block, int shift, int line, i
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 8;
-    const s16 *tm = xeve_tbl_tr8[DST7][0];
+    const s16 *tm = xevem_tbl_tr8[DST7][0];
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
 
@@ -194,7 +194,7 @@ void xeve_itrans_ats_intra_DST7_B16(s16 *coef, s16 *block, int shift, int line, 
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 16;
-    const s16 *tm = xeve_tbl_tr16[DST7][0];
+    const s16 *tm = xevem_tbl_tr16[DST7][0];
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
 
@@ -225,7 +225,7 @@ void xeve_itrans_ats_intra_DST7_B32(s16 *coef, s16 *block, int shift, int line, 
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 32;
-    const s16 *tm = xeve_tbl_tr32[DST7][0];
+    const s16 *tm = xevem_tbl_tr32[DST7][0];
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
 
@@ -254,7 +254,7 @@ void xeve_itrans_ats_intra_DCT8_B4(s16 *coef, s16 *block, int shift, int line, i
 {
     int i;
     int rnd_factor = 1 << (shift - 1);
-    const s16 *tm = xeve_tbl_tr4[DCT8][0];
+    const s16 *tm = xevem_tbl_tr4[DCT8][0];
     int c[4];
     const int reduced_line = line - skip_line;
 
@@ -286,7 +286,7 @@ void xeve_itrans_ats_intra_DCT8_B8(s16 *coef, s16 *block, int shift, int line, i
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 8;
-    const s16 *tm = xeve_tbl_tr8[DCT8][0];
+    const s16 *tm = xevem_tbl_tr8[DCT8][0];
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
 
@@ -316,7 +316,7 @@ void xeve_itrans_ats_intra_DCT8_B16(s16 *coef, s16 *block, int shift, int line, 
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 16;
-    const s16 *tm = xeve_tbl_tr16[DCT8][0];
+    const s16 *tm = xevem_tbl_tr16[DCT8][0];
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
 
@@ -346,7 +346,7 @@ void xeve_itrans_ats_intra_DCT8_B32(s16 *coef, s16 *block, int shift, int line, 
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 32;
-    const s16 *tm = xeve_tbl_tr32[DCT8][0];
+    const s16 *tm = xevem_tbl_tr32[DCT8][0];
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
 
@@ -381,8 +381,8 @@ void xeve_it_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, const int
     s16 t[MAX_TR_DIM]; /* temp buffer */
     u8  t_idx_h = 0, t_idx_v = 0;
 
-    t_idx_h = xeve_tbl_tr_subset_intra[ats_intra_tridx >> 1];
-    t_idx_v = xeve_tbl_tr_subset_intra[ats_intra_tridx & 1];
+    t_idx_h = xevem_tbl_tr_subset_intra[ats_intra_tridx >> 1];
+    t_idx_v = xevem_tbl_tr_subset_intra[ats_intra_tridx & 1];
 
     xeve_func_itrans[t_idx_v][log2_minus1_h](coef, t, shift_1st, tuw, skip_w, skip_h);
     xeve_func_itrans[t_idx_h][log2_minus1_w](t, coef, shift_2nd, tuh, 0, skip_w);
@@ -816,7 +816,7 @@ void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_
                     if(loop_h + loop_w > 2)
                     {
                         if(c == 0)
-                        xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), coef_temp_buf[c], sub_stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
+                            xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), coef_temp_buf[c], sub_stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
                         else
                             xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, coef_temp_buf[c], sub_stride >> h_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
                         coef_temp[c] = coef_temp_buf[c];
@@ -828,21 +828,21 @@ void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_
 
                     if(iqt_flag)
                     {
-                        scale = xeve_tbl_dq_scale[qp[c] % 6] << (qp[c] / 6);
+                        scale = xevem_tbl_dq_scale[qp[c] % 6] << (qp[c] / 6);
                     }
                     else
                     {
                         scale = xeve_tbl_dq_scale_b[qp[c] % 6] << (qp[c] / 6);
                     }
                     if(c == 0)
-                    xeve_itdq(coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, iqt_flag, ats_intra_cu_on, ats_mode_idx, bit_depth);
+                        xeve_itdq(coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, iqt_flag, ats_intra_cu_on, ats_mode_idx, bit_depth);
                     else
                         xeve_itdq(coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale, iqt_flag, ats_intra_cu_on, ats_mode_idx, bit_depth);
 
                     if(loop_h + loop_w > 2)
                     {
                         if(c==0)
-                        xeve_block_copy(coef_temp_buf[c], sub_stride >> (!!c), coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
+                            xeve_block_copy(coef_temp_buf[c], sub_stride >> (!!c), coef[c] + pos_sub_x + pos_sub_y, stride >> (!!c), log2_w_sub - (!!c), log2_h_sub - (!!c));
                         else
                             xeve_block_copy(coef_temp_buf[c], sub_stride >> w_shift, coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
                     }

@@ -37,8 +37,8 @@
 #define _XEVEM_MC_H_
 
 
-extern s16 tbl_mc_l_coeff_main[16][8];
-extern s16 tbl_mc_c_coeff_main[32][4];
+extern s16 xevem_tbl_mc_l_coeff[16][8];
+extern s16 xevem_tbl_mc_c_coeff[32][4];
 
 extern const s16 tbl_bl_mc_l_coeff[16][2];
 extern const s16 tbl_bl_eif_32_phases_mc_l_coeff[32][2];
@@ -71,7 +71,7 @@ extern XEVE_MC_C      (*xevem_func_bl_mc_l)[2];
         [((gmv_y) | ((gmv_y)>>1) | ((gmv_y)>>2) | ((gmv_y)>>3)) & 0x1]\
         (ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth)
 
-void xeve_mc_main(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM]
+void xevem_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM]
                 , int poc_c, pel *dmvr_ref_pred_template, pel dmvr_ref_pred_interpolated[REFP_NUM][(MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT)) * (MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT))]
                 , pel dmvr_half_pred_interpolated[REFP_NUM][(MAX_CU_SIZE + 1) * (MAX_CU_SIZE + 1)], BOOL apply_DMVR, pel dmvr_padding_buf[REFP_NUM][N_C][PAD_BUFFER_STRIDE * PAD_BUFFER_STRIDE]
                 , u8 *cu_dmvr_flag, s16 dmvr_mv[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D], int sps_admvp_flag, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc);

@@ -1,4 +1,4 @@
-set( LIB_NAME_BASE xeveb )
+﻿set( LIB_NAME_BASE xeveb )
 
 set( LIB_SOVERSION 1)
 

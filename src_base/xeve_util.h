@@ -76,7 +76,6 @@ operation: if(sign == 0) return val, else if(sign == 1) return -val */
 /* change to log value */
 #define XEVE_LOG2(v)                (xeve_tbl_log2[v])
 #define XEVE_ALIGN_VAL(val, align)  ((((val)+(align)-1)/(align))*(align))
-
 #define XEVE_CFI_FROM_CF(cf) ((cf == XEVE_CF_YCBCR400) ? 0 : (cf == XEVE_CF_YCBCR420) ? 1 : (cf == XEVE_CF_YCBCR422) ? 2 : 3)
 #define XEVE_CF_FROM_CFI(chroma_format_idc)  ((chroma_format_idc == 0) ? XEVE_CF_YCBCR400 : (chroma_format_idc == 1) ? \
                                         XEVE_CF_YCBCR420 : (chroma_format_idc == 2) ? XEVE_CF_YCBCR422 : XEVE_CF_YCBCR444)
@@ -121,7 +120,6 @@ typedef struct _XEVE_SPLIT_STRUCT
 } XEVE_SPLIT_STRUCT;
 
 void xeve_split_get_part_structure(int split_mode, int x0, int y0, int cuw, int cuh, int cup, int cud, int log2_culine, XEVE_SPLIT_STRUCT* split_struct);
-void scaling_mv(int ratio, s16 mvp[MV_D], s16 mv[MV_D]);
 void xeve_get_mv_dir(XEVE_REFP refp[REFP_NUM], u32 poc, int scup, int c_scu, u16 w_scu, u16 h_scu, s16 mvp[REFP_NUM][MV_D], int sps_admvp_flag);
 int  xeve_get_avail_cu(int neb_scua[MAX_NEB2], u32 * map_cu, u8 * map_tidx);
 int  xeve_scan_tbl_init();
@@ -168,13 +166,9 @@ void xeve_set_tree_mode(TREE_CONS* dest, MODE_CONS mode);
 MODE_CONS xeve_get_mode_cons_by_split(SPLIT_MODE split_mode, int cuw, int cuh);
 BOOL xeve_signal_mode_cons(TREE_CONS* parent, TREE_CONS* cur_split);
 
-
 #define XEVE_IMGB_OPT_NONE                 (0)
-#if 1
-XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt,
-    int pad[XEVE_IMGB_MAX_PLANE], int align[XEVE_IMGB_MAX_PLANE]);
+XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt, int pad[XEVE_IMGB_MAX_PLANE], int align[XEVE_IMGB_MAX_PLANE]);
 void xeve_imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src);
-#endif
 void xeve_imgb_garbage_free(XEVE_IMGB * imgb);
 #define XEVE_CPU_INFO_SSE2     0x7A // ((3 << 5) | 26)
 #define XEVE_CPU_INFO_SSE3     0x40 // ((2 << 5) |  0)
@@ -186,6 +180,63 @@ void xeve_imgb_garbage_free(XEVE_IMGB * imgb);
 
 int  xeve_check_cpu_info();
 
+/* Convert XEVE into XEVE_CTX */
+#define XEVE_ID_TO_CTX_R(id, ctx) \
+    xeve_assert_r((id)); \
+    (ctx) = (XEVE_CTX *)id; \
+    xeve_assert_r((ctx)->magic == XEVE_MAGIC_CODE);
 
+/* Convert XEVE into XEVE_CTX with return value if assert on */
+#define XEVE_ID_TO_CTX_RV(id, ctx, ret) \
+    xeve_assert_rv((id), (ret)); \
+    (ctx) = (XEVE_CTX *)id; \
+    xeve_assert_rv((ctx)->magic == XEVE_MAGIC_CODE, (ret));
+
+int  xeve_encode_sps(XEVE_CTX * ctx);
+int  xeve_encode_pps(XEVE_CTX * ctx);
+
+XEVE_CTX * xeve_ctx_alloc(void);
+void xeve_ctx_free(XEVE_CTX * ctx);
+XEVE_CORE * xeve_core_alloc(int chroma_format_idc);
+void xeve_core_free(XEVE_CORE * core);
+void xeve_copy_chroma_qp_mapping_params(XEVE_CHROMA_TABLE *dst, XEVE_CHROMA_TABLE *src);
+void xeve_parse_chroma_qp_mapping_params(XEVE_CHROMA_TABLE *dst_struct, XEVE_CHROMA_TABLE *src_struct, int bit_depth);
+int  xeve_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param);
+int  xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat);
+void xeve_set_nalu(XEVE_NALU * nalu, int nalu_type, int nuh_temporal_id);
+void xeve_set_vui(XEVE_CTX * ctx, XEVE_VUI * vui);
+void xeve_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps);
+void xeve_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps);
+int  xeve_set_active_pps_info(XEVE_CTX * ctx);
+void xeve_set_sh(XEVE_CTX *ctx, XEVE_SH *sh);
+int  xeve_set_tile_info(XEVE_CTX * ctx);
+int  xeve_platform_init(XEVE_CTX * ctx);
+void xeve_platform_deinit(XEVE_CTX * ctx);
+int  xeve_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
+int  xeve_pic_finish(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
+int  xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
+int  xeve_enc(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
+int  xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img);
+int  xeve_ready(XEVE_CTX * ctx);
+void xeve_flush(XEVE_CTX * ctx);
+int  xeve_picbuf_get_inbuf(XEVE_CTX * ctx, XEVE_IMGB ** img);
+int  xeve_header(XEVE_CTX * ctx);
+void xeve_update_core_loc_param(XEVE_CTX * ctx, XEVE_CORE * core);
+void xeve_update_core_loc_param_mt(XEVE_CTX * ctx, XEVE_CORE * core);
+int  xeve_mt_get_next_ctu_num(XEVE_CTX * ctx, XEVE_CORE * core, int skip_ctb_line_cnt);
+int  xeve_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int thread_cnt);
+int  xeve_deblock_mt(void * arg);
+int  xeve_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core);
+void xeve_run_itdq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM]);
+void xeve_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
+void xeve_platform_init_func();
+int  xeve_platform_init(XEVE_CTX * ctx);
+int  xeve_create_bs_buf(XEVE_CTX  * ctx);
+int  xeve_delete_bs_buf(XEVE_CTX  * ctx);
+int  xeve_encode_sps(XEVE_CTX * ctx);
+int  xeve_encode_pps(XEVE_CTX * ctx);
+int  xeve_check_frame_delay(XEVE_CTX * ctx);
+int  xeve_check_more_frames(XEVE_CTX * ctx);
+int  xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int chroma_format_idc);
+int  xeve_delete_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh);
 #endif /* __XEVE_UTIL_H__ */
-

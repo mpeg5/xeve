@@ -38,21 +38,16 @@
 
 #include "xevem_type.h"
 
-#define ALLOW_SPLIT_RATIO(long_side, block_ratio) (block_ratio <= BLOCK_14 && (long_side <= xeve_tbl_split[block_ratio][IDX_MAX] && long_side >= xeve_tbl_split[block_ratio][IDX_MIN]) ? 1 : 0)
-#define ALLOW_SPLIT_TRI(long_side) ((long_side <= xeve_tbl_split[BLOCK_TT][IDX_MAX] && long_side >= xeve_tbl_split[BLOCK_TT][IDX_MIN]) ? 1 : 0)
+#define ALLOW_SPLIT_RATIO(long_side, block_ratio) (block_ratio <= BLOCK_14 && (long_side <= xevem_tbl_split[block_ratio][IDX_MAX] && long_side >= xevem_tbl_split[block_ratio][IDX_MIN]) ? 1 : 0)
+#define ALLOW_SPLIT_TRI(long_side) ((long_side <= xevem_tbl_split[BLOCK_TT][IDX_MAX] && long_side >= xevem_tbl_split[BLOCK_TT][IDX_MIN]) ? 1 : 0)
 void xeve_check_split_mode(int *split_allow, int log2_cuw, int log2_cuh, int boundary, int boundary_r, int log2_max_cuwh
                          , int x, int y, int im_w, int im_h, int sps_btt_flag, MODE_CONS mode_cons);
 u16  xeve_get_avail_ibc(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int cuw, int cuh, u32 * map_scu, u8* map_tidx);
-void xeve_get_mmvd_mvp_list(s8(*map_refi)[REFP_NUM], XEVE_REFP refp[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int w_scu, int h_scu, int scup, u16 avail, int cuw, int cuh, int slice_t, int real_mv[][2][3], u32 *map_scu, int REF_SET[][MAX_NUM_ACTIVE_REF_FRAME], u16 avail_lr
-                          , u32 curr_ptr, u8 num_refp[REFP_NUM], XEVE_HISTORY_BUFFER history_buffer, int admvp_flag, XEVE_SH* sh, int log2_max_cuwh, u8 * map_tidx, int mmvd_idx);
 void xeve_get_default_motion_main(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int valid_flag[MAX_NUM_POSSIBLE_SCAND], s8 cur_refi, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], s8 *refi, s16 mv[MV_D]
                                 , u32 *map_scu, s16(*map_unrefined_mv)[REFP_NUM][MV_D], int scup, int w_scu, XEVE_HISTORY_BUFFER history_buffer, int hmvp_flag);
-s8   xeve_get_first_refi_main(int scup, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int cuw, int cuh, int w_scu, int h_scu, u32 *map_scu, u8 mvr_idx, u16 avail_lr
-                            , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER history_buffer, int hmvp_flag, u8 * map_tidx);
-void xeve_get_motion_merge_main(int poc, int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM], int cuw, int cuh, int w_scu, int h_scu
+void xevem_get_motion_merge(int poc, int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM], int cuw, int cuh, int w_scu, int h_scu
                               , s8 refi[REFP_NUM][MAX_NUM_MVP], s16 mvp[REFP_NUM][MAX_NUM_MVP][MV_D], u32 *map_scu, u16 avail_lr, s16(*map_unrefined_mv)[REFP_NUM][MV_D]
                               , XEVE_HISTORY_BUFFER history_buffer, u8 ibc_flag, XEVE_REFP(*refplx)[REFP_NUM], XEVE_SH* sh, int log2_max_cuwh, u8 *map_tidx);
-void xeve_get_merge_insert_mv(s8* refi_dst, s16 *mvp_dst_L0, s16 *mvp_dst_L1, s8* map_refi_src, s16* map_mv_src, int slice_type, int cuw, int cuh, int is_sps_admvp);
 void xeve_get_motion_from_mvr(u8 mvr_idx, int poc, int scup, int lidx, s8 cur_refi, int num_refp, s16(*map_mv)[REFP_NUM][MV_D], s8(*map_refi)[REFP_NUM], XEVE_REFP(*refp)[REFP_NUM]
                             , int cuw, int cuh, int w_scu, int h_scu, u16 avail, s16 mvp[MAX_NUM_MVP][MV_D], s8 refi_pred[MAX_NUM_MVP], u32* map_scu, u16 avail_lr, s16(*map_unrefined_mv)[REFP_NUM][MV_D]
                             , XEVE_HISTORY_BUFFER history_buffer, int hmvp_flag, u8* map_tidx);
@@ -80,12 +75,10 @@ int  xeve_split_is_TT(SPLIT_MODE mode);
 //! Is mode BT?
 int  xeve_split_is_BT(SPLIT_MODE mode);
 
-
 int  xeve_get_suco_flag(s8* suco_flag, int cud, int cup, int cuw, int cuh, int lcu_s, s8(*suco_flag_buf)[NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU]);
 void xeve_set_suco_flag(s8  suco_flag, int cud, int cup, int cuw, int cuh, int lcu_s, s8(*suco_flag_buf)[NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU]);
 u8   xeve_check_suco_cond(int cuw, int cuh, s8 split_mode, int boundary, u8 log2_max_cuwh, u8 log2_min_cuwh, u8 suco_max_depth, u8 suco_depth);
 void xeve_mv_rounding_s32( s32 hor, int ver, s32 * rounded_hor, s32 * rounded_ver, s32 right_shift, int left_shift );
-void xeve_get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int c_scu, u16 w_scu, u16 h_scu, s16 mvp[REFP_NUM][MV_D], s8 *available_pred_idx, XEVE_SH* sh);
 void xeve_rounding_s32(s32 comp, s32 *rounded_comp, int right_shift, int left_shift);
 void derive_affine_subblock_size_bi( s16 ac_mv[REFP_NUM][VER_NUM][MV_D], s8 refi[REFP_NUM], int cuw, int cuh, int *sub_w, int *sub_h, int vertex_num, BOOL*mem_band_conditions_for_eif_are_satisfied);
 void derive_affine_subblock_size( s16 ac_mv[VER_NUM][MV_D], int cuw, int cuh, int *sub_w, int *sub_h, int vertex_num, BOOL*mem_band_conditions_for_eif_are_satisfied);
@@ -111,6 +104,31 @@ enum TQC_RUN xeve_get_run(enum TQC_RUN run_list, TREE_CONS tree_cons);
 void get_tu_pos_offset(u8 ats_inter_info, int log2_cuw, int log2_cuh, int* x_offset, int* y_offset);
 void get_tu_size(u8 ats_inter_info, int log2_cuw, int log2_cuh, int* log2_tuw, int* log2_tuh);
 void set_cu_cbf_flags(u8 cbf_y, u8 ats_inter_info, int log2_cuw, int log2_cuh, u32 *map_scu, int w_scu);
+
+XEVEM_CTX  * xevem_ctx_alloc(void);
+XEVEM_CORE * xevem_core_alloc(int chroma_format_idc);
+int  xevem_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param);
+void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps);
+void xevem_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps);
+void xevem_set_sh(XEVE_CTX *ctx, XEVE_SH *sh);
+void xevem_pocs(XEVE_CTX * ctx, u32 pic_imcnt, int gop_size, int pos);
+int  xevem_set_tile_info(XEVE_CTX * ctx);
+int  xevem_ready(XEVE_CTX * ctx);
+void xevem_flush(XEVE_CTX * ctx);
+int  xevem_header(XEVE_CTX * ctx);
+int  xevem_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
+int  xevem_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int thread_cnt);
+int  xevem_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core);
+void xevem_itdq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM]);
+void xevem_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
+void xevem_pic_filt(XEVE_CTX * ctx, XEVE_IMGB * img);
+void xevem_platform_init_func();
+int  xevem_platform_init(XEVE_CTX * ctx);
+void xevem_platform_deinit(XEVE_CTX * ctx);
+int  xevem_encode_sps(XEVE_CTX * ctx);
+int  xevem_encode_pps(XEVE_CTX * ctx);
+int  xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps);
+int  xevem_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 #if GRAB_STAT
 void enc_stat_header(int pic_w, int pic_h);
 #endif

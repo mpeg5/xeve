@@ -30,6 +30,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   $cd build
   $cmake .. -DSET_PROF=BASE
   $make
+  $sudo make install
   ```
   - Output Location
     - Executable application (xeveb_app) can be found under build/bin/.
@@ -41,6 +42,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   $cd build
   $cmake ..
   $make
+  $sudo make install
   ```
   - Output Location
     - Executable application (xeve_app) can be found under build/bin/.
@@ -60,6 +62,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     $cd build
     $cmake .. -G "MinGW Makefiles" -DSET_PROF=BASE
     $make
+    $sudo make install
     ```
   - Microsoft Visual Studio 
     ```
@@ -77,6 +80,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     $cd build
     $cmake .. -G "MinGW Makefiles"
     $make
+    $sudo make install
     ```
   - Microsoft Visual Studio 
     ```
@@ -97,26 +101,29 @@ XEVE supports all profiles of EVC. Examples of configure file of coding structur
 | -o, --output          | -         | file name of output bitstream                               |
 | -w, --width           | -         | pixel width of input video                                  |
 | -h, --height          | -         | pixel height of input video                                 |
-| -z, --hz              | -         | frame rate (Hz)                                             |
+| -z, --fps             | -         | frame rate (frames per second)                              |
 | -f, --frames          | -         | maximum number of frames to be encoded                      |
-| -q, --op_qp           | 32        | QP value (0~51)                                             |
-| -d, --input_bit_depth | 8         | input bitdepth (8, 10)                                      |
-| -m, --parallel_task   | 0         | number of threads to be created                             |
-| -g, --max_b_frames    | 15        | number of maximum B frames (1,3,7,15)                       |
-| -p, --iperiod         | 0 (inf)   | I-picture period. Must be a multiple of (max_b_frames + 1). |
+| -q, --qp              | 32        | QP value (0~51)                                             |
+| -d, --input-depth     | 8         | input bitdepth (8, 10)                                      |
+| -m, --threads         | 0         | mumber of threads to be created                             |  
+| -b, --bframes         | 15        | number of maximum B frames (1,3,7,15)                       |
+| -I, --keyint          | 0 (inf)   | I-picture period. Must be a multiple of (bframes + 1).      |
 | -r, --recon           | none      | file name of a raw-video version of the output              |
 | -\-profile            | baseline  | index of profile (baseline, main)                           |
 | -\-config             | none      | file name of configuration                                  | 
-| -\-rc_type            | 0         | 0(rc_off) / 1(CBR, fixed hierarchy bit) / 2 (CBR, equal bit)| 
-| -\-bps                | 0.1M      | bits per second (bps, Kbps(K,k), Mbps (M,m))                | 
-| -\-vbv_msec           | 2000      | vbv size in msec                                            | 
-| -\-preset             | reference | preset of xeve (fast, medium, slow, reference)              | 
-| -\-qpa                | 0         | block qp adaptaion 0(off) / 1(on)                           | 
+| -\-rc-type            | 0         | rate control type: 0(rc-off) / 1(CBR)                       | 
+| -\-bitrate            | 100       | kbits per second (Kbps(none,K,k), Mbps (M,m))               | 
+| -\-aq-mode            | 1         | use block qp adaptation 0(off)/ 1(enable)                   | 
+| -\-cutree             | 1         | use cutree based bit allocation                             | 
+| -\-vbv-bufsize        | 100       | VBV buffer size (Kbits(none,K,k), Mbits(M,m))               | 
+| -\-preset             | slow      | preset of xeve (fast, medium, slow, placebo)                | 
+| -\-tune               | none      | tune options of xeve (psnr, zerolatency)                    | 
 
 >More options can be found when type **xeve_app** only.   
  
 ### Example
-	$xeve_app -i RaceHorses_416x240_30.yuv -w 416 -h 240 -z 30 --rc_type 0 -o xeve.bin
+	$xeve_app -i RaceHorses_416x240_30.yuv -w 416 -h 240 -z 30 -o xeve.evc
+	$xeve_app -i RaceHorses_416x240_30.y4m -o xeve.evc
 
 
 ## License

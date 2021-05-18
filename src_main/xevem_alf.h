@@ -36,7 +36,7 @@
 #ifndef __ADAPTIVELOOPFILTER__
 #define __ADAPTIVELOOPFILTER__
 
-#include "xeve_type.h"
+#include "xevem_type.h"
 #include <float.h>
 #include <math.h>
 
@@ -332,6 +332,7 @@ struct _XEVE_ALF
     short                  filter_indices[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_CLASSES];
 };
 
+int        xevem_alf_aps(XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_SH* sh, XEVE_APS* aps);
 XEVE_ALF * xeve_alf_create_buf(int bit_depth);
 void       xeve_alf_delete_buf(XEVE_ALF * enc_alf);
 void       xeve_alf_set_reset_alf_buf_flag(XEVE_ALF * enc_anf, int flag);

@@ -1259,6 +1259,7 @@ typedef struct _XEVE_POC
     u32              prev_poc_val;
     /* the decoding order count of the previous picture */
     int              prev_doc_offset;
+    int              prev_idr_poc;
 } XEVE_POC;
 
 /*****************************************************************************
@@ -1419,7 +1420,7 @@ typedef struct _XEVE_PRESET
     int    me_sub;
     int    me_sub_pos;
     int    me_sub_range;
-    double skip_th;
+    double skip_th;             // Use it carefully. If this value is greater than zero, a huge quality drop occurs
     int    merge_num;
     int    rdoq;
     int    cabac_refine;
@@ -1431,12 +1432,11 @@ typedef struct _XEVE_PRESET
 #include "xeve_thread_pool.h"
 #include "xeve_recon.h"
 #include "xeve_ipred.h"
-#include "xeve_tbl.h"
 #include "xeve_itdq.h"
 #include "xeve_picman.h"
 #include "xeve_mc.h"
 #include "xeve_mc_sse.h"
 #include "xeve_mc_avx.h"
-#include "xeve_util.h"
+#include "xeve_type.h"
 
 #endif /* _XEVE_DEF_H_ */

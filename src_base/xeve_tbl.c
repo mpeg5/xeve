@@ -269,8 +269,6 @@ int xeve_tbl_qp_chroma_ajudst[MAX_QP_TABLE_SIZE] =
     39, 39, 40, 40, 40, 41, 41, 41
 };
 
-int* xeve_qp_chroma_ajudst;
-
 // ChromaQP offset for U and V components
 int *xeve_qp_chroma_dynamic[2];
 int xeve_tbl_qp_chroma_dynamic_ext[2][MAX_QP_TABLE_SIZE_EXT];
@@ -331,7 +329,7 @@ void xeve_tbl_derived_chroma_qp_mapping(XEVE_CHROMA_TABLE *structChromaQP, int b
     }
     if (structChromaQP->same_qp_table_for_chroma)
     {
-        memcpy(&(xeve_qp_chroma_dynamic[1][-qp_bd_offset_c]), &(xeve_qp_chroma_dynamic[0][-qp_bd_offset_c]), MAX_QP_TABLE_SIZE_EXT * sizeof(int));
+        xeve_mcpy(&(xeve_qp_chroma_dynamic[1][-qp_bd_offset_c]), &(xeve_qp_chroma_dynamic[0][-qp_bd_offset_c]), MAX_QP_TABLE_SIZE_EXT * sizeof(int));
     }
 }
 
@@ -594,10 +592,83 @@ const u8 xeve_tbl_mvp_idx_bits[5][4] =
     { 1,  2,  3,  3 }
 };
 
-const XEVE_PRESET xeve_tbl_preset[ENC_PRESET_NUM] =
+const XEVE_PRESET xeve_tbl_preset[XEVE_PRESET_MAX] =
 {
-    { 32, 4, 64, 8, 1, 1, 32,  2, 2, 1, 0.5, 2, 1, 1, 5, 0},
-    { 32, 4, 64, 8, 1, 1, 64,  2, 4, 1, 0.3, 3, 1, 1, 5, 0},
-    { 32, 4, 64, 8, 1, 1, 128, 3, 4, 2, 0.2, 3, 1, 1, 5, 1},
-    { 64, 4, 64, 4, 2, 2, 384, 3, 8, 3, 0,   4, 1, 1, 5, 1},
+    { 32, 4, 64, 8, 1, 1, 32,  2, 2, 1, 0, 2, 1, 1, 5, 0},
+    { 32, 4, 64, 8, 1, 1, 64,  2, 4, 1, 0, 3, 1, 1, 5, 0},
+    { 32, 4, 64, 8, 1, 1, 128, 3, 4, 2, 0, 3, 1, 1, 5, 1},
+    { 64, 4, 64, 4, 2, 2, 384, 3, 8, 3, 0, 4, 1, 1, 5, 1},
 };
+
+const s8 xeve_tbl_slice_depth_P[5][16] =
+{
+    /* gop_size = 2 */
+    { FRM_DEPTH_2, FRM_DEPTH_1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, \
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+    /* gop_size = 4 */
+    { FRM_DEPTH_3, FRM_DEPTH_2, FRM_DEPTH_3, FRM_DEPTH_1, 0xFF, 0xFF, 0xFF, 0xFF, \
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+    /* gop_size = 8 */
+    { FRM_DEPTH_4, FRM_DEPTH_3, FRM_DEPTH_4, FRM_DEPTH_2, FRM_DEPTH_4, FRM_DEPTH_3, FRM_DEPTH_4, FRM_DEPTH_1,\
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+    /* gop_size = 12 */
+    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+    /* gop_size = 16 */
+    { FRM_DEPTH_5, FRM_DEPTH_4, FRM_DEPTH_5, FRM_DEPTH_3, FRM_DEPTH_5, FRM_DEPTH_4, FRM_DEPTH_5, FRM_DEPTH_2, \
+      FRM_DEPTH_5, FRM_DEPTH_4, FRM_DEPTH_5, FRM_DEPTH_3, FRM_DEPTH_5, FRM_DEPTH_4, FRM_DEPTH_5, FRM_DEPTH_1 }
+};
+
+const s8 xeve_tbl_slice_depth[5][15] =
+{
+    /* gop_size = 2 */
+    { FRM_DEPTH_2, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, \
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+    /* gop_size = 4 */
+    { FRM_DEPTH_2, FRM_DEPTH_3, FRM_DEPTH_3, 0xFF, 0xFF, 0xFF, 0xFF, \
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+    /* gop_size = 8 */
+    { FRM_DEPTH_2, FRM_DEPTH_3, FRM_DEPTH_3, FRM_DEPTH_4, FRM_DEPTH_4, FRM_DEPTH_4, FRM_DEPTH_4,\
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+    /* gop_size = 12 */
+    {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+    /* gop_size = 16 */
+    { FRM_DEPTH_2, FRM_DEPTH_3, FRM_DEPTH_3, FRM_DEPTH_4, FRM_DEPTH_4, FRM_DEPTH_4, FRM_DEPTH_4, FRM_DEPTH_5, \
+      FRM_DEPTH_5,  FRM_DEPTH_5, FRM_DEPTH_5, FRM_DEPTH_5, FRM_DEPTH_5, FRM_DEPTH_5, FRM_DEPTH_5 }
+};
+
+QP_ADAPT_PARAM xeve_qp_adapt_param_ra[8] =
+{
+    {-3,  0.0000, 0.0000},
+    { 1,  0.0000, 0.0000},
+    { 1, -4.8848, 0.2061},
+    { 4, -5.7476, 0.2286},
+    { 5, -5.9000, 0.2333},
+    { 6, -7.1444, 0.3000},
+    { 7, -7.1444, 0.3000},
+    { 8, -7.1444, 0.3000},
+};
+
+QP_ADAPT_PARAM xeve_qp_adapt_param_ld[8] =
+{
+    {-1,  0.0000, 0.0000 },
+    { 1,  0.0000, 0.0000 },
+    { 4, -6.5000, 0.2590 },
+    { 4, -6.5000, 0.2590 },
+    { 5, -6.5000, 0.2590 },
+    { 5, -6.5000, 0.2590 },
+    { 5, -6.5000, 0.2590 },
+    { 5, -6.5000, 0.2590 },
+};
+
+QP_ADAPT_PARAM xeve_qp_adapt_param_ai[8] =
+{
+    { 0,  0.0000, 0.0000},
+    { 0,  0.0000, 0.0000},
+    { 0,  0.0000, 0.0000},
+    { 0,  0.0000, 0.0000},
+    { 0,  0.0000, 0.0000},
+    { 0,  0.0000, 0.0000},
+    { 0,  0.0000, 0.0000},
+    { 0,  0.0000, 0.0000},
+};
+

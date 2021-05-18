@@ -115,9 +115,9 @@ typedef struct _DRA_CONTROL
 
     //------ DRA LUT ------//
     int    luma_scale_lut[DRA_LUT_MAXSIZE];               // LUT for luma and correspionding QP offset
-    int    luma_inv_scale_lut[DRA_LUT_MAXSIZE];               // LUT for luma and correspionding QP offset
+    int    xevem_luma_inv_scale_lut[DRA_LUT_MAXSIZE];               // LUT for luma and correspionding QP offset
     int    int_chroma_scale_lut[2][DRA_LUT_MAXSIZE];               // LUT for chroma scales 
-    int    int_chroma_inv_scale_lut[2][DRA_LUT_MAXSIZE];               // LUT for chroma scales 
+    int    xevem_int_chroma_inv_scale_lut[2][DRA_LUT_MAXSIZE];               // LUT for chroma scales 
                                                                   //------ Gammut mapping ------//
     //------ Adaptive mapping ------//
     double dra_hist_norm;
@@ -141,6 +141,8 @@ void xeve_apply_dra_chroma_plane(XEVE_IMGB * dst, XEVE_IMGB * src, DRA_CONTROL *
 void xeve_add_dra_aps_to_buffer(SIG_PARAM_DRA* dra_control_array, XEVE_APS_GEN *tmp_aps_gen_array);
 void xeve_reset_aps_gen_read_buffer(XEVE_APS_GEN *tmp_aps_gen_array);
 void xeve_apply_dra_from_array(XEVE_IMGB * dst, XEVE_IMGB * src, SIG_PARAM_DRA * dra_control_array, int dra_id, int backward_map);
+
+int  xevem_set_active_dra_info(XEVE_CTX * ctx);
 
 #endif 
 /* _XEVE_DRA_H_ */

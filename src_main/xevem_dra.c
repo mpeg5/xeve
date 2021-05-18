@@ -211,7 +211,7 @@ int xeve_get_dra_range_idx_gen(DRA_CONTROL *dra_mapping, int sample, int *chroma
 int xeve_correct_local_chroma_scale(DRA_CONTROL *dra_mapping, int int_scaleLumaDra, int chId, int bit_depth)
 {
     int l_array[NUM_CHROMA_QP_OFFSET_LOG];
-    memcpy(l_array, dra_chroma_qp_offset_tbl, NUM_CHROMA_QP_OFFSET_LOG * sizeof(int));
+    xeve_mcpy(l_array, xevem_dra_chroma_qp_offset_tbl, NUM_CHROMA_QP_OFFSET_LOG * sizeof(int));
     int scale_offset = 1 << DRA_SCALE_NUMFBITS;
     int table0_shift = NUM_CHROMA_QP_SCALE_EXP >> 1;
     int out_chroma_scale = 1;
@@ -232,8 +232,8 @@ int xeve_correct_local_chroma_scale(DRA_CONTROL *dra_mapping, int int_scaleLumaD
         int out_of_range = -1;
         int scale_dra_int9 = (scale_dra_int + (1 << 8)) >> 9;
         int index_scale_qp = xeve_get_dra_range_idx_gen(dra_mapping, scale_dra_int9, l_array, NUM_CHROMA_QP_OFFSET_LOG - 1);
-        int interpolation_num = scale_dra_int9 - dra_chroma_qp_offset_tbl[index_scale_qp];  //delta_scale (1.2QP)  = 0.109375
-        int interpolation_denom = dra_chroma_qp_offset_tbl[index_scale_qp + 1] - dra_chroma_qp_offset_tbl[index_scale_qp];  // DenomScale (2QP) = 0.232421875
+        int interpolation_num = scale_dra_int9 - xevem_dra_chroma_qp_offset_tbl[index_scale_qp];  //delta_scale (1.2QP)  = 0.109375
+        int interpolation_denom = xevem_dra_chroma_qp_offset_tbl[index_scale_qp + 1] - xevem_dra_chroma_qp_offset_tbl[index_scale_qp];  // DenomScale (2QP) = 0.232421875
 
         qp_dra_int = 2 * index_scale_qp - 60;  // index table == 0, associated QP == - 1
 
@@ -266,16 +266,16 @@ int xeve_correct_local_chroma_scale(DRA_CONTROL *dra_mapping, int int_scaleLumaD
             qp_dra_frac_adj = (1 << 9) + qp_dra_frac_adj;
         }
         int dra_chroma_qp_shift_clipped = XEVE_CLIP3(-12, 12, dra_chroma_qp_shift);
-        int dra_chroma_scale_shift = dra_exp_nom_v2[dra_chroma_qp_shift_clipped + table0_shift];
+        int dra_chroma_scale_shift = xevem_dra_exp_nom_v2[dra_chroma_qp_shift_clipped + table0_shift];
 
         int draChromaScaleShiftFrac;
         if (dra_chroma_qp_shift >= 0)
         {
-            draChromaScaleShiftFrac = dra_exp_nom_v2[XEVE_CLIP3(-12, 12, dra_chroma_qp_shift + 1) + table0_shift] - dra_exp_nom_v2[dra_chroma_qp_shift_clipped + table0_shift];
+            draChromaScaleShiftFrac = xevem_dra_exp_nom_v2[XEVE_CLIP3(-12, 12, dra_chroma_qp_shift + 1) + table0_shift] - xevem_dra_exp_nom_v2[dra_chroma_qp_shift_clipped + table0_shift];
         }
         else
         {
-            draChromaScaleShiftFrac = dra_exp_nom_v2[dra_chroma_qp_shift_clipped + table0_shift] - dra_exp_nom_v2[XEVE_CLIP3(-12, 12, dra_chroma_qp_shift - 1) + table0_shift];
+            draChromaScaleShiftFrac = xevem_dra_exp_nom_v2[dra_chroma_qp_shift_clipped + table0_shift] - xevem_dra_exp_nom_v2[XEVE_CLIP3(-12, 12, dra_chroma_qp_shift - 1) + table0_shift];
         }
 
         out_chroma_scale = dra_chroma_scale_shift + ((draChromaScaleShiftFrac * qp_dra_frac_adj + (1 << (DRA_SCALE_NUMFBITS - 1))) >> DRA_SCALE_NUMFBITS);
@@ -300,7 +300,7 @@ void xeve_build_dra_luma_lut(DRA_CONTROL *dra_mapping)
         int value = i * dra_mapping->inv_dra_scales_s32[range_idx_y];
         value = (dra_mapping->inv_dra_offsets_s32[range_idx_y] + value + (1 << 8)) >> 9;
         value = XEVE_CLIP3(0, DRA_LUT_MAXSIZE - 1, value);
-        dra_mapping->luma_inv_scale_lut[i] = value;
+        dra_mapping->xevem_luma_inv_scale_lut[i] = value;
     }
 }
 void xeve_build_dra_chroma_lut(DRA_CONTROL *dra_mapping, int bit_depth)
@@ -308,7 +308,7 @@ void xeve_build_dra_chroma_lut(DRA_CONTROL *dra_mapping, int bit_depth)
     for (int i = 0; i < DRA_LUT_MAXSIZE; i++)
     {
         dra_mapping->int_chroma_scale_lut[0][i] = dra_mapping->int_chroma_scale_lut[1][i] = 1;
-        dra_mapping->int_chroma_inv_scale_lut[0][i] = dra_mapping->int_chroma_scale_lut[1][i] = 1;
+        dra_mapping->xevem_int_chroma_inv_scale_lut[0][i] = dra_mapping->int_chroma_scale_lut[1][i] = 1;
     }
     {
         int chroma_mult_ranges2[33 + 1];
@@ -341,7 +341,7 @@ void xeve_build_dra_chroma_lut(DRA_CONTROL *dra_mapping, int bit_depth)
                 int run_i = i - chroma_mult_ranges2[range_idx];
                 int run_s = (chroma_mult_scale[range_idx] * run_i + (1 << (bit_depth - 1))) >> bit_depth;
 
-                dra_mapping->int_chroma_inv_scale_lut[ch][i] = chroma_mult_offset[range_idx] + run_s;
+                dra_mapping->xevem_int_chroma_inv_scale_lut[ch][i] = chroma_mult_offset[range_idx] + run_s;
             }
         }
     }
@@ -730,7 +730,7 @@ void xeve_build_fwd_dra_lut_from_dec(DRA_CONTROL *dra_mapping, int bit_depth)
         for (int i = 0; i < DRA_LUT_MAXSIZE; i++)
         {
             int value1 = 1 << (DRA_SCALE_NUMFBITS + DRA_INVSCALE_NUMFBITS);
-            int value3 = dra_mapping->int_chroma_inv_scale_lut[ch][dra_mapping->luma_scale_lut[i]];
+            int value3 = dra_mapping->xevem_int_chroma_inv_scale_lut[ch][dra_mapping->luma_scale_lut[i]];
             int temp = (int)(value1 + (value3 / 2)) / value3;
             dra_mapping->int_chroma_scale_lut[ch][i] = temp;
         }
@@ -774,7 +774,7 @@ void xeve_init_dra(DRA_CONTROL *dra_mapping, int total_change_points, int *luma_
 
     for (int i = 0; i < DRA_LUT_MAXSIZE; i++)
     {
-        dra_mapping->luma_inv_scale_lut[i] = i;
+        dra_mapping->xevem_luma_inv_scale_lut[i] = i;
         dra_mapping->luma_scale_lut[i] = i;
     };
 
@@ -841,7 +841,7 @@ int xeve_generate_dra_array(SIG_PARAM_DRA * dra_control_array, DRA_CONTROL * tmp
         xeve_analyze_input_pic(tmp_dra_control, bit_depth);
         if (tmp_dra_control->flag_enabled == 1)
         {
-            memcpy(dra_control_array + i, &(tmp_dra_control->signalled_dra), sizeof(SIG_PARAM_DRA));
+            xeve_mcpy(dra_control_array + i, &(tmp_dra_control->signalled_dra), sizeof(SIG_PARAM_DRA));
         }
     }
     return XEVE_OK;
@@ -852,7 +852,7 @@ int xeve_construct_dra_from_array(SIG_PARAM_DRA * dra_control_array, DRA_CONTROL
     assert(effective_aps_id >= 0 && effective_aps_id < APS_MAX_NUM);
 
     SIG_PARAM_DRA* pps_dra_params = dra_control_array + effective_aps_id;
-    memcpy(&(tmp_dra_control->signalled_dra), pps_dra_params, sizeof(SIG_PARAM_DRA));
+    xeve_mcpy(&(tmp_dra_control->signalled_dra), pps_dra_params, sizeof(SIG_PARAM_DRA));
     xeve_dra_ready(tmp_dra_control, bit_depth);
     xeve_build_fwd_dra_lut_from_dec(tmp_dra_control, bit_depth);
     return XEVE_OK;
@@ -940,7 +940,7 @@ void xeve_apply_dra_luma_plane(XEVE_IMGB * dst, XEVE_IMGB * src, DRA_CONTROL *dr
 
                 dst_value = dst_plane[k];
                 if (backward_map == TRUE)
-                    dst_value = dra_mapping->luma_inv_scale_lut[src_value];
+                    dst_value = dra_mapping->xevem_luma_inv_scale_lut[src_value];
                 else
                     dst_value = dra_mapping->luma_scale_lut[src_value];
                 dst_plane[k] = dst_value;
@@ -981,7 +981,7 @@ void xeve_apply_dra_chroma_plane(XEVE_IMGB * dst, XEVE_IMGB * src, DRA_CONTROL *
                 src_value = src_value - 512;
                 offset_value = src_value;
                 if (backward_map == TRUE)
-                    int_scale = (dra_mapping->int_chroma_inv_scale_lut[i - 1][ref_value]);
+                    int_scale = (dra_mapping->xevem_int_chroma_inv_scale_lut[i - 1][ref_value]);
                 else
                     int_scale = (dra_mapping->int_chroma_scale_lut[i - 1][ref_value]);
                 if (src_value < 0)
@@ -1026,7 +1026,7 @@ void xeve_add_dra_aps_to_buffer(SIG_PARAM_DRA* tmp_dra_control_array, XEVE_APS_G
         SIG_PARAM_DRA* dra_src = (SIG_PARAM_DRA*)((tmp_aps_gen_array + 1)->aps_data);
         if (dra_buffer->signal_dra_flag == -1)
         {
-            memcpy(dra_buffer, dra_src, sizeof(SIG_PARAM_DRA));
+            xeve_mcpy(dra_buffer, dra_src, sizeof(SIG_PARAM_DRA));
             (tmp_aps_gen_array + 1)->aps_id = -1;
         }
         else
@@ -1049,5 +1049,18 @@ void xeve_apply_dra_from_array(XEVE_IMGB * dst, XEVE_IMGB * src, SIG_PARAM_DRA *
         xeve_apply_dra_chroma_plane(dst, src, tmp_dra_mapping, 2, backward_map);
     }
     xeve_apply_dra_luma_plane(dst, src, tmp_dra_mapping, 0, backward_map);
+}
+
+int xevem_set_active_dra_info(XEVE_CTX * ctx)
+{
+    XEVEM_CTX * mctx = (XEVEM_CTX*)ctx;
+
+    int dra_aps_id = ctx->pps.pic_dra_aps_id;
+    ctx->aps_gen_array[1].aps_id = dra_aps_id;
+    ctx->aps_gen_array[1].aps_data = (void*)(&((SIG_PARAM_DRA *)mctx->dra_array)[dra_aps_id]);
+    ctx->aps_gen_array[1].signal_flag = ((SIG_PARAM_DRA *)mctx->dra_array)[dra_aps_id].signal_dra_flag;  // if dra entry was already sent, signal_dra_flag is equal to 0
+    xeve_assert(ctx->aps_gen_array[1].signal_flag > -1 && ctx->aps_gen_array[1].signal_flag < 2);
+
+    return XEVE_OK;
 }
 

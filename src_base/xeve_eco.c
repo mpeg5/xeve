@@ -842,7 +842,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
     {
         if (!cbf_all && sub_pos)
         {
-            return XEVE_OK;
+            return 0;
         }            
         if(b_no_cbf == 1)
         {
@@ -859,7 +859,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
                 XEVE_TRACE_INT(0);
                 XEVE_TRACE_STR("\n");
 
-                return XEVE_OK;
+                return 1;
             }
             else
             {
@@ -929,7 +929,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
         }
     }
 
-    return XEVE_OK;
+    return 0;
 }
 
 int xeve_eco_dqp(XEVE_BSW * bs, int ref_qp, int cur_qp)
@@ -1011,15 +1011,19 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
     {
         for (i = 0; i < loop_w; i++)
         {
-            xeve_eco_cbf(bs, !!nnz_sub[Y_C][(j << 1) | i], !!nnz_sub[U_C][(j << 1) | i], !!nnz_sub[V_C][(j << 1) | i], pred_mode, b_no_cbf, is_sub, j + i, cbf_all, run, tree_cons, ctx->sps.chroma_format_idc);
+            int is_cbf_all_coded_zero = xeve_eco_cbf(bs, !!nnz_sub[Y_C][(j << 1) | i], !!nnz_sub[U_C][(j << 1) | i], !!nnz_sub[V_C][(j << 1) | i], pred_mode, b_no_cbf, is_sub, j + i, cbf_all, run, tree_cons, ctx->sps.chroma_format_idc);
+
+            if (is_cbf_all_coded_zero)
+            {
+                return XEVE_OK;
+            }
 
             if(ctx->pps.cu_qp_delta_enabled_flag)
             {
                 if(enc_dqp == 1)
                 {
                     int cbf_for_dqp = (!!nnz_sub[Y_C][(j << 1) | i]) || (!!nnz_sub[U_C][(j << 1) | i]) || (!!nnz_sub[V_C][(j << 1) | i]);
-                    if((((!(ctx->sps.dquant_flag) || (core->cu_qp_delta_code == 1 && !core->cu_qp_delta_is_coded)) && (cbf_for_dqp))
-                        || (core->cu_qp_delta_code == 2 && !core->cu_qp_delta_is_coded)))
+                    if(cbf_for_dqp)
                     {
                         xeve_eco_dqp(bs, ctx->tile[core->tile_idx].qp_prev_eco[core->thread_cnt], cur_qp);
                         core->cu_qp_delta_is_coded = 1;
@@ -1069,7 +1073,7 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
 int xeve_eco_coef(XEVE_CTX * ctx, XEVE_CORE * core, XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], u8 pred_mode, int enc_dqp, int b_no_cbf, int run_stats)
 {
     return xeve_eco_coefficient(bs, coef, core->log2_cuw, core->log2_cuh, pred_mode, core->nnz_sub, b_no_cbf, run_stats
-                                , ctx, core, enc_dqp, core->qp, core->tree_cons);
+                              , ctx, core, enc_dqp, core->qp, core->tree_cons);
 }
 
 int xeve_eco_pred_mode(XEVE_BSW * bs, u8 pred_mode, int ctx)
@@ -1480,12 +1484,18 @@ int xeve_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int c
 
             if(core->cu_mode != MODE_INTRA)
             {
-                xeve_eco_direct_mode_flag(bs, cu_data->pred_mode[cup] == MODE_DIR);
+                if (slice_type == SLICE_B)
+                {
+                    xeve_eco_direct_mode_flag(bs, cu_data->pred_mode[cup] == MODE_DIR);
+                }
 
                 if((cu_data->pred_mode[cup] % ORG_PRED_NUM) != MODE_DIR)
                 {
-                    xeve_eco_inter_pred_idc(bs, cu_data->refi[cup], slice_type, cuw, cuh, ctx->sps.tool_admvp);
-                    
+                    if (slice_type == SLICE_B)
+                    {
+                        xeve_eco_inter_pred_idc(bs, cu_data->refi[cup], slice_type, cuw, cuh, ctx->sps.tool_admvp);
+                    }
+
                     refi0 = cu_data->refi[cup][REFP_0];
                     refi1 = cu_data->refi[cup][REFP_1];
                     if(IS_INTER_SLICE(slice_type) && REFI_IS_VALID(refi0))

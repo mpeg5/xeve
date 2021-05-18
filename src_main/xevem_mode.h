@@ -44,8 +44,8 @@ void xeve_rdo_bit_cnt_cu_ibc(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_type, s
 void xeve_rdo_bit_cnt_cu_inter_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_type, s32 cup, s8 refi[REFP_NUM], s16 mvd[REFP_NUM][MV_D], s16 coef[N_C][MAX_CU_DIM], int pidx, u8 * mvp_idx, u8 mvr_idx, u8 bi_idx, s16 affine_mvd[REFP_NUM][VER_NUM][MV_D]);
 void xeve_rdo_bit_cnt_cu_intra_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_type, s32 cup, s16 coef[N_C][MAX_CU_DIM]);
 void xeve_rdo_bit_cnt_intra_dir_main(XEVE_CTX * ctx, XEVE_CORE * core, int ipm);
-void xeve_rdo_bit_cnt_intra_ext(XEVE_CTX * ctx, XEVE_CORE * core);
-void xeve_rdo_bit_cnt_intra_ext_c(XEVE_CTX * ctx, XEVE_CORE * core);
+void xevem_rdo_bit_cnt_intra_ext(XEVE_CTX * ctx, XEVE_CORE * core);
+void xevem_rdo_bit_cnt_intra_ext_c(XEVE_CTX * ctx, XEVE_CORE * core);
 void update_history_buffer_affine(XEVE_HISTORY_BUFFER *history_buffer, XEVE_MODE *mi, int slice_type, XEVE_CORE *core);
 void mode_reset_intra_main(XEVE_CORE *core);
 void xeve_mode_create_main(XEVE_CTX * ctx);

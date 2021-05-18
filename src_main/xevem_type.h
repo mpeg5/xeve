@@ -36,7 +36,7 @@
 #ifndef _XEVEM_TYPE_H_
 #define _XEVEM_TYPE_H_
 
-#include <xeve_type.h>
+#include "xeve_type.h"
 #include "xevem_dra.h"
 
 typedef struct _XEVE_BEF_DATA
@@ -164,20 +164,23 @@ typedef struct _XEVEM_PRESET
 
 } XEVEM_PRESET;
 
-#include "xevem_mode.h"
-#include "xevem_eco.h"
-#include "xevem_ipred.h"
-#include "xevem_ibc_hash.h"
 #include "xevem_alf.h"
-#include "xevem_tq.h"
-#include "xevem_pred.h"
+#include "xevem_df.h"
+#include "xevem_eco.h"
+#include "xevem_ibc_hash.h"
+#include "xevem_ipred.h"
 #include "xevem_itdq.h"
 #include "xevem_itdq_sse.h"
-#include "xevem_picman.h"
-#include "xevem_tbl.h"
-#include "xevem_util.h"
 #include "xevem_mc.h"
 #include "xevem_mc_sse.h"
+#include "xevem_mode.h"
+#include "xevem_picman.h"
+#include "xevem_pred.h"
+#include "xevem_recon.h"
+#include "xevem_tbl.h"
+#include "xevem_tq.h"
+#include "xevem_util.h"
+
 #if GRAB_STAT
 #include "xevem_stat.h"
 #endif

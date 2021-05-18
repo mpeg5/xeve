@@ -415,7 +415,7 @@ static int  op_skip_frames        = 0;
 static int  op_inp_bit_depth      = 8;
 static int  op_out_bit_depth      = 0; /* same as input bit depth */
 static int  op_codec_bit_depth    = 10;
-static int  op_chroma_format_idc   = 1; /*chroma format idc: default 1 (420)*/
+static int  op_chroma_format_idc  = 1; /*chroma format idc: default 1 (420)*/
 static int  op_rdo_dbk_switch     = 1;
 static char op_profile[16]        = "baseline";
 static int  op_level              = 0;
@@ -444,8 +444,8 @@ static int  op_tool_cm_init       = 1; /* default on */
 static int  op_tool_adcc          = 1; /* default on */
 static int  op_tool_rpl           = 1; /* default on */
 static int  op_tool_pocs          = 1; /* default on */
-static int  op_cb_qp_offset       = 0;
-static int  op_cr_qp_offset       = 0;
+static int  op_qp_cb_offset       = 0;
+static int  op_qp_cr_offset       = 0;
 static int  op_tool_ats           = 1; /* default on */
 static int  op_constrained_intra_pred = 0;
 static int  op_tool_deblocking        = 1; /* default on */
@@ -464,10 +464,11 @@ static char op_num_remaining_tiles_in_slice[600]     = { 0 }; // only in case of
 static int  op_loop_filter_across_tiles_enabled_flag = 0;     // by default disabled
 static int  op_parallel_task                         = 1;     // default single task
 static int  op_rc_type                               = 0;     // rc_off = 0 , rc_cbr = 1
-static char op_bps[256]                              = "100000";// Default 100Kbps
+static char op_bps[256]                              = "100"; // Default 100Kbps
+static char op_vbv_buf_size[256]                     = "-1"; // Default off
 static int  op_vbv_msec                              = 2000;  // Default value 2000ms
 static int  op_use_filler_flag                       = 0;     // Default value 0
-static int  op_num_pre_analysis_frames               = 0;     // Default value 0
+static int  op_num_pre_analysis_frames               = 17;     // Default value 17
 static int  op_chroma_qp_table_present_flag       = 0;
 static char op_chroma_qp_num_points_in_table[256] = {0};
 static char op_chroma_qp_delta_in_val_cb[256]     = {0};
@@ -489,7 +490,8 @@ static int  op_rpl_extern = 0;
 static char op_rpl0[MAX_NUM_RPLS][256];
 static char op_rpl1[MAX_NUM_RPLS][256];
 
-static int  op_qpa = 0;  /* default block qp adaptation is off */
+static int  op_aq_mode   = 1;  /* default block qp adaptation is off */
+static int  op_cutree    = 1;  /* default cutree block qp adaptation is off */
 static int  op_cu_qp_delta_area    = 10; /* default cu_delta_qp_area is 10 */
 
 static int  op_inter_slice_type     = 0;
@@ -500,7 +502,8 @@ static int  op_picture_crop_right_offset  = 0;
 static int  op_picture_crop_top_offset    = 0;
 static int  op_picture_crop_bottom_offset = 0;
 
-static char  op_preset[16] = "reference"; /* default - reference SW level */
+static char  op_preset[16] = "slow"; /* default preset */
+static char  op_tune[16] = "none"; /* default tune */
 
 typedef enum _OP_FLAGS
 {
@@ -511,7 +514,7 @@ typedef enum _OP_FLAGS
     OP_FLAG_WIDTH_INP,
     OP_FLAG_HEIGHT_INP,
     OP_FLAG_QP,
-    OP_FLAG_USE_DQP,
+    OP_FLAG_AQMODE,
     OP_FLAG_CU_QP_DELTA_AREA,
     OP_FLAG_FPS,
     OP_FLAG_IPERIOD,
@@ -534,6 +537,8 @@ typedef enum _OP_FLAGS
     OP_FLAG_CHROMA_FORMAT_IDC,
     OP_FLAG_RDO_DBK_SWITCH,
     OP_FLAG_SKIP_FRAMES,
+    OP_FLAG_LOOKAHEAD,
+    OP_FLAG_CUTREE,
     OP_PROFILE,
     OP_LEVEL,
     OP_BTT,
@@ -561,8 +566,8 @@ typedef enum _OP_FLAGS
     OP_TOOL_IQT,
     OP_TOOL_CM_INIT,
     OP_TOOL_ADCC,
-    OP_CB_QP_OFFSET,
-    OP_CR_QP_OFFSET,
+    OP_QP_CB_OFFSET,
+    OP_QP_CR_OFFSET,
     OP_TOOL_ATS,
     OP_CONSTRAINED_INTRA_PRED,
     OP_TOOL_DBF,
@@ -581,6 +586,7 @@ typedef enum _OP_FLAGS
     OP_RC_TYPE,
     OP_BPS,
     OP_VBV_MSEC,
+    OP_VBV_BUF_SIZE,
     OP_USE_FILLER_FLAG,
     OP_NUM_PRE_ANALYSIS_FRAMES,
     OP_CHROMA_QP_TABLE_PRESENT_FLAG,
@@ -665,6 +671,7 @@ typedef enum _OP_FLAGS
     OP_PIC_CROP_TOP,
     OP_PIC_CROP_BOTTOM,
     OP_PRESET,
+    OP_TUNE,
 
     OP_FLAG_MAX
 } OP_FLAGS;
@@ -694,28 +701,33 @@ static ARGS_OPTION options[] = \
         "file name of reconstructed video"
     },
     {
-        'w',  "width", ARGS_VAL_TYPE_INTEGER|ARGS_VAL_TYPE_MANDATORY,
+        'w',  "width", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_WIDTH_INP], &op_w,
         "pixel width of input video"
     },
     {
-        'h',  "height", ARGS_VAL_TYPE_INTEGER|ARGS_VAL_TYPE_MANDATORY,
+        'h',  "height", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_HEIGHT_INP], &op_h,
         "pixel height of input video"
     },
     {
-        'q',  "op_qp", ARGS_VAL_TYPE_INTEGER,
+        'q',  "qp", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_QP], &op_qp,
         "QP value (0~51)"
     },
     {
-        ARGS_NO_KEY,  "qpa", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_USE_DQP], &op_qpa,
-        "use block qp adaptation"
+        ARGS_NO_KEY,  "aq-mode", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_FLAG_AQMODE], &op_aq_mode,
+        "use adaptive quantization block qp adaptation"
         "\t 0: off (default) \n"
-        "\t 1: adaptive quantization + block tree\n"
-        "\t 2: adaptive quantization \n"
-        "\t 3: block tree \n"
+        "\t 1: adaptive quantization\n"
+    },
+    {
+        ARGS_NO_KEY,  "cutree", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_FLAG_CUTREE], &op_cutree,
+        "use cutree block qp adaptation"
+        "\t 0: off (default) \n"
+        "\t 1: cutree \n"
     },
     {
         ARGS_NO_KEY,  "cu_qp_delta_area", ARGS_VAL_TYPE_INTEGER,
@@ -723,24 +735,24 @@ static ARGS_OPTION options[] = \
         "cu_qp_delta_area (>= 6)(default: 6) "
     },
     {
-        'z',  "hz", ARGS_VAL_TYPE_INTEGER|ARGS_VAL_TYPE_MANDATORY,
+        'z',  "fps", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_FPS], &op_fps,
-        "frame rate (Hz)"
+        "frame rate (frame per second)"
     },
     {
-        'p',  "iperiod", ARGS_VAL_TYPE_INTEGER,
+        'I',  "keyint", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_IPERIOD], &op_iperiod,
         "I-picture period"
     },
     {
-        'g',  "max_b_frames", ARGS_VAL_TYPE_INTEGER,
+        'b',  "bframes", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_MAX_B_FRAMES], &op_max_b_frames,
-        "Number of maximum B frames (1,3,7,15)\n"
+        "maximum number of B frames (1,3,7,15)\n"
     },
     {
-        'm',  "parallel_task", ARGS_VAL_TYPE_INTEGER,
+        'm',  "threads", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_PARALLEL_TASK], &op_parallel_task,
-        "Number of threads to be created"
+        "force to use a specific number of threads"
     },
     {
         'f',  "frames", ARGS_VAL_TYPE_INTEGER,
@@ -748,12 +760,12 @@ static ARGS_OPTION options[] = \
         "maximum number of frames to be encoded"
     },
     {
-        's',  "signature", ARGS_VAL_TYPE_NONE,
+        's',  "hash", ARGS_VAL_TYPE_NONE,
         &op_flag[OP_FLAG_USE_PIC_SIGN], &op_use_pic_signature,
         "embed picture signature (HASH) for conformance checking in decoding"
     },
     {
-        'v',  "verbose", ARGS_VAL_TYPE_INTEGER,
+        'v',  "log-level", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_VERBOSE], &op_verbose,
         "verbose level\n"
         "\t 0: no message\n"
@@ -761,19 +773,19 @@ static ARGS_OPTION options[] = \
         "\t 2: frame-level messages\n"
     },
     {
-        'd',  "input_bit_depth", ARGS_VAL_TYPE_INTEGER,
+        'd',  "input-depth", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_IN_BIT_DEPTH], &op_inp_bit_depth,
-        "input bitdepth (8(default), 10) "
+        "input bit depth (8(default), 10) "
     },
     {
         ARGS_NO_KEY,  "codec_bit_depth", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_CODEC_BIT_DEPTH], &op_codec_bit_depth,
-        "codec internal bitdepth (10(default), 12) "
+        "codec internal bit depth (10(default), 12) "
     },
     {
-        ARGS_NO_KEY,  "chroma_format_idc", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "input-csp", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_CHROMA_FORMAT_IDC], &op_chroma_format_idc,
-        "chroma format idc (1(default); main: 0(400), 1(420); baseline: 0(400), 1(420), 2(422), 3(444)) "
+        "input color space(chroma format idc) (1(default); main: 0(400), 1(420); baseline: 0(400), 1(420), 2(422), 3(444)) "
     },
     {
         ARGS_NO_KEY,  "rdo_dbk_switch", ARGS_VAL_TYPE_INTEGER,
@@ -781,14 +793,14 @@ static ARGS_OPTION options[] = \
         "switch to on/off rdo_dbk (1(default), 0) "
     },
     {
-        ARGS_NO_KEY,  "output_bit_depth", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "output-depth", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_OUT_BIT_DEPTH], &op_out_bit_depth,
-        "output bitdepth (8, 10)(default: same as input bitdpeth) "
+        "output bit depth (8, 10)(default: same as input bit depth)"
     },
     {
         ARGS_NO_KEY,  "ref_pic_gap_length", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_OUT_BIT_DEPTH], &op_ref_pic_gap_length,
-        "reference picture gap length (1, 2, 4, 8, 16) only available when -g is 0"
+        "reference picture gap length (1, 2, 4, 8, 16) only available when -b is 0"
     },
     {
         ARGS_NO_KEY,  "closed_gop", ARGS_VAL_TYPE_NONE,
@@ -838,7 +850,7 @@ static ARGS_OPTION options[] = \
         "disable hierarchical GOP. if not set, hierarchical GOP is used"
     },
     {
-        ARGS_NO_KEY,  "skip_frames", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "seek", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FLAG_SKIP_FRAMES], &op_skip_frames,
         "number of skipped frames before encoding. default 0"
     },
@@ -848,7 +860,7 @@ static ARGS_OPTION options[] = \
         "profile setting flag  main, baseline (default: baseline) "
     },
     {
-        ARGS_NO_KEY,  "level", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "level-idc", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_LEVEL], &op_level,
         "level setting "
     },
@@ -868,12 +880,12 @@ static ARGS_OPTION options[] = \
         "one more qp are added after this number of frames, disable:0 (default)"
     },
     {
-        ARGS_NO_KEY,  "cb_max", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "ctu", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FRAMEWORK_CB_MAX], &op_framework_cb_max,
         "Max size of Coding Block (log scale)"
     },
     {
-        ARGS_NO_KEY,  "cb_min", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "min-cu-size", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_FRAMEWORK_CB_MIN], &op_framework_cb_min,
         "MIN size of Coding Block (log scale)"
     },
@@ -979,13 +991,13 @@ static ARGS_OPTION options[] = \
         "pocs on/off flag"
     },
     {
-        ARGS_NO_KEY,  "cb_qp_offset", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_CB_QP_OFFSET], &op_cb_qp_offset,
+        ARGS_NO_KEY,  "qp_cb_offset", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_QP_CB_OFFSET], &op_qp_cb_offset,
         "cb qp offset"
     },
     {
-        ARGS_NO_KEY,  "cr_qp_offset", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_CR_QP_OFFSET], &op_cr_qp_offset,
+        ARGS_NO_KEY,  "qp_cr_offset", ARGS_VAL_TYPE_INTEGER,
+        &op_flag[OP_QP_CR_OFFSET], &op_qp_cr_offset,
         "cr qp offset"
     },
     {
@@ -999,7 +1011,7 @@ static ARGS_OPTION options[] = \
         "constrained intra pred"
     },
     {
-        ARGS_NO_KEY,  "dbf", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "deblock", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_TOOL_DBF], &op_tool_deblocking,
         "Deblocking filter on/off flag"
     },
@@ -1064,20 +1076,26 @@ static ARGS_OPTION options[] = \
         "Loop filter across tiles enabled or disabled"
     },
     {
-        ARGS_NO_KEY,  "rc_type", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "rc-type", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_RC_TYPE], &op_rc_type,
         "Rate control type, 0: OFF, 1: CBR(fixed hierarchy bit), 2: CBR(equal bit)"
     },
     {
-        ARGS_NO_KEY,  "bps", ARGS_VAL_TYPE_STRING,
+        ARGS_NO_KEY,  "bitrate", ARGS_VAL_TYPE_STRING,
         &op_flag[OP_BPS], &op_bps,
-        "Bits per second: bps, Kbps(K,k), Mbps(M,m)"
-        "\n\tex) 100000 / 100K / 0.1M"
+        "Bitrate in terms of Bits per second: Kbps(none,K,k), Mbps(M,m)"
+        "\n\tex) 100 / 100K / 0.1M"
     },
     {
-        ARGS_NO_KEY,  "vbv_msec", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "vbv-msec", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_VBV_MSEC], &op_vbv_msec,
-        "VBV size in msec"
+        "VBV buffer size in msec"
+    },
+    {
+        ARGS_NO_KEY,  "vbv-bufsize", ARGS_VAL_TYPE_STRING,
+        &op_flag[OP_VBV_BUF_SIZE], &op_vbv_buf_size,
+        "VBV buffer size: Kbits(none,K,k), Mbits(M,m)"
+        "\n\tex) 100 / 100K / 0.1M"
     },
     {
         ARGS_NO_KEY,  "use_filler", ARGS_VAL_TYPE_INTEGER,
@@ -1085,9 +1103,11 @@ static ARGS_OPTION options[] = \
         "user filler flag"
     },
     {
-        ARGS_NO_KEY,  "pre_analysis_frames", ARGS_VAL_TYPE_INTEGER,
+        ARGS_NO_KEY,  "rc-lookahead", ARGS_VAL_TYPE_INTEGER,
         &op_flag[OP_NUM_PRE_ANALYSIS_FRAMES], &op_num_pre_analysis_frames,
-        "number of pre analysis frames"
+        "number of pre analysis frames for rate control and cu-tree"
+        "\t 0: off (default) \n"
+        "\t lookahead frames \n"
     },
     {
         ARGS_NO_KEY,  "chroma_qp_table_present_flag", ARGS_VAL_TYPE_INTEGER,
@@ -1464,7 +1484,13 @@ static ARGS_OPTION options[] = \
         ARGS_NO_KEY,  "preset", ARGS_VAL_TYPE_STRING,
         &op_flag[OP_PRESET], &op_preset,
         "Encoder PRESET"
-        "\t [fast, medium, slow, reference]"
+        "\t [fast, medium, slow, placebo]"
+    },
+    {
+        ARGS_NO_KEY,  "tune", ARGS_VAL_TYPE_STRING,
+        &op_flag[OP_TUNE], &op_tune,
+        "Encoder TUNE"
+        "\t [psnr, zerolatency]"
     },
     {0, "", ARGS_VAL_TYPE_NONE, NULL, NULL, ""} /* termination */
 };

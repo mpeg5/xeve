@@ -290,7 +290,7 @@ void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     }
     if (ctx->slice_type != SLICE_I)
     {
-        ctx->slice_type = ctx->sps.rpls_l0[sh->rpl_l0_idx].pic_type == 'P' ? SLICE_P : SLICE_B;
+        ctx->slice_type = ctx->cdsc.inter_slice_type;
     }
     //Copy RPL0 from the candidate in SPS to this SH
     sh->rpl_l0.poc = ctx->poc.poc_val;
@@ -459,17 +459,17 @@ static int create_explicit_rpl(XEVE_PM *pm, XEVE_SH *sh, int poc_val)
 
 int xeve_picman_refp_rpl_based_init(XEVE_PM *pm, XEVE_SH *sh, int poc_val, XEVE_REFP(*refp)[REFP_NUM])
 {
+    for (int i = 0; i < MAX_NUM_REF_PICS; i++)
+        refp[i][REFP_0].pic = refp[i][REFP_1].pic = NULL;
+    pm->num_refp[REFP_0] = pm->num_refp[REFP_1] = 0;
+
     if (sh->slice_type == SLICE_I)
     {
         return XEVE_OK;
     }
 
-    picman_update_pic_ref(pm);
+    xeve_picman_update_pic_ref(pm);
     xeve_assert_rv(pm->cur_num_ref_pics > 0, XEVE_ERR_UNEXPECTED);
-
-    for (int i = 0; i < MAX_NUM_REF_PICS; i++)
-        refp[i][REFP_0].pic = refp[i][REFP_1].pic = NULL;
-    pm->num_refp[REFP_0] = pm->num_refp[REFP_1] = 0;
 
     //Do the L0 first
     for (int i = 0; i < sh->rpl_l0.ref_pic_active_num; i++)
@@ -482,7 +482,7 @@ int xeve_picman_refp_rpl_based_init(XEVE_PM *pm, XEVE_SH *sh, int poc_val, XEVE_
         //If the ref pic is found, set it to RPL0
         if (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc == refPicPoc)
         {
-            set_refp(&refp[i][REFP_0], pm->pic_ref[j]);
+            xeve_set_refp(&refp[i][REFP_0], pm->pic_ref[j]);
             pm->num_refp[REFP_0] = pm->num_refp[REFP_0] + 1;
         }
         else
@@ -502,7 +502,7 @@ int xeve_picman_refp_rpl_based_init(XEVE_PM *pm, XEVE_SH *sh, int poc_val, XEVE_
         //If the ref pic is found, set it to RPL1
         if (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc == refPicPoc)
         {
-            set_refp(&refp[i][REFP_1], pm->pic_ref[j]);
+            xeve_set_refp(&refp[i][REFP_1], pm->pic_ref[j]);
             pm->num_refp[REFP_1] = pm->num_refp[REFP_1] + 1;
         }
         else
@@ -515,7 +515,7 @@ int xeve_picman_refp_rpl_based_init(XEVE_PM *pm, XEVE_SH *sh, int poc_val, XEVE_
 /*This is the implementation of reference picture marking based on RPL*/
 int xeve_picman_refpic_marking(XEVE_PM *pm, XEVE_SH *sh, int poc_val)
 {
-    picman_update_pic_ref(pm);
+    xeve_picman_update_pic_ref(pm);
     if (sh->slice_type != SLICE_I && poc_val != 0)
         xeve_assert_rv(pm->cur_num_ref_pics > 0, XEVE_ERR_UNEXPECTED);
 
@@ -551,7 +551,7 @@ int xeve_picman_refpic_marking(XEVE_PM *pm, XEVE_SH *sh, int poc_val)
             if (!isIncludedInRPL)
             {
                 SET_REF_UNMARK(pic);
-                picman_move_pic(pm, i, MAX_PB_SIZE - 1);
+                xeve_picman_move_pic(pm, i, MAX_PB_SIZE - 1);
                 pm->cur_num_ref_pics--;
                 i--;                                           //We need to decrement i here because it will be increment by i++ at for loop. We want to keep the same i here because after the move, the current ref pic at i position is the i+1 position which we still need to check.
                 numberOfPicsToCheck--;                         //We also need to decrement this variable to avoid checking the moved ref picture twice.

@@ -61,18 +61,18 @@ void alf_init_filter_shape(ALF_FILTER_SHAPE* filter_shape, int size)
 
     if (size == 5)
     {
-        memcpy(filter_shape->pattern, pattern5, sizeof(pattern5));
-        memcpy(filter_shape->weights, weights5, sizeof(weights5));
-        memcpy(filter_shape->golombIdx, golombIdx5, sizeof(golombIdx5));
-        memcpy(filter_shape->pattern_to_large_filter, pattern_to_large_filter5, sizeof(pattern_to_large_filter5));
+        xeve_mcpy(filter_shape->pattern, pattern5, sizeof(pattern5));
+        xeve_mcpy(filter_shape->weights, weights5, sizeof(weights5));
+        xeve_mcpy(filter_shape->golombIdx, golombIdx5, sizeof(golombIdx5));
+        xeve_mcpy(filter_shape->pattern_to_large_filter, pattern_to_large_filter5, sizeof(pattern_to_large_filter5));
         filter_shape->filter_type = ALF_FILTER_5;
     }
     else if (size == 7)
     {
-        memcpy(filter_shape->pattern, pattern7, sizeof(pattern7));
-        memcpy(filter_shape->weights, weights7, sizeof(weights7));
-        memcpy(filter_shape->golombIdx, golombIdx7, sizeof(golombIdx7));
-        memcpy(filter_shape->pattern_to_large_filter, pattern_to_large_filter7, sizeof(pattern_to_large_filter7));
+        xeve_mcpy(filter_shape->pattern, pattern7, sizeof(pattern7));
+        xeve_mcpy(filter_shape->weights, weights7, sizeof(weights7));
+        xeve_mcpy(filter_shape->golombIdx, golombIdx7, sizeof(golombIdx7));
+        xeve_mcpy(filter_shape->pattern_to_large_filter, pattern_to_large_filter7, sizeof(pattern_to_large_filter7));
         filter_shape->filter_type = ALF_FILTER_7;
     }
     else
@@ -97,7 +97,7 @@ void alf_copy_and_extend_tile(pel* tmp_yuv, const int s, const pel* rec, const i
     //copy
     for (int j = 0; j < h; j++)
     {
-        memcpy(tmp_yuv + j * s, rec + j * s2, sizeof(pel) * w);
+        xeve_mcpy(tmp_yuv + j * s, rec + j * s2, sizeof(pel) * w);
     }
 
     //extend
@@ -118,7 +118,7 @@ void alf_copy_and_extend_tile(pel* tmp_yuv, const int s, const pel* rec, const i
     // p is now the (-margin, height-1)
     for (int y = 0; y < m; y++)
     {
-        memcpy(p + (y + 1) * s, p, sizeof(pel) * (w + (m << 1)));
+        xeve_mcpy(p + (y + 1) * s, p, sizeof(pel) * (w + (m << 1)));
     }
 
     // pi is still (-marginX, height-1)
@@ -126,7 +126,7 @@ void alf_copy_and_extend_tile(pel* tmp_yuv, const int s, const pel* rec, const i
     // pi is now (-marginX, 0)
     for (int y = 0; y < m; y++)
     {
-        memcpy(p - (y + 1) * s, p, sizeof(pel) * (w + (m << 1)));
+        xeve_mcpy(p - (y + 1) * s, p, sizeof(pel) * (w + (m << 1)));
     }
 }
 
@@ -146,7 +146,7 @@ void alf_copy_and_extend( pel* tmp_yuv, const int s, const pel* rec, const int s
 //copy
     for (int j = 0; j < h; j++)
     {
-        memcpy(tmp_yuv + j * s, rec + j * s2, sizeof(pel) * w);
+        xeve_mcpy(tmp_yuv + j * s, rec + j * s2, sizeof(pel) * w);
     }
 
 //extend
@@ -168,7 +168,7 @@ void alf_copy_and_extend( pel* tmp_yuv, const int s, const pel* rec, const int s
 // p is now the (-margin, height-1)
     for (int y = 0; y < m; y++)
     {
-        memcpy(p + (y + 1) * s, p, sizeof(pel) * (w + (m << 1)));
+        xeve_mcpy(p + (y + 1) * s, p, sizeof(pel) * (w + (m << 1)));
     }
 
 // pi is still (-marginX, height-1)
@@ -176,7 +176,7 @@ void alf_copy_and_extend( pel* tmp_yuv, const int s, const pel* rec, const int s
 // pi is now (-marginX, 0)
     for (int y = 0; y < 3; y++)
     {
-        memcpy(p - (y + 1) * s, p, sizeof(pel) * (w + (m << 1)));
+        xeve_mcpy(p - (y + 1) * s, p, sizeof(pel) * (w + (m << 1)));
     }
 
 } // <-- end of copy and extend
@@ -304,7 +304,7 @@ void alf_recon_coef(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PARAM* alf_slice_param
             }
         }
 
-        memset(alf->coef_final, 0, sizeof(alf->coef_final));
+        xeve_mset(alf->coef_final, 0, sizeof(alf->coef_final));
         int num_coef_large_minus1 = MAX_NUM_ALF_LUMA_COEFF - 1;
         for (int class_idx = 0; class_idx < num_classes; class_idx++)
         {
@@ -394,7 +394,7 @@ void alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_h
     alf->last_ras_poc = INT_MAX;
     alf->pending_ras_init = FALSE;
 
-    memcpy(alf->input_bit_depth, input_bit_depth, sizeof(alf->input_bit_depth));
+    xeve_mcpy(alf->input_bit_depth, input_bit_depth, sizeof(alf->input_bit_depth));
     alf->pic_width = pic_width;
     alf->pic_height = pic_height;
     alf->max_cu_width = max_cu_width;
@@ -422,7 +422,7 @@ void alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_h
         for (int i = 0; i < MAX_CU_SIZE * XEVE_MAX_TASK_CNT; i++)
         {
             alf->classifier_mt[i] = (ALF_CLASSIFIER*)malloc(MAX_CU_SIZE * sizeof(ALF_CLASSIFIER));
-            memset(alf->classifier_mt[i], 0, MAX_CU_SIZE * sizeof(ALF_CLASSIFIER));
+            xeve_mset(alf->classifier_mt[i], 0, MAX_CU_SIZE * sizeof(ALF_CLASSIFIER));
         }
     }
 
@@ -431,7 +431,7 @@ void alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_h
     for (int i = 0; i < pic_height; i++)
     {
         alf->classifier[i] = (ALF_CLASSIFIER*)malloc(pic_width * sizeof(ALF_CLASSIFIER));
-        memset(alf->classifier[i], 0, pic_width * sizeof(ALF_CLASSIFIER));
+        xeve_mset(alf->classifier[i], 0, pic_width * sizeof(ALF_CLASSIFIER));
     }
 }
 
@@ -877,7 +877,7 @@ void alf_filter_blk_5(ALF_CLASSIFIER** classifier, pel * rec_dst, const int dst_
 
 void alf_param_chroma(ALF_SLICE_PARAM* dst, ALF_SLICE_PARAM* src)
 {
-    memcpy(dst->chroma_coef, src->chroma_coef, sizeof(short)*MAX_NUM_ALF_CHROMA_COEFF);
+    xeve_mcpy(dst->chroma_coef, src->chroma_coef, sizeof(short)*MAX_NUM_ALF_CHROMA_COEFF);
     dst->chroma_filter_present = src->chroma_filter_present;
     dst->chroma_ctb_present_flag = src->chroma_ctb_present_flag;
     dst->enable_flag[1] = src->enable_flag[1];
@@ -887,14 +887,14 @@ void alf_param_chroma(ALF_SLICE_PARAM* dst, ALF_SLICE_PARAM* src)
 
 void alf_copy_param(ALF_SLICE_PARAM* dst, ALF_SLICE_PARAM* src)
 {
-    memcpy(dst->enable_flag, src->enable_flag, sizeof(BOOL)*N_C);
+    xeve_mcpy(dst->enable_flag, src->enable_flag, sizeof(BOOL)*N_C);
     dst->chroma_filter_present = src->chroma_filter_present;
-    memcpy(dst->luma_coef, src->luma_coef, sizeof(short)*MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF);
-    memcpy(dst->chroma_coef, src->chroma_coef, sizeof(short)*MAX_NUM_ALF_CHROMA_COEFF);
-    memcpy(dst->filter_coef_delta_idx, src->filter_coef_delta_idx, sizeof(short)*MAX_NUM_ALF_CLASSES);
-    memcpy(dst->filter_coef_flag, src->filter_coef_flag, sizeof(BOOL)*MAX_NUM_ALF_CLASSES);
-    memcpy(dst->fixed_filter_idx, src->fixed_filter_idx, sizeof(int)*MAX_NUM_ALF_CLASSES);
-    memcpy(dst->fixed_filter_usage_flag, src->fixed_filter_usage_flag, sizeof(u8)*MAX_NUM_ALF_CLASSES);
+    xeve_mcpy(dst->luma_coef, src->luma_coef, sizeof(short)*MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF);
+    xeve_mcpy(dst->chroma_coef, src->chroma_coef, sizeof(short)*MAX_NUM_ALF_CHROMA_COEFF);
+    xeve_mcpy(dst->filter_coef_delta_idx, src->filter_coef_delta_idx, sizeof(short)*MAX_NUM_ALF_CLASSES);
+    xeve_mcpy(dst->filter_coef_flag, src->filter_coef_flag, sizeof(BOOL)*MAX_NUM_ALF_CLASSES);
+    xeve_mcpy(dst->fixed_filter_idx, src->fixed_filter_idx, sizeof(int)*MAX_NUM_ALF_CLASSES);
+    xeve_mcpy(dst->fixed_filter_usage_flag, src->fixed_filter_usage_flag, sizeof(u8)*MAX_NUM_ALF_CLASSES);
 
     dst->luma_filter_type = src->luma_filter_type;
     dst->num_luma_filters = src->num_luma_filters;
@@ -917,11 +917,11 @@ void alf_reset_param(ALF_SLICE_PARAM* dst)
 {
     //Reset destination
     dst->is_ctb_alf_on = FALSE;
-    memset(dst->enable_flag, 0, sizeof(dst->enable_flag)); //false is still 0
+    xeve_mset(dst->enable_flag, 0, sizeof(dst->enable_flag)); //false is still 0
     dst->luma_filter_type = ALF_FILTER_5;
-    memset(dst->luma_coef, 0, sizeof(dst->luma_coef));
-    memset(dst->chroma_coef, 0, sizeof(dst->chroma_coef));
-    memset(dst->filter_coef_delta_idx, 0, sizeof(dst->filter_coef_delta_idx));
+    xeve_mset(dst->luma_coef, 0, sizeof(dst->luma_coef));
+    xeve_mset(dst->chroma_coef, 0, sizeof(dst->chroma_coef));
+    xeve_mset(dst->filter_coef_delta_idx, 0, sizeof(dst->filter_coef_delta_idx));
     for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
         dst->filter_coef_flag[i] = TRUE;
     dst->num_luma_filters = 1;
@@ -929,8 +929,8 @@ void alf_reset_param(ALF_SLICE_PARAM* dst)
     dst->coef_delta_pred_mode_flag = FALSE;
     dst->chroma_ctb_present_flag = FALSE;
     dst->fixed_filter_pattern = 0;
-    memset(dst->fixed_filter_idx, 0, sizeof(dst->fixed_filter_idx));
-    memset(dst->fixed_filter_usage_flag, 0, sizeof(dst->fixed_filter_usage_flag));
+    xeve_mset(dst->fixed_filter_idx, 0, sizeof(dst->fixed_filter_idx));
+    xeve_mset(dst->fixed_filter_usage_flag, 0, sizeof(dst->fixed_filter_usage_flag));
     dst->temporal_alf_flag = FALSE;
     dst->prev_idx = 0;
     dst->prev_idx_comp[0] = 0;
@@ -1117,9 +1117,9 @@ void alf_cov_copy(ALF_COVARIANCE* dst, ALF_COVARIANCE* src)
 
     for (int i = 0; i < src->num_coef; i++)
     {
-        memcpy(dst->E[i], src->E[i], sizeof(src->E[i]) * src->num_coef);
+        xeve_mcpy(dst->E[i], src->E[i], sizeof(src->E[i]) * src->num_coef);
     }
-    memcpy(dst->y, src->y, sizeof(src->y) * src->num_coef);
+    xeve_mcpy(dst->y, src->y, sizeof(src->y) * src->num_coef);
     src->pix_acc = src->pix_acc;
 }
 
@@ -1232,8 +1232,8 @@ void xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEV
     ALF_SLICE_PARAM alf_slice_param;
     alf_slice_param.alf_ctb_flag = (u8 *)malloc(N_C * ctx->f_lcu * sizeof(u8));
     input_alf_slice_param->alf_ctb_flag = (u8 *)malloc(N_C * ctx->f_lcu * sizeof(u8));
-    memset(alf_slice_param.alf_ctb_flag, 0, N_C * ctx->f_lcu * sizeof(u8));
-    memset(input_alf_slice_param->alf_ctb_flag, 0, N_C * ctx->f_lcu * sizeof(u8));
+    xeve_mset(alf_slice_param.alf_ctb_flag, 0, N_C * ctx->f_lcu * sizeof(u8));
+    xeve_mset(input_alf_slice_param->alf_ctb_flag, 0, N_C * ctx->f_lcu * sizeof(u8));
     xeve_alf_process(enc_alf, &cs, lambdas, &alf_slice_param);
 
     if (alf_slice_param.enable_flag[0] && enc_alf->alf.strore2_alf_buf_flag)
@@ -1259,7 +1259,7 @@ void xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEV
     }
 
     input_alf_slice_param->is_ctb_alf_on = (BOOL)alf_slice_param.is_ctb_alf_on ? 1 : 0;
-    memcpy(input_alf_slice_param->alf_ctb_flag, alf_slice_param.alf_ctb_flag, N_C * ctx->f_lcu * sizeof(u8));
+    xeve_mcpy(input_alf_slice_param->alf_ctb_flag, alf_slice_param.alf_ctb_flag, N_C * ctx->f_lcu * sizeof(u8));
     input_alf_slice_param->enable_flag[0] = (BOOL)alf_slice_param.enable_flag[Y_C];
     input_alf_slice_param->enable_flag[1] = (BOOL)alf_slice_param.enable_flag[U_C];
     input_alf_slice_param->enable_flag[2] = (BOOL)alf_slice_param.enable_flag[V_C];
@@ -1267,11 +1267,11 @@ void xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEV
     input_alf_slice_param->num_luma_filters = alf_slice_param.num_luma_filters;
     input_alf_slice_param->luma_filter_type = (int)alf_slice_param.luma_filter_type;
 
-    memcpy(input_alf_slice_param->filter_coef_delta_idx, alf_slice_param.filter_coef_delta_idx, MAX_NUM_ALF_CLASSES * sizeof(short));
-    memcpy(input_alf_slice_param->luma_coef, alf_slice_param.luma_coef, sizeof(short)*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF);
-    memcpy(input_alf_slice_param->chroma_coef, alf_slice_param.chroma_coef, sizeof(short)*MAX_NUM_ALF_CHROMA_COEFF);
-    memcpy(input_alf_slice_param->fixed_filter_idx, alf_slice_param.fixed_filter_idx, MAX_NUM_ALF_CLASSES * sizeof(int));
-    memcpy(input_alf_slice_param->fixed_filter_usage_flag, alf_slice_param.fixed_filter_usage_flag, MAX_NUM_ALF_CLASSES * sizeof(u8));
+    xeve_mcpy(input_alf_slice_param->filter_coef_delta_idx, alf_slice_param.filter_coef_delta_idx, MAX_NUM_ALF_CLASSES * sizeof(short));
+    xeve_mcpy(input_alf_slice_param->luma_coef, alf_slice_param.luma_coef, sizeof(short)*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF);
+    xeve_mcpy(input_alf_slice_param->chroma_coef, alf_slice_param.chroma_coef, sizeof(short)*MAX_NUM_ALF_CHROMA_COEFF);
+    xeve_mcpy(input_alf_slice_param->fixed_filter_idx, alf_slice_param.fixed_filter_idx, MAX_NUM_ALF_CLASSES * sizeof(int));
+    xeve_mcpy(input_alf_slice_param->fixed_filter_usage_flag, alf_slice_param.fixed_filter_usage_flag, MAX_NUM_ALF_CLASSES * sizeof(u8));
     input_alf_slice_param->fixed_filter_pattern = alf_slice_param.fixed_filter_pattern;
     input_alf_slice_param->coef_delta_flag = (BOOL)alf_slice_param.coef_delta_flag;
     input_alf_slice_param->coef_delta_pred_mode_flag = (BOOL)alf_slice_param.coef_delta_pred_mode_flag;
@@ -1299,12 +1299,12 @@ u8 xeve_alf_aps_get_current_alf_idx(XEVE_ALF * enc_alf)
 void AlfSliceParam_reset(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PARAM* alf_param)
 {
     alf_param->is_ctb_alf_on = FALSE;
-    memset(alf_param->alf_ctb_flag, 1, alf->num_ctu_in_pic * sizeof(u8));
-    memset(alf_param->enable_flag, 0, sizeof(alf_param->enable_flag)); //FALSE is still 0
+    xeve_mset(alf_param->alf_ctb_flag, 1, alf->num_ctu_in_pic * sizeof(u8));
+    xeve_mset(alf_param->enable_flag, 0, sizeof(alf_param->enable_flag)); //FALSE is still 0
     alf_param->luma_filter_type = ALF_FILTER_5;
-    memset(alf_param->luma_coef, 0, sizeof(alf_param->luma_coef));
-    memset(alf_param->chroma_coef, 0, sizeof(alf_param->chroma_coef));
-    memset(alf_param->filter_coef_delta_idx, 0, sizeof(alf_param->filter_coef_delta_idx));
+    xeve_mset(alf_param->luma_coef, 0, sizeof(alf_param->luma_coef));
+    xeve_mset(alf_param->chroma_coef, 0, sizeof(alf_param->chroma_coef));
+    xeve_mset(alf_param->filter_coef_delta_idx, 0, sizeof(alf_param->filter_coef_delta_idx));
     for (int i = 0; i < MAX_NUM_ALF_CLASSES; i++)
     {
         alf_param->filter_coef_flag[i] = TRUE;
@@ -1314,8 +1314,8 @@ void AlfSliceParam_reset(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PARAM* alf_param)
     alf_param->coef_delta_pred_mode_flag = FALSE;
     alf_param->chroma_ctb_present_flag = FALSE;
     alf_param->fixed_filter_pattern = 0;
-    memset(alf_param->fixed_filter_idx, 0, sizeof(alf_param->fixed_filter_idx));
-    memset(alf_param->fixed_filter_usage_flag, 0, sizeof(alf_param->fixed_filter_usage_flag));
+    xeve_mset(alf_param->fixed_filter_idx, 0, sizeof(alf_param->fixed_filter_idx));
+    xeve_mset(alf_param->fixed_filter_usage_flag, 0, sizeof(alf_param->fixed_filter_usage_flag));
     alf_param->temporal_alf_flag = FALSE;
     alf_param->prev_idx = 0;
     alf_param->prev_idx_comp[0] = 0;
@@ -1869,6 +1869,11 @@ void xeve_alf_encode(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM*
             xeve_alf_set_ctb_enable_flag(enc_alf, alf->ctu_enable_flag, Y_C, 1);
             cost = xeve_alf_get_filter_coef_cost(enc_alf, cs, 0, Y_C, is_luma, input_shape_idx, &input_coef_bits, &filter_conformance_flag);
 
+            if (filter_conformance_flag)
+            {
+                xeve_alf_set_enable_flag(&enc_alf->alf_slice_param_temp, Y_C, FALSE);
+            }
+
             cost += enc_alf->lambda[channel];
             if (cost < cost_min)
             {
@@ -1938,29 +1943,38 @@ void xeve_alf_encode(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM*
             {
                 if ((iter & 0x01) == 0)
                 {
-                    cost = enc_alf->lambda[channel] * input_coef_bits;
-                    cost += xeve_alf_derive_ctb_enable_flags(enc_alf, cs, input_shape_idx, Y_C, num_classes, (input_shape_idx ? 13 : 7), &dist_unfilter, TRUE);
-                    cost += enc_alf->lambda[channel] * (alf->num_ctu_in_pic);
-
-                    if (cost < cost_min)
+                    if (!filter_conformance_flag)
                     {
-                        cost_min = cost;
-                        xeve_alf_copy_ctb_enable_flag(enc_alf, enc_alf->ctu_enable_flag_temp, alf->ctu_enable_flag, Y_C);
-                        xeve_alf_copy_slice_param(enc_alf, alf_slice_param, &enc_alf->alf_slice_param_temp, channel);
-                        alf_slice_param->is_ctb_alf_on = TRUE;
+                        cost = enc_alf->lambda[channel] * input_coef_bits;
+                        cost += xeve_alf_derive_ctb_enable_flags(enc_alf, cs, input_shape_idx, Y_C, num_classes, (input_shape_idx ? 13 : 7), &dist_unfilter, TRUE);
+                        cost += enc_alf->lambda[channel] * (alf->num_ctu_in_pic);
+
+                        if (cost < cost_min)
+                        {
+                            cost_min = cost;
+                            xeve_alf_copy_ctb_enable_flag(enc_alf, enc_alf->ctu_enable_flag_temp, alf->ctu_enable_flag, Y_C);
+                            xeve_alf_copy_slice_param(enc_alf, alf_slice_param, &enc_alf->alf_slice_param_temp, channel);
+                            alf_slice_param->is_ctb_alf_on = TRUE;
+                        }
                     }
                 }
                 else
                 {
+                    xeve_alf_set_enable_flag(&enc_alf->alf_slice_param_temp, Y_C, TRUE);
                     cost = xeve_alf_get_filter_coef_cost(enc_alf, cs, dist_unfilter, Y_C, TRUE, input_shape_idx, &input_coef_bits, &filter_conformance_flag);
+                    if (filter_conformance_flag)
+                    {
+                        xeve_alf_set_enable_flag(&enc_alf->alf_slice_param_temp, Y_C, FALSE);
+                    }
+                    else
+                    {
+                        xeve_alf_set_enable_flag(&enc_alf->alf_slice_param_temp, Y_C, TRUE);
+                    }
                 }
             }//for iter
-            if (filter_conformance_flag)
-            {
-                xeve_alf_set_enable_flag(alf_slice_param, Y_C, FALSE);
-            }
         }
     }//for shapeIdx
+
     if (is_luma)
     {
         enc_alf->cost_alf_encoder[channel] = cost_min;
@@ -2099,7 +2113,7 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                         int dst_pos = i * l_stride - l_zero_offset;
                         int src_pos_offset = x_pos + y_pos * rec_stride;
                         int stride = (width == ctx->max_cuwh ? l_stride : width + m + m);
-                        memcpy(tmp_buffer + dst_pos + m, rec_ext_buf + src_pos_offset + (i - m) * rec_stride, sizeof(pel) * (stride - 2 * m));
+                        xeve_mcpy(tmp_buffer + dst_pos + m, rec_ext_buf + src_pos_offset + (i - m) * rec_stride, sizeof(pel) * (stride - 2 * m));
                         for (int j = 0; j < m; j++)
                         {
                             if (avail_left)
@@ -2118,9 +2132,9 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                         int src_pos_offset = x_pos + y_pos * rec_stride;
                         int stride = (width == ctx->max_cuwh ? l_stride : width + m + m);
                         if (avail_top)
-                            memcpy(tmp_buffer + dst_pos, rec_ext_buf + src_pos_offset - (m - i) * rec_stride - m, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer + dst_pos, rec_ext_buf + src_pos_offset - (m - i) * rec_stride - m, sizeof(pel) * stride);
                         else
-                            memcpy(tmp_buffer + dst_pos, tmp_buffer + dst_pos + (2 * m - 2 * i) * l_stride, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer + dst_pos, tmp_buffer + dst_pos + (2 * m - 2 * i) * l_stride, sizeof(pel) * stride);
                     }
                     for (int i = height + m; i < height + m + m; i++)
                     {
@@ -2128,9 +2142,9 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                         int src_pos_offset = x_pos + y_pos * rec_stride;
                         int stride = (width == ctx->max_cuwh ? l_stride : width + m + m);
                         if (avail_bottom)
-                            memcpy(tmp_buffer + dst_pos, rec_ext_buf + src_pos_offset + (i - m) * rec_stride - m, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer + dst_pos, rec_ext_buf + src_pos_offset + (i - m) * rec_stride - m, sizeof(pel) * stride);
                         else
-                            memcpy(tmp_buffer + dst_pos, tmp_buffer + dst_pos - (2 * (i - height - m) + 2) * l_stride, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer + dst_pos, tmp_buffer + dst_pos - (2 * (i - height - m) + 2) * l_stride, sizeof(pel) * stride);
                     }
                 }
                 else if (comp_id == U_C && ctx->sps.chroma_format_idc)
@@ -2140,7 +2154,7 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                         int dst_pos = i * l_stride_chroma - l_zero_offset_chroma;
                         int src_pos_offset = (x_pos >> 1) + (y_pos >> 1) * rec_stride;
                         int stride = (width == ctx->max_cuwh ? l_stride_chroma : (width >> 1) + m + m);
-                        memcpy(tmp_buffer_cb + dst_pos + m, rec_ext_buf + src_pos_offset + (i - m) * rec_stride, sizeof(pel) * (stride - 2 * m));
+                        xeve_mcpy(tmp_buffer_cb + dst_pos + m, rec_ext_buf + src_pos_offset + (i - m) * rec_stride, sizeof(pel) * (stride - 2 * m));
                         for (int j = 0; j < m; j++)
                         {
                             if (avail_left)
@@ -2160,9 +2174,9 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                         int src_pos_offset = (x_pos >> 1) + (y_pos >> 1) * rec_stride;
                         int stride = (width == ctx->max_cuwh ? l_stride_chroma : (width >> 1) + m + m);
                         if (avail_top)
-                            memcpy(tmp_buffer_cb + dst_pos, rec_ext_buf + src_pos_offset - (m - i) * rec_stride - m, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer_cb + dst_pos, rec_ext_buf + src_pos_offset - (m - i) * rec_stride - m, sizeof(pel) * stride);
                         else
-                            memcpy(tmp_buffer_cb + dst_pos, tmp_buffer_cb + dst_pos + (2 * m - 2 * i) * l_stride_chroma, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer_cb + dst_pos, tmp_buffer_cb + dst_pos + (2 * m - 2 * i) * l_stride_chroma, sizeof(pel) * stride);
                     }
 
                     for (int i = ((height >> 1) + m); i < ((height >> 1) + m + m); i++)
@@ -2171,9 +2185,9 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                         int src_pos_offset = (x_pos >> 1) + (y_pos >> 1) * rec_stride;
                         int stride = (width == ctx->max_cuwh ? l_stride_chroma : (width >> 1) + m + m);
                         if (avail_bottom)
-                            memcpy(tmp_buffer_cb + dst_pos, rec_ext_buf + src_pos_offset + (i - m) * rec_stride - m, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer_cb + dst_pos, rec_ext_buf + src_pos_offset + (i - m) * rec_stride - m, sizeof(pel) * stride);
                         else
-                            memcpy(tmp_buffer_cb + dst_pos, tmp_buffer_cb + dst_pos - (2 * (i - (height >> 1) - m) + 2) * l_stride_chroma, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer_cb + dst_pos, tmp_buffer_cb + dst_pos - (2 * (i - (height >> 1) - m) + 2) * l_stride_chroma, sizeof(pel) * stride);
                     }
                 }
                 else if(ctx->sps.chroma_format_idc)
@@ -2183,7 +2197,7 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                         int dst_pos = i * l_stride_chroma - l_zero_offset_chroma;
                         int src_pos_offset = (x_pos >> 1) + (y_pos >> 1) * rec_stride;
                         int stride = (width == ctx->max_cuwh ? l_stride_chroma : (width >> 1) + m + m);
-                        memcpy(tmp_buffer_cr + dst_pos + m, rec_ext_buf + src_pos_offset + (i - m) * rec_stride, sizeof(pel) * (stride - 2 * m));
+                        xeve_mcpy(tmp_buffer_cr + dst_pos + m, rec_ext_buf + src_pos_offset + (i - m) * rec_stride, sizeof(pel) * (stride - 2 * m));
                         for (int j = 0; j < m; j++)
                         {
                             if (avail_left)
@@ -2203,9 +2217,9 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                         int src_pos_offset = (x_pos >> 1) + (y_pos >> 1) * rec_stride;
                         int stride = (width == ctx->max_cuwh ? l_stride_chroma : (width >> 1) + m + m);
                         if (avail_top)
-                            memcpy(tmp_buffer_cr + dst_pos, rec_ext_buf + src_pos_offset - (m - i) * rec_stride - m, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer_cr + dst_pos, rec_ext_buf + src_pos_offset - (m - i) * rec_stride - m, sizeof(pel) * stride);
                         else
-                            memcpy(tmp_buffer_cr + dst_pos, tmp_buffer_cr + dst_pos + (2 * m - 2 * i) * l_stride_chroma, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer_cr + dst_pos, tmp_buffer_cr + dst_pos + (2 * m - 2 * i) * l_stride_chroma, sizeof(pel) * stride);
                     }
 
                     for (int i = ((height >> 1) + m); i < ((height >> 1) + m + m); i++)
@@ -2214,9 +2228,9 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
                         int src_pos_offset = (x_pos >> 1) + (y_pos >> 1) * rec_stride;
                         int stride = (width == ctx->max_cuwh ? l_stride_chroma : (width >> 1) + m + m);
                         if (avail_bottom)
-                            memcpy(tmp_buffer_cr + dst_pos, rec_ext_buf + src_pos_offset + (i - m) * rec_stride - m, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer_cr + dst_pos, rec_ext_buf + src_pos_offset + (i - m) * rec_stride - m, sizeof(pel) * stride);
                         else
-                            memcpy(tmp_buffer_cr + dst_pos, tmp_buffer_cr + dst_pos - (2 * (i - (height >> 1) - m) + 2) * l_stride_chroma, sizeof(pel) * stride);
+                            xeve_mcpy(tmp_buffer_cr + dst_pos, tmp_buffer_cr + dst_pos - (2 * (i - (height >> 1) - m) + 2) * l_stride_chroma, sizeof(pel) * stride);
                     }
                 }
                 AREA blk = { 0, 0, width >> chroma_scale_x, height >> chroma_scale_y };
@@ -2569,16 +2583,16 @@ void xeve_alf_copy_slice_param(XEVE_ALF * enc_alf, ALF_SLICE_PARAM* alf_slice_pa
     if (channel == LUMA_CH)
     {
         u8* temp = alf_slice_param_dst->alf_ctb_flag;
-        memcpy(alf_slice_param_dst, alf_slice_param_src, sizeof(ALF_SLICE_PARAM));
+        xeve_mcpy(alf_slice_param_dst, alf_slice_param_src, sizeof(ALF_SLICE_PARAM));
         alf_slice_param_dst->alf_ctb_flag = temp;
-        memcpy(alf_slice_param_dst->alf_ctb_flag, alf_slice_param_src->alf_ctb_flag, alf->num_ctu_in_pic * sizeof(u8));
+        xeve_mcpy(alf_slice_param_dst->alf_ctb_flag, alf_slice_param_src->alf_ctb_flag, alf->num_ctu_in_pic * sizeof(u8));
     }
     else
     {
         alf_slice_param_dst->enable_flag[U_C] = alf_slice_param_src->enable_flag[U_C];
         alf_slice_param_dst->enable_flag[V_C] = alf_slice_param_src->enable_flag[V_C];
         alf_slice_param_dst->chroma_ctb_present_flag = alf_slice_param_src->chroma_ctb_present_flag;
-        memcpy(alf_slice_param_dst->chroma_coef, alf_slice_param_src->chroma_coef, sizeof(short)*MAX_NUM_ALF_CHROMA_COEFF);
+        xeve_mcpy(alf_slice_param_dst->chroma_coef, alf_slice_param_src->chroma_coef, sizeof(short)*MAX_NUM_ALF_CHROMA_COEFF);
     }
 }
 
@@ -2610,7 +2624,7 @@ double xeve_alf_get_filter_coef_cost(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, 
         dist += enc_alf->alf_cov_frame[comp_id][input_shape_idx][0].pix_acc +
                 xeve_alf_derive_coef_quant(enc_alf->filter_coef_quant, enc_alf->alf_cov_frame[comp_id][input_shape_idx][0].E
                               , enc_alf->alf_cov_frame[comp_id][input_shape_idx][0].y, alf_filter_shape.num_coef, alf_filter_shape.weights, NUM_BITS, TRUE);
-        memcpy(enc_alf->filter_coef_set[0], enc_alf->filter_coef_quant, sizeof(*enc_alf->filter_coef_quant) * alf_filter_shape.num_coef);
+        xeve_mcpy(enc_alf->filter_coef_set[0], enc_alf->filter_coef_quant, sizeof(*enc_alf->filter_coef_quant) * alf_filter_shape.num_coef);
         const int alf_chroma_idc = enc_alf->alf_slice_param_temp.enable_flag[U_C] * 2 + enc_alf->alf_slice_param_temp.enable_flag[V_C];
         for (int i = 0; i < MAX_NUM_ALF_CHROMA_COEFF; i++)
         {
@@ -2662,7 +2676,7 @@ void xeve_alf_get_filter_coef_cost_ch(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs,
     dist += enc_alf->alf_cov_frame[N_C][input_shape_idx][0].pix_acc +
             xeve_alf_derive_coef_quant(enc_alf->filter_coef_quant, enc_alf->alf_cov_frame[N_C][0][0].E
                            , enc_alf->alf_cov_frame[N_C][0][0].y, alf_filter_shape.num_coef, alf_filter_shape.weights, NUM_BITS, TRUE);
-    memcpy(enc_alf->filter_coef_set[0], enc_alf->filter_coef_quant, sizeof(*enc_alf->filter_coef_quant) * alf_filter_shape.num_coef);
+    xeve_mcpy(enc_alf->filter_coef_set[0], enc_alf->filter_coef_quant, sizeof(*enc_alf->filter_coef_quant) * alf_filter_shape.num_coef);
     u8 filter_conformance_flag = 0;
     int sum = 0;
     int factor = (1 << (NUM_BITS - 1));
@@ -2720,7 +2734,7 @@ int xeve_alf_get_coef_rate(XEVE_ALF * enc_alf, ALF_SLICE_PARAM* alf_slice_param,
         }
     }
 
-    memset(enc_alf->bits_coef_scan, 0, sizeof(enc_alf->bits_coef_scan));
+    xeve_mset(enc_alf->bits_coef_scan, 0, sizeof(enc_alf->bits_coef_scan));
     ALF_FILTER_SHAPE alf_shape;
     alf_init_filter_shape(&alf_shape, is_chroma ? 5 : (alf_slice_param->luma_filter_type == ALF_FILTER_5 ? 5 : 7));
     const int max_golomb_idx = alf_get_max_golomb_idx((ALF_FILTER_TYPE)alf_shape.filter_type);
@@ -2974,7 +2988,7 @@ double xeve_alf_merge_filters_cost(XEVE_ALF * enc_alf, ALF_SLICE_PARAM* alf_slic
         {
             if (coded_var_bins[varInd] == 0)
             {
-                memset(enc_alf->filter_coef_set[varInd], 0, sizeof(int)*MAX_NUM_ALF_LUMA_COEFF);
+                xeve_mset(enc_alf->filter_coef_set[varInd], 0, sizeof(int)*MAX_NUM_ALF_LUMA_COEFF);
             }
         }
     }
@@ -2993,7 +3007,7 @@ double xeve_alf_merge_filters_cost(XEVE_ALF * enc_alf, ALF_SLICE_PARAM* alf_slic
         }
     }
 
-    memcpy(alf_slice_param->filter_coef_delta_idx, enc_alf->filter_indices[num_filter_best - 1], sizeof(short) * MAX_NUM_ALF_CLASSES);
+    xeve_mcpy(alf_slice_param->filter_coef_delta_idx, enc_alf->filter_indices[num_filter_best - 1], sizeof(short) * MAX_NUM_ALF_CLASSES);
     const int num_fixed_filter_per_class = ALF_FIXED_FILTER_NUM;
     if (num_fixed_filter_per_class > 0)
     {
@@ -3087,7 +3101,7 @@ int xeve_alf_lenth_truncated_unary(int symbol, int max_symbol)
 int xeve_alf_get_cost_filter_coef_force0(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* alf_shape, int **diff_q_filter_coef, const int num_filters, BOOL* coded_var_bins)
 {
     const int max_golomb_idx = alf_get_max_golomb_idx((ALF_FILTER_TYPE)alf_shape->filter_type);
-    memset(enc_alf->bits_coef_scan, 0, sizeof(enc_alf->bits_coef_scan));
+    xeve_mset(enc_alf->bits_coef_scan, 0, sizeof(enc_alf->bits_coef_scan));
 
     for (int ind = 0; ind < num_filters; ++ind)
     {
@@ -3134,7 +3148,7 @@ int xeve_alf_derive_filter_coef_pred_mode(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* 
     {
         if (ind == 0)
         {
-            memcpy(filterCoeffDiff[ind], filter_set[ind], sizeof(int) * alf_shape->num_coef);
+            xeve_mcpy(filterCoeffDiff[ind], filter_set[ind], sizeof(int) * alf_shape->num_coef);
         }
         else
         {
@@ -3157,7 +3171,7 @@ int xeve_alf_get_cost_filter_coef(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* alf_shap
 {
     const int max_golomb_idx = alf_get_max_golomb_idx((ALF_FILTER_TYPE)alf_shape->filter_type);
 
-    memset(enc_alf->bits_coef_scan, 0, sizeof(enc_alf->bits_coef_scan));
+    xeve_mset(enc_alf->bits_coef_scan, 0, sizeof(enc_alf->bits_coef_scan));
 
     for (int ind = 0; ind < num_filters; ++ind)
     {
@@ -3199,7 +3213,7 @@ double xeve_alf_get_dist_force0(XEVE_ALF * enc_alf, ALF_FILTER_SHAPE* alf_shape,
 {
     static int bits_var_bin[MAX_NUM_ALF_CLASSES];
 
-    memset(enc_alf->bits_coef_scan, 0, sizeof(enc_alf->bits_coef_scan));
+    xeve_mset(enc_alf->bits_coef_scan, 0, sizeof(enc_alf->bits_coef_scan));
     for (int ind = 0; ind < num_filters; ++ind)
     {
         for (int i = 0; i < alf_shape->num_coef - 1; i++)
@@ -3281,7 +3295,7 @@ int xeve_alf_get_golomb_k_min(ALF_FILTER_SHAPE* alf_shape, const int num_filters
 double xeve_alf_get_dist_coef_force0(XEVE_ALF * enc_alf, BOOL* coded_var_bins, double err_force0_coef_tab[MAX_NUM_ALF_CLASSES][2], int* bits_var_bin, const int num_filters)
 {
     double dist_force0 = 0;
-    memset(coded_var_bins, 0, sizeof(*coded_var_bins) * MAX_NUM_ALF_CLASSES);
+    xeve_mset(coded_var_bins, 0, sizeof(*coded_var_bins) * MAX_NUM_ALF_CLASSES);
 
     for (int filt_idx = 0; filt_idx < num_filters; filt_idx++)
     {
@@ -3346,7 +3360,7 @@ double xeve_alf_derive_filter_coef(XEVE_ALF * enc_alf, ALF_COVARIANCE* cov, ALF_
         error += err_tab_force0_coef[filt_idx][1];
 
         // store coeff
-        memcpy(enc_alf->filter_coef_set[filt_idx], enc_alf->filter_coef_quant, sizeof(int)*alf_shape->num_coef);
+        xeve_mcpy(enc_alf->filter_coef_set[filt_idx], enc_alf->filter_coef_quant, sizeof(int)*alf_shape->num_coef);
     }
     return error;
 }
@@ -3379,7 +3393,7 @@ double xeve_alf_derive_coef_quant(int *filter_coef_quant, double **E, double *y,
         {
             if (weights[k] <= diff)
             {
-                memcpy(filter_coef_quant_mod, filter_coef_quant, sizeof(int) * num_coef);
+                xeve_mcpy(filter_coef_quant_mod, filter_coef_quant, sizeof(int) * num_coef);
 
                 filter_coef_quant_mod[k] -= sign;
                 double error = xeve_alf_calc_err_coef(E, y, filter_coef_quant_mod, num_coef, bit_depth);
@@ -3406,7 +3420,7 @@ double xeve_alf_derive_coef_quant(int *filter_coef_quant, double **E, double *y,
     }
     if (count == 10)
     {
-        memset(filter_coef_quant, 0, sizeof(int) * num_coef);
+        xeve_mset(filter_coef_quant, 0, sizeof(int) * num_coef);
     }
 
     int max_value = 512 + 64 + 32 + 4 + 2;
@@ -3506,7 +3520,7 @@ void xeve_alf_merge_classes(ALF_COVARIANCE* cov, ALF_COVARIANCE* cov_merged, con
     static u8 index_list_temp[MAX_NUM_ALF_CLASSES];
     int num_remaining = num_classes;
 
-    memset(filter_indices, 0, sizeof(short) * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_CLASSES);
+    xeve_mset(filter_indices, 0, sizeof(short) * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_CLASSES);
 
     for (int i = 0; i < num_classes; i++)
     {
@@ -3565,7 +3579,7 @@ void xeve_alf_merge_classes(ALF_COVARIANCE* cov, ALF_COVARIANCE* cov_merged, con
         num_remaining--;
         if (num_remaining <= num_classes)
         {
-            memcpy(index_list_temp, index_list, sizeof(u8) * num_classes);
+            xeve_mcpy(index_list_temp, index_list, sizeof(u8) * num_classes);
 
             BOOL exist = FALSE;
             int ind = 0;
@@ -3741,7 +3755,7 @@ void xeve_alf_get_blk_stats(int ch, ALF_COVARIANCE* alf_cov, const ALF_FILTER_SH
     {
         for (int j = 0; j < width; j++)
         {
-            memset(E_local, 0, shape->num_coef * sizeof(int));
+            xeve_mset(E_local, 0, shape->num_coef * sizeof(int));
             if (classifier )
             {
                 int x2 = ch ? (x << 1) : x;
@@ -3985,7 +3999,7 @@ int xeve_alf_gns_solve_chol(double **LHS, double *rhs, double *x, int num_eq)
 
         if (!res)
         {
-            memset(x, 0, sizeof(double)*num_eq);
+            xeve_mset(x, 0, sizeof(double)*num_eq);
             return 0;
         }
 
@@ -4033,15 +4047,15 @@ void xeve_alf_copy_ctb_enable_flag(XEVE_ALF * enc_alf, u8** ctu_flags_dst, u8** 
     ADAPTIVE_LOOP_FILTER * alf = &enc_alf->alf;
     if (comp_id == Y_C)
     {
-        memcpy(ctu_flags_dst[Y_C], ctu_flags_src[Y_C], sizeof(u8) * alf->num_ctu_in_pic);
+        xeve_mcpy(ctu_flags_dst[Y_C], ctu_flags_src[Y_C], sizeof(u8) * alf->num_ctu_in_pic);
     }
     else if (comp_id == U_C)
     {
-        memcpy(ctu_flags_dst[U_C], ctu_flags_src[U_C], sizeof(u8) * alf->num_ctu_in_pic);
+        xeve_mcpy(ctu_flags_dst[U_C], ctu_flags_src[U_C], sizeof(u8) * alf->num_ctu_in_pic);
     }
     else if (comp_id == V_C)
     {
-        memcpy(ctu_flags_dst[V_C], ctu_flags_src[V_C], sizeof(u8) * alf->num_ctu_in_pic);
+        xeve_mcpy(ctu_flags_dst[V_C], ctu_flags_src[V_C], sizeof(u8) * alf->num_ctu_in_pic);
     }
 }
 
@@ -4050,14 +4064,57 @@ void xeve_alf_set_ctb_enable_flag(XEVE_ALF * enc_alf, u8** ctu_flags, u8 comp_id
     ADAPTIVE_LOOP_FILTER * alf = &enc_alf->alf;
     if (comp_id == Y_C)
     {
-        memset(ctu_flags[Y_C], val, sizeof(u8) * alf->num_ctu_in_pic);
+        xeve_mset(ctu_flags[Y_C], val, sizeof(u8) * alf->num_ctu_in_pic);
     }
     else if (comp_id == U_C)
     {
-        memset(ctu_flags[U_C], val, sizeof(u8) * alf->num_ctu_in_pic);
+        xeve_mset(ctu_flags[U_C], val, sizeof(u8) * alf->num_ctu_in_pic);
     }
     else if (comp_id == V_C)
     {
-        memset(ctu_flags[V_C], val, sizeof(u8) * alf->num_ctu_in_pic);
+        xeve_mset(ctu_flags[V_C], val, sizeof(u8) * alf->num_ctu_in_pic);
     }
+}
+
+int xevem_alf_aps(XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_SH* sh, XEVE_APS* aps)
+{
+    XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
+    XEVE_ALF  * enc_anf = (XEVE_ALF *)(mctx->enc_alf);
+
+    double lambdas[3];
+    for (int i = 0; i < 3; i++)
+        lambdas[i] = (ctx->lambda[i]) * ALF_LAMBDA_SCALE; //this is for appr match of different lambda sets
+
+
+    xeve_alf_set_reset_alf_buf_flag(enc_anf, sh->slice_type == SLICE_I ? 1 : 0);
+    xeve_alf_aps_enc_opt_process(enc_anf, lambdas, ctx, pic, &(sh->alf_sh_param));
+
+    aps->alf_aps_param = sh->alf_sh_param;
+    if (sh->alf_sh_param.reset_alf_buf_flag) // reset aps index counter (buffer) if ALF flag reset is present
+    {
+        ctx->aps_counter = -1;
+    }
+    sh->alf_on = sh->alf_sh_param.enable_flag[0];
+    if (sh->alf_on == 0)
+    {
+        sh->alf_sh_param.is_ctb_alf_on = 0;
+    }
+    if (sh->alf_on)
+    {
+        if (aps->alf_aps_param.temporal_alf_flag)
+        {
+            aps->aps_id = sh->alf_sh_param.prev_idx;
+            sh->aps_id_y = sh->alf_sh_param.prev_idx_comp[0];
+            sh->aps_id_ch = sh->alf_sh_param.prev_idx_comp[1];
+            sh->aps_signaled = aps->aps_id;
+        }
+        else
+        {
+            aps->aps_id = xeve_alf_aps_get_current_alf_idx(enc_anf);
+            sh->aps_id_y = aps->aps_id;
+            sh->aps_id_ch = aps->aps_id;
+            sh->aps_signaled = aps->aps_id;
+        }
+    }
+    return XEVE_OK;
 }

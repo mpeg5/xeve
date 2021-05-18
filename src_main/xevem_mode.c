@@ -97,7 +97,7 @@ void xeve_rdo_bit_cnt_cu_intra_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
     }
 }
 
-void xeve_rdo_bit_cnt_intra_ext_c(XEVE_CTX * ctx, XEVE_CORE * core)
+void xevem_rdo_bit_cnt_intra_ext_c(XEVE_CTX * ctx, XEVE_CORE * core)
 {
     if (ctx->sps.tool_eipd)
     {
@@ -105,7 +105,7 @@ void xeve_rdo_bit_cnt_intra_ext_c(XEVE_CTX * ctx, XEVE_CORE * core)
     }
 }
 
-void xeve_rdo_bit_cnt_intra_ext(XEVE_CTX * ctx, XEVE_CORE * core)
+void xevem_rdo_bit_cnt_intra_ext(XEVE_CTX * ctx, XEVE_CORE * core)
 {
     if (((ctx->slice_type == SLICE_I) || xeve_check_only_intra(core->tree_cons))
         && xeve_check_luma(core->tree_cons)
@@ -934,10 +934,10 @@ static int init_history_buffer(XEVE_HISTORY_BUFFER *history_buffer)
 
 static int copy_history_buffer(XEVE_HISTORY_BUFFER *dst, XEVE_HISTORY_BUFFER *src)
 {
-    memcpy(dst->history_mv_table,   src->history_mv_table,   sizeof(s16)* ALLOWED_CHECKED_NUM * REFP_NUM * MV_D);
-    memcpy(dst->history_refi_table, src->history_refi_table, sizeof(s8)* ALLOWED_CHECKED_NUM * REFP_NUM);
+    xeve_mcpy(dst->history_mv_table,   src->history_mv_table,   sizeof(s16)* ALLOWED_CHECKED_NUM * REFP_NUM * MV_D);
+    xeve_mcpy(dst->history_refi_table, src->history_refi_table, sizeof(s8)* ALLOWED_CHECKED_NUM * REFP_NUM);
 #if TRACE_ENC_CU_DATA
-    memcpy(dst->history_cu_table, src->history_cu_table, sizeof(src->history_cu_table[0])* ALLOWED_CHECKED_NUM);
+    xeve_mcpy(dst->history_cu_table, src->history_cu_table, sizeof(src->history_cu_table[0])* ALLOWED_CHECKED_NUM);
 #endif
 
     dst->currCnt = src->currCnt;
@@ -1502,7 +1502,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
         xeve_check_split_mode(split_allow, log2_cuw, log2_cuh, boundary, boundary_r, ctx->log2_max_cuwh
                             , x0, y0, ctx->w, ctx->h, ctx->sps.sps_btt_flag, core->tree_cons.mode_cons);
         //save normatively allowed split modes, as it will be used in in child nodes for entropy coding of split mode
-        memcpy(curr_split_allow, split_allow, sizeof(int)*MAX_SPLIT_NUM);
+        xeve_mcpy(curr_split_allow, split_allow, sizeof(int)*MAX_SPLIT_NUM);
         for (int i = 1; i < MAX_SPLIT_NUM; i++)
         {
             num_split_to_try += split_allow[i];
@@ -1561,7 +1561,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
             {
                 core->qp = GET_QP((s8)qp, dqp - (s8)qp);
 
-                if (ctx->param.qpa)
+                if (ctx->param.aq_mode != 0 || ctx->param.cutree)
                 {
                     set_lambda(ctx, core, &ctx->sh, core->qp);
                 }
@@ -1801,7 +1801,8 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
 
                             cost_temp = 0.0;
 
-                            if (x0 + cuw <= ctx->w && y0 + cuh <= ctx->h)
+                            /* When BTT is disabled, split_cu_flag should always be considered although CU is on the picture boundary */
+                            if ((ctx->sps.sps_btt_flag == 0) || (x0 + cuw <= ctx->w && y0 + cuh <= ctx->h))
                             {
                                 /* consider CU split flag */
                                 SBAC_LOAD(core->s_temp_run, core->s_curr_before_split[log2_cuw - 2][log2_cuh - 2]);
@@ -1839,7 +1840,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                                 int dqp = min_qp + dqp_loop;
                                 core->qp = GET_QP((s8)qp, dqp - (s8)qp);
 
-                                if (ctx->param.qpa)
+                                if (ctx->param.aq_mode != 0 || ctx->param.cutree != 0)
                                 {
                                     set_lambda(ctx, core, &ctx->sh, core->qp);
                                 }
@@ -2016,7 +2017,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
 
 #if ET_BY_RDC_CHILD_SPLIT
                 split_cost[split_mode] = cost_temp;
-                memcpy(split_mode_child_rdo[split_mode], split_mode_child, sizeof(int) * 4);
+                xeve_mcpy(split_mode_child_rdo[split_mode], split_mode_child, sizeof(int) * 4);
 #endif
                 if(!mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit)
                 {
@@ -2132,12 +2133,12 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
     return (cost_best > MAX_COST) ? MAX_COST : cost_best;
 }
 
-static int mode_init_tile_main(XEVE_CTX *ctx, int tile_idx)
+static int xevem_mode_init_mt(XEVE_CTX *ctx, int thread_idx)
 {
     XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
     int ret;
 
-    ret = mode_init_tile(ctx, tile_idx);
+    ret = xeve_mode_init_mt(ctx, thread_idx);
     xeve_assert_rv(ret == XEVE_OK, ret);
 
     if (ctx->param.use_ibc_flag)
@@ -2145,7 +2146,7 @@ static int mode_init_tile_main(XEVE_CTX *ctx, int tile_idx)
         /* initialize pibc */
         if (mctx->fn_pibc_init_tile)
         {
-            ret = mctx->fn_pibc_init_tile(ctx, tile_idx);
+            ret = mctx->fn_pibc_init_tile(ctx, thread_idx);
             xeve_assert_rv(ret == XEVE_OK, ret);
         }
         if (ctx->param.ibc_hash_search_flag)
@@ -2508,57 +2509,57 @@ void xeve_split_tbl_init(XEVE_CTX *ctx)
 {
     if (ctx->cdsc.ext->framework_cb_max)
     {
-        xeve_tbl_split[BLOCK_11][IDX_MAX] = ctx->cdsc.ext->framework_cb_max;
+        xevem_tbl_split[BLOCK_11][IDX_MAX] = ctx->cdsc.ext->framework_cb_max;
     }
     else
     {
-        xeve_tbl_split[BLOCK_11][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cb_max;
+        xevem_tbl_split[BLOCK_11][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cb_max;
 
     }
     if (ctx->cdsc.ext->framework_cb_min)
     {
-        xeve_tbl_split[BLOCK_11][IDX_MIN] = ctx->cdsc.ext->framework_cb_min;
+        xevem_tbl_split[BLOCK_11][IDX_MIN] = ctx->cdsc.ext->framework_cb_min;
     }
     else
     {
-        xeve_tbl_split[BLOCK_11][IDX_MIN] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cb_min;
+        xevem_tbl_split[BLOCK_11][IDX_MIN] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cb_min;
     }
     
-    xeve_tbl_split[BLOCK_12][IDX_MAX] = xeve_tbl_split[BLOCK_11][IDX_MAX];
-    xeve_tbl_split[BLOCK_12][IDX_MIN] = xeve_tbl_split[BLOCK_11][IDX_MIN] + 1;
+    xevem_tbl_split[BLOCK_12][IDX_MAX] = xevem_tbl_split[BLOCK_11][IDX_MAX];
+    xevem_tbl_split[BLOCK_12][IDX_MIN] = xevem_tbl_split[BLOCK_11][IDX_MIN] + 1;
     if (ctx->cdsc.ext->framework_cu14_max)
     {
-        xeve_tbl_split[BLOCK_14][IDX_MAX] = ctx->cdsc.ext->framework_cu14_max;
+        xevem_tbl_split[BLOCK_14][IDX_MAX] = ctx->cdsc.ext->framework_cu14_max;
     }
     else
     {
-        xeve_tbl_split[BLOCK_14][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cu14_max;
+        xevem_tbl_split[BLOCK_14][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cu14_max;
     }
-    xeve_tbl_split[BLOCK_14][IDX_MIN] = xeve_tbl_split[BLOCK_12][IDX_MIN] + 1;
+    xevem_tbl_split[BLOCK_14][IDX_MIN] = xevem_tbl_split[BLOCK_12][IDX_MIN] + 1;
 
     if (ctx->cdsc.ext->framework_tris_max)
     {
-        xeve_tbl_split[BLOCK_TT][IDX_MAX] = ctx->cdsc.ext->framework_tris_max;
+        xevem_tbl_split[BLOCK_TT][IDX_MAX] = ctx->cdsc.ext->framework_tris_max;
     }
     else
     {
-        xeve_tbl_split[BLOCK_TT][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_tris_max;
+        xevem_tbl_split[BLOCK_TT][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_tris_max;
     }
 
     if (ctx->cdsc.ext->framework_tris_max)
     {
-        xeve_tbl_split[BLOCK_TT][IDX_MIN] = ctx->cdsc.ext->framework_tris_min;
+        xevem_tbl_split[BLOCK_TT][IDX_MIN] = ctx->cdsc.ext->framework_tris_min;
     }
     else
     {
-        xeve_tbl_split[BLOCK_TT][IDX_MIN] = ((XEVEM_PRESET*)ctx->param.preset)->btt_tris_min;
+        xevem_tbl_split[BLOCK_TT][IDX_MIN] = ((XEVEM_PRESET*)ctx->param.preset)->btt_tris_min;
     }
 }
 
 void xeve_mode_create_main(XEVE_CTX *ctx)
 {
     /* set function addresses */
-    ctx->fn_mode_init_tile = mode_init_tile_main;
+    ctx->fn_mode_init_mt = xevem_mode_init_mt;
     ctx->fn_mode_init_lcu = mode_init_lcu_main;
     ctx->fn_mode_copy_to_cu_data = copy_to_cu_data_main;
     ctx->fn_mode_reset_intra = mode_reset_intra_main;
