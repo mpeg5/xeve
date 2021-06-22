@@ -38,12 +38,11 @@
 
 #include "xeve_def.h"
 
-extern const u8   xevem_tbl_split_flag_ctx[6][6];
-extern const int  xevem_tbl_dq_scale[6];
-extern const int  xevem_tbl_ipred_adi[32][4];
-extern const int  xevem_tbl_ipred_dxdy[IPD_CNT][2];
-extern u16        xevem_tbl_split[SPLIT_CHECK_NUM][2];
-extern int        xevem_tbl_qp_chroma_ajudst[MAX_QP_TABLE_SIZE];
+extern const u8  xevem_tbl_split_flag_ctx[6][6];
+extern const int xevem_tbl_dq_scale[6];
+extern const int xevem_tbl_ipred_adi[32][4];
+extern const int xevem_tbl_ipred_dxdy[IPD_CNT][2];
+extern const int xevem_tbl_qp_chroma_ajudst[MAX_QP_TABLE_SIZE];
 
 extern const s16 xevem_init_cbf_luma[2][NUM_CTX_CBF_LUMA];
 extern const s16 xevem_init_cbf_cb[2][NUM_CTX_CBF_CR];
@@ -97,31 +96,17 @@ extern const s16 xevem_init_ats_cu_inter_quad_flag[2][NUM_CTX_ATS_INTER_QUAD_FLA
 extern const s16 xevem_init_ats_cu_inter_hor_flag[2][NUM_CTX_ATS_INTER_HOR_FLAG];
 extern const s16 xevem_init_ats_cu_inter_pos_flag[2][NUM_CTX_ATS_INTER_POS_FLAG];
 
-extern s16 xevem_tbl_tr2[NUM_TRANS_TYPE][2][2];
-extern s16 xevem_tbl_tr4[NUM_TRANS_TYPE][4][4];
-extern s16 xevem_tbl_tr8[NUM_TRANS_TYPE][8][8];
-extern s16 xevem_tbl_tr16[NUM_TRANS_TYPE][16][16];
-extern s16 xevem_tbl_tr32[NUM_TRANS_TYPE][32][32];
-extern s16 xevem_tbl_tr64[NUM_TRANS_TYPE][64][64];
-extern s16 xevem_tbl_tr128[NUM_TRANS_TYPE][128][128];
-extern int xevem_tbl_tr_subset_intra[4];
-extern s16 xevem_tbl_inv_tr2[NUM_TRANS_TYPE][2][2];
-extern s16 xevem_tbl_inv_tr4[NUM_TRANS_TYPE][4][4];
-extern s16 xevem_tbl_inv_tr8[NUM_TRANS_TYPE][8][8];
-extern s16 xevem_tbl_inv_tr16[NUM_TRANS_TYPE][16][16];
-extern s16 xevem_tbl_inv_tr32[NUM_TRANS_TYPE][32][32];
-extern s16 xevem_tbl_inv_tr64[NUM_TRANS_TYPE][64][64];
-extern s16 xevem_tbl_inv_tr128[NUM_TRANS_TYPE][128][128];
+extern const int xevem_tbl_tr_subset_intra[4];
+
+/* Range of intra ATS is 4 to 32 */
+extern const s8 xevem_tbl_tr[NUM_TRANS_TYPE][4][1024];
+extern const s8 xevem_tbl_inv_tr[NUM_TRANS_TYPE][4][1024];
 
 extern const u8 xevem_addb_alpha_tbl[52];
 extern const u8 xevem_addb_beta_tbl[52];
 extern const u8 xevem_addb_clip_tbl[52][5];
 
 /* HDR */
-extern int    xevem_luma_inv_scale_lut[DRA_LUT_MAXSIZE];               // LUT for luma and correspionding QP offset
-extern double xevem_chroma_inv_scale_lut[2][DRA_LUT_MAXSIZE];          // LUT for chroma scales 
-extern int    xevem_int_chroma_inv_scale_lut[2][DRA_LUT_MAXSIZE];      // LUT for chroma scales 
-
 extern const int xevem_dra_chroma_qp_offset_tbl[NUM_CHROMA_QP_OFFSET_LOG];
 extern const int xevem_dra_exp_nom_v2[NUM_CHROMA_QP_SCALE_EXP];
 

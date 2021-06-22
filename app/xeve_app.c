@@ -1,4 +1,3 @@
-
 /* Copyright (c) 2020, Samsung Electronics Co., Ltd.
    All Rights Reserved. */
 /*
@@ -100,7 +99,7 @@ static int get_conf(XEVE_CDSC * cdsc, Y4M_PARAMS * y4m, int is_y4m)
 {
     int result = 0;
     int color_format = 0;
-    
+
     if (!is_y4m)
     {
         cdsc->w = op_w;
@@ -122,7 +121,7 @@ static int get_conf(XEVE_CDSC * cdsc, Y4M_PARAMS * y4m, int is_y4m)
         cdsc->cs = y4m->cs;
         op_inp_bit_depth = y4m->bit_depth;
     }
-    
+
     cdsc->qp = op_qp;
     cdsc->qp_cb_offset = op_qp_cb_offset;
     cdsc->qp_cr_offset = op_qp_cr_offset;
@@ -164,7 +163,7 @@ static int get_conf(XEVE_CDSC * cdsc, Y4M_PARAMS * y4m, int is_y4m)
         cdsc->closed_gop = 1;
     }
 
-    cdsc->parallel_task_cnt = (op_parallel_task > XEVE_MAX_TASK_CNT) ? XEVE_MAX_TASK_CNT : op_parallel_task;
+    cdsc->threads = (op_threads > XEVE_MAX_TASK_CNT) ? XEVE_MAX_TASK_CNT : op_threads;
     cdsc->rdo_dbk_switch = op_rdo_dbk_switch;
     cdsc->inter_slice_type = op_inter_slice_type == 0 ? 0/*SLICE_B*/ : 1/*SLICE_P*/;
     cdsc->add_qp_frame = op_add_qp_frames;
@@ -173,12 +172,12 @@ static int get_conf(XEVE_CDSC * cdsc, Y4M_PARAMS * y4m, int is_y4m)
     if (strchr(op_bps, 'K') || strchr(op_bps, 'k'))
     {
         char *tmp = strtok(op_bps, "Kk ");
-        cdsc->bps = atof(tmp) * 1000;
+        cdsc->bps = (int)(atof(tmp) * 1000);
     }
     else if (strchr(op_bps, 'M') || strchr(op_bps, 'm'))
     {
         char *tmp = strtok(op_bps, "Mm ");
-        cdsc->bps = atof(tmp) * 1000000;
+        cdsc->bps = (int)(atof(tmp) * 1000000);
     }
     else
     {
@@ -189,12 +188,12 @@ static int get_conf(XEVE_CDSC * cdsc, Y4M_PARAMS * y4m, int is_y4m)
     if (strchr(op_vbv_buf_size, 'K') || strchr(op_vbv_buf_size, 'k'))
     {
         char *tmp = strtok(op_vbv_buf_size, "Kk ");
-        cdsc->vbv_buf_size = atof(tmp) * 1000;
+        cdsc->vbv_buf_size = (int)(atof(tmp) * 1000);
     }
     else if (strchr(op_vbv_buf_size, 'M') || strchr(op_vbv_buf_size, 'm'))
     {
         char *tmp = strtok(op_vbv_buf_size, "Mm ");
-        cdsc->vbv_buf_size = atof(tmp) * 1000000;
+        cdsc->vbv_buf_size = (int)(atof(tmp) * 1000000);
     }
     else
     {
@@ -255,6 +254,11 @@ static int get_conf(XEVE_CDSC * cdsc, Y4M_PARAMS * y4m, int is_y4m)
     }
 
     XEVE_CDSC_EXT * cdsc_ext = (XEVE_CDSC_EXT*)malloc(sizeof(XEVE_CDSC_EXT));
+    if(cdsc_ext == NULL)
+    {
+        logerr("cannot allocate cdsc_ext, size=%lu", sizeof(XEVE_CDSC_EXT));
+        return -1;
+    }
     memset(cdsc_ext, 0, sizeof(XEVE_CDSC_EXT));
     cdsc->ext = cdsc_ext;
 
@@ -464,7 +468,7 @@ static int get_conf(XEVE_CDSC * cdsc, Y4M_PARAMS * y4m, int is_y4m)
 
             for (int i = 0; i < MAX_NUM_RPLS && op_rpl1[i][0] != 0; ++i)
             {
-                cdsc_ext->rpls_l0[i].pic_type = get_pic_type(strtok(op_rpl1[i], " "));
+                cdsc_ext->rpls_l1[i].pic_type = get_pic_type(strtok(op_rpl1[i], " "));
                 cdsc_ext->rpls_l1[i].poc = atoi(strtok(NULL, " "));
                 cdsc_ext->rpls_l1[i].tid = atoi(strtok(NULL, " "));
                 cdsc_ext->rpls_l1[i].ref_pic_active_num = atoi(strtok(NULL, " "));
@@ -789,14 +793,14 @@ static int y4m_test(FILE * ip_y4m)
 {
 
     char buffer[9] = { 0 };
-         
+
     /*Peek to check if y4m header is present*/
     if (!fread(buffer, 1, 8, ip_y4m)) return -1;
     fseek( ip_y4m, 0, SEEK_SET );
     buffer[8] = '\0';
-    if (memcmp(buffer, "YUV4MPEG", 8)) 
+    if (memcmp(buffer, "YUV4MPEG", 8))
     {
-        
+
         return 0;
     }
     return 1;
@@ -805,12 +809,12 @@ static int y4m_test(FILE * ip_y4m)
 }
 
 
-static int y4m_parse_tags(Y4M_PARAMS * y4m, char *_tags) 
+static int y4m_parse_tags(Y4M_PARAMS * y4m, char *_tags)
 {
-      
+
     char *p;
     char *q;
-    char t_buff[10];
+    char t_buff[20];
     int found_w = 0, found_h = 0, found_cs = 0;
     int fps_n, fps_d, pix_ratio_n, pix_ratio_d, interlace;
 
@@ -826,8 +830,8 @@ static int y4m_parse_tags(Y4M_PARAMS * y4m, char *_tags)
         /*Find the end of this tag.*/
         for (q = p + 1; *q != '\0' && *q != ' '; q++) {
         }
-       
-        
+
+
         /*Process the tag.*/
         switch (p[0])
         {
@@ -928,13 +932,13 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_PARAMS * y4m)
     char buffer[80] = { 0 };
     int ret;
     int i;
-       
+
     /*Read until newline, or 80 cols, whichever happens first.*/
-    for (i = 0; i < 79; i++) 
+    for (i = 0; i < 79; i++)
     {
-       
+
         if (!fread(buffer + i, 1, 1, ip_y4m)) return -1;
-        
+
         if (buffer[i] == '\n') break;
     }
     /*We skipped too much header data.*/
@@ -943,17 +947,17 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_PARAMS * y4m)
         return -1;
     }
     buffer[i] = '\0';
-    if (memcmp(buffer, "YUV4MPEG", 8)) 
+    if (memcmp(buffer, "YUV4MPEG", 8))
     {
         logerr("Incomplete magic for YUV4MPEG file.\n");
         return -1;
     }
-    if (buffer[8] != '2') 
+    if (buffer[8] != '2')
     {
         logerr("Incorrect YUV input file version; YUV4MPEG2 required.\n");
     }
     ret = y4m_parse_tags(y4m, buffer + 5);
-    if (ret < 0) 
+    if (ret < 0)
     {
         logerr("Error parsing YUV4MPEG2 header.\n");
         return ret;
@@ -1060,7 +1064,7 @@ int main(int argc, const char **argv)
         fclose(fp);
     }
 
-    
+
     /* allocate bitstream buffer */
     bs_buf = (unsigned char*)malloc(MAX_BS_BUF);
     if(bs_buf == NULL)
@@ -1069,16 +1073,16 @@ int main(int argc, const char **argv)
         return -1;
     }
 
-    
+
     int val = 0;
     memset(&cdsc, 0, sizeof(XEVE_CDSC));
-    
+
 
     /***********************y4m header parsing *********************/
     if (is_y4m)
     {
         val = y4m_header_parser(fp_inp, &y4m);
-       
+
 
     }
     if (val != XEVE_OK)

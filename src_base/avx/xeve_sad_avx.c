@@ -106,7 +106,7 @@ static int sad_16b_avx_16nx2n(int w, int h, void * src1, void * src2, int s_src1
 }
 
 /* index: [log2 of width][log2 of height] */
-XEVE_FN_SAD xeve_tbl_sad_16b_avx[8][8] =
+const XEVE_FN_SAD xeve_tbl_sad_16b_avx[8][8] =
 {
     /* width == 1 */
     {

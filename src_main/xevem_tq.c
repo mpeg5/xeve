@@ -337,7 +337,7 @@ void xeve_trans_DST7_B4(s16 *block, s16 *coef, s32 shift, s32 line, int skip_lin
 {
     int i;
     int rnd_factor = 1 << (shift - 1);
-    const s16 *tm = xevem_tbl_tr4[DST7][0];
+    const s8 *tm = xevem_tbl_tr[DST7][0];
     int c[4];
     s16 *tmp = coef;
     const int reduced_line = line - skip_line;
@@ -375,7 +375,7 @@ void xeve_trans_DST7_B8(s16 *block, s16 *coef, s32 shift, s32 line, int skip_lin
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 8;
-    const s16 *tm;
+    const s8 *tm;
     s16 *coef_tmp;
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
@@ -383,7 +383,8 @@ void xeve_trans_DST7_B8(s16 *block, s16 *coef, s32 shift, s32 line, int skip_lin
     for (i = 0; i < reduced_line; i++)
     {
         coef_tmp = coef;
-        tm = xevem_tbl_tr8[DST7][0];
+        tm = xevem_tbl_tr[DST7][1];
+
         for (j = 0; j < cut_off; j++)
         {
             sum = 0;
@@ -420,7 +421,7 @@ void xeve_trans_DST7_B16(s16 *block, s16 *coef, s32 shift, s32 line, int skip_li
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 16;
-    const s16 *tm;
+    const s8 *tm;
     s16 *coef_tmp;
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
@@ -428,7 +429,8 @@ void xeve_trans_DST7_B16(s16 *block, s16 *coef, s32 shift, s32 line, int skip_li
     for (i = 0; i < reduced_line; i++)
     {
         coef_tmp = coef;
-        tm = xevem_tbl_tr16[DST7][0];
+        tm = xevem_tbl_tr[DST7][2];
+
         for (j = 0; j < cut_off; j++)
         {
             sum = 0;
@@ -465,7 +467,7 @@ void xeve_trans_DST7_B32(s16 *block, s16 *coef, s32 shift, s32 line, int skip_li
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 32;
-    const s16 *tm;
+    const s8 *tm;
     s16 *coef_tmp;
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
@@ -473,7 +475,8 @@ void xeve_trans_DST7_B32(s16 *block, s16 *coef, s32 shift, s32 line, int skip_li
     for (i = 0; i < reduced_line; i++)
     {
         coef_tmp = coef;
-        tm = xevem_tbl_tr32[DST7][0];
+        tm = xevem_tbl_tr[DST7][3];
+
         for (j = 0; j < cut_off; j++)
         {
             sum = 0;
@@ -510,7 +513,7 @@ void xeve_trans_DCT8_B4(s16 *block, s16 *coef, s32 shift, s32 line, int skip_lin
 {
     int i;
     int rnd_factor = 1 << (shift - 1);
-    const s16 *tm = xevem_tbl_tr4[DCT8][0];
+    const s8 *tm = xevem_tbl_tr[DCT8][0];
     int c[4];
     s16 *tmp = coef;
     const int reduced_line = line - skip_line;
@@ -547,7 +550,7 @@ void xeve_trans_DCT8_B8(s16 *block, s16 *coef, s32 shift, s32 line, int skip_lin
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 8;
-    const s16 *tm;
+    const s8 *tm;
     s16 *coef_tmp;
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
@@ -555,7 +558,8 @@ void xeve_trans_DCT8_B8(s16 *block, s16 *coef, s32 shift, s32 line, int skip_lin
     for (i = 0; i < reduced_line; i++)
     {
         coef_tmp = coef;
-        tm = xevem_tbl_tr8[DCT8][0];
+        tm = xevem_tbl_tr[DCT8][1];
+
         for (j = 0; j < cut_off; j++)
         {
             sum = 0;
@@ -592,7 +596,7 @@ void xeve_trans_DCT8_B16(s16 *block, s16 *coef, s32 shift, s32 line, int skip_li
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 16;
-    const s16 *tm;
+    const s8 *tm;
     s16 *coef_tmp;
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
@@ -600,7 +604,8 @@ void xeve_trans_DCT8_B16(s16 *block, s16 *coef, s32 shift, s32 line, int skip_li
     for (i = 0; i < reduced_line; i++)
     {
         coef_tmp = coef;
-        tm = xevem_tbl_tr16[DCT8][0];
+        tm = xevem_tbl_tr[DCT8][2];
+
         for (j = 0; j < tr_size; j++)
         {
             sum = 0;
@@ -637,7 +642,7 @@ void xeve_trans_DCT8_B32(s16 *block, s16 *coef, s32 shift, s32 line, int skip_li
     int i, j, k, sum;
     int rnd_factor = 1 << (shift - 1);
     const int tr_size = 32;
-    const s16 *tm;
+    const s8 *tm;
     s16 *coef_tmp;
     const int reduced_line = line - skip_line;
     const int cut_off = tr_size - skip_line_2;
@@ -645,7 +650,8 @@ void xeve_trans_DCT8_B32(s16 *block, s16 *coef, s32 shift, s32 line, int skip_li
     for (i = 0; i < reduced_line; i++)
     {
         coef_tmp = coef;
-        tm = xevem_tbl_tr32[DCT8][0];
+        tm = xevem_tbl_tr[DCT8][3];
+
         for (j = 0; j < cut_off; j++)
         {
             sum = 0;
@@ -1014,11 +1020,11 @@ int xeve_rdoq_method_adcc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s1
     const int ns_shift = ((log2_cuw + log2_cuh) & 1) ? 7 : 0;
     const int ns_scale = ((log2_cuw + log2_cuh) & 1) ? 181 : 1;
     const int qp_rem = qp % 6;
-    const int q_value = (xeve_quant_scale[qp_rem] * ns_scale) >> ns_shift;
+    const int q_value = (xeve_quant_scale[core->ctx->cdsc.ext->tool_iqt][qp_rem] * ns_scale) >> ns_shift;
     const int log2_size = (log2_cuw + log2_cuh) >> 1;
     const int tr_shift = MAX_TX_DYNAMIC_RANGE - bit_depth - (log2_size);
 
-    s64 err_scale = err_scale_tbl[qp_rem][log2_size - 1];
+    s64 err_scale = core->ctx->param.err_scale[qp_rem][log2_size - 1];
     s64 lambda = (s64)(d_lambda * (double)(1 << SCALE_BITS) + 0.5);
     int q_bits;
     const int width = (1 << log2_cuw);
@@ -1026,7 +1032,7 @@ int xeve_rdoq_method_adcc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s1
     const int max_num_coef = width * height;
     int scan_type = COEF_SCAN_ZIGZAG;
     int log2_block_size = XEVE_MIN(log2_cuw, log2_cuh);
-    u16 *scan;
+    const u16 *scan;
     int scan_pos_last = -1;
     int ipos;
     int cg_log2_size = LOG2_CG_SIZE;
@@ -1071,8 +1077,7 @@ int xeve_rdoq_method_adcc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s1
     int last_pos_in_raster_from_scan = -1;
     int scan_pos = 0;
     q_bits = QUANT_SHIFT + tr_shift + (qp / 6);
-
-    scan = xeve_scan_tbl[scan_type][log2_cuw - 1][log2_cuh - 1];
+    scan = xeve_tbl_scan[log2_cuw - 1][log2_cuh - 1];
 
     for (scan_pos = 0; scan_pos < max_num_coef; scan_pos++)
     {
@@ -1266,12 +1271,7 @@ int xeve_rdoq_method_adcc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s1
         {
             cost_base -= pdcost_sig[blk_pos];
         }
-
-        if (found_last > 0)
-        {
-            break;
-        }
-    }    
+    }
 
     nnz = 0;
     for (ipos = 0; ipos < best_last_idx_p1; ipos++)
@@ -1456,7 +1456,7 @@ int xevem_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DI
                         coef_temp[c] = coef[c];
                     }
 
-                    int scale = xeve_quant_scale[qp[c] % 6];
+                    int scale = xeve_quant_scale[ctx->cdsc.ext->tool_iqt][qp[c] % 6];
                     if(c == 0)
                     {
                     core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, slice_type, c, is_intra, ctx->sps.tool_cm_init, ctx->sps.tool_iqt

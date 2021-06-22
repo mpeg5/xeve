@@ -38,7 +38,7 @@
 
 #include "xeve_def.h"
 #if X86_SSE
-extern INV_TRANS xeve_itrans_map_tbl_sse[16][5];
+extern const INV_TRANS xeve_itrans_map_tbl_sse[16][5];
 
 void xeve_itrans_ats_intra_DST7_B8_sse(s16 *coeff, s16 *block, int shift, int line, int skip_line, int skip_line_2);
 void xeve_itrans_ats_intra_DST7_B16_sse(s16 *coeff, s16 *block, int shift, int line, int skip_line, int skip_line_2);

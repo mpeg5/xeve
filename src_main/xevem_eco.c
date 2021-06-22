@@ -225,16 +225,7 @@ int xevem_eco_aps_gen(XEVE_BSW * bs, XEVE_APS_GEN * aps, int bit_depth)
 
     u8 aps_extension_flag = 0;
     xeve_bsw_write1(bs, aps_extension_flag);
-
     assert(aps_extension_flag == 0);
-    if (aps_extension_flag)
-    {
-        while (0/*more_rbsp_data()*/)
-        {
-            u8 aps_extension_data_flag;
-            xeve_bsw_write1(bs, aps_extension_data_flag);
-        }
-    }
 
     u32 t0 = 0;
     while (!XEVE_BSW_IS_BYTE_ALIGN(bs))
@@ -779,7 +770,7 @@ int xevem_eco_split_mode(XEVE_BSW *bs, XEVE_CTX *c, XEVE_CORE *core, int cud, in
         return ret;
     }
 
-    xeve_check_split_mode(split_allow, XEVE_LOG2(cuw), XEVE_LOG2(cuh), 0, 0, c->log2_max_cuwh
+    xeve_check_split_mode(c, split_allow, XEVE_LOG2(cuw), XEVE_LOG2(cuh), 0, 0, c->log2_max_cuwh
                         , x, y, c->w, c->h, c->sps.sps_btt_flag, core->tree_cons.mode_cons);
 
     split_mode_sum = 1;
@@ -1162,7 +1153,7 @@ static void code_positionLastXY(XEVE_BSW *bs, int last_x, int last_y, int width,
     }
 }
 
-static void xeve_eco_adcc(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int num_sig, int ch_type)
+static void xeve_eco_adcc(XEVE_CTX * ctx, XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int num_sig, int ch_type)
 {
     int width = 1 << log2_w;
     int height = 1 << log2_h;
@@ -1172,14 +1163,13 @@ static void xeve_eco_adcc(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int n
     SBAC_CTX_MODEL* cm_gtx;
     int scan_type = COEF_SCAN_ZIGZAG;
     int log2_block_size = XEVE_MIN(log2_w, log2_h);
-    u16 *scan;
+    const u16 *scan;
     int scan_pos_last = -1;
     int last_x = 0, last_y = 0;
     int ipos;
     int last_scan_set;
     int rice_param;
     int sub_set;
-
     int ctx_sig_coeff = 0;
     int cg_log2_size = LOG2_CG_SIZE;
     int is_last_x = 0;
@@ -1192,10 +1182,8 @@ static void xeve_eco_adcc(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int n
     int cnt_nz = 0;
     int blkpos, sx, sy;
     int sig_coeff_flag;
-
-
     int max_num_coef = width * height;
-    scan = xeve_scan_tbl[scan_type][log2_w - 1][log2_h - 1];
+    scan = xeve_tbl_scan[log2_w - 1][log2_h - 1];
 
     int last_pos_in_scan = 0;
     int numNonZeroCoefs = 0;
@@ -1355,15 +1343,15 @@ static void xeve_eco_adcc(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int n
     }
 }
 
-static void xeve_eco_xcoef(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int num_sig, int ch_type, int tool_adcc)
+static void xeve_eco_xcoef(XEVE_CTX * ctx, XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int num_sig, int ch_type, int tool_adcc)
 {
     if (tool_adcc)
     {
-        xeve_eco_adcc(bs, coef, log2_w, log2_h, num_sig, (ch_type == Y_C ? 0 : 1));
+        xeve_eco_adcc(ctx, bs, coef, log2_w, log2_h, num_sig, (ch_type == Y_C ? 0 : 1));
     }
     else
     {
-        xeve_eco_run_length_cc(bs, coef, log2_w, log2_h, num_sig, (ch_type == Y_C ? 0 : 1));
+        xeve_eco_run_length_cc(ctx, bs, coef, log2_w, log2_h, num_sig, (ch_type == Y_C ? 0 : 1));
     }
 
 #if TRACE_COEFFS
@@ -1506,9 +1494,9 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
                         coef_temp[c] = coef[c];
                     }
                     if(c == 0)
-                    xeve_eco_xcoef(bs, coef_temp[c], log2_w_sub - (!!c), log2_h_sub - (!!c), nnz_sub[c][(j << 1) | i], c, ctx->sps.tool_adcc);
+                    xeve_eco_xcoef(ctx, bs, coef_temp[c], log2_w_sub - (!!c), log2_h_sub - (!!c), nnz_sub[c][(j << 1) | i], c, ctx->sps.tool_adcc);
                     else
-                        xeve_eco_xcoef(bs, coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, nnz_sub[c][(j << 1) | i], c, ctx->sps.tool_adcc);
+                        xeve_eco_xcoef(ctx, bs, coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, nnz_sub[c][(j << 1) | i], c, ctx->sps.tool_adcc);
 
                     if (is_sub)
                     {
@@ -2027,7 +2015,7 @@ int xeve_eco_udata_hdr(XEVE_CTX * ctx, XEVE_BSW * bs, u8 pic_sign[N_C][16])
     xeve_imgb_cpy(imgb_hdr_md5, PIC_CURR(ctx)->imgb);  // store copy of the reconstructed picture in DPB
 
     SIG_PARAM_DRA *pps_dra_params = (SIG_PARAM_DRA *)((XEVEM_CTX*)ctx)->dra_array;
-    xeve_apply_dra_from_array(imgb_hdr_md5, imgb_hdr_md5, &(pps_dra_params[0]), ctx->aps_gen_array[1].aps_id, TRUE);
+    xeve_apply_dra_from_array(ctx, imgb_hdr_md5, imgb_hdr_md5, &(pps_dra_params[0]), ctx->aps_gen_array[1].aps_id, TRUE);
 
     /* should be aligned before adding user data */
     xeve_assert_rv(XEVE_BSW_IS_BYTE_ALIGN(bs), XEVE_ERR_UNKNOWN);
@@ -2366,7 +2354,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
     XEVE_TRACE_INT(cuh);
 
 #if ENC_DEC_TRACE
-    if (ctx->sh.slice_type != SLICE_I && ctx->sps.sps_btt_flag)
+    if (ctx->sh->slice_type != SLICE_I && ctx->sps.sps_btt_flag)
     {
         XEVE_TRACE_STR("tree status ");
         XEVE_TRACE_INT(core->tree_cons.tree_type);
@@ -2377,7 +2365,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
     XEVE_TRACE_STR("\n");
 
     xeve_get_ctx_some_flags(core->x_scu, core->y_scu, cuw, cuh, ctx->w_scu, ctx->map_scu, ctx->map_cu_mode, core->ctx_flags
-                         , ctx->sh.slice_type, ctx->sps.tool_cm_init , ctx->param.use_ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
+                         , ctx->sh->slice_type, ctx->sps.tool_cm_init , ctx->param.use_ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
 
     if (ctx->sps.tool_admvp && core->log2_cuw == MIN_CU_LOG2 && core->log2_cuh == MIN_CU_LOG2)
     {
@@ -2422,7 +2410,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
 
             if(mcore->mmvd_flag)
             {
-                xevem_eco_mmvd_info(bs, cu_data->mmvd_idx[cup], ctx->sh.mmvd_group_enable_flag && !(cuw*cuh <= NUM_SAMPLES_BLOCK));
+                xevem_eco_mmvd_info(bs, cu_data->mmvd_idx[cup], ctx->sh->mmvd_group_enable_flag && !(cuw*cuh <= NUM_SAMPLES_BLOCK));
             }
             else
             {
@@ -2496,7 +2484,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
 
                         if((cu_data->pred_mode[cup] == MODE_DIR_MMVD))
                         {
-                            xevem_eco_mmvd_info(bs, cu_data->mmvd_idx[cup], ctx->sh.mmvd_group_enable_flag && !(cuw*cuh <= NUM_SAMPLES_BLOCK));
+                            xevem_eco_mmvd_info(bs, cu_data->mmvd_idx[cup], ctx->sh->mmvd_group_enable_flag && !(cuw*cuh <= NUM_SAMPLES_BLOCK));
                         }
                     }
 
@@ -2668,7 +2656,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
             }
         }
     }
-    else if (((ctx->sh.slice_type == SLICE_I || xeve_check_only_intra(core->tree_cons)) && ctx->param.use_ibc_flag))
+    else if (((ctx->sh->slice_type == SLICE_I || xeve_check_only_intra(core->tree_cons)) && ctx->param.use_ibc_flag))
     {
         if (core->skip_flag == 0 && xeve_check_luma(core->tree_cons))
         {

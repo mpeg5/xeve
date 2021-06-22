@@ -258,7 +258,7 @@ int sad_16b_sse_16nx1n(int w, int h, void * src1, void * src2, int s_src1, int s
 }
 
 /* index: [log2 of width][log2 of height] */
-XEVE_FN_SAD xeve_tbl_sad_16b_sse[8][8] =
+const XEVE_FN_SAD xeve_tbl_sad_16b_sse[8][8] =
 {
     /* width == 1 */
     {
@@ -510,7 +510,7 @@ static void diff_16b_sse_32nx4n(int w, int h, void * src1, void * src2, int s_sr
     }
 }
 
-XEVE_FN_DIFF xeve_tbl_diff_16b_sse[8][8] =
+const XEVE_FN_DIFF xeve_tbl_diff_16b_sse[8][8] =
 {
     /* width == 1 */
     {
@@ -993,7 +993,7 @@ static s64 ssd_16b_sse_8nx8n(int w, int h, void * src1, void * src2, int s_src1,
     return ssd;
 }
 
-XEVE_FN_SSD xeve_tbl_ssd_16b_sse[8][8] =
+const XEVE_FN_SSD xeve_tbl_ssd_16b_sse[8][8] =
 {
     /* width == 1 */
     {
@@ -4739,7 +4739,7 @@ int xeve_had_sse(int w, int h, void *o, void *c, int s_org, int s_cur, int bit_d
     return (sum >> (bit_depth - 8));
 }
 
-XEVE_FN_SATD xeve_tbl_satd_16b_sse[1] =
+const XEVE_FN_SATD xeve_tbl_satd_16b_sse[1] =
 {
     xeve_had_sse,
 };

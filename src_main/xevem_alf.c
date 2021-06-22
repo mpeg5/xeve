@@ -378,8 +378,10 @@ void alf_recon_coef(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PARAM* alf_slice_param
     }
 }
 
-void alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_height, const int max_cu_width, const int max_cu_height, const int max_cu_depth,  const int chroma_format_idc, int bit_depth)
+int alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_height, const int max_cu_width, const int max_cu_height, const int max_cu_depth,  const int chroma_format_idc, int bit_depth)
 {
+    int ret;
+
     const int input_bit_depth[NUM_CH] = { bit_depth, bit_depth };
 
     xeve_mset(alf->alf_idx_in_scan_order, 0, sizeof(u8) * APS_MAX_NUM);
@@ -431,8 +433,11 @@ void alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_h
     for (int i = 0; i < pic_height; i++)
     {
         alf->classifier[i] = (ALF_CLASSIFIER*)malloc(pic_width * sizeof(ALF_CLASSIFIER));
+        xeve_assert_gv( alf->classifier[i], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
         xeve_mset(alf->classifier[i], 0, pic_width * sizeof(ALF_CLASSIFIER));
     }
+ERR:
+    return -1;
 }
 
 void alf_destroy(ADAPTIVE_LOOP_FILTER * alf)
@@ -1068,12 +1073,15 @@ void alf_load_paramline_from_aps_buffer(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PA
 }
 
 
-void alf_cov_create(ALF_COVARIANCE* alf_cov, int size)
+int alf_cov_create(ALF_COVARIANCE* alf_cov, int size)
 {
+    int ret;
     alf_cov->num_coef = size;
 
     alf_cov->y = (double*)xeve_malloc(sizeof(double) * alf_cov->num_coef);
+    xeve_assert_gv(alf_cov->y, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     alf_cov->E = (double**)xeve_malloc(sizeof(double*) * alf_cov->num_coef);
+    xeve_assert_gv(alf_cov->E, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
 
     xeve_mset(alf_cov->y, 0, sizeof(double) * alf_cov->num_coef);
     xeve_mset(alf_cov->E, 0, sizeof(double*) * alf_cov->num_coef);
@@ -1081,8 +1089,11 @@ void alf_cov_create(ALF_COVARIANCE* alf_cov, int size)
     for (int i = 0; i < alf_cov->num_coef; i++)
     {
         alf_cov->E[i] = (double*)xeve_malloc(sizeof(double) * alf_cov->num_coef);
+        xeve_assert_gv(alf_cov->E[i], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
         xeve_mset(alf_cov->E[i], 0, sizeof(double) * alf_cov->num_coef);
     }
+ERR:
+    return -1;
 }
 
 void alf_cov_destroy(ALF_COVARIANCE* alf_cov)
@@ -1120,7 +1131,6 @@ void alf_cov_copy(ALF_COVARIANCE* dst, ALF_COVARIANCE* src)
         xeve_mcpy(dst->E[i], src->E[i], sizeof(src->E[i]) * src->num_coef);
     }
     xeve_mcpy(dst->y, src->y, sizeof(src->y) * src->num_coef);
-    src->pix_acc = src->pix_acc;
 }
 
 void alf_cov_add_to(ALF_COVARIANCE* dst, const ALF_COVARIANCE* lhs, const ALF_COVARIANCE* rhs)
@@ -1219,7 +1229,7 @@ void xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEV
         enc_alf->alf.last_ras_poc = INT_MAX;
         enc_alf->alf.pending_ras_init = TRUE;
     }
-    if (ctx->sh.slice_type == SLICE_I)
+    if (ctx->sh->slice_type == SLICE_I)
     {
         enc_alf->alf.last_ras_poc = ctx->poc.poc_val;
     }
@@ -1244,7 +1254,7 @@ void xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEV
         alf_store_enc_alf_param_line_aps(&enc_alf->alf, &alf_slice_param, tidx);
         alf_slice_param.store2_alf_buf_flag = enc_alf->alf.strore2_alf_buf_flag;
     }
-    if (ctx->sh.slice_type == SLICE_I)
+    if (ctx->sh->slice_type == SLICE_I)
     {
         if (alf_slice_param.enable_flag[0] && enc_alf->alf.strore2_alf_buf_flag)
         {
@@ -1328,8 +1338,9 @@ void AlfSliceParam_reset(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PARAM* alf_param)
     alf_param->max_idr_poc = INT_MAX;  // Max of 2 IDR POC available for current coded nalu  (to identify availability of this filter for temp prediction)
 }
 
-void xeve_alf_create(XEVE_ALF * enc_alf, const int pic_widht, const int pic_height, const int max_cu_width, const int max_cu_height, const int max_cu_depth, const int chroma_format_idc, int bit_depth)
+int xeve_alf_create(XEVE_ALF * enc_alf, const int pic_widht, const int pic_height, const int max_cu_width, const int max_cu_height, const int max_cu_depth, const int chroma_format_idc, int bit_depth)
 {
+    int ret;
     ADAPTIVE_LOOP_FILTER * alf = &enc_alf->alf;
 
     enc_alf->frac_bits_scale = 1.0 / (double)(1 << SCALE_BITS);
@@ -1372,6 +1383,7 @@ void xeve_alf_create(XEVE_ALF * enc_alf, const int pic_widht, const int pic_heig
     }
 
     enc_alf->alf_slice_param_temp.alf_ctb_flag = (u8 *)malloc(N_C * alf->num_ctu_in_pic * sizeof(u8));
+    xeve_assert_gv(enc_alf->alf_slice_param_temp.alf_ctb_flag, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     xeve_mset(enc_alf->alf_slice_param_temp.alf_ctb_flag, 0, N_C * alf->num_ctu_in_pic * sizeof(u8));
 
     enc_alf->ctu_enable_flag_temp_luma = (u8 *)malloc(N_C * alf->num_ctu_in_pic * sizeof(u8));
@@ -1393,6 +1405,7 @@ void xeve_alf_create(XEVE_ALF * enc_alf, const int pic_widht, const int pic_heig
             for (int j = 0; j < alf->num_ctu_in_pic; j++)
             {
                 enc_alf->alf_cov[comp_id][i][j] = (ALF_COVARIANCE*)xeve_malloc(sizeof(ALF_COVARIANCE) * num_classes);
+                xeve_assert_gv(enc_alf->alf_cov[comp_id][i][j], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
                 for (int k = 0; k < num_classes; k++)
                 {
                     alf_cov_create(&enc_alf->alf_cov[comp_id][i][j][k], alf->filter_shapes[ch_type][i].num_coef);
@@ -1422,6 +1435,9 @@ void xeve_alf_create(XEVE_ALF * enc_alf, const int pic_widht, const int pic_heig
         xeve_mset(enc_alf->filter_coef_set[i], 0, sizeof(int) * MAX_NUM_ALF_LUMA_COEFF);
         xeve_mset(enc_alf->dif_filter_coef[i], 0, sizeof(int) * MAX_NUM_ALF_LUMA_COEFF);
     }
+    return XEVE_OK;
+ERR:
+    return XEVE_ERR;
 }
 
 void xeve_alf_destroy(XEVE_ALF * enc_alf)
@@ -1587,29 +1603,33 @@ void xeve_alf_process(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, const double *l
 
     int  x_l, x_r, y_l, y_r, w_tile, h_tile;
     int col_bd = 0;
-    int total_tiles_in_slice = ctx->sh.num_tiles_in_slice;
 
-    u32 k = 0;
-    int tile_idx = 0;
-    while (total_tiles_in_slice)
+    for (int slice_num = 0; slice_num < ctx->param.num_slice_in_pic; slice_num++)
     {
-        tile_idx = ctx->tiles_in_slice[k++];
-        int x_loc = ((ctx->tile[tile_idx].ctba_rs_first) % ctx->w_lcu);
-        int y_loc = ((ctx->tile[tile_idx].ctba_rs_first) / ctx->w_lcu);
-        x_l = x_loc << ctx->log2_max_cuwh; //entry point CTB's x location
-        y_l = y_loc << ctx->log2_max_cuwh; //entry point CTB's y location
-        x_r = x_l + ((int)(ctx->tile[tile_idx].w_ctb) << ctx->log2_max_cuwh);
-        y_r = y_l + ((int)(ctx->tile[tile_idx].h_ctb) << ctx->log2_max_cuwh);
-        w_tile = x_r > ((int)ctx->w_scu << MIN_CU_LOG2) ? ((int)ctx->w_scu << MIN_CU_LOG2) - x_l : x_r - x_l;
-        h_tile = y_r > ((int)ctx->h_scu << MIN_CU_LOG2) ? ((int)ctx->h_scu << MIN_CU_LOG2) - y_l : y_r - y_l;
-        pel * rec_temp_y_tile = rec_tmp_y + x_l + y_l * s;
-        pel * rec_y_tile = rec_y + x_l + y_l * rec_stride;
-        alf_copy_and_extend_tile(rec_temp_y_tile, s, rec_y_tile, rec_stride, w_tile, h_tile, m);
-        AREA blk = { x_l, y_l, w_tile, h_tile };
-        alf_derive_classification(alf, alf->classifier, rec_tmp_y, s, &blk);
-        total_tiles_in_slice--;
-    }
+        ctx->sh = &ctx->sh_array[slice_num];
 
+        u32 k = 0;
+        int tile_idx = 0;
+        int total_tiles_in_slice = ctx->sh->num_tiles_in_slice;
+        while (total_tiles_in_slice)
+        {
+            tile_idx = ctx->sh->tile_order[k++];
+            int x_loc = ((ctx->tile[tile_idx].ctba_rs_first) % ctx->w_lcu);
+            int y_loc = ((ctx->tile[tile_idx].ctba_rs_first) / ctx->w_lcu);
+            x_l = x_loc << ctx->log2_max_cuwh; //entry point CTB's x location
+            y_l = y_loc << ctx->log2_max_cuwh; //entry point CTB's y location
+            x_r = x_l + ((int)(ctx->tile[tile_idx].w_ctb) << ctx->log2_max_cuwh);
+            y_r = y_l + ((int)(ctx->tile[tile_idx].h_ctb) << ctx->log2_max_cuwh);
+            w_tile = x_r > ((int)ctx->w_scu << MIN_CU_LOG2) ? ((int)ctx->w_scu << MIN_CU_LOG2) - x_l : x_r - x_l;
+            h_tile = y_r > ((int)ctx->h_scu << MIN_CU_LOG2) ? ((int)ctx->h_scu << MIN_CU_LOG2) - y_l : y_r - y_l;
+            pel * rec_temp_y_tile = rec_tmp_y + x_l + y_l * s;
+            pel * rec_y_tile = rec_y + x_l + y_l * rec_stride;
+            alf_copy_and_extend_tile(rec_temp_y_tile, s, rec_y_tile, rec_stride, w_tile, h_tile, m);
+            AREA blk = { x_l, y_l, w_tile, h_tile };
+            alf_derive_classification(alf, alf->classifier, rec_tmp_y, s, &blk);
+            total_tiles_in_slice--;
+        }
+    }
     alf_copy_and_extend(rec_tmp_y, s, rec_y, rec_stride, w, h, m);
     if(ctx->sps.chroma_format_idc)
     {
@@ -1654,66 +1674,71 @@ void xeve_alf_process(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, const double *l
         alf_slice_param->reset_alf_buf_flag = TRUE;
         alf->reset_alf_buf_flag = TRUE;
     }
-    k = 0;
-    tile_idx = 0;
-    total_tiles_in_slice = ctx->sh.num_tiles_in_slice;
-    while (total_tiles_in_slice)
+    for (int slice_num = 0; slice_num < ctx->param.num_slice_in_pic; slice_num++)
     {
-        int tile_idx = ctx->tiles_in_slice[k++];
-        int x_loc = ((ctx->tile[tile_idx].ctba_rs_first) % ctx->w_lcu);
-        int y_loc = ((ctx->tile[tile_idx].ctba_rs_first) / ctx->w_lcu);
+        ctx->sh = &ctx->sh_array[slice_num];
 
-        col_bd = 0;
-        if (tile_idx% ctx->param.tile_columns)
+        u32 k = 0;
+        int tile_idx = 0;
+        int total_tiles_in_slice = ctx->sh->num_tiles_in_slice;
+        while (total_tiles_in_slice)
         {
-            int temp = tile_idx - 1;
-            while (temp >= 0)
-            {
-                col_bd += ctx->tile[temp].w_ctb;
-                if (!(temp % ctx->param.tile_columns)) break;
-                temp--;
-            }
-        }
-        else
-        {
+            int tile_idx = ctx->sh->tile_order[k++];
+            int x_loc = ((ctx->tile[tile_idx].ctba_rs_first) % ctx->w_lcu);
+            int y_loc = ((ctx->tile[tile_idx].ctba_rs_first) / ctx->w_lcu);
+
             col_bd = 0;
-        }
+            if (tile_idx% ctx->param.tile_columns)
+            {
+                int temp = tile_idx - 1;
+                while (temp >= 0)
+                {
+                    col_bd += ctx->tile[temp].w_ctb;
+                    if (!(temp % ctx->param.tile_columns)) break;
+                    temp--;
+                }
+            }
+            else
+            {
+                col_bd = 0;
+            }
 
-        x_l = x_loc << ctx->log2_max_cuwh; //entry point CTB's x location
-        y_l = y_loc << ctx->log2_max_cuwh; //entry point CTB's y location
-        x_r = x_l + ((int)(ctx->tile[tile_idx].w_ctb) << ctx->log2_max_cuwh);
-        y_r = y_l + ((int)(ctx->tile[tile_idx].h_ctb) << ctx->log2_max_cuwh);
-        w_tile = x_r > ((int)ctx->w_scu << MIN_CU_LOG2) ? ((int)ctx->w_scu << MIN_CU_LOG2) - x_l : x_r - x_l;
-        h_tile = y_r > ((int)ctx->h_scu << MIN_CU_LOG2) ? ((int)ctx->h_scu << MIN_CU_LOG2) - y_l : y_r - y_l;
-        //This is for YUV420 only
-        pel * rec_temp_y_tile = rec_tmp_y + x_l + y_l * s;
-        pel * rec_temp_u_tile = rec_tmp_u + (x_l >> 1) + (y_l >> 1) * (s1);
-        pel * rec_temp_v_tile = ref_tmp_v + (x_l >> 1) + (y_l >> 1) * (s1);
-        pel * rec_y_tile = rec_y + x_l + y_l * rec_stride;
-        pel * rec_u_tile = rec_u + (x_l >> 1) + (y_l >> 1) * pir_rec->s_c;
-        pel * rec_v_tile = rec_v + (x_l >> 1) + (y_l >> 1) * pir_rec->s_c;
+            x_l = x_loc << ctx->log2_max_cuwh; //entry point CTB's x location
+            y_l = y_loc << ctx->log2_max_cuwh; //entry point CTB's y location
+            x_r = x_l + ((int)(ctx->tile[tile_idx].w_ctb) << ctx->log2_max_cuwh);
+            y_r = y_l + ((int)(ctx->tile[tile_idx].h_ctb) << ctx->log2_max_cuwh);
+            w_tile = x_r > ((int)ctx->w_scu << MIN_CU_LOG2) ? ((int)ctx->w_scu << MIN_CU_LOG2) - x_l : x_r - x_l;
+            h_tile = y_r > ((int)ctx->h_scu << MIN_CU_LOG2) ? ((int)ctx->h_scu << MIN_CU_LOG2) - y_l : y_r - y_l;
+            //This is for YUV420 only
+            pel * rec_temp_y_tile = rec_tmp_y + x_l + y_l * s;
+            pel * rec_temp_u_tile = rec_tmp_u + (x_l >> 1) + (y_l >> 1) * (s1);
+            pel * rec_temp_v_tile = ref_tmp_v + (x_l >> 1) + (y_l >> 1) * (s1);
+            pel * rec_y_tile = rec_y + x_l + y_l * rec_stride;
+            pel * rec_u_tile = rec_u + (x_l >> 1) + (y_l >> 1) * pir_rec->s_c;
+            pel * rec_v_tile = rec_v + (x_l >> 1) + (y_l >> 1) * pir_rec->s_c;
 
-        alf_copy_and_extend_tile(rec_temp_y_tile, s, rec_y_tile, rec_stride, w_tile, h_tile, m);
-        if(ctx->sps.chroma_format_idc)
-        {
-            alf_copy_and_extend_tile(rec_temp_u_tile, s1, rec_u_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
-            alf_copy_and_extend_tile(rec_temp_v_tile, s1, rec_v_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
-        }
+            alf_copy_and_extend_tile(rec_temp_y_tile, s, rec_y_tile, rec_stride, w_tile, h_tile, m);
+            if (ctx->sps.chroma_format_idc)
+            {
+                alf_copy_and_extend_tile(rec_temp_u_tile, s1, rec_u_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
+                alf_copy_and_extend_tile(rec_temp_v_tile, s1, rec_v_tile, pir_rec->s_c, (w_tile >> 1), (h_tile >> 1), m);
+            }
 
-        // reconstruct
-        if (alf_slice_param->enable_flag[Y_C])
-        {
-            xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[0], org_yuv.s[0], rec_temp.yuv[0], rec_temp.s[0], Y_C, tile_idx, col_bd);
+            // reconstruct
+            if (alf_slice_param->enable_flag[Y_C])
+            {
+                xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[0], org_yuv.s[0], rec_temp.yuv[0], rec_temp.s[0], Y_C, tile_idx, col_bd);
+            }
+            if (alf_slice_param->enable_flag[U_C] && ctx->sps.chroma_format_idc)
+            {
+                xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[1], org_yuv.s[1], rec_temp.yuv[1], rec_temp.s[1], U_C, tile_idx, col_bd);
+            }
+            if (alf_slice_param->enable_flag[V_C] && ctx->sps.chroma_format_idc)
+            {
+                xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[2], org_yuv.s[2], rec_temp.yuv[2], rec_temp.s[2], V_C, tile_idx, col_bd);
+            }
+            total_tiles_in_slice--;
         }
-        if (alf_slice_param->enable_flag[U_C] && ctx->sps.chroma_format_idc)
-        {
-            xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[1], org_yuv.s[1], rec_temp.yuv[1], rec_temp.s[1], U_C, tile_idx, col_bd);
-        }
-        if (alf_slice_param->enable_flag[V_C] && ctx->sps.chroma_format_idc)
-        {
-            xeve_alf_recon(enc_alf, cs, alf_slice_param, org_yuv.yuv[2], org_yuv.s[2], rec_temp.yuv[2], rec_temp.s[2], V_C, tile_idx, col_bd);
-        }
-        total_tiles_in_slice--;
     }
 
     for (int i = 0; i < (int)ctx->f_lcu; i++)
@@ -2028,9 +2053,10 @@ void tile_boundary_check(int* avail_left, int* avail_right, int* avail_top, int*
     }
 }
 
-void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* alf_slice_param, const pel * org_unit_buf, const int org_stride
+int xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* alf_slice_param, const pel * org_unit_buf, const int org_stride
                   , pel * rec_ext_buf, const int rec_stride, const u8 comp_id, int tile_idx, int col_bd)
 {
+    int ret;
     ADAPTIVE_LOOP_FILTER * alf = &enc_alf->alf;
     int x_l, x_r, y_l, y_r;
     const u8 channel = comp_id == Y_C ? LUMA_CH : CHROMA_CH;
@@ -2069,12 +2095,15 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
     int l_zero_offset = (MAX_CU_SIZE + m + m) * m + m;
     int l_stride = MAX_CU_SIZE + 2 * m;
     pel *buffer_l = (pel*)xeve_malloc(sizeof(pel) * (MAX_CU_SIZE + 2 * m) * (MAX_CU_SIZE + 2 * m));
+    xeve_assert_gv(buffer_l, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     xeve_mset(buffer_l, 0, sizeof(pel) * (MAX_CU_SIZE + 2 * m) * (MAX_CU_SIZE + 2 * m));
     pel *tmp_buffer = buffer_l + l_zero_offset;
     int l_zero_offset_chroma = ((MAX_CU_SIZE >> 1) + m + m) * m + m;
     int l_stride_chroma = (MAX_CU_SIZE >> 1) + m + m;
     pel *buffer_cb = (pel*)xeve_malloc(sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));
+    xeve_assert_gv(buffer_cb, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     pel *buffer_cr = (pel*)xeve_malloc(sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));
+    xeve_assert_gv(buffer_cr, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     xeve_mset(buffer_cb, 0, sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));
     xeve_mset(buffer_cr, 0, sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));
     pel *tmp_buffer_cb = buffer_cb + l_zero_offset_chroma;
@@ -2272,10 +2301,15 @@ void xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* 
             }
         }
     }
-
     xeve_mfree(buffer_l);
     xeve_mfree(buffer_cb);
     xeve_mfree(buffer_cr);
+    return 0;
+ERR:
+    xeve_mfree(buffer_l);
+    xeve_mfree(buffer_cb);
+    xeve_mfree(buffer_cr);
+    return -1;
 }
 
 void xeve_alf_temporal_enc_aps_comp(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* alf_slice_param)

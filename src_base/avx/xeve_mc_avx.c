@@ -1356,7 +1356,7 @@ void mc_filter_l_6pel_vert_clip_avx(s16 *ref,
     }
 }
 
-void xeve_mc_l_n0_avx(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth)
+void xeve_mc_l_n0_avx(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth, const s16(*mc_l_coeff)[8])
 {
     int dx = gmv_x & 15;
     ref += (gmv_y >> 4) * s_ref + (gmv_x >> 4) - 3;
@@ -1364,10 +1364,10 @@ void xeve_mc_l_n0_avx(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_l_8pel_horz_clip_avx(ref, s_ref, pred, s_pred, xeve_mc_l_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0);
+    mc_filter_l_8pel_horz_clip_avx(ref, s_ref, pred, s_pred, mc_l_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0);
 }
 
-void xeve_mc_l_0n_avx(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth)
+void xeve_mc_l_0n_avx(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth, const s16(*mc_l_coeff)[8])
 {
     int dy = gmv_y & 15;
     ref += ((gmv_y >> 4) - 3) * s_ref + (gmv_x >> 4);
@@ -1375,10 +1375,10 @@ void xeve_mc_l_0n_avx(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_l_8pel_vert_clip_avx(ref, s_ref, pred, s_pred, xeve_mc_l_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N);
+    mc_filter_l_8pel_vert_clip_avx(ref, s_ref, pred, s_pred, mc_l_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N);
 }
 
-void xeve_mc_l_nn_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
+void xeve_mc_l_nn_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth, const s16(*mc_l_coeff)[8])
 {
     s16         buf[(MAX_CU_SIZE + MC_IBUF_PAD_L)*(MAX_CU_SIZE + MC_IBUF_PAD_L)];
     int         dx, dy;
@@ -1394,8 +1394,8 @@ void xeve_mc_l_nn_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_l_8pel_horz_no_clip_avx(ref, s_ref, buf, w, xeve_mc_l_coeff[dx], w, (h + 7), offset1, shift1);
-    mc_filter_l_8pel_vert_clip_avx(buf, w, pred, s_pred, xeve_mc_l_coeff[dy], w, h, min, max, offset2, shift2);
+    mc_filter_l_8pel_horz_no_clip_avx(ref, s_ref, buf, w, mc_l_coeff[dx], w, (h + 7), offset1, shift1);
+    mc_filter_l_8pel_vert_clip_avx(buf, w, pred, s_pred, mc_l_coeff[dy], w, h, min, max, offset2, shift2);
 }
 
 
@@ -1812,7 +1812,7 @@ void mc_filter_c_4pel_vert_avx(s16 *ref,
     }
 }
 
-void xeve_mc_c_n0_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
+void xeve_mc_c_n0_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth, const s16(*mc_c_coeff)[4])
 {
     int  dx = gmv_x & 31;
     ref += (gmv_y >> 5) * s_ref + (gmv_x >> 5) - 1;
@@ -1820,10 +1820,10 @@ void xeve_mc_c_n0_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_c_4pel_horz_avx(ref, s_ref, pred, s_pred, xeve_mc_c_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0, 1);
+    mc_filter_c_4pel_horz_avx(ref, s_ref, pred, s_pred, mc_c_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0, 1);
 }
 
-void xeve_mc_c_0n_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
+void xeve_mc_c_0n_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth, const s16(*mc_c_coeff)[4])
 {
     int dy = gmv_y & 31;
     ref += ((gmv_y >> 5) - 1) * s_ref + (gmv_x >> 5);
@@ -1831,10 +1831,10 @@ void xeve_mc_c_0n_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_c_4pel_vert_avx(ref, s_ref, pred, s_pred, xeve_mc_c_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N, 1);
+    mc_filter_c_4pel_vert_avx(ref, s_ref, pred, s_pred, mc_c_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N, 1);
 }
 
-void xeve_mc_c_nn_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
+void xeve_mc_c_nn_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth, const s16(*mc_c_coeff)[4])
 {
     s16 buf[(MAX_CU_SIZE + MC_IBUF_PAD_C)*MAX_CU_SIZE];
     int dx, dy;
@@ -1850,11 +1850,11 @@ void xeve_mc_c_nn_avx(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_c_4pel_horz_avx(ref, s_ref, buf, w, xeve_mc_c_coeff[dx], w, (h + 3), min, max, offset1, shift1, 0);
-    mc_filter_c_4pel_vert_avx(buf, w, pred, s_pred, xeve_mc_c_coeff[dy], w, h, min, max, offset2, shift2, 1);
+    mc_filter_c_4pel_horz_avx(ref, s_ref, buf, w, mc_c_coeff[dx], w, (h + 3), min, max, offset1, shift1, 0);
+    mc_filter_c_4pel_vert_avx(buf, w, pred, s_pred, mc_c_coeff[dy], w, h, min, max, offset2, shift2, 1);
 }
 
-XEVE_MC_L xeve_tbl_mc_l_avx[2][2] =
+const XEVE_MC_L xeve_tbl_mc_l_avx[2][2] =
 {
     {
         xeve_mc_l_00, /* dx == 0 && dy == 0 */
@@ -1866,7 +1866,7 @@ XEVE_MC_L xeve_tbl_mc_l_avx[2][2] =
     }
 };
 
-XEVE_MC_C xeve_tbl_mc_c_avx[2][2] =
+const XEVE_MC_C xeve_tbl_mc_c_avx[2][2] =
 {
     {
         xeve_mc_c_00, /* dx == 0 && dy == 0 */

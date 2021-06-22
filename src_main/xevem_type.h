@@ -56,6 +56,8 @@ typedef struct _XEVE_BEF_DATA
     int                affine_flag;
     int                ats_intra_cu_idx_intra;
     int                ats_intra_cu_idx_inter;
+    double             pred_mode_cost[3];
+    int                pred_best_mode;
 } XEVE_BEF_DATA;
 
 typedef struct _XEVE_MMVD_OPT XEVE_MMVD_OPT;
@@ -161,6 +163,7 @@ typedef struct _XEVEM_PRESET
     u8 ats_intra_fast;
     u8 mmvd_fast;
     u8 me_fast;
+    u8 use_btt;
 
 } XEVEM_PRESET;
 

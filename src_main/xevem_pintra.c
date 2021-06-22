@@ -75,7 +75,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
         SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
         DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
         xeve_sbac_bit_reset(&core->s_temp_run);
-        xeve_rdo_bit_cnt_cu_intra_luma(ctx, core, ctx->sh.slice_type, core->scup, pi->coef_tmp);
+        xeve_rdo_bit_cnt_cu_intra_luma(ctx, core, ctx->sh->slice_type, core->scup, pi->coef_tmp);
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
 
         ctx->fn_itdp(ctx, core, pi->coef_tmp, core->nnz_sub);
@@ -141,7 +141,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
         }
 
         xeve_sbac_bit_reset(&core->s_temp_run);
-        xeve_rdo_bit_cnt_cu_intra_chroma(ctx, core, ctx->sh.slice_type, core->scup, coef);
+        xeve_rdo_bit_cnt_cu_intra_chroma(ctx, core, ctx->sh->slice_type, core->scup, coef);
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
 
         cost += core->dist_chroma_weight[0] * xeve_ssd_16b(log2_cuw - w_shift, log2_cuh - h_shift, pi->rec[U_C], org_cb, cuw >> w_shift, s_org_c, ctx->sps.bit_depth_chroma_minus8 + 8);
@@ -530,7 +530,7 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
                     best_ipd_c = i;
                     for(j = U_C; j < N_C; j++)
                     {
-                        int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : (w_shift + h_shift));
+                        int size_tmp = (cuw * cuh) >> (w_shift + h_shift);
                         xeve_mcpy(pi->coef_best[j], coef[j], size_tmp * sizeof(s16));
                         xeve_mcpy(pi->rec_best[j], pi->rec[j], size_tmp * sizeof(pel));
 
@@ -553,7 +553,7 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
 
             for(j = U_C; j < N_C; j++)
             {
-                int size_tmp = (cuw * cuh) >> (j == 0 ? 0 : 2);
+                int size_tmp = (cuw * cuh) >> (w_shift + h_shift);;
                 xeve_mcpy(pi->coef_best[j], coef[j], size_tmp * sizeof(s16));
                 xeve_mcpy(pi->rec_best[j], pi->rec[j], size_tmp * sizeof(pel));
 
@@ -603,7 +603,7 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
     DQP_STORE(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
     xeve_sbac_bit_reset(&core->s_temp_run);
-    xeve_rdo_bit_cnt_cu_intra_main(ctx, core, ctx->sh.slice_type, core->scup, coef);
+    xeve_rdo_bit_cnt_cu_intra_main(ctx, core, ctx->sh->slice_type, core->scup, coef);
 
     bit_cnt = xeve_get_bit_number(&core->s_temp_run);
     cost = RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);

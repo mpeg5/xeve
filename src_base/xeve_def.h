@@ -52,9 +52,9 @@
 
 
 //fast algorithm
-#define ENC_ECU_DEPTH                                8 // for early CU termination
+#define ENC_ECU_DEPTH                                7 // for early CU termination
 #define ENC_ECU_ADAPTIVE                             1 // for early CU termination
-#define ENC_ECU_DEPTH_B                              8 // for early CU termination
+#define ENC_ECU_DEPTH_B                              4 // for early CU termination
 #define MULTI_REF_ME_STEP                            1 // for ME speed-up
 #define FAST_MERGE_THR                               1.3
 #define ENC_SUCO_FAST_CONFIG                         1  /* fast config: 1(low complexity), 2(medium complexity), 4(high_complexity) */
@@ -452,7 +452,8 @@ extern int fp_trace_started;
 #define MODE_SKIP_MMVD                     4
 #define MODE_DIR_MMVD                      5
 #define MODE_IBC                           6
-/*****************************************************************************
+
+ /*****************************************************************************
  * prediction direction
  *****************************************************************************/
 /* inter pred direction, look list0 side */
@@ -1230,6 +1231,7 @@ typedef struct _XEVE_SH
     u32              alfChromaMapSignalled;
     u32              alfChroma2MapSignalled;
     int              aps_id_ch2;
+    u8               tile_order[MAX_NUM_TILES_COL * MAX_NUM_TILES_ROW];
 } XEVE_SH;
 
 /*****************************************************************************

@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -709,7 +709,7 @@ static u32 me_ipel_diamond(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
                     else
                     {
                         /* get MVD bits */
-                        mv_bits = get_mv_bits((mv_x << 2) - gmvp[MV_X], (mv_y << 2) - gmvp[MV_Y], pi->num_refp, refi, pi->curr_mvr, pi->sps_amvr_flag); 
+                        mv_bits = get_mv_bits((mv_x << 2) - gmvp[MV_X], (mv_y << 2) - gmvp[MV_Y], pi->num_refp, refi, pi->curr_mvr, pi->sps_amvr_flag);
 
                         if(bi)
                         {
@@ -922,7 +922,7 @@ static u32 me_spel_pattern(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
         cost = MV_COST(pi, mv_bits);
 
         /* get the interpolated(predicted) image */
-        xeve_mc_l((mv_x << 2), (mv_y << 2), ref, (mv_x << 2), (mv_y << 2), s_ref, cuw, pred, cuw, cuh, bit_depth_luma);
+        xeve_mc_l((mv_x << 2), (mv_y << 2), ref, (mv_x << 2), (mv_y << 2), s_ref, cuw, pred, cuw, cuh, bit_depth_luma, pi->mc_l_coeff);
 
         if(bi)
         {
@@ -969,7 +969,7 @@ static u32 me_spel_pattern(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
             cost = MV_COST(pi, mv_bits);
 
             /* get the interpolated(predicted) image */
-            xeve_mc_l((mv_x << 2), (mv_y << 2), ref, (mv_x << 2), (mv_y << 2), s_ref, cuw, pred, cuw, cuh, bit_depth_luma);
+            xeve_mc_l((mv_x << 2), (mv_y << 2), ref, (mv_x << 2), (mv_y << 2), s_ref, cuw, pred, cuw, cuh, bit_depth_luma, pi->mc_l_coeff);
 
             if(bi)
             {
@@ -1035,7 +1035,7 @@ static u32 pinter_me_epzs(XEVE_PINTER * pi, int x, int y, int log2_cuw, int log2
 
     mvc[MV_X] = XEVE_CLIP3(pi->min_clip[MV_X], pi->max_clip[MV_X], mvc[MV_X]);
     mvc[MV_Y] = XEVE_CLIP3(pi->min_clip[MV_Y], pi->max_clip[MV_Y], mvc[MV_Y]);
-    
+
     get_range_ipel(pi, mvc, range, (bi != BI_NORMAL) ? 0 : 1, ri, lidx);
     cost = me_ipel_diamond(pi, x, y, log2_cuw, log2_cuh, ri, lidx, range, gmvp, mvi, mvt, bi, &tmpstep, MAX_FIRST_SEARCH_STEP - pi->me_opt->max_first_search_step_th, bit_depth_luma);
 
@@ -1412,12 +1412,13 @@ static double pinter_residue_rdo_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int
 
     /* prediction */
     xeve_mc_mmvd(x, y, ctx->w, ctx->h, w, h, pi->refi[pidx], pi->mv[pidx], pi->refp, pred, ctx->sps.bit_depth_luma_minus8 + 8, &mcore->mmvd_opt);
+ 
     /* get distortion */
     y_org = pi->o[Y_C] + x + y * pi->s_o[Y_C];
     cost = xeve_satd_16b(log2_w, log2_h, pred[0][Y_C], y_org, w, pi->s_o[Y_C], ctx->sps.bit_depth_luma_minus8 + 8);
 
     /* get bits */
-    bit_cnt = mmvd_info_bit_cost(pi->mmvd_idx[pidx], ctx->sh.mmvd_group_enable_flag && !((1 << core->log2_cuw)*(1 << core->log2_cuh) <= NUM_SAMPLES_BLOCK));
+    bit_cnt = mmvd_info_bit_cost(pi->mmvd_idx[pidx], ctx->sh->mmvd_group_enable_flag && !((1 << core->log2_cuw)*(1 << core->log2_cuh) <= NUM_SAMPLES_BLOCK));
 
     /* get RD cost */
     cost += RATE_TO_COST_SQRT_LAMBDA(core->sqrt_lambda[0], bit_cnt);
@@ -1748,7 +1749,6 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     pel   *org[N_C];
     double cost_comp_best = MAX_COST;
     int    idx_best[N_C] = {0,};
-    int    j;
     u8     is_from_mv_field = 0;
     s64    dist_no_resi[N_C];
     int    log2_tuw, log2_tuh;
@@ -1930,6 +1930,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
                     dist[0][i] += core->delta_dist[i];
                 }
             }
+
             if(ctx->param.rdo_dbk_switch)
             {
                 //complete rec
@@ -1969,26 +1970,26 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 
                 xeve_sbac_bit_reset(&core->s_temp_run);
 
-                if(IS_INTER_SLICE(ctx->sh.slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
+                if(IS_INTER_SLICE(ctx->sh->slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
                 {
                     pi->mvd[pidx][REFP_0][MV_X] >>= pi->mvr_idx[pidx];
                     pi->mvd[pidx][REFP_0][MV_Y] >>= pi->mvr_idx[pidx];
                 }
 
-                if(ctx->sh.slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
+                if(ctx->sh->slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
                 {
                     pi->mvd[pidx][REFP_1][MV_X] >>= pi->mvr_idx[pidx];
                     pi->mvd[pidx][REFP_1][MV_Y] >>= pi->mvr_idx[pidx];
                 }
 
-                xeve_rdo_bit_cnt_cu_inter_main(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, pi->mvr_idx[pidx], pi->bi_idx[pidx], pi->affine_mvd[pidx]);
+                xeve_rdo_bit_cnt_cu_inter_main(ctx, core, ctx->sh->slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, pi->mvr_idx[pidx], pi->bi_idx[pidx], pi->affine_mvd[pidx]);
 
-                if(IS_INTER_SLICE(ctx->sh.slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
+                if(IS_INTER_SLICE(ctx->sh->slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
                 {
                     pi->mvd[pidx][REFP_0][MV_X] <<= pi->mvr_idx[pidx];
                     pi->mvd[pidx][REFP_0][MV_Y] <<= pi->mvr_idx[pidx];
                 }
-                if(ctx->sh.slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
+                if(ctx->sh->slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
                 {
                     pi->mvd[pidx][REFP_1][MV_X] <<= pi->mvr_idx[pidx];
                     pi->mvd[pidx][REFP_1][MV_Y] <<= pi->mvr_idx[pidx];
@@ -2032,25 +2033,25 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 
             xeve_sbac_bit_reset(&core->s_temp_run);
 
-            if(IS_INTER_SLICE(ctx->sh.slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
+            if(IS_INTER_SLICE(ctx->sh->slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
             {
                 pi->mvd[pidx][REFP_0][MV_X] >>= pi->mvr_idx[pidx];
                 pi->mvd[pidx][REFP_0][MV_Y] >>= pi->mvr_idx[pidx];
             }
-            if(ctx->sh.slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
+            if(ctx->sh->slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
             {
                 pi->mvd[pidx][REFP_1][MV_X] >>= pi->mvr_idx[pidx];
                 pi->mvd[pidx][REFP_1][MV_Y] >>= pi->mvr_idx[pidx];
             }
 
-            xeve_rdo_bit_cnt_cu_inter_main(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, pi->mvr_idx[pidx], pi->bi_idx[pidx], pi->affine_mvd[pidx]);
+            xeve_rdo_bit_cnt_cu_inter_main(ctx, core, ctx->sh->slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, pi->mvr_idx[pidx], pi->bi_idx[pidx], pi->affine_mvd[pidx]);
 
-            if(IS_INTER_SLICE(ctx->sh.slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
+            if(IS_INTER_SLICE(ctx->sh->slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
             {
                 pi->mvd[pidx][REFP_0][MV_X] <<= pi->mvr_idx[pidx];
                 pi->mvd[pidx][REFP_0][MV_Y] <<= pi->mvr_idx[pidx];
             }
-            if(ctx->sh.slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
+            if(ctx->sh->slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
             {
                 pi->mvd[pidx][REFP_1][MV_X] <<= pi->mvr_idx[pidx];
                 pi->mvd[pidx][REFP_1][MV_Y] <<= pi->mvr_idx[pidx];
@@ -2077,128 +2078,10 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
                 }
             }
 
-            SBAC_LOAD(core->s_temp_prev_comp_best, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
-            /* cbf test for each component */
-            for(i = 0; i < N_C; i++)
-            {
-                if(nnz_store[i] > 0)
-                {
-                    cost_comp_best = MAX_COST;
-                    SBAC_LOAD(core->s_temp_prev_comp_run, core->s_temp_prev_comp_best);
-                    for(j = 0; j < 2; j++)
-                    {
-                        cost = dist[j][i] * (i == 0 ? 1 : core->dist_chroma_weight[i - 1]);
-                        nnz[i] = j ? nnz_store[i] : 0;
-                        if(j)
-                        {
-                            xeve_mcpy(core->nnz_sub[i], nnz_sub_store[i], sizeof(int) * MAX_SUB_TB_NUM);
-                        }
-                        else
-                        {
-                            xeve_mset(core->nnz_sub[i], 0, sizeof(int) * MAX_SUB_TB_NUM);
-                        }
-
-                        SBAC_LOAD(core->s_temp_run, core->s_temp_prev_comp_run);
-                        xeve_sbac_bit_reset(&core->s_temp_run);
-                        xeve_rdo_bit_cnt_cu_inter_comp(core, coef, i, pidx, ctx
-                                                       , core->tree_cons);
-
-                        bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-                        cost += RATE_TO_COST_LAMBDA(core->lambda[i], bit_cnt);
-                        if(cost < cost_comp_best)
-                        {
-                            cost_comp_best = cost;
-                            idx_best[i] = j;
-                            SBAC_STORE(core->s_temp_prev_comp_best, core->s_temp_run);
-                        }
-                    }
-                }
-                else
-                {
-                    idx_best[i] = 0;
-                }
-            }
-
-            if(idx_best[Y_C] != 0 || idx_best[U_C] != 0 || idx_best[V_C] != 0)
-            {
-                idx_y = idx_best[Y_C];
-                idx_u = idx_best[U_C];
-                idx_v = idx_best[V_C];
-                nnz[Y_C] = idx_y ? nnz_store[Y_C] : 0;
-                nnz[U_C] = idx_u ? nnz_store[U_C] : 0;
-                nnz[V_C] = idx_v ? nnz_store[V_C] : 0;
-                for(i = 0; i < N_C; i++)
-                {
-                    if(idx_best[i])
-                    {
-                        xeve_mcpy(core->nnz_sub[i], nnz_sub_store[i], sizeof(int) * MAX_SUB_TB_NUM);
-                    }
-                    else
-                    {
-                        xeve_mset(core->nnz_sub[i], 0, sizeof(int) * MAX_SUB_TB_NUM);
-                    }
-                }
-            }
-
-            if(nnz[Y_C] != nnz_store[Y_C] || nnz[U_C] != nnz_store[U_C] || nnz[V_C] != nnz_store[V_C])
-            {
-                cost = (double)dist[idx_y][Y_C] + (((double)dist[idx_u][U_C] * core->dist_chroma_weight[0]) + ((double)dist[idx_v][V_C] * core->dist_chroma_weight[1]));
-
-                SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
-                DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
-
-                xeve_sbac_bit_reset(&core->s_temp_run);
-
-                if(IS_INTER_SLICE(ctx->sh.slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
-                {
-                    pi->mvd[pidx][REFP_0][MV_X] >>= pi->mvr_idx[pidx];
-                    pi->mvd[pidx][REFP_0][MV_Y] >>= pi->mvr_idx[pidx];
-                }
-                if(ctx->sh.slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
-                {
-                    pi->mvd[pidx][REFP_1][MV_X] >>= pi->mvr_idx[pidx];
-                    pi->mvd[pidx][REFP_1][MV_Y] >>= pi->mvr_idx[pidx];
-                }
-
-                xeve_rdo_bit_cnt_cu_inter_main(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, pi->mvr_idx[pidx], pi->bi_idx[pidx], pi->affine_mvd[pidx]);
-
-                if(IS_INTER_SLICE(ctx->sh.slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
-                {
-                    pi->mvd[pidx][REFP_0][MV_X] <<= pi->mvr_idx[pidx];
-                    pi->mvd[pidx][REFP_0][MV_Y] <<= pi->mvr_idx[pidx];
-                }
-                if(ctx->sh.slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
-                {
-                    pi->mvd[pidx][REFP_1][MV_X] <<= pi->mvr_idx[pidx];
-                    pi->mvd[pidx][REFP_1][MV_Y] <<= pi->mvr_idx[pidx];
-                }
-
-                bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-                cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
-
-                if(cost < cost_best)
-                {
-                    cost_best = cost;
-                    cbf_idx[Y_C] = idx_y;
-                    cbf_idx[U_C] = idx_u;
-                    cbf_idx[V_C] = idx_v;
-                    SBAC_STORE(core->s_temp_best, core->s_temp_run);
-                    DQP_STORE(core->dqp_temp_best, core->dqp_temp_run);
-                    ats_inter_info_best = mcore->ats_inter_info;
-                    core->cost_best = cost < core->cost_best ? cost : core->cost_best;
-                    if(ats_inter_mode_idx == 0)
-                    {
-                        dist_ats_inter0 = (s64)(cost_best - RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt));
-                        cost_ats_inter0 = cost_best;
-                        root_cbf_ats_inter0 = (idx_y + idx_u + idx_v) != 0;
-                    }
-                }
-            }
-
-            for(i = 0; i < N_C; i++)
+            for (i = 0; i < N_C; i++)
             {
                 nnz[i] = (cbf_idx[i] ? nnz_store[i] : 0);
-                if(cbf_idx[i])
+                if (cbf_idx[i])
                 {
                     xeve_mcpy(core->nnz_sub[i], nnz_sub_store[i], sizeof(int) * MAX_SUB_TB_NUM);
                 }
@@ -2206,7 +2089,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
                 {
                     xeve_mset(core->nnz_sub[i], 0, sizeof(int) * MAX_SUB_TB_NUM);
                 }
-                if(nnz[i] == 0 && nnz_store[i] != 0)
+                if (nnz[i] == 0 && nnz_store[i] != 0)
                 {
                     xeve_mset(core->nnz_sub[i], 0, sizeof(int) * MAX_SUB_TB_NUM);
                     xeve_mset(coef[i], 0, sizeof(s16) * ((cuw * cuh) >> (i == 0 ? 0 : w_shift + h_shift)));
@@ -2278,25 +2161,25 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 
             xeve_sbac_bit_reset(&core->s_temp_run);
 
-            if(IS_INTER_SLICE(ctx->sh.slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
+            if(IS_INTER_SLICE(ctx->sh->slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
             {
                 pi->mvd[pidx][REFP_0][MV_X] >>= pi->mvr_idx[pidx];
                 pi->mvd[pidx][REFP_0][MV_Y] >>= pi->mvr_idx[pidx];
             }
-            if(ctx->sh.slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
+            if(ctx->sh->slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
             {
                 pi->mvd[pidx][REFP_1][MV_X] >>= pi->mvr_idx[pidx];
                 pi->mvd[pidx][REFP_1][MV_Y] >>= pi->mvr_idx[pidx];
             }
 
-            xeve_rdo_bit_cnt_cu_inter_main(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, pi->mvr_idx[pidx], pi->bi_idx[pidx], pi->affine_mvd[pidx]);
+            xeve_rdo_bit_cnt_cu_inter_main(ctx, core, ctx->sh->slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, pi->mvr_idx[pidx], pi->bi_idx[pidx], pi->affine_mvd[pidx]);
 
-            if(IS_INTER_SLICE(ctx->sh.slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
+            if(IS_INTER_SLICE(ctx->sh->slice_type) && REFI_IS_VALID(pi->refi[pidx][REFP_0]))
             {
                 pi->mvd[pidx][REFP_0][MV_X] <<= pi->mvr_idx[pidx];
                 pi->mvd[pidx][REFP_0][MV_Y] <<= pi->mvr_idx[pidx];
             }
-            if(ctx->sh.slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
+            if(ctx->sh->slice_type == SLICE_B && REFI_IS_VALID(pi->refi[pidx][REFP_1]))
             {
                 pi->mvd[pidx][REFP_1][MV_X] <<= pi->mvr_idx[pidx];
                 pi->mvd[pidx][REFP_1][MV_Y] <<= pi->mvr_idx[pidx];
@@ -2367,7 +2250,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 static void get_mmvd_mvp_list(s8(*map_refi)[REFP_NUM], XEVE_REFP refp[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int w_scu, int h_scu, int scup, u16 avail, int log2_cuw, int log2_cuh, int slice_t
                             , int real_mv[][2][3], u32 *map_scu, int REF_SET[][MAX_NUM_ACTIVE_REF_FRAME], u16 avail_lr
                             , u32 curr_ptr, u8 num_refp[REFP_NUM]
-                            , XEVE_HISTORY_BUFFER history_buffer, int admvp_flag, XEVE_SH* sh, int log2_max_cuwh, u8* map_tidx, int mmvd_idx)
+                            , XEVE_HISTORY_BUFFER history_buffer, int admvp_flag, XEVE_SH* sh, int log2_max_cuwh, u8* map_tidx)
 {
     int ref_mvd = 0;
     int ref_mvd1 = 0;
@@ -2398,14 +2281,14 @@ static void get_mmvd_mvp_list(s8(*map_refi)[REFP_NUM], XEVE_REFP refp[REFP_NUM],
     int base_mv_p[25][3][3];
     int small_cu = (cuw*cuh <= NUM_SAMPLES_BLOCK) ? 1 : 0;
 
-    int base_st = mmvd_idx == -1 ? 0 : (mmvd_idx & 127) >> 5;
-    int base_ed = mmvd_idx == -1 ? MMVD_BASE_MV_NUM : base_st + 1;
+    int base_st = 0;
+    int base_ed = MMVD_BASE_MV_NUM;
 
-    int group_st = mmvd_idx == -1 ? 0 : mmvd_idx >> 7;
-    int group_ed = mmvd_idx == -1 ? (small_cu ? 1 : 3) : group_st + 1;
+    int group_st = 0;
+    int group_ed =  (small_cu ? 1 : 3);
 
-    int mmvd_v_st = mmvd_idx == -1 ? 0 : (mmvd_idx & 31);
-    int mmvd_v_ed = mmvd_idx == -1 ? MMVD_MAX_REFINE_NUM : mmvd_v_st + 1;
+    int mmvd_v_st = 0;
+    int mmvd_v_ed = MMVD_MAX_REFINE_NUM;
 
     if (admvp_flag == 0)
     {
@@ -2524,7 +2407,6 @@ static void get_mmvd_mvp_list(s8(*map_refi)[REFP_NUM], XEVE_REFP refp[REFP_NUM],
                 {
                     base_mv_p[k][0][MV_X] = base_mv_t[k][REFP_0][MV_X];
                     base_mv_p[k][0][MV_Y] = base_mv_t[k][REFP_0][MV_Y];
-                    base_mv_p[k][0][REFI] = base_mv_p[k][REFP_0][REFI];
 
                     poc0 = REF_SET[0][base_mv_p[k][0][REFI]];
                     poc_c = curr_ptr;
@@ -2779,16 +2661,6 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
     int cuh = (1 << log2_cuh);
     int small_cu = 0;
     int c_num = 0;
-    s16 mvp[MAX_NUM_MVP][MV_D];
-    s16 mvp1[MAX_NUM_MVP][MV_D];
-    s8 refi[MAX_NUM_MVP];
-    s8 refi1[MAX_NUM_MVP];
-    int sld[MMVD_BASE_MV_NUM*MMVD_BASE_MV_NUM][2];
-    int idx0, idx1;
-    int s, z, a;
-    int sld1[MMVD_BASE_MV_NUM];
-    int sld2[MMVD_BASE_MV_NUM];
-    int comp;
     int c_win = 0;
     s8 srefi[REFP_NUM][MAX_NUM_MVP];
     s16 smvp[REFP_NUM][MAX_NUM_MVP][MV_D];
@@ -2802,26 +2674,12 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
     {
         base_skip[k] = 1;
     }
-    for(s = 0; s < MMVD_BASE_MV_NUM; s++)
-    {
-        sld1[s] = s;
-        sld2[s] = s;
-    }
-    for(z = 0; z < MMVD_BASE_MV_NUM; z++)
-    {
-        comp = z;
-        for(s = 0; s < MMVD_BASE_MV_NUM; s++)
-        {
-            a = s + comp;
-            if(a >= MMVD_BASE_MV_NUM)
-            {
-                a = a - MMVD_BASE_MV_NUM;
-            }
-            sld[c_win][0] = sld1[s];
-            sld[c_win][1] = sld2[a];
-            c_win++;
-        }
-    }
+
+    int sld[MMVD_BASE_MV_NUM*MMVD_BASE_MV_NUM][2] = {
+    {0, 0}, {1, 1}, {2, 2}, {3, 3},
+    {0, 1}, {1, 2}, {2, 3}, {3, 0},
+    {0, 2}, {1, 3}, {2, 0}, {3, 1},
+    {0, 3}, {1, 0}, {2, 1}, {3, 2}, };
 
     if(admvp_flag == 0)
     {
@@ -2833,47 +2691,17 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
                                    , NULL, history_buffer, 0, (XEVE_REFP(*)[2])refp, sh, log2_max_cuwh, ctx->map_tidx);
     }
 
-    for(z = 0; z < MAX_NUM_MVP; z++)
+    for (k = 0; k < MMVD_BASE_MV_NUM; k++)
     {
-        mvp[z][MV_X] = smvp[REFP_0][z][MV_X];
-        mvp[z][MV_Y] = smvp[REFP_0][z][MV_Y];
-        mvp1[z][MV_X] = smvp[REFP_1][z][MV_X];
-        mvp1[z][MV_Y] = smvp[REFP_1][z][MV_Y];
-        refi[z] = srefi[REFP_0][z];
-        refi1[z] = srefi[REFP_1][z];
+        base_mv[k][REFP_0][MV_X] = smvp[REFP_0][k][MV_X];
+        base_mv[k][REFP_0][MV_Y] = smvp[REFP_0][k][MV_Y];
+        base_mv[k][REFP_1][MV_X] = smvp[REFP_1][k][MV_X];
+        base_mv[k][REFP_1][MV_Y] = smvp[REFP_1][k][MV_Y];
+        base_mv[k][REFP_0][2]    = srefi[REFP_0][k];
+        base_mv[k][REFP_1][2]    = srefi[REFP_1][k];
+
     }
 
-    if(slice_t == SLICE_B)
-    {
-        for(k = 0; k < MMVD_BASE_MV_NUM; k++)
-        {
-            base_mv[c_num][0][MV_X] = mvp[sld[k][0]][MV_X];
-            base_mv[c_num][0][MV_Y] = mvp[sld[k][0]][MV_Y];
-            base_mv[c_num][1][MV_X] = mvp1[sld[k][1]][MV_X];
-            base_mv[c_num][1][MV_Y] = mvp1[sld[k][1]][MV_Y];
-            base_mv[c_num][0][2] = refi[sld[k][0]];
-            base_mv[c_num][1][2] = refi1[sld[k][1]];
-
-            c_num++;
-        }
-    }
-    else
-    {
-        for(idx0 = 0; idx0 < ORG_MAX_NUM_MVP; idx0++)
-        {
-            idx1 = idx0;
-            {
-                base_mv[c_num][0][MV_X] = mvp[idx0][MV_X];
-                base_mv[c_num][0][MV_Y] = mvp[idx0][MV_Y];
-                base_mv[c_num][1][MV_X] = mvp1[idx1][MV_X];
-                base_mv[c_num][1][MV_Y] = mvp1[idx1][MV_Y];
-                base_mv[c_num][0][2] = refi[idx0];
-                base_mv[c_num][1][2] = refi1[idx1];
-
-                c_num++;
-            }
-        }
-    }
     for(k = 0; k < MMVD_BASE_MV_NUM - 1; k++)
     {
         if(base_skip[k] == 1)
@@ -2884,23 +2712,21 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
                 {
                     if((base_mv[k][1][2] != -1) && (base_mv[nn][1][2] != -1))
                     {
-                        if((base_mv[k][0][MV_X] == base_mv[nn][0][MV_X])
-                           && (base_mv[k][0][MV_Y] == base_mv[nn][0][MV_Y])
-                           && (base_mv[k][0][2] == base_mv[nn][0][2])
-                           && (base_mv[k][1][MV_X] == base_mv[nn][1][MV_X])
-                           && (base_mv[k][1][MV_Y] == base_mv[nn][1][MV_Y])
-                           && (base_mv[k][1][2] == base_mv[nn][1][2])
-                           )
+                        if((base_mv[k][0][MV_X] == base_mv[nn][0][MV_X])  &&
+                           (base_mv[k][0][MV_Y] == base_mv[nn][0][MV_Y])  &&
+                           (base_mv[k][0][2]    == base_mv[nn][0][2])     &&
+                           (base_mv[k][1][MV_X] == base_mv[nn][1][MV_X])  &&
+                           (base_mv[k][1][MV_Y] == base_mv[nn][1][MV_Y])  &&
+                           (base_mv[k][1][2]    == base_mv[nn][1][2]))
                         {
                             base_skip[nn] = -1;
                         }
                     }
                     else if((base_mv[k][1][2] == -1) && (base_mv[nn][1][2] == -1))
                     {
-                        if((base_mv[k][0][MV_X] == base_mv[nn][0][MV_X])
-                           && (base_mv[k][0][MV_Y] == base_mv[nn][0][MV_Y])
-                           && (base_mv[k][0][2] == base_mv[nn][0][2])
-                           )
+                        if((base_mv[k][0][MV_X] == base_mv[nn][0][MV_X]) &&
+                           (base_mv[k][0][MV_Y] == base_mv[nn][0][MV_Y]) &&
+                           (base_mv[k][0][2]    == base_mv[nn][0][2]))
                         {
                             base_skip[nn] = -1;
                         }
@@ -2911,10 +2737,9 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
                 {
                     if((base_mv[k][1][2] != -1) && (base_mv[nn][1][2] != -1))
                     {
-                        if((base_mv[k][1][MV_X] == base_mv[nn][1][MV_X])
-                           && (base_mv[k][1][MV_Y] == base_mv[nn][1][MV_Y])
-                           && (base_mv[k][1][2] == base_mv[nn][1][2])
-                           )
+                        if((base_mv[k][1][MV_X] == base_mv[nn][1][MV_X]) &&
+                           (base_mv[k][1][MV_Y] == base_mv[nn][1][MV_Y]) &&
+                           (base_mv[k][1][2] == base_mv[nn][1][2]))
                         {
                             base_skip[nn] = -1;
                         }
@@ -2930,15 +2755,15 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
 
     for(c_num = 0; c_num < 3 * t_base_num; c_num++)
     {
-        if((c_num >= t_base_num) && (!(ctx->sh.mmvd_group_enable_flag) || (small_cu == 1)))
+        if((c_num >= t_base_num) && (!(ctx->sh->mmvd_group_enable_flag) || (small_cu == 1)))
         {
             continue;
         }
 
         cur_num = c_num;
-        if(cur_num >= (MMVD_MAX_REFINE_NUM*MMVD_BASE_MV_NUM))
+        if(cur_num >= t_base_num)
         {
-            cur_num = cur_num % (MMVD_MAX_REFINE_NUM*MMVD_BASE_MV_NUM);
+            cur_num = cur_num % t_base_num;
         }
         dev0 = cur_num / (MMVD_MAX_REFINE_NUM);
         if(base_skip[dev0] == -1)
@@ -2986,12 +2811,12 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
 
     if(ctx->sps.tool_admvp == 0)
     {
-        xeve_get_motion_skip(ctx->sh.slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], cuw, cuh, ctx->w_scu, pi->refi_pred, pi->mvp, core->avail_cu);
+        xeve_get_motion_skip(ctx->sh->slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], cuw, cuh, ctx->w_scu, pi->refi_pred, pi->mvp, core->avail_cu);
     }
     else
     {
         xevem_get_motion_merge(ctx->poc.poc_val, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, pi->refp[0], cuw, cuh, ctx->w_scu, ctx->h_scu, pi->refi_pred, pi->mvp, ctx->map_scu, core->avail_lr
-                                   , ctx->map_unrefined_mv, mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], &ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
+                                   , ctx->map_unrefined_mv, mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
     }
 
     if(ctx->pps.cu_qp_delta_enabled_flag)
@@ -3003,6 +2828,7 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
     }
     pi->mvp_idx[PRED_SKIP][REFP_0] = 0;
     pi->mvp_idx[PRED_SKIP][REFP_1] = 0;
+
     for(idx0 = 0; idx0 < (cuw*cuh <= NUM_SAMPLES_BLOCK ? MAX_NUM_MVP_SMALL_CU : MAX_NUM_MVP); idx0++)
     {
         idx1 = idx0;
@@ -3013,7 +2839,7 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
             mvp[REFP_1][MV_X] = pi->mvp[REFP_1][idx1][MV_X];
             mvp[REFP_1][MV_Y] = pi->mvp[REFP_1][idx1][MV_Y];
 
-            SET_REFI(refi, pi->refi_pred[REFP_0][idx0], ctx->sh.slice_type == SLICE_B ? pi->refi_pred[REFP_1][idx1] : REFI_INVALID);
+            SET_REFI(refi, pi->refi_pred[REFP_0][idx0], ctx->sh->slice_type == SLICE_B ? pi->refi_pred[REFP_1][idx1] : REFI_INVALID);
             if(!REFI_IS_VALID(refi[REFP_0]) && !REFI_IS_VALID(refi[REFP_1]))
             {
                 continue;
@@ -3045,7 +2871,7 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
             DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
             xeve_sbac_bit_reset(&core->s_temp_run);
-            xeve_rdo_bit_cnt_cu_skip_main(ctx, core, ctx->sh.slice_type, core->scup, idx0, idx1, 0, ctx->sps.tool_mmvd);
+            xeve_rdo_bit_cnt_cu_skip_main(ctx, core, ctx->sh->slice_type, core->scup, idx0, idx1, 0, ctx->sps.tool_mmvd);
 
             bit_cnt = xeve_get_bit_number(&core->s_temp_run);
             cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -3186,17 +3012,17 @@ static double analyze_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int lo
 
     if(ctx->sps.tool_admvp == 0)
     {
-        xeve_get_motion_skip(ctx->sh.slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], cuw, cuh, ctx->w_scu, pi->refi_pred, pi->mvp, core->avail_cu);
+        xeve_get_motion_skip(ctx->sh->slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], cuw, cuh, ctx->w_scu, pi->refi_pred, pi->mvp, core->avail_cu);
     }
     else
     {
         xevem_get_motion_merge(ctx->poc.poc_val, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, pi->refp[0], cuw, cuh, ctx->w_scu, ctx->h_scu, pi->refi_pred, pi->mvp, ctx->map_scu, core->avail_lr
-                                   , ctx->map_unrefined_mv, mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], &ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
+                             , ctx->map_unrefined_mv, mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
     }
 
     for(idx0 = 0; idx0 < (cuw*cuh <= NUM_SAMPLES_BLOCK ? MAX_NUM_MVP_SMALL_CU : MAX_NUM_MVP); idx0++)
     {
-        if(ctx->sh.slice_type == SLICE_B && 0 == mcore->eval_mvp_idx[idx0])
+        if(ctx->sh->slice_type == SLICE_B && 0 == mcore->eval_mvp_idx[idx0])
         {
             continue;
         }
@@ -3205,7 +3031,7 @@ static double analyze_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int lo
         mvp[REFP_1][MV_X] = pi->mvp[REFP_1][idx0][MV_X];
         mvp[REFP_1][MV_Y] = pi->mvp[REFP_1][idx0][MV_Y];
 
-        SET_REFI(refi, pi->refi_pred[REFP_0][idx0], ctx->sh.slice_type == SLICE_B ? pi->refi_pred[REFP_1][idx0] : REFI_INVALID);
+        SET_REFI(refi, pi->refi_pred[REFP_0][idx0], ctx->sh->slice_type == SLICE_B ? pi->refi_pred[REFP_1][idx0] : REFI_INVALID);
         if(!REFI_IS_VALID(refi[REFP_0]) && !REFI_IS_VALID(refi[REFP_1]))
         {
             continue;
@@ -3381,7 +3207,7 @@ static double analyze_skip_mmvd(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, 
         pi->refi[PRED_SKIP_MMVD][0] = real_mv[c_num][0][2];
         pi->refi[PRED_SKIP_MMVD][1] = real_mv[c_num][1][2];
 
-        SET_REFI(refi, real_mv[c_num][0][2], ctx->sh.slice_type == SLICE_B ? real_mv[c_num][1][2] : REFI_INVALID);
+        SET_REFI(refi, real_mv[c_num][0][2], ctx->sh->slice_type == SLICE_B ? real_mv[c_num][1][2] : REFI_INVALID);
         if(!REFI_IS_VALID(refi[REFP_0]) && !REFI_IS_VALID(refi[REFP_1]))
         {
             continue;
@@ -3410,7 +3236,7 @@ static double analyze_skip_mmvd(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, 
         DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
         xeve_sbac_bit_reset(&core->s_temp_run);
-        xeve_rdo_bit_cnt_cu_skip_main(ctx, core, ctx->sh.slice_type, core->scup, 0, 0, c_num, ctx->sps.tool_mmvd);
+        xeve_rdo_bit_cnt_cu_skip_main(ctx, core, ctx->sh->slice_type, core->scup, 0, 0, c_num, ctx->sps.tool_mmvd);
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
         cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
 
@@ -3483,7 +3309,7 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
     mcore->ats_inter_info = 0;
 
     pidx = PRED_DIR_MMVD;
-    SET_REFI(pi->refi[pidx], 0, ctx->sh.slice_type == SLICE_B ? 0 : REFI_INVALID);
+    SET_REFI(pi->refi[pidx], 0, ctx->sh->slice_type == SLICE_B ? 0 : REFI_INVALID);
 
     for(i = 0; i < MMVD_SKIP_CON_NUM; i++)
     {
@@ -3511,10 +3337,16 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         }
     }
 
+    int max_dist = 0;
     for(moving_index = 0; moving_index < 3 * t_base_num; moving_index++)
     {
-        c_num = current_array[moving_index];
-        if((moving_index >= t_base_num) && (!(ctx->sh.mmvd_group_enable_flag) || ((1 << core->log2_cuw)*(1 << core->log2_cuh) <= NUM_SAMPLES_BLOCK)))
+        c_num = moving_index;
+        if((moving_index >= t_base_num) && (!(ctx->sh->mmvd_group_enable_flag) || ((1 << core->log2_cuw)*(1 << core->log2_cuh) <= NUM_SAMPLES_BLOCK)))
+        {
+            continue;
+        }
+
+        if (c_num >= 32 && ((c_num & 31) >> 2) > max_dist + 1)
         {
             continue;
         }
@@ -3531,7 +3363,7 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         pi->refi[pidx][0] = real_mv[c_num][0][2];
         pi->refi[pidx][1] = real_mv[c_num][1][2];
 
-        SET_REFI(refi, real_mv[c_num][0][2], ctx->sh.slice_type == SLICE_B ? real_mv[c_num][1][2] : REFI_INVALID);
+        SET_REFI(refi, real_mv[c_num][0][2], ctx->sh->slice_type == SLICE_B ? real_mv[c_num][1][2] : REFI_INVALID);
         if(!REFI_IS_VALID(refi[REFP_0]) && !REFI_IS_VALID(refi[REFP_1]))
         {
             continue;
@@ -3548,6 +3380,11 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 
         if(temp_cost < direct_cost[current_idx])
         {
+            if (c_num < 32 && max_dist < (c_num >> 2))
+            {
+                max_dist = (c_num >> 2);
+            }
+
             direct_cost[current_idx] = temp_cost;
             pi->best_index[pidx][current_idx] = c_num;
 
@@ -3606,7 +3443,7 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         pi->refi[pidx][0] = real_mv[c_num][0][2];
         pi->refi[pidx][1] = real_mv[c_num][1][2];
 
-        SET_REFI(refi, real_mv[c_num][0][2], ctx->sh.slice_type == SLICE_B ? real_mv[c_num][1][2] : REFI_INVALID);
+        SET_REFI(refi, real_mv[c_num][0][2], ctx->sh->slice_type == SLICE_B ? real_mv[c_num][1][2] : REFI_INVALID);
         if(!REFI_IS_VALID(refi[REFP_0]) && !REFI_IS_VALID(refi[REFP_1]))
         {
             continue;
@@ -3647,7 +3484,7 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         pi->refi[pidx][0] = real_mv[c_num][0][2];
         pi->refi[pidx][1] = real_mv[c_num][1][2];
 
-        SET_REFI(refi, real_mv[c_num][0][2], ctx->sh.slice_type == SLICE_B ? real_mv[c_num][1][2] : REFI_INVALID);
+        SET_REFI(refi, real_mv[c_num][0][2], ctx->sh->slice_type == SLICE_B ? real_mv[c_num][1][2] : REFI_INVALID);
         if(!REFI_IS_VALID(refi[REFP_0]) && !REFI_IS_VALID(refi[REFP_1]))
         {
             continue;
@@ -3672,7 +3509,7 @@ static double analyze_merge_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 }
 
 static s8 get_first_refi_main(int scup, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int cuw, int cuh, int w_scu, int h_scu, u32 *map_scu, u8 mvr_idx, u16 avail_lr
-                            , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER history_buffer, int hmvp_flag, u8* map_tidx)
+                            , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER * history_buffer, int hmvp_flag, u8* map_tidx)
 {
     int neb_addr[MAX_NUM_POSSIBLE_SCAND], valid_flag[MAX_NUM_POSSIBLE_SCAND];
     s8  refi = 0, default_refi;
@@ -3701,7 +3538,7 @@ s8 pinter_get_first_refi_main(XEVE_CTX *ctx, XEVE_CORE *core, int ref_idx, int p
     XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     return get_first_refi_main(core->scup, ref_idx, ctx->map_refi, ctx->map_mv, cuw, cuh, ctx->w_scu, ctx->h_scu, ctx->map_scu, pi->mvr_idx[pidx], core->avail_lr
-                                    , ctx->map_unrefined_mv, mcore->history_buffer, ctx->sps.tool_hmvp, ctx->map_tidx);
+                                    , ctx->map_unrefined_mv, &mcore->history_buffer, ctx->sps.tool_hmvp, ctx->map_tidx);
 }
 
 static double analyze_bi(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, double * cost_inter)
@@ -4497,8 +4334,8 @@ static double analyze_affine_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y,
     v_org = pi->o[V_C] + (x >> w_shift) + ((y >> h_shift) * pi->s_o[V_C]);
 
     mrg_cnt = xeve_get_affine_merge_candidate(ctx->poc.poc_val, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, pi->refp, cuw, cuh, ctx->w_scu, ctx->h_scu
-                                              , core->avail_cu, mrg_list_refi, mrg_list_cp_mv, mrg_list_cp_num, ctx->map_scu, mctx->map_affine, ctx->log2_max_cuwh
-                                              , ctx->map_unrefined_mv, core->avail_lr, &ctx->sh, ctx->map_tidx);
+                                            , core->avail_cu, mrg_list_refi, mrg_list_cp_mv, mrg_list_cp_num, ctx->map_scu, mctx->map_affine, ctx->log2_max_cuwh
+                                            , ctx->map_unrefined_mv, core->avail_lr, ctx->sh, ctx->map_tidx);
 
     if(mrg_cnt == 0)
     {
@@ -4572,7 +4409,7 @@ static double analyze_affine_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y,
             DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
             xeve_sbac_bit_reset(&core->s_temp_run);
-            xeve_rdo_bit_cnt_cu_skip_main(ctx, core, ctx->sh.slice_type, core->scup, idx, 0, 0, ctx->sps.tool_mmvd);
+            xeve_rdo_bit_cnt_cu_skip_main(ctx, core, ctx->sh->slice_type, core->scup, idx, 0, 0, ctx->sps.tool_mmvd);
 
             bit_cnt = xeve_get_bit_number(&core->s_temp_run);
             cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -4726,13 +4563,12 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
         }
 
         get_mmvd_mvp_list(ctx->map_refi, ctx->refp[0], ctx->map_mv, ctx->w_scu, ctx->h_scu, core->scup, core->avail_cu, log2_cuw, log2_cuh, ctx->slice_type, real_mv, ctx->map_scu, REF_SET, core->avail_lr
-                               , ctx->poc.poc_val, ctx->rpm.num_refp
-                               , mcore->history_buffer, ctx->sps.tool_admvp, &ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx, -1);
+                        , ctx->poc.poc_val, ctx->rpm.num_refp
+                        , mcore->history_buffer, ctx->sps.tool_admvp, ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
+  
+        mmvd_base_skip(ctx, core, real_mv, log2_cuw, log2_cuh, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], ctx->w_scu, core->avail_cu, REF_SET
+                     , ctx->h_scu, ctx->map_scu, core->avail_lr, mcore->history_buffer, ctx->sps.tool_admvp, ctx->sh, ctx->log2_max_cuwh, ctx->poc.poc_val);
     }
-    mmvd_base_skip(ctx, core, real_mv, log2_cuw, log2_cuh, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], ctx->w_scu, core->avail_cu, REF_SET
-                   , ctx->h_scu, ctx->map_scu, core->avail_lr, mcore->history_buffer, ctx->sps.tool_admvp, &ctx->sh, ctx->log2_max_cuwh
-                   , ctx->poc.poc_val
-    );
     /* skip mode */
     cost = cost_inter[PRED_SKIP] = analyze_skip(ctx, core, x, y, log2_cuw, log2_cuh);
     if(cost < cost_best)
@@ -4857,7 +4693,7 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
                 {
                     mvp = pi->mvp_scale[lidx][refi_cur];
                     xeve_get_motion_from_mvr(pi->curr_mvr, ctx->poc.poc_val, core->scup, lidx, refi_cur, pi->num_refp, ctx->map_mv, ctx->map_refi, pi->refp, core->cuw, core->cuh, ctx->w_scu, ctx->h_scu, core->avail_cu, mvp, pi->refi_pred[lidx], ctx->map_scu, core->avail_lr
-                                             , ctx->map_unrefined_mv, mcore->history_buffer, ctx->sps.tool_hmvp, ctx->map_tidx);
+                                             , ctx->map_unrefined_mv, &mcore->history_buffer, ctx->sps.tool_hmvp, ctx->map_tidx);
                     mvp_idx[lidx] = 0;
 
                     /* motion search ********************/
@@ -4874,13 +4710,7 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
                     if(refi_cur > 0 && best_mecost != XEVE_UINT32_MAX && abs(pi->mvd[lidx][0][MV_X] + pi->mvd[lidx][0][MV_Y]) < th_mvd)
                         skip_me = 1;
 #endif
-                    if(skip_me)
-                    {
-                        mecost = XEVE_UINT32_MAX;
-                        mv[MV_X] = mvp[mvp_idx[lidx]][MV_X];
-                        mv[MV_Y] = mvp[mvp_idx[lidx]][MV_Y];
-                    }
-                    else
+
                     {
                         mecost = pi->fn_me(pi, x, y, log2_cuw, log2_cuh, &refi_cur, lidx, mvp[mvp_idx[lidx]], mv, 0, ctx->sps.bit_depth_luma_minus8 + 8);
                     }
@@ -5112,7 +4942,7 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
                             {
                                 xeve_affine_mc_l(x, y, refp->w_l, refp->h_l, cuw, cuh, affine_mvp[i], refp, pred, vertex_num, mcore->eif_tmp_buffer
                                                , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
-          
+
                                 mvp_temp = xeve_satd_16b(log2_cuw, log2_cuh, org, pred, s_org, cuw, ctx->sps.bit_depth_luma_minus8 + 8);
                                 mebits = 1; // zero mvd flag
                                 mebits += xeve_tbl_mvp_idx_bits[AFF_MAX_NUM_MVP][i]; // mvp idx
@@ -5335,7 +5165,7 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
                                 affine_mv[2][MV_Y] = affine_mv[0][MV_Y] + (affine_mv[1][MV_X] - affine_mv[0][MV_X]) * cuh / cuw;
                                 xeve_affine_mc_l(x, y, refp->w_l, refp->h_l, cuw, cuh, affine_mv, refp, pred, vertex_num, mcore->eif_tmp_buffer
                                                , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
-        
+
                                 mvp_temp = xeve_satd_16b(log2_cuw, log2_cuh, org, pred, s_org, cuw, ctx->sps.bit_depth_luma_minus8 + 8);
 
                                 // 4 parameter AFFINE MV
@@ -5620,8 +5450,8 @@ void pinter_mc_main(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int w, int h, 
     XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
     xevem_mc(x, y, ctx->w, ctx->h, w, h, refi, mv, refp, pred, poc_c, pi->dmvr_template, pi->dmvr_ref_pred_interpolated
-               , pi->dmvr_half_pred_interpolated, apply_dmvr && ctx->sps.tool_dmvr, pi->dmvr_padding_buf, &(mcore->dmvr_flag)
-               , dmvr_mv, ctx->sps.tool_admvp, ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
+           , pi->dmvr_half_pred_interpolated, apply_dmvr && ctx->sps.tool_dmvr, pi->dmvr_padding_buf, &(mcore->dmvr_flag)
+           , dmvr_mv, ctx->sps.tool_admvp, ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
 }
 
 static void pinter_save_best_info_main(XEVE_CTX *ctx, XEVE_CORE *core, int pidx)
@@ -5645,7 +5475,7 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
 {
     XEVE_PINTER *pi;
 
-    for(int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    for(int i = 0; i < ctx->cdsc.threads; i++)
     {
         pi = &ctx->pinter[i];
         pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : ctx->param.preset->me_range;
@@ -5688,19 +5518,8 @@ int xevem_pinter_create(XEVE_CTX *ctx, int complexity)
     ctx->fn_pinter_init_lcu = xeve_pinter_init_lcu;
     ctx->fn_pinter_set_complexity = pinter_set_complexity;
 
-    if(ctx->cdsc.ext->tool_admvp == 0)
-    {
-        xeve_mc_l_coeff = xeve_tbl_mc_l_coeff;
-        xeve_mc_c_coeff = xeve_tbl_mc_c_coeff;
-    }
-    else
-    {
-        xeve_mc_l_coeff = xevem_tbl_mc_l_coeff;
-        xeve_mc_c_coeff = xevem_tbl_mc_c_coeff;
-    }
-
     XEVE_PINTER * pi;
-    for(int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    for(int i = 0; i < ctx->cdsc.threads; i++)
     {
         pi = &ctx->pinter[i];
         /* set maximum/minimum value of search range */
@@ -5708,7 +5527,18 @@ int xevem_pinter_create(XEVE_CTX *ctx, int complexity)
         pi->min_clip[MV_Y] = -MAX_CU_SIZE + 1;
         pi->max_clip[MV_X] = ctx->param.w - 1;
         pi->max_clip[MV_Y] = ctx->param.h - 1;
+
+        if (ctx->cdsc.ext->tool_admvp == 0)
+        {
+            pi->mc_l_coeff = xeve_tbl_mc_l_coeff;
+            pi->mc_c_coeff = xeve_tbl_mc_c_coeff;
+        }
+        else
+        {
+            pi->mc_l_coeff = xevem_tbl_mc_l_coeff;
+            pi->mc_c_coeff = xevem_tbl_mc_c_coeff;
+        }
     }
-   
+
     return ctx->fn_pinter_set_complexity(ctx, complexity);
 }

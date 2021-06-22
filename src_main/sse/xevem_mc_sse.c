@@ -93,31 +93,31 @@ void mc_filter_bilin_horz_sse(s16 const *ref,
             for (col = rem_w; col > 7; col -= 8)
             {
                 /*load 8 pixel values from row 0*/
-                row1 = _mm_loadu_si128((__m128i*)(inp_copy + cnt));                             /*a0 a1 a2 a3 a4 a5 a6 a7*/
-                row11 = _mm_loadu_si128((__m128i*)(inp_copy + cnt + 1));                        /*a1 a2 a3 a4 a5 a6 a7 a8*/
-                row2 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride + cnt));       /*b0 b1 b2 b3 b4 b5 b6 b7*/
+                row1  = _mm_loadu_si128((__m128i*)(inp_copy + cnt));                   /*a0 a1 a2 a3 a4 a5 a6 a7*/
+                row11 = _mm_loadu_si128((__m128i*)(inp_copy + cnt + 1));               /*a1 a2 a3 a4 a5 a6 a7 a8*/
+                row2  = _mm_loadu_si128((__m128i*)(inp_copy + src_stride + cnt));      /*b0 b1 b2 b3 b4 b5 b6 b7*/
                 row22 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride + cnt + 1));  /*b1 b2 b3 b4 b5 b6 b7 b8*/
-                row3 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride2 + cnt));
+                row3  = _mm_loadu_si128((__m128i*)(inp_copy + src_stride2 + cnt));
                 row33 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride2 + cnt + 1));
-                row4 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride3 + cnt));
+                row4  = _mm_loadu_si128((__m128i*)(inp_copy + src_stride3 + cnt));
                 row44 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride3 + cnt + 1));
 
-                row1 = _mm_madd_epi16(row1, coeff0_1_8x16b);            /*a0+a1 a2+a3 a4+a5 a6+a7*/
+                row1  = _mm_madd_epi16(row1,  coeff0_1_8x16b);          /*a0+a1 a2+a3 a4+a5 a6+a7*/
                 row11 = _mm_madd_epi16(row11, coeff0_1_8x16b);          /*a1+a2 a3+a4 a5+a6 a7+a8*/
-                row2 = _mm_madd_epi16(row2, coeff0_1_8x16b);
+                row2  = _mm_madd_epi16(row2,  coeff0_1_8x16b);
                 row22 = _mm_madd_epi16(row22, coeff0_1_8x16b);
-                row3 = _mm_madd_epi16(row3, coeff0_1_8x16b);
+                row3  = _mm_madd_epi16(row3,  coeff0_1_8x16b);
                 row33 = _mm_madd_epi16(row33, coeff0_1_8x16b);
-                row4 = _mm_madd_epi16(row4, coeff0_1_8x16b);
+                row4  = _mm_madd_epi16(row4,  coeff0_1_8x16b);
                 row44 = _mm_madd_epi16(row44, coeff0_1_8x16b);
 
-                row1 = _mm_add_epi32(row1, offset_4x32b);
+                row1  = _mm_add_epi32(row1,  offset_4x32b);
                 row11 = _mm_add_epi32(row11, offset_4x32b);
-                row2 = _mm_add_epi32(row2, offset_4x32b);
+                row2  = _mm_add_epi32(row2,  offset_4x32b);
                 row22 = _mm_add_epi32(row22, offset_4x32b);
-                row3 = _mm_add_epi32(row3, offset_4x32b);
+                row3  = _mm_add_epi32(row3,  offset_4x32b);
                 row33 = _mm_add_epi32(row33, offset_4x32b);
-                row4 = _mm_add_epi32(row4, offset_4x32b);
+                row4  = _mm_add_epi32(row4,  offset_4x32b);
                 row44 = _mm_add_epi32(row44, offset_4x32b);
 
                 row1 = _mm_srai_epi32(row1, shift);
@@ -216,7 +216,7 @@ void mc_filter_bilin_horz_sse(s16 const *ref,
         for (row = height; row > 3; row -= 4)
         {
             /*load 8 pixel values from row 0*/
-            row1 = _mm_loadu_si128((__m128i*)(inp_copy));                        /*a0 a1 a2 a3 a4 a5 a6 a7*/
+            row1 = _mm_loadu_si128((__m128i*)(inp_copy));               /*a0 a1 a2 a3 a4 a5 a6 a7*/
             row2 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride));  /*a1 a2 a3 a4 a5 a6 a7 a8*/
             row3 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride2));
             row4 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride3));
@@ -300,7 +300,7 @@ void mc_filter_bilin_horz_sse(s16 const *ref,
         {
             for (col = 0; col < rem_w; col++)
             {
-                row1 = _mm_loadu_si128((__m128i*)(inp_copy + col));                        /*a0 a1 x x x x x x*/
+                row1 = _mm_loadu_si128((__m128i*)(inp_copy + col));               /*a0 a1 x x x x x x*/
                 row2 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride + col));  /*b0 b1 x x x x x x*/
                 row3 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride2 + col));
                 row4 = _mm_loadu_si128((__m128i*)(inp_copy + src_stride3 + col));
@@ -685,7 +685,7 @@ void xeve_mc_dmvr_l_n0_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_l_8pel_horz_clip_sse(ref, s_ref, pred, s_pred, xeve_mc_l_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0);
+    mc_filter_l_8pel_horz_clip_sse(ref, s_ref, pred, s_pred, xevem_tbl_mc_l_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0);
 }
 
 void xeve_mc_dmvr_l_0n_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth)
@@ -696,7 +696,7 @@ void xeve_mc_dmvr_l_0n_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_l_8pel_vert_clip_sse(ref, s_ref, pred, s_pred, xeve_mc_l_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N);
+    mc_filter_l_8pel_vert_clip_sse(ref, s_ref, pred, s_pred, xevem_tbl_mc_l_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N);
 }
 
 void xeve_mc_dmvr_l_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
@@ -716,8 +716,8 @@ void xeve_mc_dmvr_l_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
 
     int min = 0;
 
-    mc_filter_l_8pel_horz_no_clip_sse(ref, s_ref, buf, w, xeve_mc_l_coeff[dx], w, (h + 7), offset1, shift1);
-    mc_filter_l_8pel_vert_clip_sse(buf, w, pred, s_pred, xeve_mc_l_coeff[dy], w, h, min, max, offset2, shift2);
+    mc_filter_l_8pel_horz_no_clip_sse(ref, s_ref, buf, w, xevem_tbl_mc_l_coeff[dx], w, (h + 7), offset1, shift1);
+    mc_filter_l_8pel_vert_clip_sse(buf, w, pred, s_pred, xevem_tbl_mc_l_coeff[dy], w, h, min, max, offset2, shift2);
 }
 
 void xeve_bl_mc_l_00_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth)
@@ -883,7 +883,7 @@ void xeve_mc_dmvr_c_n0_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_c_4pel_horz_sse(ref, s_ref, pred, s_pred, xeve_mc_c_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0, 1);
+    mc_filter_c_4pel_horz_sse(ref, s_ref, pred, s_pred, xevem_tbl_mc_c_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0, 1);
 }
 
 void xeve_mc_dmvr_c_0n_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
@@ -894,7 +894,7 @@ void xeve_mc_dmvr_c_0n_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_c_4pel_vert_sse(ref, s_ref, pred, s_pred, xeve_mc_c_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N, 1);
+    mc_filter_c_4pel_vert_sse(ref, s_ref, pred, s_pred, xevem_tbl_mc_c_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N, 1);
 }
 
 void xeve_mc_dmvr_c_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
@@ -913,11 +913,11 @@ void xeve_mc_dmvr_c_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_c_4pel_horz_sse(ref, s_ref, buf, w, xeve_mc_c_coeff[dx], w, (h + 3), min, max, offset1, shift1, 0);
-    mc_filter_c_4pel_vert_sse(buf, w, pred, s_pred, xeve_mc_c_coeff[dy], w, h, min, max, offset2, shift2, 1);
+    mc_filter_c_4pel_horz_sse(ref, s_ref, buf, w, xevem_tbl_mc_c_coeff[dx], w, (h + 3), min, max, offset1, shift1, 0);
+    mc_filter_c_4pel_vert_sse(buf, w, pred, s_pred, xevem_tbl_mc_c_coeff[dy], w, h, min, max, offset2, shift2, 1);
 }
 
-XEVE_MC_L xeve_tbl_dmvr_mc_l_sse[2][2] =
+const XEVEM_MC xeve_tbl_dmvr_mc_l_sse[2][2] =
 
 {
   {
@@ -930,7 +930,7 @@ XEVE_MC_L xeve_tbl_dmvr_mc_l_sse[2][2] =
   }
 };
 
-XEVE_MC_C xeve_tbl_dmvr_mc_c_sse[2][2] =
+const XEVEM_MC xeve_tbl_dmvr_mc_c_sse[2][2] =
 {
   {
     xeve_mc_dmvr_c_00_sse, /* dx == 0 && dy == 0 */
@@ -943,7 +943,7 @@ XEVE_MC_C xeve_tbl_dmvr_mc_c_sse[2][2] =
 };
 
 /* luma and chroma will remain the same */
-XEVE_MC_L xeve_tbl_bl_mc_l_sse[2][2] =
+const XEVEM_MC xeve_tbl_bl_mc_l_sse[2][2] =
 {
     {
         xeve_bl_mc_l_00_sse,

@@ -735,20 +735,20 @@ void xeve_eco_tile_end_flag(XEVE_BSW * bs, int flag)
     xeve_sbac_encode_bin_trm(flag, sbac, bs);
 }
 
-void xeve_eco_run_length_cc(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int num_sig, int ch_type)
+void xeve_eco_run_length_cc(XEVE_CTX * ctx, XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int num_sig, int ch_type)
 {
-    XEVE_SBAC    *sbac;
-    XEVE_SBAC_CTX *sbac_ctx;
-    u32            num_coeff, scan_pos;
-    u32            sign, level, prev_level, run, last_flag;
-    s32            t0;
-    const u16     *scanp;
-    s16            coef_cur;
-    int ctx_last = 0;
+    XEVE_SBAC     * sbac;
+    XEVE_SBAC_CTX * sbac_ctx;
+    u32             num_coeff, scan_pos;
+    u32             sign, level, prev_level, run, last_flag;
+    s32             t0;
+    const u16     * scanp;
+    s16             coef_cur;
+    int             ctx_last = 0;
 
     sbac = GET_SBAC_ENC(bs);
     sbac_ctx = &sbac->ctx;
-    scanp = xeve_scan_tbl[COEF_SCAN_ZIGZAG][log2_w - 1][log2_h - 1];
+    scanp = xeve_tbl_scan[log2_w - 1][log2_h - 1];
     num_coeff = 1 << (log2_w + log2_h);
     run = 0;
     prev_level = 6;
@@ -807,9 +807,9 @@ void xeve_eco_run_length_cc(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int
 }
 
 
-static void xeve_eco_xcoef(XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int num_sig, int ch_type)
+static void xeve_eco_xcoef(XEVE_CTX * ctx, XEVE_BSW *bs, s16 *coef, int log2_w, int log2_h, int num_sig, int ch_type)
 {
-    xeve_eco_run_length_cc(bs, coef, log2_w, log2_h, num_sig, (ch_type == Y_C ? 0 : 1));
+    xeve_eco_run_length_cc(ctx, bs, coef, log2_w, log2_h, num_sig, (ch_type == Y_C ? 0 : 1));
 
 #if TRACE_COEFFS
     int cuw = 1 << log2_w;
@@ -1052,9 +1052,9 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
                         coef_temp[c] = coef[c];
                     }
                     if(c == 0)
-                    xeve_eco_xcoef(bs, coef_temp[c], log2_w_sub - (!!c), log2_h_sub - (!!c), nnz_sub[c][(j << 1) | i], c);
+                    xeve_eco_xcoef(ctx, bs, coef_temp[c], log2_w_sub - (!!c), log2_h_sub - (!!c), nnz_sub[c][(j << 1) | i], c);
                     else
-                        xeve_eco_xcoef(bs, coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, nnz_sub[c][(j << 1) | i], c);
+                        xeve_eco_xcoef(ctx, bs, coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, nnz_sub[c][(j << 1) | i], c);
 
                     if (is_sub)
                     {
@@ -1238,7 +1238,7 @@ int xeve_eco_mvd(XEVE_BSW *bs, s16 mvd[MV_D])
     XEVE_SBAC    *sbac;
     XEVE_SBAC_CTX *sbac_ctx;
     int            t0;
-    u32            mv;
+    s32            mv;
 
     sbac     = GET_SBAC_ENC(bs);
     sbac_ctx = &sbac->ctx;
@@ -1441,7 +1441,7 @@ int xeve_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int c
     XEVE_TRACE_STR("\n");
 
     xeve_get_ctx_some_flags(core->x_scu, core->y_scu, cuw, cuh, ctx->w_scu, ctx->map_scu, ctx->map_cu_mode, core->ctx_flags
-                            , ctx->sh.slice_type, ctx->sps.tool_cm_init, ctx->param.use_ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
+                            , ctx->sh->slice_type, ctx->sps.tool_cm_init, ctx->param.use_ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
 
     if (core->skip_flag == 0)
     {

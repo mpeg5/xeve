@@ -462,7 +462,7 @@ static char op_tile_array_in_slice[2 * 600];                  // Max. slices can
 static int  op_arbitrary_slice_flag                  = 0;     // default  0
 static char op_num_remaining_tiles_in_slice[600]     = { 0 }; // only in case of arbitrary slices
 static int  op_loop_filter_across_tiles_enabled_flag = 0;     // by default disabled
-static int  op_parallel_task                         = 1;     // default single task
+static int  op_threads                         = 1;     // default single task
 static int  op_rc_type                               = 0;     // rc_off = 0 , rc_cbr = 1
 static char op_bps[256]                              = "100"; // Default 100Kbps
 static char op_vbv_buf_size[256]                     = "-1"; // Default off
@@ -582,7 +582,7 @@ typedef enum _OP_FLAGS
     OP_ARBITRAY_SLICE_FLAG,
     OP_NUM_REMAINING_TILES_IN_SLICE,
     OP_LOOP_FILTER_ACROSS_TILES_ENABLED_FLAG,
-    OP_PARALLEL_TASK,
+    OP_THREADS,
     OP_RC_TYPE,
     OP_BPS,
     OP_VBV_MSEC,
@@ -751,7 +751,7 @@ static ARGS_OPTION options[] = \
     },
     {
         'm',  "threads", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_PARALLEL_TASK], &op_parallel_task,
+        &op_flag[OP_THREADS], &op_threads,
         "force to use a specific number of threads"
     },
     {

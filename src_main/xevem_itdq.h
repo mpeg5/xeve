@@ -40,11 +40,9 @@
 
 void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, u8 qp_y, u8 qp_u, u8 qp_v, int flag[N_C], int nnz_sub[N_C][MAX_SUB_TB_NUM], int iqt_flag
                             , u8 ats_intra_cu, u8 ats_mode, u8 ats_inter_info, int bit_depth, int chroma_format_idc);
-void xeve_init_multi_tbl();
-void xeve_init_multi_inv_tbl();
 
-extern INV_TRANS (*xeve_func_itrans)[5];
-extern INV_TRANS xeve_itrans_map_tbl[16][5];
+extern const INV_TRANS (*xeve_func_itrans)[5];
+extern const INV_TRANS xeve_itrans_map_tbl[16][5];
 
 void xeve_itrans_ats_intra(s16 *coef, int log2_cuw, int log2_cuh, u8 ats_mode, int skip_w, int skip_h, int bit_depth);
 void xeve_it_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, const int max_log2_tr_dynamic_range, u8 ats_intra_tridx, int skip_w, int skip_h);

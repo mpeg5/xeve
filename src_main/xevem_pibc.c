@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -317,7 +317,7 @@ static double pibc_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int
     int bit_depth_tbl[3] = { ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8 };
     int w_shift = ctx->param.cs_w_shift;
     int h_shift = ctx->param.cs_h_shift;
-    
+
     rec = pi->unfiltered_rec_buf;
     nnz = core->nnz;
     cuw = 1 << log2_cuw;
@@ -387,7 +387,7 @@ static double pibc_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int
         DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
         xeve_sbac_bit_reset(&core->s_temp_run);
-        xeve_rdo_bit_cnt_cu_ibc(ctx, core, ctx->sh.slice_type, core->scup, pi->mvd, coef, mvp_idx, pi->ibc_flag);
+        xeve_rdo_bit_cnt_cu_ibc(ctx, core, ctx->sh->slice_type, core->scup, pi->mvd, coef, mvp_idx, pi->ibc_flag);
 
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
         cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -454,7 +454,7 @@ static double pibc_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int
         SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
         xeve_sbac_bit_reset(&core->s_temp_run);
-        xeve_rdo_bit_cnt_cu_ibc(ctx, core, ctx->sh.slice_type, core->scup, pi->mvd, coef, mvp_idx, pi->ibc_flag);
+        xeve_rdo_bit_cnt_cu_ibc(ctx, core, ctx->sh->slice_type, core->scup, pi->mvd, coef, mvp_idx, pi->ibc_flag);
 
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
         cost_best += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -823,7 +823,7 @@ static int pibc_search_estimation(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_PIBC *pi,
             best_cand_idx = refine_ibc_chroma_mv(ctx, core, pi, cu_x, cu_y, log2_cuw, log2_cuh, pic_width, pic_height, sad_best_cand, mv_cand);
 #else
             best_cand_idx = 0;
-#endif         
+#endif
             bestX = mv_cand[0][0];
             bestY = mv_cand[0][1];
             sad_best = sad_best_cand[best_cand_idx];
@@ -913,7 +913,7 @@ static int pibc_search_estimation(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_PIBC *pi,
             {
                 continue;
             }
-    
+
             for (int x = (XEVE_MAX(srch_rng_hor_left, -cu_pel_x) + 1); x <= srch_rng_hor_right; x += 2)
             {
 
@@ -943,7 +943,7 @@ static int pibc_search_estimation(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_PIBC *pi,
                     best_cand_idx = refine_ibc_chroma_mv(ctx, core, pi, cu_x, cu_y, log2_cuw, log2_cuh, pic_width, pic_height, sad_best_cand, mv_cand);
 #else
                     best_cand_idx = 0;
-#endif                       
+#endif
                     bestX = mv_cand[best_cand_idx][0];
                     bestY = mv_cand[best_cand_idx][1];
                     sad_best = sad_best_cand[best_cand_idx];
@@ -1174,7 +1174,7 @@ void reset_ibc_search_range(XEVE_CTX *ctx, int cu_x, int cu_y, int log2_cuw, int
     mctx->pibc[core->thread_cnt].search_range_x = ctx->param.ibc_search_range_x;
     mctx->pibc[core->thread_cnt].search_range_y = ctx->param.ibc_search_range_y;
     hashHitRatio = xeve_ibc_hash_hit_ratio(ctx, mctx->ibc_hash, cu_x, cu_y, log2_cuw, log2_cuh); // in percent
-    
+
     if (hashHitRatio < 5) // 5%
     {
         mctx->pibc[core->thread_cnt].search_range_x >>= 1;
@@ -1201,7 +1201,7 @@ static int pibc_set_complexity(XEVE_CTX *ctx, int complexity)
     XEVE_PIBC *pi;
     XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
 
-    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    for (int i = 0; i < ctx->cdsc.threads; i++)
     {
         pi = &mctx->pibc[i];
         pi->search_range_x = ctx->param.ibc_search_range_x;
@@ -1222,8 +1222,8 @@ int xevem_pibc_create(XEVE_CTX *ctx, int complexity)
     mctx->fn_pibc_init_tile = pibc_init_tile;
     mctx->fn_pibc_init_lcu = pibc_init_lcu;
     mctx->fn_pibc_set_complexity = pibc_set_complexity;
-    
-    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+
+    for (int i = 0; i < ctx->cdsc.threads; i++)
     {
         pi = &mctx->pibc[i];
         pi->min_clip[MV_X] = -MAX_CU_SIZE + 1;

@@ -264,7 +264,7 @@ struct _ADAPTIVE_LOOP_FILTER
     void              (* filter_7x7_blk)( ALF_CLASSIFIER** classifier, pel * rec_dst, const int dst_stride, const pel * rec_src, const int src_stride, const AREA* blk, const u8 comp_id, short* filter_set, const CLIP_RANGE* clip_range );
 };
 
-void alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_height, const int max_cu_width, const int max_cu_height, const int max_cu_depth, const int chroma_format_idc, int bit_depth);
+int alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_height, const int max_cu_width, const int max_cu_height, const int max_cu_depth, const int chroma_format_idc, int bit_depth);
 void alf_destroy(ADAPTIVE_LOOP_FILTER * alf);
 void alf_init(ADAPTIVE_LOOP_FILTER * alf, int bit_depth);
 void alf_copy_and_extend_tile(pel* tmp_yuv, const int s, const pel* rec_yuv, const int s2, const int w, const int h, const int m);
@@ -294,7 +294,7 @@ typedef struct _ALF_COVARIANCE
     double pix_acc;
 } ALF_COVARIANCE;
 
-void alf_cov_create(ALF_COVARIANCE* alf_cov, int size);
+int alf_cov_create(ALF_COVARIANCE* alf_cov, int size);
 void alf_cov_destroy(ALF_COVARIANCE* alf_cov);
 void alf_cov_reset(ALF_COVARIANCE* alf_cov);
 void alf_cov_copy(ALF_COVARIANCE* dst, ALF_COVARIANCE* src);
@@ -338,12 +338,12 @@ void       xeve_alf_delete_buf(XEVE_ALF * enc_alf);
 void       xeve_alf_set_reset_alf_buf_flag(XEVE_ALF * enc_anf, int flag);
 u8         xeve_alf_aps_get_current_alf_idx(XEVE_ALF * enc_anf);
 void       xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_anf, const double* lambdas, XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_ALF_SLICE_PARAM * input_alf_slice_param);
-void       xeve_alf_create(XEVE_ALF * enc_alf, const int pic_width, const int pic_height, const int max_cu_width, const int max_cu_height, const int max_cu_depth, const int chroma_format_idc, int bit_depth);
+int        xeve_alf_create(XEVE_ALF * enc_alf, const int pic_width, const int pic_height, const int max_cu_width, const int max_cu_height, const int max_cu_depth, const int chroma_format_idc, int bit_depth);
 void       xeve_alf_destroy(XEVE_ALF * enc_alf);
 void       xeve_alf_process(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, const double *lambdas, ALF_SLICE_PARAM* alf_slice_param);
 double     xeve_alf_derive_ctb_enable_flags(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, const int input_shape_idx, u8 channel, const int num_classes, const int num_coef, double* dist_unfilter, BOOL rec_coef);
 void       xeve_alf_encode(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* alf_slice_param, const int channel);
-void       xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* alf_slice_param, const pel * org_unit_buf, const int org_stride, pel * rec_ext_buf, const int rec_stride, const u8 comp_id, int tile_idx, int col_bd2);
+int        xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* alf_slice_param, const pel * org_unit_buf, const int org_stride, pel * rec_ext_buf, const int rec_stride, const u8 comp_id, int tile_idx, int col_bd2);
 void       xeve_alf_temporal_enc_aps_comp(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* alf_slice_param);
 void       xeve_alf_derive_cov_from_ltap_filter(ALF_COVARIANCE* cov_large, ALF_COVARIANCE* cov_small, int * pattern_small, ALF_FILTER_TYPE luma_filter_type);
 void       xeve_alf_copy_slice_param(XEVE_ALF * enc_alf, ALF_SLICE_PARAM* alf_slice_param_dst, ALF_SLICE_PARAM* alf_slice_param_src, int channel);

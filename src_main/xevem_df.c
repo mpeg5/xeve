@@ -559,7 +559,7 @@ static u32* deblock_set_coded_block(u32* map_scu, int w, int h, int w_scu)
 
 static void deblock_addb_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D]
                               , int w_scu, int log2_max_cuwh, XEVE_REFP(*refp)[REFP_NUM], int ats_inter_mode, TREE_CONS tree_cons, u8* map_tidx
-                              , int boundary_filtering, u8* map_ats_inter, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc)
+                              , int boundary_filtering, u8* map_ats_inter, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc, int* qp_chroma_dynamic[2])
 {
     pel * y, *u, *v;
     int   i, t, qp, s_l, s_c;
@@ -598,12 +598,10 @@ static void deblock_addb_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, in
     u = pic->u + t;
     v = pic->v + t;
 
-    unsigned int  no_boundary = map_tidx[t_copy] == map_tidx[t1];
-    if(boundary_filtering)
+    int no_boundary = 0;
+    if (y_pel > 0)
     {
-        no_boundary = !(map_tidx[t_copy] == map_tidx[t1]);
-        if((t_copy - w_scu) > 0)
-            no_boundary = no_boundary && ((MCU_GET_SN(map_scu[0])) == (MCU_GET_SN(map_scu[-w_scu])));
+        no_boundary = (map_tidx[t_copy] == map_tidx[t1]) || boundary_filtering;
     }
 
     if(align_8_8_grid  && y_pel > 0 && (no_boundary))
@@ -651,8 +649,8 @@ static void deblock_addb_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, in
             {
                 t >>= w_shift;
                 int qp_u = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_u_offset);
-                indexA = get_index(xeve_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_alpha_offset);
-                indexB = get_index(xeve_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_beta_offset);
+                indexA = get_index(qp_chroma_dynamic[0][qp_u], pic->pic_deblock_alpha_offset);
+                indexB = get_index(qp_chroma_dynamic[0][qp_u], pic->pic_deblock_beta_offset);
                 alpha = xevem_addb_alpha_tbl[indexA] << bitdepth_scale;
                 beta = xevem_addb_beta_tbl[indexB] << bitdepth_scale;
                 c1 = xevem_addb_clip_tbl[indexA][bs_cur];
@@ -661,8 +659,8 @@ static void deblock_addb_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, in
                 deblock_scu_addb_hor_chroma(u + t, s_c, bs_cur, alpha, beta, c0, bit_depth_chroma - 8);
 
                 int qp_v = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_v_offset);
-                indexA = get_index(xeve_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_alpha_offset);
-                indexB = get_index(xeve_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_beta_offset);
+                indexA = get_index(qp_chroma_dynamic[1][qp_v], pic->pic_deblock_alpha_offset);
+                indexB = get_index(qp_chroma_dynamic[1][qp_v], pic->pic_deblock_beta_offset);
                 alpha = xevem_addb_alpha_tbl[indexA] << bitdepth_scale;
                 beta = xevem_addb_beta_tbl[indexB] << bitdepth_scale;
                 c1 = xevem_addb_clip_tbl[indexA][bs_cur];
@@ -676,7 +674,7 @@ static void deblock_addb_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, in
 }
 
 static void deblock_addb_cu_ver_yuv(XEVE_PIC *pic, int x_pel, int y_pel, int log2_max_cuwh, pel *y, pel* u, pel *v, int s_l, int s_c, int cuh, u32 *map_scu, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int w_scu, XEVE_REFP(*refp)[REFP_NUM], int ats_inter_mode
-                                  , TREE_CONS tree_cons, u8* map_ats_inter, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc)
+                                  , TREE_CONS tree_cons, u8* map_ats_inter, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc, int* qp_chroma_dynamic[2])
 {
     int i, qp;
     int h = cuh >> MIN_CU_LOG2;
@@ -727,8 +725,8 @@ static void deblock_addb_cu_ver_yuv(XEVE_PIC *pic, int x_pel, int y_pel, int log
             {
                 int qp_u = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_u_offset);
 
-                indexA = get_index(xeve_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_alpha_offset);
-                indexB = get_index(xeve_qp_chroma_dynamic[0][qp_u], pic->pic_deblock_beta_offset);
+                indexA = get_index(qp_chroma_dynamic[0][qp_u], pic->pic_deblock_alpha_offset);
+                indexB = get_index(qp_chroma_dynamic[0][qp_u], pic->pic_deblock_beta_offset);
 
                 alpha = xevem_addb_alpha_tbl[indexA] << bitdepth_scale;
                 beta = xevem_addb_beta_tbl[indexB] << bitdepth_scale;
@@ -739,8 +737,8 @@ static void deblock_addb_cu_ver_yuv(XEVE_PIC *pic, int x_pel, int y_pel, int log
                 deblock_scu_addb_ver_chroma(u, s_c, bs_cur, alpha, beta, c0, bit_depth_chroma - 8);
 
                 int qp_v = XEVE_CLIP3(-6 * (bit_depth_chroma - 8), 57, qp + pic->pic_qp_v_offset);
-                indexA = get_index(xeve_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_alpha_offset);
-                indexB = get_index(xeve_qp_chroma_dynamic[1][qp_v], pic->pic_deblock_beta_offset);
+                indexA = get_index(qp_chroma_dynamic[1][qp_v], pic->pic_deblock_alpha_offset);
+                indexB = get_index(qp_chroma_dynamic[1][qp_v], pic->pic_deblock_beta_offset);
 
                 alpha = xevem_addb_alpha_tbl[indexA] << bitdepth_scale;
                 beta = xevem_addb_beta_tbl[indexB] << bitdepth_scale;
@@ -767,7 +765,7 @@ static void deblock_addb_cu_ver_yuv(XEVE_PIC *pic, int x_pel, int y_pel, int log
 static void deblock_addb_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8(*map_refi)[REFP_NUM]
                               , s16(*map_mv)[REFP_NUM][MV_D], int w_scu, int log2_max_cuwh, u32  *map_cu, XEVE_REFP(*refp)[REFP_NUM]
                               , int ats_inter_mode, TREE_CONS tree_cons, u8* map_tidx, int boundary_filtering, u8* map_ats_inter
-                              , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc)
+                              , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc, int* qp_chroma_dynamic[2])
 {
     pel  * y, *u, *v;
     int    t, s_l, s_c;
@@ -815,16 +813,16 @@ static void deblock_addb_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, in
 
     /* vertical filtering */
 
-    unsigned int no_boundary = map_tidx[t_copy] == map_tidx[t1];
-    if(boundary_filtering)
+    int no_boundary = 0;
+    if (x_pel > 0)
     {
-        no_boundary = !(map_tidx[t_copy] == map_tidx[t1]) && ((MCU_GET_SN(map_scu[0])) == (MCU_GET_SN(map_scu[-1])));
+        no_boundary = (map_tidx[t_copy] == map_tidx[t1]) || boundary_filtering;
     }
 
     if(align_8_8_grid && x_pel > 0 && MCU_GET_COD(map_scu[-1]) && (no_boundary))
     {
         deblock_addb_cu_ver_yuv(pic, x_pel, y_pel, log2_max_cuwh, y, u, v, s_l, s_c, cuh, map_scu, map_refi, map_mv, w_scu, refp, ats_inter_mode
-                              , tree_cons, map_ats_inter, bit_depth_luma, bit_depth_chroma, chroma_format_idc);
+                              , tree_cons, map_ats_inter, bit_depth_luma, bit_depth_chroma, chroma_format_idc, qp_chroma_dynamic);
     }
 
     map_scu = map_scu_tmp;
@@ -833,10 +831,10 @@ static void deblock_addb_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, in
     map_ats_inter = map_ats_inter_tmp;
     map_cu = map_cu_tmp;
 
-    no_boundary = map_tidx[t_copy] == map_tidx[t2];
-    if(boundary_filtering)
+    no_boundary = 0;
+    if (x_pel + cuw < pic->w_l)
     {
-        no_boundary = !(map_tidx[t_copy] == map_tidx[t2]) && ((MCU_GET_SN(map_scu[0])) == (MCU_GET_SN(map_scu[w])));
+        no_boundary = (map_tidx[t_copy] == map_tidx[t2]) || boundary_filtering;
     }
 
     if((x_pel + cuw) % 8 == 0)
@@ -863,43 +861,44 @@ static void deblock_addb_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, in
         map_ats_inter += w;
 
         deblock_addb_cu_ver_yuv(pic, x_pel + cuw, y_pel, log2_max_cuwh, y, u, v, s_l, s_c, cuh, map_scu, map_refi, map_mv, w_scu, refp, ats_inter_mode
-                              , tree_cons, map_ats_inter, bit_depth_luma, bit_depth_chroma, chroma_format_idc);
+                              , tree_cons, map_ats_inter, bit_depth_luma, bit_depth_chroma, chroma_format_idc, qp_chroma_dynamic);
     }
 
     map_scu = deblock_set_coded_block(map_scu_tmp, w, h, w_scu);
 }
 
 
-void xevem_deblock_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int w_scu, int log2_max_cuwh, XEVE_REFP(*refp)[REFP_NUM], int ats_inter_mode
-                        , TREE_CONS tree_cons, u8* map_tidx, int boundary_filtering, int tool_addb, u8* map_ats_inter, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc)
+void xevem_deblock_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D]
+                        , int w_scu, int log2_max_cuwh, XEVE_REFP(*refp)[REFP_NUM], int ats_inter_mode, TREE_CONS tree_cons, u8* map_tidx
+                        , int boundary_filtering, int tool_addb, u8* map_ats_inter, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc, int* qp_chroma_dynamic[2])
 {
     if(tool_addb)
     {
         deblock_addb_cu_hor(pic, x_pel, y_pel, cuw, cuh, map_scu, map_refi, map_mv, w_scu, log2_max_cuwh, refp
                           , ats_inter_mode, tree_cons, map_tidx, boundary_filtering, map_ats_inter
-                          , bit_depth_luma, bit_depth_chroma, chroma_format_idc);
+                          , bit_depth_luma, bit_depth_chroma, chroma_format_idc, qp_chroma_dynamic);
     }
     else
     {
-        xeve_deblock_cu_hor(pic, x_pel, y_pel, cuw, cuh, map_scu, map_refi, map_mv, w_scu, refp
-                          , tree_cons, map_tidx, boundary_filtering, bit_depth_luma, bit_depth_chroma, chroma_format_idc);
+        xeve_deblock_cu_hor(pic, x_pel, y_pel, cuw, cuh, map_scu, map_refi, map_mv, w_scu, tree_cons, map_tidx
+                          , boundary_filtering, bit_depth_luma, bit_depth_chroma, chroma_format_idc, qp_chroma_dynamic);
     }
 }
 
-void xevem_deblock_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int w_scu, int log2_max_cuwh
-                        , u32  *map_cu, XEVE_REFP(*refp)[REFP_NUM], int ats_inter_mode, TREE_CONS tree_cons, u8* map_tidx, int boundary_filtering, int tool_addb, u8* map_ats_inter
-                        , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc)
+void xevem_deblock_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D]
+                        , int w_scu, int log2_max_cuwh, u32  *map_cu, XEVE_REFP(*refp)[REFP_NUM], int ats_inter_mode, TREE_CONS tree_cons, u8* map_tidx
+                        , int boundary_filtering, int tool_addb, u8* map_ats_inter, int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc, int* qp_chroma_dynamic[2])
 {
     if(tool_addb)
     {
         deblock_addb_cu_ver(pic, x_pel, y_pel, cuw, cuh, map_scu, map_refi, map_mv, w_scu, log2_max_cuwh, map_cu, refp
                           , ats_inter_mode, tree_cons, map_tidx, boundary_filtering, map_ats_inter
-                          , bit_depth_luma, bit_depth_chroma, chroma_format_idc);
+                          , bit_depth_luma, bit_depth_chroma, chroma_format_idc, qp_chroma_dynamic);
     }
     else
     {
-        xeve_deblock_cu_ver(pic, x_pel, y_pel, cuw, cuh, map_scu, map_refi, map_mv, w_scu, map_cu, refp, tree_cons, map_tidx, boundary_filtering
-                          , bit_depth_luma, bit_depth_chroma, chroma_format_idc);
+        xeve_deblock_cu_ver(pic, x_pel, y_pel, cuw, cuh, map_scu, map_refi, map_mv, w_scu, map_cu, tree_cons, map_tidx
+                          , boundary_filtering, bit_depth_luma, bit_depth_chroma, chroma_format_idc, qp_chroma_dynamic);
     }
 }
 
@@ -914,16 +913,16 @@ void xevem_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, i
 
             xevem_deblock_cu_hor(pic, x, y, cuw, cuh >> 1, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh, ctx->refp, 0
                                , core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
             xevem_deblock_cu_hor(pic, x, y + MAX_TR_SIZE, cuw, cuh >> 1, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh, ctx->refp, 0
                                , core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
         }
         else
         {
             xevem_deblock_cu_hor(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh, ctx->refp, 0
                                , core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
         }
     }
     else
@@ -932,16 +931,16 @@ void xevem_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, i
         {
             xevem_deblock_cu_ver(pic, x, y, cuw >> 1, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh
                                , ctx->map_cu_mode, ctx->refp, 0, core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
             xevem_deblock_cu_ver(pic, x + MAX_TR_SIZE, y, cuw >> 1, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh
                                , ctx->map_cu_mode, ctx->refp, 0, core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
         }
         else
         {
             xevem_deblock_cu_ver(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh
                                , ctx->map_cu_mode, ctx->refp, 0, core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
         }
     }
 }
@@ -956,10 +955,10 @@ void xevem_deblock_tree(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, i
 
     core->tree_cons = tree_cons;
 
-    pic->pic_deblock_alpha_offset = ctx->sh.sh_deblock_alpha_offset;
-    pic->pic_deblock_beta_offset = ctx->sh.sh_deblock_beta_offset;
-    pic->pic_qp_u_offset = ctx->sh.qp_u_offset;
-    pic->pic_qp_v_offset = ctx->sh.qp_v_offset;
+    pic->pic_deblock_alpha_offset = ctx->sh->sh_deblock_alpha_offset;
+    pic->pic_deblock_beta_offset = ctx->sh->sh_deblock_beta_offset;
+    pic->pic_qp_u_offset = ctx->sh->qp_u_offset;
+    pic->pic_qp_v_offset = ctx->sh->qp_v_offset;
 
     lcu_num = (x >> ctx->log2_max_cuwh) + (y >> ctx->log2_max_cuwh) * ctx->w_lcu;
     xeve_get_split_mode(&split_mode, cud, cup, cuw, cuh, ctx->max_cuwh, ctx->map_cu_data[lcu_num].split_mode);
@@ -1041,16 +1040,13 @@ int xevem_deblock(XEVE_CTX * ctx, XEVE_PIC * pic, int tile_idx, int filter_acros
     t_scu = y_l * scu_in_lcu_wh;
     b_scu = XEVE_CLIP3(0, ctx->h_scu, y_r*scu_in_lcu_wh);
 
-    /* Filtering tile boundaries in case of loop filter is enabled across tiles*/
-    if (filter_across_boundary)
+    for (j = t_scu; j < b_scu; j++)
     {
-        int boundary_filtering = 1;
-        /*Horizontal filtering only at the top of the tile */
-        j = t_scu;
         for (i = l_scu; i < r_scu; i++)
         {
             k1 = i + j * ctx->w_scu;
             MCU_CLR_COD(ctx->map_scu[k1]);
+
             if (!MCU_GET_DMVRF(ctx->map_scu[k1]))
             {
                 ctx->map_unrefined_mv[k1][REFP_0][MV_X] = ctx->map_mv[k1][REFP_0][MV_X];
@@ -1059,76 +1055,17 @@ int xevem_deblock(XEVE_CTX * ctx, XEVE_PIC * pic, int tile_idx, int filter_acros
                 ctx->map_unrefined_mv[k1][REFP_1][MV_Y] = ctx->map_mv[k1][REFP_1][MV_Y];
             }
         }
+    }
 
-        /* horizontal filtering */
-        j = y_l;
+    /* horizontal filtering */
+    for (j = y_l; j < y_r; j++)
+    {
         for (i = x_l; i < x_r; i++)
         {
-            ctx->fn_deblock_tree(ctx, pic, (i << ctx->log2_max_cuwh), (j << ctx->log2_max_cuwh), ctx->max_cuwh, ctx->max_cuwh, 0, 0, 0/*0 - horizontal filtering of vertical edge*/
-                               , xeve_get_default_tree_cons(), core, boundary_filtering);
-        }
-        /*Vertical filtering only at the left boundary of the tile */
-        i = l_scu;
-        for (j = t_scu; j < b_scu; j++)
-        {
-            MCU_CLR_COD(ctx->map_scu[i + j * ctx->w_scu]);
-        }
-        /* vertical filtering */
-        i = x_l;
-        for (j = y_l; j < y_r; j++)
-        {
-            ctx->fn_deblock_tree(ctx, pic, (i << ctx->log2_max_cuwh), (j << ctx->log2_max_cuwh), ctx->max_cuwh, ctx->max_cuwh, 0, 0, 1/*1 - vertical filtering of horizontal edge*/
-                               , xeve_get_default_tree_cons(), core, boundary_filtering);
+            ctx->fn_deblock_tree(ctx, pic, (i << ctx->log2_max_cuwh), (j << ctx->log2_max_cuwh), ctx->max_cuwh, ctx->max_cuwh, 0, 0, core->deblock_is_hor
+                               , xeve_get_default_tree_cons(), core, filter_across_boundary);
         }
     }
-    else
-    /* Applying deblocking on the image except tile boundaries*/
-    {
-        for (j = t_scu; j < b_scu; j++)
-        {
-            for (i = l_scu; i < r_scu; i++)
-            {
-                k1 = i + j * ctx->w_scu;
-                MCU_CLR_COD(ctx->map_scu[k1]);
 
-                if (!MCU_GET_DMVRF(ctx->map_scu[k1]))
-                {
-                    ctx->map_unrefined_mv[k1][REFP_0][MV_X] = ctx->map_mv[k1][REFP_0][MV_X];
-                    ctx->map_unrefined_mv[k1][REFP_0][MV_Y] = ctx->map_mv[k1][REFP_0][MV_Y];
-                    ctx->map_unrefined_mv[k1][REFP_1][MV_X] = ctx->map_mv[k1][REFP_1][MV_X];
-                    ctx->map_unrefined_mv[k1][REFP_1][MV_Y] = ctx->map_mv[k1][REFP_1][MV_Y];
-                }
-            }
-        }
-
-        /* horizontal filtering */
-        for (j = y_l; j < y_r; j++)
-        {
-            for (i = x_l; i < x_r; i++)
-            {
-                ctx->fn_deblock_tree(ctx, pic, (i << ctx->log2_max_cuwh), (j << ctx->log2_max_cuwh), ctx->max_cuwh, ctx->max_cuwh, 0, 0, 0/*0 - horizontal filtering of vertical edge*/
-                                   , xeve_get_default_tree_cons(), core, boundary_filtering);
-            }
-        }
-
-        for (j = t_scu; j < b_scu; j++)
-        {
-            for (i = l_scu; i < r_scu; i++)
-            {
-                MCU_CLR_COD(ctx->map_scu[i + j * ctx->w_scu]);
-            }
-        }
-
-        /* vertical filtering */
-        for (j = y_l; j < y_r; j++)
-        {
-            for (i = x_l; i < x_r; i++)
-            {
-
-                ctx->fn_deblock_tree(ctx, pic, (i << ctx->log2_max_cuwh), (j << ctx->log2_max_cuwh), ctx->max_cuwh, ctx->max_cuwh, 0, 0, 1/*1 - vertical filtering of horizontal edge*/
-                                   , xeve_get_default_tree_cons(), core, boundary_filtering);
-            }
-        }
-    }
     return XEVE_OK;
 }

@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -39,7 +39,7 @@
 #include "xevem_stat.h"
 #endif
 
-void xeve_check_split_mode(int *split_allow, int log2_cuw, int log2_cuh, int boundary, int boundary_r, int log2_max_cuwh
+void xeve_check_split_mode(XEVE_CTX * ctx, int *split_allow, int log2_cuw, int log2_cuh, int boundary, int boundary_r, int log2_max_cuwh
                          , int x, int y, int im_w, int im_h, int sps_btt_flag, MODE_CONS mode_cons)
 {
     if(!sps_btt_flag)
@@ -85,7 +85,7 @@ void xeve_check_split_mode(int *split_allow, int log2_cuw, int log2_cuh, int bou
                     }
 
                     split_allow[SPLIT_TRI_VER] = ALLOW_SPLIT_TRI(log2_cuw) && (log2_cuw > log2_cuh || (log2_cuw == log2_cuh && ALLOW_SPLIT_RATIO(log2_cuw, 2)));
-                    split_allow[SPLIT_TRI_HOR] = ALLOW_SPLIT_TRI(log2_cuh) && (log2_cuh > log2_cuw || (log2_cuw == log2_cuh && ALLOW_SPLIT_RATIO(log2_cuh, 2)));
+                    split_allow[SPLIT_TRI_HOR] = 0;
                 }
             }
             else
@@ -97,7 +97,7 @@ void xeve_check_split_mode(int *split_allow, int log2_cuw, int log2_cuh, int bou
 
                 split_allow[SPLIT_BI_HOR] = ALLOW_SPLIT_RATIO(long_side, ratio);
                 split_allow[SPLIT_BI_VER] = ALLOW_SPLIT_RATIO(log2_cuh, log2_cuh - log2_cuw + 1);
-                split_allow[SPLIT_TRI_VER] = ALLOW_SPLIT_TRI(log2_cuw) && (log2_cuw > log2_cuh || (log2_cuw == log2_cuh && ALLOW_SPLIT_RATIO(log2_cuw, 2)));
+                split_allow[SPLIT_TRI_VER] = 0;
                 split_allow[SPLIT_TRI_HOR] = ALLOW_SPLIT_TRI(log2_cuh) && (log2_cuh > log2_cuw || (log2_cuw == log2_cuh && ALLOW_SPLIT_RATIO(log2_cuh, 2)));
 
             }
@@ -198,7 +198,7 @@ u16 xeve_get_avail_ibc(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int
 }
 
 void xeve_get_default_motion_main(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int valid_flag[MAX_NUM_POSSIBLE_SCAND], s8 cur_refi, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], s8 *refi, s16 mv[MV_D]
-    , u32 *map_scu, s16(*map_unrefined_mv)[REFP_NUM][MV_D], int scup, int w_scu, XEVE_HISTORY_BUFFER history_buffer, int hmvp_flag)
+    , u32 *map_scu, s16(*map_unrefined_mv)[REFP_NUM][MV_D], int scup, int w_scu, XEVE_HISTORY_BUFFER * history_buffer, int hmvp_flag)
 {
     int k;
     int found = 0;
@@ -214,15 +214,15 @@ void xeve_get_default_motion_main(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int vali
     {
         if (!found)
         {
-            for (k = 1; k <= XEVE_MIN(history_buffer.currCnt, ALLOWED_CHECKED_AMVP_NUM); k++)
+            for (k = 1; k <= XEVE_MIN(history_buffer->currCnt, ALLOWED_CHECKED_AMVP_NUM); k++)
             {
-                tmp_refi = REFI_IS_VALID(history_buffer.history_refi_table[history_buffer.currCnt - k][lidx]) ? history_buffer.history_refi_table[history_buffer.currCnt - k][lidx] : REFI_INVALID;
+                tmp_refi = REFI_IS_VALID(history_buffer->history_refi_table[history_buffer->currCnt - k][lidx]) ? history_buffer->history_refi_table[history_buffer->currCnt - k][lidx] : REFI_INVALID;
                 if (tmp_refi == cur_refi)
                 {
                     found = 1;
                     *refi = tmp_refi;
-                    mv[MV_X] = history_buffer.history_mv_table[history_buffer.currCnt - k][lidx][MV_X];
-                    mv[MV_Y] = history_buffer.history_mv_table[history_buffer.currCnt - k][lidx][MV_Y];
+                    mv[MV_X] = history_buffer->history_mv_table[history_buffer->currCnt - k][lidx][MV_X];
+                    mv[MV_Y] = history_buffer->history_mv_table[history_buffer->currCnt - k][lidx][MV_Y];
                     break;
                 }
             }
@@ -230,15 +230,15 @@ void xeve_get_default_motion_main(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int vali
 
         if (!found)
         {
-            for (k = 1; k <= XEVE_MIN(history_buffer.currCnt, ALLOWED_CHECKED_AMVP_NUM); k++)
+            for (k = 1; k <= XEVE_MIN(history_buffer->currCnt, ALLOWED_CHECKED_AMVP_NUM); k++)
             {
-                tmp_refi = REFI_IS_VALID(history_buffer.history_refi_table[history_buffer.currCnt - k][lidx]) ? history_buffer.history_refi_table[history_buffer.currCnt - k][lidx] : REFI_INVALID;
+                tmp_refi = REFI_IS_VALID(history_buffer->history_refi_table[history_buffer->currCnt - k][lidx]) ? history_buffer->history_refi_table[history_buffer->currCnt - k][lidx] : REFI_INVALID;
                 if (tmp_refi != REFI_INVALID)
                 {
                     found = 1;
                     *refi = tmp_refi;
-                    mv[MV_X] = history_buffer.history_mv_table[history_buffer.currCnt - k][lidx][MV_X];
-                    mv[MV_Y] = history_buffer.history_mv_table[history_buffer.currCnt - k][lidx][MV_Y];
+                    mv[MV_X] = history_buffer->history_mv_table[history_buffer->currCnt - k][lidx][MV_X];
+                    mv[MV_Y] = history_buffer->history_mv_table[history_buffer->currCnt - k][lidx][MV_Y];
                     break;
                 }
             }
@@ -414,7 +414,7 @@ static void get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int
 
     XEVE_REFP colPic = (refp[collocated_from_ref_idx][collocated_from_list_idx]);  // col picture is ref idx 0 and list 1
 
-    int neb_addr_coll = scup;     // Col 
+    int neb_addr_coll = scup;     // Col
     int dpoc_co[REFP_NUM] = {0, 0};
     int dpoc[REFP_NUM] = {0, 0};
     int ver_refi[REFP_NUM] = {-1, -1};
@@ -450,8 +450,10 @@ static void get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int
     {
         // collocated_mvp_source_list_idx = REFP_0; // specified above
         s8 refidx = map_refi_co[neb_addr_coll][collocated_mvp_source_list_idx];
-        dpoc_co[REFP_0] = colPic.poc - colPic.list_poc[refidx];
+        if (REFI_IS_VALID(refidx))
         {
+        dpoc_co[REFP_0] = colPic.poc - colPic.list_poc[refidx];
+        }
             if(dpoc_co[REFP_0] != 0 && REFI_IS_VALID(refidx))
             {
                 ver_refi[REFP_0] = 0;
@@ -470,16 +472,16 @@ static void get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int
                 mvp[REFP_1][MV_X] = 0;
                 mvp[REFP_1][MV_Y] = 0;
             }
-        }
+        
     }
 
-    {
+    
         int maxX = PIC_PAD_SIZE_L + (w_scu << MIN_CU_LOG2) - 1;
         int maxY = PIC_PAD_SIZE_L + (h_scu << MIN_CU_LOG2) - 1;
         int x = (c_scu % w_scu) << MIN_CU_LOG2;
         int y = (c_scu / w_scu) << MIN_CU_LOG2;
         clip_mv_pic(x, y, maxX, maxY, mvp);
-    }
+    
 
     int flag = REFI_IS_VALID(ver_refi[REFP_0]) + (REFI_IS_VALID(ver_refi[REFP_1]) << 1);
     *available_pred_idx = flag; // combines flag and indication on what type of prediction is ( 0 - not available, 1 = uniL0, 2 = uniL1, 3 = Bi)
@@ -752,7 +754,7 @@ void xevem_get_motion_merge(int ptr, int slice_type, int scup, s8(*map_refi)[REF
 void xeve_get_motion_from_mvr(u8 mvr_idx, int poc, int scup, int lidx, s8 cur_refi, int num_refp
                             , s16(*map_mv)[REFP_NUM][MV_D], s8(*map_refi)[REFP_NUM], XEVE_REFP(*refp)[REFP_NUM]
                             , int cuw, int cuh, int w_scu, int h_scu, u16 avail, s16 mvp[MAX_NUM_MVP][MV_D], s8 refi[MAX_NUM_MVP], u32* map_scu, u16 avail_lr
-                            , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER history_buffer, int hmvp_flag, u8* map_tidx)
+                            , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER * history_buffer, int hmvp_flag, u8* map_tidx)
 {
     int i, t0, poc_refi_cur;
     int ratio[MAX_NUM_REF_PICS];
@@ -1477,7 +1479,7 @@ int xeve_derive_affine_constructed_candidate(int poc, XEVE_REFP (*refp)[REFP_NUM
     {
         return 0;
     }
-    
+
     for(lidx = 0; lidx < REFP_NUM; lidx++)
     {
         if(valid_model[lidx])
@@ -1676,7 +1678,7 @@ void xeve_get_affine_motion_scaling(int poc, int scup, int lidx, s8 cur_refi, in
     }
 
     //-------------------  Model based affine MVP  -------------------//
-    
+
     // left inherited affine MVP, first of {A0, A1}
     neb_addr[0] = scup + w_scu * scuh - 1;       // A0
     neb_addr[1] = scup + w_scu * (scuh - 1) - 1; // A1
@@ -1824,7 +1826,7 @@ void xeve_get_affine_motion_scaling(int poc, int scup, int lidx, s8 cur_refi, in
     valid_flag_rt[0] = y_scu > 0 && x_scu + scuw < w_scu && MCU_GET_COD(map_scu[neb_addr_rt[0]]) && !MCU_GET_IF(map_scu[neb_addr_rt[0]]) && !MCU_GET_IBC(map_scu[neb_addr_rt[0]]) &&
                        (map_tidx[scup] == map_tidx[neb_addr_rt[0]]);
     valid_flag_rt[1] = y_scu > 0 && MCU_GET_COD(map_scu[neb_addr_rt[1]]) && !MCU_GET_IF(map_scu[neb_addr_rt[1]]) && !MCU_GET_IBC(map_scu[neb_addr_rt[1]]) &&
-                       (map_tidx[scup] == map_tidx[neb_addr_rt[1]]);            
+                       (map_tidx[scup] == map_tidx[neb_addr_rt[1]]);
     valid_flag_rt[2] = x_scu + scuw < w_scu && MCU_GET_COD(map_scu[neb_addr_rt[2]]) && !MCU_GET_IF(map_scu[neb_addr_rt[2]]) && !MCU_GET_IBC(map_scu[neb_addr_rt[2]]) &&
                        (map_tidx[scup] == map_tidx[neb_addr_rt[2]]);
 
@@ -2174,7 +2176,7 @@ int xeve_get_affine_merge_candidate(int poc, int slice_type, int scup, s8(*map_r
         valid_flag_lt[0] = x_scu > 0 && y_scu > 0 && MCU_GET_COD(map_scu[neb_addr_lt[0]]) && !MCU_GET_IF(map_scu[neb_addr_lt[0]]) && !MCU_GET_IBC(map_scu[neb_addr_lt[0]]);
         valid_flag_lt[1] = y_scu > 0 && MCU_GET_COD(map_scu[neb_addr_lt[1]]) && !MCU_GET_IF(map_scu[neb_addr_lt[1]]) && !MCU_GET_IBC(map_scu[neb_addr_lt[1]]);
         valid_flag_lt[2] = x_scu > 0 && MCU_GET_COD(map_scu[neb_addr_lt[2]]) && !MCU_GET_IF(map_scu[neb_addr_lt[2]]) && !MCU_GET_IBC(map_scu[neb_addr_lt[2]]);
-        
+
         valid_flag_lt[0] = valid_flag_lt[0] && (map_tidx[scup] == map_tidx[neb_addr_lt[0]]);
         valid_flag_lt[1] = valid_flag_lt[1] && (map_tidx[scup] == map_tidx[neb_addr_lt[1]]);
         valid_flag_lt[2] = valid_flag_lt[2] && (map_tidx[scup] == map_tidx[neb_addr_lt[2]]);
@@ -2358,7 +2360,7 @@ int xeve_get_affine_merge_candidate(int poc, int slice_type, int scup, s8(*map_r
         {
             s32 isSameCtuLine = ((y_scu + scuh) << MIN_CU_LOG2 >> log2_max_cuwh) == (y_scu << MIN_CU_LOG2 >> log2_max_cuwh);
             valid_flag_rb[0] = x_scu + scuw < w_scu && y_scu + scuh < h_scu && isSameCtuLine;
-            
+
             neb_addr_rb[0] = ((x_scu + scuw) >> 1 << 1) + ((y_scu + scuh) >> 1 << 1) * w_scu; // 8x8 grid
             valid_flag_rb[0] = valid_flag_rb[0] && (map_tidx[scup] == map_tidx[neb_addr_rb[0]]);
 
@@ -2649,7 +2651,7 @@ int get_rice_para(s16 *pcoeff, int blkpos, int width, int height, int base_level
 
 
 void xeve_eco_sbac_ctx_initialize(SBAC_CTX_MODEL *model, s16 *ctx_init_model, u16 num_ctx, u8 slice_type, u8 slice_qp)
-{    
+{
     s32 i, slope, offset;
     u16 mps, state;
     const int qp = XEVE_CLIP3(0, 51, slice_qp);
@@ -2916,12 +2918,13 @@ int xevem_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param)
     if (cdsc->profile == PROFILE_MAIN)
     {
         param->preset = (XEVE_PRESET *)(&xevem_tbl_preset[cdsc->preset]);
+        cdsc->ext->btt = ((XEVEM_PRESET*)param->preset)->use_btt;
     }
     else /* cdsc->profile == PROFILE_BASELINE */
     {
         param->preset = &xeve_tbl_preset[cdsc->preset];
     }
-    
+
     param->rdo_dbk_switch = param->use_deblock ? param->preset->rdo_dbk : 0;
 
     /* check input parameters */
@@ -2932,7 +2935,7 @@ int xevem_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param)
 
     if (!cdsc->chroma_qp_table_struct.chroma_qp_table_present_flag)
     {
-        int * qp_chroma_ajudst;
+        const int * qp_chroma_ajudst;
         if (cdsc->ext->tool_iqt == 0)
         {
             qp_chroma_ajudst = xeve_tbl_qp_chroma_ajudst;
@@ -2941,8 +2944,8 @@ int xevem_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param)
         {
             qp_chroma_ajudst = xevem_tbl_qp_chroma_ajudst;
         }
-        xeve_mcpy(&(xeve_tbl_qp_chroma_dynamic_ext[0][6 *( cdsc->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
-        xeve_mcpy(&(xeve_tbl_qp_chroma_dynamic_ext[1][6 * (cdsc->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
+        xeve_mcpy(&(param->qp_chroma_dynamic_ext[0][6 *( cdsc->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
+        xeve_mcpy(&(param->qp_chroma_dynamic_ext[1][6 * (cdsc->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
     }
 
     param->deblock_alpha_offset = cdsc->ext->deblock_aplha_offset;
@@ -3021,12 +3024,12 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
 
     if(sps->profile_idc == PROFILE_MAIN)
     {
-        sps->log2_min_cb_size_minus2 = xevem_tbl_split[BLOCK_11][IDX_MIN] - 2;
-        sps->log2_diff_ctu_max_14_cb_size = XEVE_MIN(ctx->log2_max_cuwh - xevem_tbl_split[BLOCK_14][IDX_MAX], 6);
-        sps->log2_diff_ctu_max_tt_cb_size = XEVE_MIN(ctx->log2_max_cuwh - xevem_tbl_split[BLOCK_TT][IDX_MAX], 6);
-        sps->log2_diff_min_cb_min_tt_cb_size_minus2 = xevem_tbl_split[BLOCK_TT][IDX_MIN] - xevem_tbl_split[BLOCK_11][IDX_MIN] - 2;
+        sps->log2_min_cb_size_minus2 = ctx->param.split_check[BLOCK_11][IDX_MIN] - 2;
+        sps->log2_diff_ctu_max_14_cb_size = XEVE_MIN(ctx->log2_max_cuwh - ctx->param.split_check[BLOCK_14][IDX_MAX], 6);
+        sps->log2_diff_ctu_max_tt_cb_size = XEVE_MIN(ctx->log2_max_cuwh - ctx->param.split_check[BLOCK_TT][IDX_MAX], 6);
+        sps->log2_diff_min_cb_min_tt_cb_size_minus2 = ctx->param.split_check[BLOCK_TT][IDX_MIN] - ctx->param.split_check[BLOCK_11][IDX_MIN] - 2;
         sps->log2_diff_ctu_size_max_suco_cb_size = ctx->log2_max_cuwh - XEVE_MIN(ctx->cdsc.ext->framework_suco_max, XEVE_MIN(6, ctx->log2_max_cuwh));
-        sps->log2_diff_max_suco_min_suco_cb_size = XEVE_MAX(ctx->log2_max_cuwh - sps->log2_diff_ctu_size_max_suco_cb_size - XEVE_MAX(ctx->cdsc.ext->framework_suco_min, XEVE_MAX(4, xevem_tbl_split[BLOCK_11][IDX_MIN])), 0);
+        sps->log2_diff_max_suco_min_suco_cb_size = XEVE_MAX(ctx->log2_max_cuwh - sps->log2_diff_ctu_size_max_suco_cb_size - XEVE_MAX(ctx->cdsc.ext->framework_suco_min, XEVE_MAX(4, ctx->param.split_check[BLOCK_11][IDX_MIN])), 0);
     }
 
     sps->tool_amvr = ctx->cdsc.ext->tool_amvr;
@@ -3220,7 +3223,7 @@ void xevem_set_sh(XEVE_CTX *ctx, XEVE_SH *sh)
 
     if (ctx->param.arbitrary_slice_flag == 1)
     {
-        ctx->sh.arbitrary_slice_flag = 1;
+        ctx->sh->arbitrary_slice_flag = 1;
         sh->num_remaining_tiles_in_slice_minus1 = ctx->param.num_remaining_tiles_in_slice_minus1[ctx->slice_num];
         if (ctx->tile_cnt > 1)
         {
@@ -3429,7 +3432,7 @@ int xevem_ready(XEVE_CTX * ctx)
 
     mctx->map_ats_inter = NULL;
 
-    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    for (int i = 0; i < ctx->cdsc.threads; i++)
     {
         mctx->ats_inter_info_pred[i] = NULL;
         mctx->ats_inter_num_pred[i] = NULL;
@@ -3439,7 +3442,7 @@ int xevem_ready(XEVE_CTX * ctx)
     {
 
         /* set various value */
-        for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+        for (int i = 0; i < ctx->cdsc.threads; i++)
         {
             mcore = xevem_core_alloc(ctx->param.chroma_format_idc);
             xeve_assert_gv(mcore != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
@@ -3454,17 +3457,14 @@ int xevem_ready(XEVE_CTX * ctx)
 
     if (ctx->cdsc.ext->btt)
     {
-        ctx->max_cuwh = 1 << xevem_tbl_split[BLOCK_11][IDX_MAX];
+        ctx->max_cuwh = 1 << ctx->param.split_check[BLOCK_11][IDX_MAX];
         if (ctx->w < ctx->max_cuwh * 2 && ctx->h < ctx->max_cuwh * 2)
         {
             ctx->max_cuwh = ctx->max_cuwh >> 1;
         }
-        else
-        {
-            ctx->max_cuwh = ctx->max_cuwh;
-        }
-        ctx->min_cuwh = 1 << xevem_tbl_split[BLOCK_11][IDX_MIN];
-        ctx->log2_min_cuwh = (u8)xevem_tbl_split[BLOCK_11][IDX_MIN];
+
+        ctx->min_cuwh = 1 << ctx->param.split_check[BLOCK_11][IDX_MIN];
+        ctx->log2_min_cuwh = (u8)ctx->param.split_check[BLOCK_11][IDX_MIN];
     }
     else
     {
@@ -3508,11 +3508,11 @@ int xevem_ready(XEVE_CTX * ctx)
     ctx->sync_block = get_synchronized_object();
     xeve_assert_gv(ctx->sync_block != NULL, ret, XEVE_ERR_UNKNOWN, ERR);
 
-    if (ctx->cdsc.parallel_task_cnt >= 1)
+    if (ctx->cdsc.threads >= 1)
     {
         ctx->tc = xeve_malloc(sizeof(THREAD_CONTROLLER));
-        init_thread_controller(ctx->tc, ctx->cdsc.parallel_task_cnt);
-        for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+        init_thread_controller(ctx->tc, ctx->cdsc.threads);
+        for (int i = 0; i < ctx->cdsc.threads; i++)
         {
             ctx->thread_pool[i] = ctx->tc->create(ctx->tc, i);
             xeve_assert_gv(ctx->thread_pool[i] != NULL, ret, XEVE_ERR_UNKNOWN, ERR);
@@ -3559,7 +3559,7 @@ int xevem_ready(XEVE_CTX * ctx)
     }
 
     int num_tiles = (ctx->cdsc.ext->tile_columns) * (ctx->cdsc.ext->tile_rows);
-    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    for (int i = 0; i < ctx->cdsc.threads; i++)
     {
         if (mctx->ats_inter_info_pred[i] == NULL)
         {
@@ -3623,7 +3623,7 @@ int xevem_ready(XEVE_CTX * ctx)
         mctx->dra_control->dra_descriptor1 = 4;
 
         xeve_init_dra(mctx->dra_control, 0, NULL, NULL, ctx->sps.bit_depth_luma_minus8 + 8);
-        xeve_analyze_input_pic(mctx->dra_control, ctx->sps.bit_depth_luma_minus8 + 8);
+        xeve_analyze_input_pic(ctx, mctx->dra_control, ctx->sps.bit_depth_luma_minus8 + 8);
 
         mctx->dra_array = (SIG_PARAM_DRA*)xeve_malloc(sizeof(SIG_PARAM_DRA) * APS_MAX_NUM);
         xeve_assert_gv(mctx->dra_array, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
@@ -3634,7 +3634,7 @@ int xevem_ready(XEVE_CTX * ctx)
             mctx->dra_array[i].signal_dra_flag = -1;
         }
 
-        xeve_generate_dra_array(mctx->dra_array, mctx->dra_control, 1, ctx->sps.bit_depth_luma_minus8 + 8);
+        xeve_generate_dra_array(ctx, mctx->dra_array, mctx->dra_control, 1, ctx->sps.bit_depth_luma_minus8 + 8);
 
         if (ctx->cdsc.ext->tool_dra)
         {
@@ -3658,7 +3658,7 @@ ERR:
     xeve_mfree_fast(mctx->map_ats_inter);
 
     num_tiles = (ctx->cdsc.ext->tile_columns) * (ctx->cdsc.ext->tile_rows);
-    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    for (int i = 0; i < ctx->cdsc.threads; i++)
     {
         xeve_mfree_fast(mctx->ats_inter_pred_dist[i]);
         xeve_mfree_fast(mctx->ats_inter_info_pred[i]);
@@ -3682,10 +3682,6 @@ ERR:
 
     if (ctx->cdsc.ext->tool_alf || ctx->cdsc.ext->tool_dra)
     {
-        if (ctx->aps_gen_array)
-        {
-            xeve_mfree(ctx->aps_gen_array);
-        }
 
         if (ctx->cdsc.ext->tool_alf)
         {
@@ -3693,6 +3689,10 @@ ERR:
             {
                 xeve_mfree(ctx->aps_gen_array[0].aps_data);
             }
+        }
+        if (ctx->aps_gen_array)
+        {
+            xeve_mfree(ctx->aps_gen_array);
         }
     }
 
@@ -3708,7 +3708,7 @@ ERR:
         xeve_alf_delete_buf(mctx->enc_alf);
     }
 
-    return ret;
+    return XEVE_ERR;
 }
 
 
@@ -3727,7 +3727,7 @@ void xevem_flush(XEVE_CTX * ctx)
     xeve_mfree_fast(mctx->map_ats_inter);
 
     int num_tiles = (ctx->cdsc.ext->tile_columns) * (ctx->cdsc.ext->tile_rows);
-    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    for (int i = 0; i < ctx->cdsc.threads; i++)
     {
         xeve_mfree_fast(mctx->ats_inter_pred_dist[i]);
         xeve_mfree_fast(mctx->ats_inter_info_pred[i]);
@@ -3836,11 +3836,20 @@ int xevem_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core)
 
     XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
     /* adaptive loop filter */
-    ctx->sh.alf_on = ctx->sps.tool_alf;
-    if (ctx->sh.alf_on)
+    ctx->sh = &ctx->sh_array[0];
+    ctx->sh->alf_on = ctx->sps.tool_alf;
+    if (ctx->sh->alf_on)
     {
-        ret = mctx->fn_alf(ctx, PIC_MODE(ctx), &ctx->sh, &ctx->aps);
+        ret = mctx->fn_alf(ctx, PIC_MODE(ctx), ctx->sh, &ctx->aps);
         xeve_assert_rv(ret == XEVE_OK, ret);
+        for (ctx->slice_num = 1; ctx->slice_num < ctx->param.num_slice_in_pic; ctx->slice_num++)
+        {
+            ctx->sh_array[ctx->slice_num].alf_on = ctx->sh_array[0].alf_on;
+            ctx->sh_array[ctx->slice_num].aps_id_y = ctx->sh_array[0].aps_id_y;
+            ctx->sh_array[ctx->slice_num].aps_id_ch = ctx->sh_array[0].aps_id_ch;
+            ctx->sh_array[ctx->slice_num].aps_id_ch2 = ctx->sh_array[0].aps_id_ch2;
+            xeve_mcpy(&ctx->sh_array[ctx->slice_num].alf_sh_param, &ctx->sh_array[0].alf_sh_param, sizeof(XEVE_ALF_SLICE_PARAM));
+        }
     }
 
     return ret;
@@ -3865,7 +3874,7 @@ void xevem_pic_filt(XEVE_CTX * ctx, XEVE_IMGB * img)
     XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
     if (ctx->cdsc.ext->tool_dra)
     {
-        xeve_apply_dra_from_array(img, img, mctx->dra_array, ctx->aps_gen_array[1].aps_id, 0);
+        xeve_apply_dra_from_array(ctx, img, img, mctx->dra_array, ctx->aps_gen_array[1].aps_id, 0);
     }
 }
 

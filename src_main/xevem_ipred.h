@@ -62,7 +62,7 @@ void xevem_ipred_uv(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *ds
 void xevem_get_mpm(int x_scu, int y_scu, int cuw, int cuh, u32 * map_scu, s8 * map_ipm, int scup, int w_scu, u8 mpm[2], u16 avail_lr, u8 mpm_ext[8], u8 pms[IPD_CNT], u8 * map_tidx);
 
 typedef void(*XEVE_INTRA_PRED_ANG)(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, pel *dst, int w, int h, int ipm, int bit_depth);
-extern XEVE_INTRA_PRED_ANG xeve_tbl_intra_pred_ang[3][2];
-extern XEVE_INTRA_PRED_ANG (*xeve_func_intra_pred_ang)[2];
+extern const XEVE_INTRA_PRED_ANG xeve_tbl_intra_pred_ang[3][2];
+extern const XEVE_INTRA_PRED_ANG (*xeve_func_intra_pred_ang)[2];
 
 #endif /* _XEVEM_IPRED_H_ */

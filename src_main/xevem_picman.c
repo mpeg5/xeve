@@ -36,7 +36,7 @@
 #include "xevem_picman.h"
 
 
-XEVE_RPL pre_define_rpls[2][3][2][MAX_NUM_RPLS] = 
+const XEVE_RPL pre_define_rpls[2][3][2][MAX_NUM_RPLS] = 
 {
     /* Disable redordering (LD) */
     {
@@ -294,19 +294,25 @@ void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     }
     //Copy RPL0 from the candidate in SPS to this SH
     sh->rpl_l0.poc = ctx->poc.poc_val;
+    if (sh->rpl_l0_idx != -1)
+    {
     sh->rpl_l0.tid = ctx->sps.rpls_l0[sh->rpl_l0_idx].tid;
     sh->rpl_l0.ref_pic_num = ctx->sps.rpls_l0[sh->rpl_l0_idx].ref_pic_num;
     sh->rpl_l0.ref_pic_active_num = ctx->sps.rpls_l0[sh->rpl_l0_idx].ref_pic_active_num;
     for (int i = 0; i < sh->rpl_l0.ref_pic_num; i++)
         sh->rpl_l0.ref_pics[i] = ctx->sps.rpls_l0[sh->rpl_l0_idx].ref_pics[i];
+    }
 
     //Copy RPL0 from the candidate in SPS to this SH
     sh->rpl_l1.poc = ctx->poc.poc_val;
+    if (sh->rpl_l1_idx != -1)
+    {
     sh->rpl_l1.tid = ctx->sps.rpls_l1[sh->rpl_l1_idx].tid;
     sh->rpl_l1.ref_pic_num = ctx->sps.rpls_l1[sh->rpl_l1_idx].ref_pic_num;
     sh->rpl_l1.ref_pic_active_num = ctx->sps.rpls_l1[sh->rpl_l1_idx].ref_pic_active_num;
     for (int i = 0; i < sh->rpl_l1.ref_pic_num; i++)
         sh->rpl_l1.ref_pics[i] = ctx->sps.rpls_l1[sh->rpl_l1_idx].ref_pics[i];
+    }
 
     if (sh->rpl_l0_idx != -1)
     {

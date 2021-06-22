@@ -35,9 +35,6 @@
 #include <immintrin.h>
 
 #if X86_SSE
-extern XEVE_FN_SAD xeve_tbl_sad_16b_avx[8][8];
-//extern XEVE_FN_SSD xeve_tbl_ssd_16b_sse[8][8];
-//extern XEVE_FN_DIFF xeve_tbl_diff_16b_sse[8][8];
-//extern XEVE_FN_SATD xeve_tbl_satd_16b_sse[1];
+extern const XEVE_FN_SAD xeve_tbl_sad_16b_avx[8][8];
 #endif /* X86_SSE */
 #endif /* _XEVE_SAD_AVX_H_ */

@@ -42,12 +42,6 @@
 /* blk-tree strength */
 #define LCU_STRENGTH                   0.75
 
-/* clipping transfer cost */
-#define CLIP_ADD(a,b)                  (XEVE_MIN((a)+(b),0xffff))
-
-/* modulo pico idx in pico_buf */
-#define MOD_PICO_IDX(num, mod)       (((num) + (mod)) % (mod))
-
 #define SEARCH_RANGE_IPEL            64
 #define INIT_SDS_PTS                 4
 /* initial direction of diamond searhc pattern */

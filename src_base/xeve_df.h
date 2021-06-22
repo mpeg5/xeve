@@ -34,13 +34,11 @@
 int  xeve_deblock(XEVE_CTX * ctx, XEVE_PIC * pic, int tile_idx, int filter_across_boundary, XEVE_CORE * core);
 void xeve_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int is_hor_edge, XEVE_CORE * core, int boundary_filtering);
 void xeve_deblock_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8 (*map_refi)[REFP_NUM], s16 (*map_mv)[REFP_NUM][MV_D]
-                         , int w_scu, XEVE_REFP (*refp)[REFP_NUM], TREE_CONS tree_cons, u8* map_tidx, int boundary_filtering
-                         , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc
-);
+                         , int w_scu, TREE_CONS tree_cons, u8* map_tidx, int boundary_filtering
+                         , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc, int* qp_chroma_dynamic[2]);
 void xeve_deblock_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8 (*map_refi)[REFP_NUM], s16 (*map_mv)[REFP_NUM][MV_D]
-                         , int w_scu, u32 *map_cu, XEVE_REFP (*refp)[REFP_NUM], TREE_CONS tree_cons, u8 *map_tidx, int boundary_filtering
-                         , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc
-);
+                         , int w_scu, u32 *map_cu, TREE_CONS tree_cons, u8 *map_tidx, int boundary_filtering
+                         , int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc, int* qp_chroma_dynamic[2]);
 
 void xeve_deblock_tree(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int cud, int cup, int is_hor_edge
                      , TREE_CONS tree_cons, XEVE_CORE * core, int boundary_filtering);

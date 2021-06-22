@@ -32,10 +32,10 @@
 #include <math.h>
 
 
-XEVE_FN_SAD  (* xeve_func_sad)[8];
-XEVE_FN_SSD  (* xeve_func_ssd)[8];
-XEVE_FN_DIFF (* xeve_func_diff)[8];
-XEVE_FN_SATD  * xeve_func_satd;
+const XEVE_FN_SAD  (* xeve_func_sad)[8];
+const XEVE_FN_SSD  (* xeve_func_ssd)[8];
+const XEVE_FN_DIFF (* xeve_func_diff)[8];
+const XEVE_FN_SATD  * xeve_func_satd;
 
 /* SAD for 16bit **************************************************************/
 int sad_16b(int w, int h, void *src1, void *src2, int s_src1, int s_src2, int bit_depth)
@@ -64,7 +64,7 @@ int sad_16b(int w, int h, void *src1, void *src2, int s_src1, int s_src2, int bi
 }
 
 /* index: [log2 of width][log2 of height] */
-XEVE_FN_SAD xeve_tbl_sad_16b[8][8] =
+const XEVE_FN_SAD xeve_tbl_sad_16b[8][8] =
 {
     /* width == 1 */
     {
@@ -179,7 +179,7 @@ void diff_16b(int w, int h, void *src1, void *src2, int s_src1, int s_src2, int 
     }
 }
 
-XEVE_FN_DIFF xeve_tbl_diff_16b[8][8] =
+const XEVE_FN_DIFF xeve_tbl_diff_16b[8][8] =
 {
     /* width == 1 */
     {
@@ -298,7 +298,7 @@ s64 ssd_16b(int w, int h, void *src1, void *src2, int s_src1, int s_src2, int bi
     return ssd;
 }
 
-XEVE_FN_SSD xeve_tbl_ssd_16b[8][8] =
+const XEVE_FN_SSD xeve_tbl_ssd_16b[8][8] =
 {
     /* width == 1 */
     {
@@ -1194,7 +1194,7 @@ int xeve_had(int w, int h, void *o, void *c, int s_org, int s_cur, int bit_depth
 }
 
 /* index: [log2 of width][log2 of height] */
-XEVE_FN_SATD xeve_tbl_satd_16b[1] =
+const XEVE_FN_SATD xeve_tbl_satd_16b[1] =
 {
     xeve_had,
 };

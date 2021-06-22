@@ -37,24 +37,22 @@
 #define _XEVEM_MC_H_
 
 
-extern s16 xevem_tbl_mc_l_coeff[16][8];
-extern s16 xevem_tbl_mc_c_coeff[32][4];
+extern const s16 xevem_tbl_mc_l_coeff[16][8];
+extern const s16 xevem_tbl_mc_c_coeff[32][4];
 
 extern const s16 tbl_bl_mc_l_coeff[16][2];
 extern const s16 tbl_bl_eif_32_phases_mc_l_coeff[32][2];
 
-typedef void (*XEVE_DMVR_MC_L) (pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth);
-typedef void (*XEVE_DMVR_MC_C) (pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth);
+typedef void (*XEVEM_MC) (pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth);
+typedef int  (*XEVE_DMVR_SAD_MR)(int w, int h, void * src1, void * src2, int s_src1, int s_src2, s16 delta);
 
-typedef int (*XEVE_DMVR_SAD_MR)(int w, int h, void * src1, void * src2, int s_src1, int s_src2, s16 delta);
+extern const XEVEM_MC xevem_tbl_dmvr_mc_l[2][2];
+extern const XEVEM_MC xevem_tbl_dmvr_mc_c[2][2];
+extern const XEVEM_MC xevem_tbl_bl_mc_l[2][2];
 
-extern XEVE_DMVR_MC_L xevem_tbl_dmvr_mc_l[2][2];
-extern XEVE_DMVR_MC_C xevem_tbl_dmvr_mc_c[2][2];
-extern XEVE_MC_C      xevem_tbl_bl_mc_l[2][2];
-
-extern XEVE_DMVR_MC_L (*xevem_func_dmvr_mc_l)[2];
-extern XEVE_DMVR_MC_C (*xevem_func_dmvr_mc_c)[2];
-extern XEVE_MC_C      (*xevem_func_bl_mc_l)[2];
+extern const XEVEM_MC (*xevem_func_dmvr_mc_l)[2];
+extern const XEVEM_MC (*xevem_func_dmvr_mc_c)[2];
+extern const XEVEM_MC (*xevem_func_bl_mc_l)[2];
 
 #define xeve_dmvr_mc_l(ref, gmv_x, gmv_y, s_ref, s_pred, pred, w, h, bit_depth) \
        (xevem_func_dmvr_mc_l[((gmv_x) | ((gmv_x)>>1) | ((gmv_x)>>2) | ((gmv_x)>>3)) & 0x1])\

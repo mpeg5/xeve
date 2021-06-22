@@ -58,8 +58,8 @@
     mac = _mm_add_epi32(mac, m04);
 
 #define MAC_8PEL_REG(mcoef, src2, mac) \
-    mac = _mm_add_epi32(mac,  _mm_madd_epi16(mcoef,\
-        _mm_loadu_si128((__m128i*)(src2))));
+    mac = _mm_add_epi32(mac,  _mm_madd_epi16(mcoef, \
+          _mm_cvtepi8_epi16(_mm_loadu_si128((__m128i*)(src2)))));
 
 #define MAC_LINE(idx, w, mcoef, src2, mac, mtot, lane) \
     mac = _mm_setzero_si128(); \
@@ -80,7 +80,7 @@
 #define ITX_MATRIX(coef, blk, tsize, line, shift, itm_tbl, skip_line) \
 {\
     int i, j, k, h, w; \
-    const s16 *itm; \
+    const s8 *itm; \
     s16 * c; \
 \
     __m128i mc[8]; \
@@ -138,8 +138,7 @@
     } \
 }
 
-
-INV_TRANS xeve_itrans_map_tbl_sse[16][5] =
+const INV_TRANS xeve_itrans_map_tbl_sse[16][5] =
 {
     { NULL, xeve_itrans_ats_intra_DCT8_B4, xeve_itrans_ats_intra_DCT8_B8_sse, xeve_itrans_ats_intra_DCT8_B16_sse, xeve_itrans_ats_intra_DCT8_B32_sse },
     { NULL, xeve_itrans_ats_intra_DST7_B4, xeve_itrans_ats_intra_DST7_B8_sse, xeve_itrans_ats_intra_DST7_B16_sse, xeve_itrans_ats_intra_DST7_B32_sse },
@@ -148,7 +147,7 @@ INV_TRANS xeve_itrans_map_tbl_sse[16][5] =
 
 void xeve_itrans_ats_intra_DST7_B8_sse(s16 *coef, s16 *block, int shift, int line, int skip_line, int skip_line_2)
 {
-    ITX_MATRIX(coef, block, 8, line, shift, xevem_tbl_inv_tr8[DST7][0], skip_line);
+    ITX_MATRIX(coef, block, 8, line, shift, xevem_tbl_inv_tr[DST7][1], skip_line);
 
     if (skip_line)
     {
@@ -158,7 +157,7 @@ void xeve_itrans_ats_intra_DST7_B8_sse(s16 *coef, s16 *block, int shift, int lin
 
 void xeve_itrans_ats_intra_DST7_B16_sse(s16 *coef, s16 *block, int shift, int line, int skip_line, int skip_line_2)
 {
-    ITX_MATRIX(coef, block, 16, line, shift, xevem_tbl_inv_tr16[DST7][0], skip_line);
+    ITX_MATRIX(coef, block, 16, line, shift, xevem_tbl_inv_tr[DST7][2], skip_line);
 
     if (skip_line)
     {
@@ -168,7 +167,7 @@ void xeve_itrans_ats_intra_DST7_B16_sse(s16 *coef, s16 *block, int shift, int li
 
 void xeve_itrans_ats_intra_DST7_B32_sse(s16 *coef, s16 *block, int shift, int line, int skip_line, int skip_line_2)
 {
-    ITX_MATRIX(coef, block, 32, line, shift, xevem_tbl_inv_tr32[DST7][0], skip_line);
+    ITX_MATRIX(coef, block, 32, line, shift, xevem_tbl_inv_tr[DST7][3], skip_line);
 
     if (skip_line)
     {
@@ -178,7 +177,7 @@ void xeve_itrans_ats_intra_DST7_B32_sse(s16 *coef, s16 *block, int shift, int li
 
 void xeve_itrans_ats_intra_DCT8_B8_sse(s16 *coef, s16 *block, int shift, int line, int skip_line, int skip_line_2)
 {
-    ITX_MATRIX(coef, block, 8, line, shift, xevem_tbl_inv_tr8[DCT8][0], skip_line);
+    ITX_MATRIX(coef, block, 8, line, shift, xevem_tbl_inv_tr[DCT8][1], skip_line);
 
     if (skip_line)
     {
@@ -188,7 +187,7 @@ void xeve_itrans_ats_intra_DCT8_B8_sse(s16 *coef, s16 *block, int shift, int lin
 
 void xeve_itrans_ats_intra_DCT8_B16_sse(s16 *coef, s16 *block, int shift, int line, int skip_line, int skip_line_2)
 {
-    ITX_MATRIX(coef, block, 16, line, shift, xevem_tbl_inv_tr16[DCT8][0], skip_line);
+    ITX_MATRIX(coef, block, 16, line, shift, xevem_tbl_inv_tr[DCT8][2], skip_line);
 
     if (skip_line)
     {
@@ -198,7 +197,7 @@ void xeve_itrans_ats_intra_DCT8_B16_sse(s16 *coef, s16 *block, int shift, int li
 
 void xeve_itrans_ats_intra_DCT8_B32_sse(s16 *coef, s16 *block, int shift, int line, int skip_line, int skip_line_2)
 {
-    ITX_MATRIX(coef, block, 32, line, shift, xevem_tbl_inv_tr32[DCT8][0], skip_line);
+    ITX_MATRIX(coef, block, 32, line, shift, xevem_tbl_inv_tr[DCT8][3], skip_line);
 
     if (skip_line)
     {

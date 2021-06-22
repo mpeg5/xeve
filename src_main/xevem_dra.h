@@ -126,21 +126,13 @@ typedef struct _DRA_CONTROL
 
 } DRA_CONTROL;
 
-void xeve_dra_ready(DRA_CONTROL *dra_mapping, int bit_depth);
 void xeve_init_dra(DRA_CONTROL *dra_mapping, int total_change_points, int *luma_change_points, int* qps, int bit_depth);
-int xeve_analyze_input_pic(DRA_CONTROL *dra_mapping, int bit_depth);
-void xeve_build_fwd_dra_lut_from_dec(DRA_CONTROL *dra_mapping, int bit_depth);
-int xeve_generate_dra_array(SIG_PARAM_DRA * dra_control_array, DRA_CONTROL * tmp_dra_control, int num_aps, int bit_depth);
-int xeve_construct_dra_from_array(SIG_PARAM_DRA * dra_control_array, DRA_CONTROL * tmp_dra_control, int effective_aps_id, int bit_depth);
-
-/* DRA applicaton (sample processing) functions are listed below: */
-void xeve_apply_dra_luma_plane(XEVE_IMGB * dst, XEVE_IMGB * src, DRA_CONTROL *dra_mapping, int plane_id, int backward_map);
-void xeve_apply_dra_chroma_plane(XEVE_IMGB * dst, XEVE_IMGB * src, DRA_CONTROL *dra_mapping, int plane_id, int backward_map);
+int  xeve_analyze_input_pic(XEVE_CTX * ctx, DRA_CONTROL *dra_mapping, int bit_depth);
+int  xeve_generate_dra_array(XEVE_CTX * ctx, SIG_PARAM_DRA * dra_control_array, DRA_CONTROL * tmp_dra_control, int num_aps, int bit_depth);
 
 /* DRA APS buffer functions are listed below: */
-void xeve_add_dra_aps_to_buffer(SIG_PARAM_DRA* dra_control_array, XEVE_APS_GEN *tmp_aps_gen_array);
 void xeve_reset_aps_gen_read_buffer(XEVE_APS_GEN *tmp_aps_gen_array);
-void xeve_apply_dra_from_array(XEVE_IMGB * dst, XEVE_IMGB * src, SIG_PARAM_DRA * dra_control_array, int dra_id, int backward_map);
+void xeve_apply_dra_from_array(XEVE_CTX * ctx, XEVE_IMGB * dst, XEVE_IMGB * src, SIG_PARAM_DRA * dra_control_array, int dra_id, int backward_map);
 
 int  xevem_set_active_dra_info(XEVE_CTX * ctx);
 

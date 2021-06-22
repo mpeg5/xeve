@@ -44,8 +44,9 @@ XEVE_IBC_HASH * xeve_ibc_hash_create(XEVE_CTX * ctx, int pic_width, int pic_heig
     return (XEVE_IBC_HASH *)ibc_hash;
 }
 
-void xeve_ibc_hash_init(XEVE_CTX * ctx, XEVE_IBC_HASH * ibc_hash, const int pic_width, const int pic_height)
+int xeve_ibc_hash_init(XEVE_CTX * ctx, XEVE_IBC_HASH * ibc_hash, const int pic_width, const int pic_height)
 {
+    int ret;
     ibc_hash->search_range_4small_blk = ctx->param.ibc_hash_search_range_4smallblk;
 
     ibc_hash->max_hash_cand = ctx->param.ibc_hash_search_max_cand;
@@ -56,6 +57,7 @@ void xeve_ibc_hash_init(XEVE_CTX * ctx, XEVE_IBC_HASH * ibc_hash, const int pic_
 
     ibc_hash->map_pos_to_hash = (POS_NODE**)xeve_malloc(sizeof(POS_NODE*) * pic_height);
     ibc_hash->map_pos_to_hash[0] = (POS_NODE*)xeve_malloc(sizeof(POS_NODE) * pic_width  *  pic_height);
+    xeve_assert_gv(ibc_hash->map_pos_to_hash[0], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     xeve_mset(ibc_hash->map_pos_to_hash[0], 0, sizeof(POS_NODE) * pic_width  *  pic_height);
     for (int n = 1; n < pic_height; n++)
     {
@@ -67,6 +69,10 @@ void xeve_ibc_hash_init(XEVE_CTX * ctx, XEVE_IBC_HASH * ibc_hash, const int pic_
     xeve_mset(ibc_hash->map_hash_to_pos, 0, sizeof(HASH_KEY_NODE) * ibc_hash->hash_table_size);
     ibc_hash->map_hash_to_pos_used = (u8 *)xeve_malloc(sizeof(u8) * ibc_hash->hash_table_size);
     xeve_mset(ibc_hash->map_hash_to_pos_used, 0, sizeof(u8) * ibc_hash->hash_table_size);
+
+    return XEVE_OK;
+ERR:
+    return XEVE_ERR;
 }
 
 void xeve_ibc_hash_destroy(XEVE_IBC_HASH * ibc_hash)
@@ -386,7 +392,10 @@ int xeve_ibc_hash_hit_ratio(XEVE_CTX * ctx, XEVE_IBC_HASH * ibc_hash, int cu_x, 
             total++;
         }
     }
+    if (total)
     return 100 * hit / total;
+    else
+        return 0;
 }
 
 static const u32 crc32_table[256] = {
