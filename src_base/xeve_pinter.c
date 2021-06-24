@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -31,9 +31,9 @@
 #include "xeve_type.h"
 #include <math.h>
 
-XEVE_PRED_INTER_COMP tbl_inter_pred_comp[2] = 
+const XEVE_PRED_INTER_COMP tbl_inter_pred_comp[2] =
 {
-    { 12, 16, 8, 8, 1, 1, 1, 1, 1, 2, 1, 1, 2 },
+    { 12,                 16,  8, 8, 1, 1, 1, 1, 1, 2, 1, 1, 2 },
     { RASTER_SEARCH_STEP, 128, 0, 0, 0, 0, 2, 0, 2, 1, 0, 2, 4}
 };
 
@@ -392,7 +392,7 @@ static u32 me_ipel_diamond(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
             min_cmv_x = (mv_best_x <= range[MV_RANGE_MIN][MV_X]) ? mv_best_x : mv_best_x - (bi == BI_NORMAL ? BI_STEP : 2);
             min_cmv_y = (mv_best_y <= range[MV_RANGE_MIN][MV_Y]) ? mv_best_y : mv_best_y - (bi == BI_NORMAL ? BI_STEP : 2);
             max_cmv_x = (mv_best_x >= range[MV_RANGE_MAX][MV_X]) ? mv_best_x : mv_best_x + (bi == BI_NORMAL ? BI_STEP : 2);
-            max_cmv_y = (mv_best_y >= range[MV_RANGE_MAX][MV_Y]) ? mv_best_y : mv_best_y + (bi == BI_NORMAL ? BI_STEP : 2);                       
+            max_cmv_y = (mv_best_y >= range[MV_RANGE_MAX][MV_Y]) ? mv_best_y : mv_best_y + (bi == BI_NORMAL ? BI_STEP : 2);
             mvsize = 1;
 
             for(i = min_cmv_y; i <= max_cmv_y; i += mvsize)
@@ -534,7 +534,7 @@ static u32 me_ipel_diamond(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
 
         step <<= 1;
 
-        if(step > pi->max_search_range || step > pi->max_search_range)
+        if(step > pi->max_search_range)
         {
             break;
         }
@@ -598,7 +598,7 @@ static u32 me_spel_pattern(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
         cost = MV_COST(pi, mv_bits);
 
         /* get the interpolated(predicted) image */
-        xeve_mc_l((mv_x << 2), (mv_y << 2), ref, (mv_x << 2), (mv_y << 2), s_ref, cuw, pred, cuw, cuh, bit_depth_luma);
+        xeve_mc_l((mv_x << 2), (mv_y << 2), ref, (mv_x << 2), (mv_y << 2), s_ref, cuw, pred, cuw, cuh, bit_depth_luma, pi->mc_l_coeff);
 
         if(bi)
         {
@@ -645,7 +645,7 @@ static u32 me_spel_pattern(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2
             cost = MV_COST(pi, mv_bits);
 
             /* get the interpolated(predicted) image */
-            xeve_mc_l((mv_x << 2), (mv_y << 2), ref, (mv_x << 2), (mv_y << 2), s_ref, cuw, pred, cuw, cuh, bit_depth_luma);
+            xeve_mc_l((mv_x << 2), (mv_y << 2), ref, (mv_x << 2), (mv_y << 2), s_ref, cuw, pred, cuw, cuh, bit_depth_luma, pi->mc_l_coeff);
 
             if(bi)
             {
@@ -1009,7 +1009,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
             xeve_sbac_bit_reset(&core->s_temp_run);
-            xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
+            xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh->slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
 
             bit_cnt = xeve_get_bit_number(&core->s_temp_run);
             cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -1041,7 +1041,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
         xeve_sbac_bit_reset(&core->s_temp_run);
-        xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
+        xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh->slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
 
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
         cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -1129,7 +1129,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
             DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
             xeve_sbac_bit_reset(&core->s_temp_run);
-            xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
+            xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh->slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
 
             bit_cnt = xeve_get_bit_number(&core->s_temp_run);
             cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -1200,7 +1200,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
         DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
         xeve_sbac_bit_reset(&core->s_temp_run);
-        xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh.slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
+        xeve_rdo_bit_cnt_cu_inter(ctx, core, ctx->sh->slice_type, core->scup, pi->refi[pidx], pi->mvd[pidx], coef, pidx, mvp_idx, 0, 0, NULL);
 
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
         cost_best += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -1297,7 +1297,7 @@ static double xeve_analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
             mvp[REFP_1][MV_X] = pi->mvp[REFP_1][idx1][MV_X];
             mvp[REFP_1][MV_Y] = pi->mvp[REFP_1][idx1][MV_Y];
 
-            SET_REFI(refi, pi->refi_pred[REFP_0][idx0], ctx->sh.slice_type == SLICE_B ? pi->refi_pred[REFP_1][idx1] : REFI_INVALID);
+            SET_REFI(refi, pi->refi_pred[REFP_0][idx0], ctx->sh->slice_type == SLICE_B ? pi->refi_pred[REFP_1][idx1] : REFI_INVALID);
             if(!REFI_IS_VALID(refi[REFP_0]) && !REFI_IS_VALID(refi[REFP_1]))
             {
                 continue;
@@ -1332,7 +1332,7 @@ static double xeve_analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
 
             xeve_sbac_bit_reset(&core->s_temp_run);
 
-            xeve_rdo_bit_cnt_cu_skip(ctx, core, ctx->sh.slice_type, core->scup, idx0, idx1, 0, 0);
+            xeve_rdo_bit_cnt_cu_skip(ctx, core, ctx->sh->slice_type, core->scup, idx0, idx1, 0, 0);
 
             bit_cnt = xeve_get_bit_number(&core->s_temp_run);
             cost += RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -1395,7 +1395,7 @@ static double analyze_t_direct(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int
     cost = pinter_residue_rdo(ctx, core, x, y, log2_cuw, log2_cuh, pi->pred[pidx], pi->coef[pidx], pidx, pi->mvp_idx[pidx]);
 
     xeve_mcpy(pi->nnz_best[pidx], core->nnz, sizeof(int) * N_C);
-        
+
     return cost;
 }
 
@@ -1438,7 +1438,7 @@ static double analyze_bi(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_
     pi->mvp_idx[pidx][REFP_0] = pi->mvp_idx[PRED_L0][REFP_0];
     pi->mvp_idx[pidx][REFP_1] = pi->mvp_idx[PRED_L1][REFP_1];
     pi->refi[pidx][REFP_0] = pi->refi[PRED_L0][REFP_0];
-    pi->refi[pidx][REFP_1] = pi->refi[PRED_L1][REFP_1];    
+    pi->refi[pidx][REFP_1] = pi->refi[PRED_L1][REFP_1];
     pi->mv[pidx][lidx_ref][MV_X] = pi->mv[pidx_ref][lidx_ref][MV_X];
     pi->mv[pidx][lidx_ref][MV_Y] = pi->mv[pidx_ref][lidx_ref][MV_Y];
     pi->mv[pidx][lidx_cnd][MV_X] = pi->mv[pidx_cnd][lidx_cnd][MV_X];
@@ -1499,7 +1499,7 @@ static double analyze_bi(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_
     pi->mvd[pidx][REFP_0][MV_Y] = pi->mv[pidx][REFP_0][MV_Y] - pi->mvp_scale[REFP_0][pi->refi[pidx][REFP_0]][pi->mvp_idx[pidx][REFP_0]][MV_Y];
     pi->mvd[pidx][REFP_1][MV_X] = pi->mv[pidx][REFP_1][MV_X] - pi->mvp_scale[REFP_1][pi->refi[pidx][REFP_1]][pi->mvp_idx[pidx][REFP_1]][MV_X];
     pi->mvd[pidx][REFP_1][MV_Y] = pi->mv[pidx][REFP_1][MV_Y] - pi->mvp_scale[REFP_1][pi->refi[pidx][REFP_1]][pi->mvp_idx[pidx][REFP_1]][MV_Y];
-    
+
     cost = pinter_residue_rdo(ctx, core, x, y, log2_cuw, log2_cuh, pi->pred[pidx], pi->coef[pidx], pidx, pi->mvp_idx[pidx]);
 
     xeve_mcpy(pi->nnz_best[pidx], core->nnz, sizeof(int) * N_C);
@@ -1518,16 +1518,16 @@ static int pinter_init_mt(XEVE_CTX *ctx, int thread_idx)
     pi->o[Y_C]     = pic->y;
     pi->o[U_C]     = pic->u;
     pi->o[V_C]     = pic->v;
-                   
+
     pi->s_o[Y_C]   = pic->s_l;
     pi->s_o[U_C]   = pic->s_c;
     pi->s_o[V_C]   = pic->s_c;
-                   
+
     pic            = pi->pic_m = PIC_MODE(ctx);
     pi->m[Y_C]     = pic->y;
     pi->m[U_C]     = pic->u;
     pi->m[V_C]     = pic->v;
-                   
+
     pi->s_m[Y_C]   = pic->s_l;
     pi->s_m[U_C]   = pic->s_c;
     pi->s_m[V_C]   = pic->s_c;
@@ -1556,10 +1556,10 @@ static int pinter_init_mt(XEVE_CTX *ctx, int thread_idx)
 
     size = sizeof(s16) * REFP_NUM * MAX_NUM_ACTIVE_REF_FRAME * MV_D;
     xeve_mset(pi->mv_scale, 0, size);
-        
+
     size = sizeof(s16) * N_C * MAX_CU_DIM;
     xeve_mset(pi->resi, 0, size);
-        
+
     /* MV predictor */
     size = sizeof(s16) * REFP_NUM * MAX_NUM_MVP * MV_D;
     xeve_mset(pi->mvp, 0, size);
@@ -1578,7 +1578,7 @@ static int pinter_init_mt(XEVE_CTX *ctx, int thread_idx)
 
     size = sizeof(pel) * (PRED_NUM + 1) * 2 * N_C * MAX_CU_DIM;
     xeve_mset(pi->pred, 0, size);
-    
+
     return XEVE_OK;
 }
 
@@ -1662,7 +1662,7 @@ static void check_best_mvp(XEVE_CTX *ctx, XEVE_CORE *core, s32 slice_type, s8 re
 }
 
 double xeve_pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C])
-{    
+{
     s8 *refi;
     s8 refi_temp = 0;
     u32 mecost, best_mecost;
@@ -1870,7 +1870,7 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
 {
     XEVE_PINTER *pi;
 
-    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    for (int i = 0; i < ctx->cdsc.threads; i++)
     {
         pi = &ctx->pinter[i];
         pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : ctx->param.preset->me_range;
@@ -1899,11 +1899,9 @@ int xeve_pinter_create(XEVE_CTX *ctx, int complexity)
     ctx->fn_pinter_init_mt = pinter_init_mt;
     ctx->fn_pinter_init_lcu = xeve_pinter_init_lcu;
     ctx->fn_pinter_set_complexity = pinter_set_complexity;
-    xeve_mc_l_coeff = xeve_tbl_mc_l_coeff;
-    xeve_mc_c_coeff = xeve_tbl_mc_c_coeff;
 
     XEVE_PINTER * pi;
-    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+    for (int i = 0; i < ctx->cdsc.threads; i++)
     {
         pi = &ctx->pinter[i];
         /* set maximum/minimum value of search range */
@@ -1911,7 +1909,9 @@ int xeve_pinter_create(XEVE_CTX *ctx, int complexity)
         pi->min_clip[MV_Y] = -MAX_CU_SIZE + 1;
         pi->max_clip[MV_X] = ctx->param.w - 1;
         pi->max_clip[MV_Y] = ctx->param.h - 1;
+        pi->mc_l_coeff = xeve_tbl_mc_l_coeff;
+        pi->mc_c_coeff = xeve_tbl_mc_c_coeff;
     }
-   
+
     return ctx->fn_pinter_set_complexity(ctx, complexity);
 }

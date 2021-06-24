@@ -36,7 +36,7 @@
 #include "xevem_type.h"
 
 
-XEVE_INTRA_PRED_ANG (*xeve_func_intra_pred_ang)[2];
+const XEVE_INTRA_PRED_ANG (*xeve_func_intra_pred_ang)[2];
 
 void xevem_get_nbr(int x, int y, int cuw, int cuh, pel *src, int s_src, u16 avail_cu, pel nb[N_C][N_REF][MAX_CU_SIZE * 3], int scup, u32 * map_scu
                  , int w_scu, int h_scu, int ch_type, int constrained_intra_pred, u8 * map_tidx, int bit_depth, int chroma_format_idc)
@@ -865,7 +865,7 @@ void ipred_ang_only_right(pel *src_le, pel *src_up, pel *src_ri, u16 avail_lr, p
     }
 }
 
-XEVE_INTRA_PRED_ANG xeve_tbl_intra_pred_ang[3][2] =
+const XEVE_INTRA_PRED_ANG xeve_tbl_intra_pred_ang[3][2] =
 {
     {ipred_ang_less_ver_no_right, ipred_ang_less_ver_on_right},
     {ipred_ang_gt_hor_no_right, ipred_ang_gt_hor_on_right},

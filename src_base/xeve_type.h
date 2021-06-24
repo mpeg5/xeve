@@ -346,7 +346,7 @@ struct _XEVE_PINTER
     s16                 coff_save[N_C][MAX_CU_DIM];
     u8                  ats_inter_info_mode[PRED_NUM];
     /* MV predictor */
-    s16                 mvp[REFP_NUM][MAX_NUM_MVP][MV_D]; 
+    s16                 mvp[REFP_NUM][MAX_NUM_MVP][MV_D];
     s16                 dmvr_mv[PRED_NUM][MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D];
     s16                 mv[PRED_NUM][REFP_NUM][MV_D];
     s16                 mvd[PRED_NUM][REFP_NUM][MV_D];
@@ -418,7 +418,9 @@ struct _XEVE_PINTER
     int                 skip_merge_cand_num;
     int                 me_complexity;
     s64                 best_ssd;
-    XEVE_PRED_INTER_COMP * me_opt;
+    const s16        (* mc_l_coeff)[8];
+    const s16        (* mc_c_coeff)[4];
+    const XEVE_PRED_INTER_COMP * me_opt;
     /* ME function (Full-ME or Fast-ME) */
     u32 (*fn_me)(XEVE_PINTER *pi, int x, int y, int log2_cuw, int log2_cuh, s8 *refi, int lidx, s16 mvp[MV_D], s16 mv[MV_D], int bi, int bit_depth_luma);
     /* AFFINE ME function (Gradient-ME) */
@@ -565,6 +567,10 @@ typedef struct _XEVE_PARAM
     int                 chroma_format_idc;
     int                 cs_w_shift;
     int                 cs_h_shift;
+    u16                 split_check[SPLIT_CHECK_NUM][2];
+    s64                 err_scale[6][NUM_CU_LOG2 + 1];
+    int                 qp_chroma_dynamic_ext[2][MAX_QP_TABLE_SIZE_EXT];
+    int               * qp_chroma_dynamic[2];    // pointer to [12th position in xeve_tbl_qp_chroma_dynamic_ext]
 } XEVE_PARAM;
 
 /*****************************************************************************
@@ -747,7 +753,7 @@ struct _XEVE_CORE
     u32                inter_satd;
     s32                dist_cu;
     s32                dist_cu_best; //dist of the best intra mode (note: only updated in intra coding now)
-
+    u8                 deblock_is_hor;
 #if TRACE_ENC_CU_DATA
     u64  trace_idx;
 #endif
@@ -756,10 +762,10 @@ struct _XEVE_CORE
     int                tile_idx;
     XEVE_CTX         * ctx;
     int                thread_cnt;
-    TREE_CONS          tree_cons; //!< Tree status    
+    TREE_CONS          tree_cons; //!< Tree status
     u8                 ctx_flags[NUM_CNID]; 
     int                split_mode_child[4];
-    int                parent_split_allow[6];    
+    int                parent_split_allow[6];
     //one picture that arranges cu pixels and neighboring pixels for deblocking (just to match the interface of deblocking functions)
     s64                delta_dist[N_C];  //delta distortion from filtering (negative values mean distortion reduced)
     s64                dist_nofilt[N_C]; //distortion of not filtered samples
@@ -824,7 +830,8 @@ struct _XEVE_CTX
     /* nal unit header */
     XEVE_NALU          nalu;
     /* slice header */
-    XEVE_SH            sh;
+    XEVE_SH          * sh;
+    XEVE_SH          * sh_array;
     /* reference picture manager */
     XEVE_PM            rpm;
     /* create descriptor */
@@ -839,7 +846,7 @@ struct _XEVE_CTX
     /* encoding picture height */
     u16                h;
     /* encoding picture width * height */
-    u16                f;
+    u32                f;
     /* the picture order count of the previous Tid0 picture */
     u32                prev_pic_order_cnt_val;
     /* the picture order count msb of the previous Tid0 picture */

@@ -174,10 +174,10 @@ struct _XEVE_RC
     int          st_idx;
     int          prev_adpt;
 
-    XEVE_RC_PARAM * param;
+    const XEVE_RC_PARAM * param;
 };
 
-extern XEVE_RC_PARAM tbl_rc_param;
+extern const XEVE_RC_PARAM tbl_rc_param;
 
 enum RC_TYPE
 {
@@ -185,12 +185,6 @@ enum RC_TYPE
     RC_CBR_FIXED_HIERARCHY,
     RC_CBR_EQUAL,
 };
-
-/* modulo pico idx in pico_buf */
-#define MOD_IDX(num, mod)  (((num) + (mod)) % (mod))
-
-/* clipping transfer cost */
-#define CLIP_ADD(a,b)                  (XEVE_MIN((a)+(b),0xffff))
 
 /* Define the Search Range for int-pel */
 #define SEARCH_RANGE_IPEL       64

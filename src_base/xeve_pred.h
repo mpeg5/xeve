@@ -43,7 +43,7 @@ double xeve_pintra_analyze_cu_simple(XEVE_CTX* ctx, XEVE_CORE* core, int x, int 
 int    xeve_pinter_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core);
 
 /* Inter prediction */
-extern XEVE_PRED_INTER_COMP tbl_inter_pred_comp[2];
+extern const XEVE_PRED_INTER_COMP tbl_inter_pred_comp[2];
 
 #define BI_ITER                            4
 #define MAX_FIRST_SEARCH_STEP              3

@@ -35,8 +35,8 @@
 #if X86_SSE
 #include <immintrin.h>
 
-extern XEVE_MC_L xeve_tbl_mc_l_avx[2][2];
-extern XEVE_MC_C xeve_tbl_mc_c_avx[2][2];
+extern const XEVE_MC_L xeve_tbl_mc_l_avx[2][2];
+extern const XEVE_MC_C xeve_tbl_mc_c_avx[2][2];
 #endif /* X86_SSE */
 
 #endif /* _XEVE_MC_SSE_H_ */

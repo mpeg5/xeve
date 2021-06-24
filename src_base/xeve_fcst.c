@@ -183,7 +183,7 @@ s32 xeve_fcst_get_scene_type(XEVE_CTX * ctx, XEVE_PICO * pico)
     {
         for (i = 1; i < param->max_b_frames + 1; i++)
         {
-            ridx = MOD_IDX(pico->pic_icnt - i, ctx->pico_max_cnt);
+            ridx = XEVE_MOD_IDX(pico->pic_icnt - i, ctx->pico_max_cnt);
 
             if (ctx->pico_buf[ridx]->sinfo.scene_type == SCENE_HIGH)
             {
@@ -455,28 +455,28 @@ static void set_transfer_cost(XEVE_CTX * ctx, s16 (* mv_blk)[MV_D],
     /* for upper left */
     if(mv[MV_X] < w_blk && mv[MV_Y] < h_blk && mv[MV_X] >= 0 && mv[MV_Y] >= 0)
     {
-        map_transfer_cost[blk_idx[0]] = CLIP_ADD(map_transfer_cost[blk_idx[0]],
+        map_transfer_cost[blk_idx[0]] = XEVE_CLIP16_ADD(map_transfer_cost[blk_idx[0]],
             (area_idx[0] * transfer_cost + 2048) >> (log2_cuwh * 2));
     }
 
     /* for upper right */
     if(mv[MV_X]+1 < w_blk && mv[MV_Y] < h_blk && mv[MV_X]+1 >= 0 && mv[MV_Y] >= 0)
     {
-        map_transfer_cost[blk_idx[1]] = CLIP_ADD(map_transfer_cost[blk_idx[1]],
+        map_transfer_cost[blk_idx[1]] = XEVE_CLIP16_ADD(map_transfer_cost[blk_idx[1]],
             (area_idx[1] * transfer_cost + 2048) >> (log2_cuwh * 2));
     }
 
     /* for bottom left */
     if(mv[MV_X] < w_blk && mv[MV_Y]+1 < h_blk && mv[MV_X] >= 0 && mv[MV_Y]+1 >= 0)
     {
-        map_transfer_cost[blk_idx[2]] = CLIP_ADD(map_transfer_cost[blk_idx[2]],
+        map_transfer_cost[blk_idx[2]] = XEVE_CLIP16_ADD(map_transfer_cost[blk_idx[2]],
             (area_idx[2] * transfer_cost + 2048) >> (log2_cuwh * 2));
     }
 
     /* for bottom right */
     if(mv[MV_X]+1 < w_blk && mv[MV_Y]+1 < h_blk && mv[MV_X]+1 >= 0 && mv[MV_Y]+1 >= 0)
     {
-        map_transfer_cost[blk_idx[3]] = CLIP_ADD(map_transfer_cost[blk_idx[3]],
+        map_transfer_cost[blk_idx[3]] = XEVE_CLIP16_ADD(map_transfer_cost[blk_idx[3]],
             (area_idx[3] * transfer_cost + 2048) >> (log2_cuwh * 2));
     }
 }
@@ -689,9 +689,10 @@ static void blk_tree_fixed_gop(XEVE_CTX * ctx)
     gop_size = param->max_b_frames + 1;
 
     max_depth = 0;
-    for (i = 0; i < gop_size + 1; i++)
+    int offset = pic_icnt_last == gop_size ? 1 : 0;
+    for (i = 0; i < gop_size + offset; i++)
     {
-        pic_idx = MOD_PICO_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
+        pic_idx = XEVE_MOD_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
         pico = ctx->pico_buf[pic_idx];
         if (pico->sinfo.slice_depth > max_depth)
         {
@@ -701,31 +702,31 @@ static void blk_tree_fixed_gop(XEVE_CTX * ctx)
 
     for (depth = max_depth; depth >= 0; depth--)
     {
-        for (i = 0; i < gop_size + 1; i++)
+        for (i = 0; i < gop_size + offset; i++)
         {
-            pic_idx = MOD_PICO_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
+            pic_idx = XEVE_MOD_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
             pico = ctx->pico_buf[pic_idx];
             if (pico->sinfo.slice_depth != depth) continue;
 
-            pico_l0 = ctx->pico_buf[MOD_PICO_IDX(pic_idx - pico->sinfo.ref_pic[REFP_0], ctx->pico_max_cnt)]; 
-            pico_l1 = ctx->pico_buf[MOD_PICO_IDX(pic_idx - pico->sinfo.ref_pic[REFP_1], ctx->pico_max_cnt)]; 
+            pico_l0 = ctx->pico_buf[XEVE_MOD_IDX(pic_idx - pico->sinfo.ref_pic[REFP_0], ctx->pico_max_cnt)]; 
+            pico_l1 = ctx->pico_buf[XEVE_MOD_IDX(pic_idx - pico->sinfo.ref_pic[REFP_1], ctx->pico_max_cnt)]; 
 
             blk_tree_transfer(ctx, pico_l0, pico_l1, pico);
         }
     }
 
     /* calcuate all qps */
-    for (i = 0; i < gop_size + 1; i++)
+    for (i = 0; i < gop_size + offset; i++)
     {
-        pic_idx = MOD_PICO_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
+        pic_idx = XEVE_MOD_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
         pico = ctx->pico_buf[pic_idx];
         if(pico->sinfo.slice_depth < max_depth) blk_tree_end(ctx, pico);
     }
 
     /* copy blk qp to scu map */
-    for (i = 0; i < gop_size + 1; i++)
+    for (i = 0; i < gop_size + offset; i++)
     {
-        pic_idx = MOD_PICO_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
+        pic_idx = XEVE_MOD_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
         pico = ctx->pico_buf[pic_idx];
         qp_offset = pico->sinfo.map_qp_blk;
 
@@ -964,14 +965,15 @@ static void set_mv_bound(int x, s32 y, s32 sub_w, s32 sub_h, s16 * min_out, s16 
 {
     s16 lower_clip[MV_D], upper_clip[MV_D];
     s32 search_range_ipel;
-    u8  shift = 1;
+    u8  shift = 2;
 
     lower_clip[MV_X] = -((PIC_PAD_SIZE_L - 16)) >> shift; /* -32 */
     lower_clip[MV_Y] = -((PIC_PAD_SIZE_L - 16)) >> shift; /* -32 */
-    upper_clip[MV_X] = sub_w - lower_clip[MV_X];          /* w + 32 */
-    upper_clip[MV_Y] = sub_h - lower_clip[MV_Y];          /* h + 32 */
-
-    search_range_ipel = SEARCH_RANGE_IPEL >> shift;
+    //upper_clip[MV_X] = sub_w - lower_clip[MV_X];          /* w + 32 */
+    //upper_clip[MV_Y] = sub_h - lower_clip[MV_Y];          /* h + 32 */
+    upper_clip[MV_X] = sub_w;
+    upper_clip[MV_Y] = sub_h;
+    search_range_ipel = SEARCH_RANGE_IPEL >> (shift - 1);
 
     min_out[MV_X] = XEVE_CLIP3(lower_clip[MV_X], upper_clip[MV_X], x - search_range_ipel);
     max_out[MV_X] = XEVE_CLIP3(lower_clip[MV_X], upper_clip[MV_X], x + search_range_ipel);
@@ -1240,14 +1242,14 @@ void uni_direction_cost_estimation(XEVE_CTX * ctx, XEVE_PICO * pico_cur, XEVE_PI
 
     map_lcu_cost = pico_cur->sinfo.map_uni_lcost;
     map_pdir = pico_cur->sinfo.map_pdir;
-    log2_cuwh =  ctx->fcst.log2_fcst_blk_spic;
+    log2_cuwh =  ctx->fcst.log2_fcst_blk_spic + 1;
 
     if (intra_cost_compute) pico_cur->sinfo.uni_est_cost[INTRA] = 0;
 
     pico_cur->sinfo.uni_est_cost[uni_inter_mode] = 0;
 
     /* get fcost */
-    for (lcu_num = 0; lcu_num < (ctx->fcst.f_blk>>2); lcu_num++)
+    for (lcu_num = 0; lcu_num < ctx->fcst.f_blk; lcu_num++)
     {
         if (intra_cost_compute)
         {
@@ -1341,7 +1343,7 @@ static s32 get_bi_lcost(XEVE_CTX * ctx, int x, int y, XEVE_PICO * pico_1,
     u16   lambda_p, lambda_b;
 
     best_cost = XEVE_INT32_MAX;
-    log2_cuwh = ctx->fcst.log2_fcst_blk_spic;
+    log2_cuwh = ctx->fcst.log2_fcst_blk_spic + 1;
     cuwh      = 1 << log2_cuwh;
     pos = ((x >> log2_cuwh) + (y >> log2_cuwh)* ctx->fcst.w_blk);
     map_mv    = pico_1->sinfo.map_mv_bi;
@@ -1440,7 +1442,7 @@ void bi_direction_cost_estimation(XEVE_CTX * ctx, XEVE_PICO * pico_cur, XEVE_PIC
     /* get map_lcost for pictures */
     uni_lcost = pico_cur->sinfo.map_uni_lcost; /* current pic */
     bi_lcost = pico_cur->sinfo.map_bi_lcost; /* current pic */
-    log2_cuwh = ctx->fcst.log2_fcst_blk_spic;
+    log2_cuwh = ctx->fcst.log2_fcst_blk_spic + 1;
     map_pdir = pico_cur->sinfo.map_pdir_bi;
 
     /* first init delayed_fcost */
@@ -1450,8 +1452,11 @@ void bi_direction_cost_estimation(XEVE_CTX * ctx, XEVE_PICO * pico_cur, XEVE_PIC
     {
         /*BI_estimation*/
 
-        bi_lcost[lcu_num] = get_bi_lcost(ctx, x_lcu << log2_cuwh, y_lcu << log2_cuwh, pico_cur, pico_l0, pico_l1, &map_pdir[lcu_num]) +
-                                         ctx->rc->param->sub_pic_penalty;
+        bi_lcost[lcu_num] = get_bi_lcost(ctx, x_lcu << log2_cuwh, y_lcu << log2_cuwh, pico_cur, pico_l0, pico_l1, &map_pdir[lcu_num]);
+        if (bi_lcost[lcu_num] != XEVE_INT32_MAX)
+        {
+            bi_lcost[lcu_num] += ctx->rc->param->sub_pic_penalty;
+        }
 
         if (uni_lcost[lcu_num][INTRA] < bi_lcost[lcu_num])
         {
@@ -1532,29 +1537,27 @@ void get_fcost_fixed_gop(XEVE_CTX * ctx, int is_intra_pic)
 
     if (ctx->param.gop_size == 1 && ctx->param.i_period != 1) //LD case
     {
-         pic_icnt = MOD_PICO_IDX(ctx->pico->pic_icnt - 1, ctx->pico_max_cnt);
+         pic_icnt = XEVE_MOD_IDX(ctx->pico->pic_icnt, ctx->pico_max_cnt);
          pico = ctx->pico_buf[pic_icnt];
-         ctx->pico = pico;
          refp_l0 = pico->sinfo.ref_pic[REFP_0];
-         pico_ridx = MOD_PICO_IDX(pic_icnt - refp_l0, ctx->pico_max_cnt);
+         pico_ridx = XEVE_MOD_IDX(pic_icnt - refp_l0, ctx->pico_max_cnt);
          pico_ref = ctx->pico_buf[pico_ridx];
          uni_direction_cost_estimation(ctx, pico, pico_ref, pico->sinfo.slice_type == SLICE_I, 1, INTER_UNI0);
     }
     else
     {
+        int offset = pic_icnt_last == gop_size ? 1 : 0;
         for (depth = FRM_DEPTH_MAX; depth >= 0; depth--)
         {
-            for (i = 0; i < gop_size + 1; i++)
+            for (i = 0; i < gop_size + offset; i++)
             {
 
-                pic_icnt = MOD_PICO_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
+                pic_icnt = XEVE_MOD_IDX(pic_icnt_last - i, ctx->pico_max_cnt);
                 pico = ctx->pico_buf[pic_icnt];
-
-                ctx->pico = pico;
 
                 if (pico->sinfo.slice_depth != depth) continue;
                 refp_l0 = pico->sinfo.ref_pic[REFP_0];
-                pico_ridx = MOD_PICO_IDX(pic_icnt - refp_l0, ctx->pico_max_cnt);
+                pico_ridx = XEVE_MOD_IDX(pic_icnt - refp_l0, ctx->pico_max_cnt);
                 pico_ref = ctx->pico_buf[pico_ridx];
 
                 uni_direction_cost_estimation(ctx, pico, pico_ref, pico->sinfo.slice_type == SLICE_I, 1, INTER_UNI0);
@@ -1565,17 +1568,17 @@ void get_fcost_fixed_gop(XEVE_CTX * ctx, int is_intra_pic)
                     refp_l0 = pico->sinfo.ref_pic[REFP_0];
                     refp_l1 = pico->sinfo.ref_pic[REFP_1];
 
-                    pico_ridx = MOD_PICO_IDX(pic_icnt - refp_l0, ctx->pico_max_cnt);
+                    pico_ridx = XEVE_MOD_IDX(pic_icnt - refp_l0, ctx->pico_max_cnt);
                     pico_l0 = ctx->pico_buf[pico_ridx];
 
-                    pico_ridx = MOD_PICO_IDX(pic_icnt - refp_l1, ctx->pico_max_cnt);
+                    pico_ridx = XEVE_MOD_IDX(pic_icnt - refp_l1, ctx->pico_max_cnt);
                     pico_l1 = ctx->pico_buf[pico_ridx];
                     bi_direction_cost_estimation(ctx, pico, pico_l0, pico_l1);
 
                     xeve_mset(pico->sinfo.map_mv_pga, 0, sizeof(s16) * ctx->f_lcu * REFP_NUM * MV_D);
 
                     /* get PGA cost */
-                    pico_ridx = MOD_PICO_IDX(((pic_icnt - 1) / param->gop_size) *
+                    pico_ridx = XEVE_MOD_IDX(((pic_icnt - 1) / param->gop_size) *
                         param->gop_size, ctx->pico_max_cnt);
                     pico_ref = ctx->pico_buf[pico_ridx];
                     uni_direction_cost_estimation(ctx, pico, pico_ref, pico->sinfo.slice_type == SLICE_I, 0, INTER_UNI2);

@@ -443,7 +443,7 @@ static void itx_pb64b(void *src, void *dst, int shift, int line, int step)
 }
 
 typedef void(*XEVE_ITXB)(void *coef, void *t, int shift, int line, int step);
-XEVE_ITXB tbl_itxb[MAX_TR_LOG2] =
+const XEVE_ITXB tbl_itxb[MAX_TR_LOG2] =
 {
     itx_pb2b,
     itx_pb4b,

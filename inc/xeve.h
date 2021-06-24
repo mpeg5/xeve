@@ -381,7 +381,7 @@ typedef struct _XEVE_CDSC
     int            cutree;
     int            constrained_intra_pred;
     int            use_deblock;
-    int            parallel_task_cnt;
+    int            threads;
     int            inter_slice_type;
     int            picture_cropping_flag;
     int            picture_crop_left_offset;

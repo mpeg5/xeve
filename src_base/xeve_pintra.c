@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -95,7 +95,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
         SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
         DQP_LOAD(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
         xeve_sbac_bit_reset(&core->s_temp_run);
-        xeve_rdo_bit_cnt_cu_intra_luma(ctx, core, ctx->sh.slice_type, core->scup, pi->coef_tmp);
+        xeve_rdo_bit_cnt_cu_intra_luma(ctx, core, ctx->sh->slice_type, core->scup, pi->coef_tmp);
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
 
         ctx->fn_itdp(ctx, core, pi->coef_tmp, core->nnz_sub);
@@ -134,7 +134,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
         ctx->fn_recon(ctx, core, pi->coef_tmp[V_C], pi->pred[V_C], core->nnz[V_C], cuw >> w_shift, cuh >> h_shift, cuw >> w_shift, pi->rec[V_C], ctx->sps.bit_depth_luma_minus8 + 8);
 
         xeve_sbac_bit_reset(&core->s_temp_run);
-        xeve_rdo_bit_cnt_cu_intra_chroma(ctx, core, ctx->sh.slice_type, core->scup, coef);
+        xeve_rdo_bit_cnt_cu_intra_chroma(ctx, core, ctx->sh->slice_type, core->scup, coef);
         bit_cnt = xeve_get_bit_number(&core->s_temp_run);
 
         if(ctx->sps.chroma_format_idc)
@@ -145,7 +145,7 @@ static double pintra_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, pel *org_luma, 
 
         if(ctx->param.rdo_dbk_switch)
         {
-            calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->rec, cuw, x, y, core->avail_lr, 1, 
+            calc_delta_dist_filter_boundary(ctx, PIC_MODE(ctx), PIC_ORIG(ctx), cuw, cuh, pi->rec, cuw, x, y, core->avail_lr, 1,
                                             core->nnz[Y_C] != 0, NULL, NULL, 0, core);
             cost += (core->delta_dist[U_C] * core->dist_chroma_weight[0]) + (core->delta_dist[V_C] * core->dist_chroma_weight[1]);
         }
@@ -184,16 +184,7 @@ static double make_ipred_list_simple(XEVE_CTX * ctx, XEVE_CORE * core, int log2_
         pintra_ipred(ctx, core, pred_buf, i, cuw, cuh);
 
         cost = xeve_satd_16b(log2_cuw, log2_cuh, org, pred_buf, s_org, cuw, ctx->sps.bit_depth_luma_minus8+8);
-#if 0
-        cost = (double)cost_satd;
-        SBAC_LOAD(core->s_temp_run, core->s_curr_best[log2_cuw - 2][log2_cuh - 2]);
-        xeve_sbac_bit_reset(&core->s_temp_run);
 
-        ctx->fn_mode_rdo_bit_cnt_intra_dir(ctx, core, i);
-
-        bit_cnt = xeve_get_bit_number(&core->s_temp_run);
-        cost += RATE_TO_COST_SQRT_LAMBDA(core->sqrt_lambda[0], bit_cnt);
-#endif
         if (cost < min_cost)
         {
             min_cost = cost;
@@ -509,7 +500,7 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
     DQP_STORE(core->dqp_temp_run, core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2]);
 
     xeve_sbac_bit_reset(&core->s_temp_run);
-    xeve_rdo_bit_cnt_cu_intra(ctx, core, ctx->sh.slice_type, core->scup, coef);
+    xeve_rdo_bit_cnt_cu_intra(ctx, core, ctx->sh->slice_type, core->scup, coef);
 
     bit_cnt = xeve_get_bit_number(&core->s_temp_run);
     cost = RATE_TO_COST_LAMBDA(core->lambda[0], bit_cnt);
@@ -532,10 +523,8 @@ int xeve_pintra_set_complexity(XEVE_CTX * ctx, int complexity)
 {
     XEVE_PINTRA * pi;
 
-   // pi = &ctx->pintra[0];
-   // pi->complexity = complexity;
-
-    for (int i = 0; i < ctx->cdsc.parallel_task_cnt; i++)
+   
+    for (int i = 0; i < ctx->cdsc.threads; i++)
     {
         pi = &ctx->pintra[i];
         pi->complexity = complexity;

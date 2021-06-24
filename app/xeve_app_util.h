@@ -31,6 +31,7 @@
 #ifndef _XEVEA_APP_UTIL_H_
 #define _XEVEA_APP_UTIL_H_
 
+
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -44,7 +45,7 @@
 #include <stdarg.h>
 
 /* logging functions */
-void log_msg(char * filename, int line, const char *fmt, ...)
+static void log_msg(char * filename, int line, const char *fmt, ...)
 {
     char str[1024]={'\0',};
     if(filename != NULL && line >= 0) sprintf(str, "[%s:%d] ", filename, line);
@@ -55,7 +56,7 @@ void log_msg(char * filename, int line, const char *fmt, ...)
     printf("%s", str);
 }
 
-void log_line(char * pre)
+static void log_line(char * pre)
 {
     char str[128]={'\0',};
     const int chars = 80;
@@ -98,12 +99,6 @@ void log_line(char * pre)
 #define VERBOSE_2                  2
 
 static int op_verbose = VERBOSE_1;
-
-#if defined(__GNUC__)
-
-#else
-
-#endif
 
 /* Clocks */
 #if defined(_WIN64) || defined(_WIN32)
@@ -263,6 +258,7 @@ static int imgb_write(char * fname, XEVE_IMGB * imgb)
     else
     {
         logv0("cannot support the color space\n");
+        fclose(fp);
         return -1;
     }
 
@@ -733,6 +729,7 @@ static int write_data(char * fname, unsigned char * data, int size)
     fclose(fp);
     return 0;
 }
+
 
 #endif /* _XEVEA_APP_UTIL_H_ */
 

@@ -427,7 +427,6 @@ END:
 
 ERR:
     if(err) *err = ret;
-    if(pic) pm->pa.fn_free(&pm->pa, pic);
     return NULL;
 }
 

@@ -632,8 +632,10 @@ int get_averaged_qp(s8 * map_dqp, int x_scu, int y_scu,  int w_scu, int h_scu, i
             cnt++;
         }
     }
-
-    return aver_qp / cnt;
+    if (cnt)
+        return aver_qp / cnt;
+    else
+        return 0;
 
 }
 
@@ -646,9 +648,9 @@ void set_lambda(XEVE_CTX * ctx, XEVE_CORE * core, XEVE_SH *sh, s8 qp)
     qp_v = (s8)XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, qp + sh->qp_v_offset);
 
     core->lambda[0] = 0.57 * pow(2.0, (qp- 12.0) / 3.0);
-    qp_c_i = xeve_qp_chroma_dynamic[0][qp_u];
+    qp_c_i = ctx->param.qp_chroma_dynamic[0][qp_u];
     core->dist_chroma_weight[0] = pow(2.0, (qp- qp_c_i) / 3.0);
-    qp_c_i = xeve_qp_chroma_dynamic[1][qp_v];
+    qp_c_i = ctx->param.qp_chroma_dynamic[1][qp_v];
     core->dist_chroma_weight[1] = pow(2.0, (qp- qp_c_i) / 3.0);
     core->lambda[1] = core->lambda[0] / core->dist_chroma_weight[0];
     core->lambda[2] = core->lambda[0] / core->dist_chroma_weight[1];
@@ -684,7 +686,7 @@ void get_min_max_qp(XEVE_CTX * ctx, XEVE_CORE *core, s8 * min_qp, s8 * max_qp, i
         else
         {
             min_dqp = ctx->tile[core->tile_idx].qp;
-            max_dqp = ctx->tile[core->tile_idx].qp + ctx->sh.dqp;
+            max_dqp = ctx->tile[core->tile_idx].qp + ctx->sh->dqp;
         }
 
         if (!(ctx->sps.dquant_flag))
@@ -760,10 +762,10 @@ int mode_cu_init(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int log2_cuw, i
     int qp_i_cb, qp_i_cr;
 
     core->qp_y = GET_LUMA_QP(core->qp, ctx->sps.bit_depth_luma_minus8);
-    qp_i_cb = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh.qp_u_offset);
-    qp_i_cr = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh.qp_v_offset);
-    core->qp_u = xeve_qp_chroma_dynamic[0][qp_i_cb] + 6 * ctx->sps.bit_depth_chroma_minus8;
-    core->qp_v = xeve_qp_chroma_dynamic[1][qp_i_cr] + 6 * ctx->sps.bit_depth_chroma_minus8;
+    qp_i_cb = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh->qp_u_offset);
+    qp_i_cr = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh->qp_v_offset);
+    core->qp_u = ctx->param.qp_chroma_dynamic[0][qp_i_cb] + 6 * ctx->sps.bit_depth_chroma_minus8;
+    core->qp_v = ctx->param.qp_chroma_dynamic[1][qp_i_cr] + 6 * ctx->sps.bit_depth_chroma_minus8;
 
     XEVE_PINTER *pi = &ctx->pinter[core->thread_cnt];
 
@@ -851,7 +853,8 @@ void mode_cpy_rec_to_ref(XEVE_CORE *core, int x, int y, int w, int h, XEVE_PIC *
 void copy_to_cu_data(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi, s16 coef_src[N_C][MAX_CU_DIM])
 {
     XEVE_CU_DATA *cu_data;
-    int i, j, idx, size;
+    int i, j, idx;
+    u32 size;
     int log2_cuw, log2_cuh;
 
     log2_cuw = XEVE_LOG2(core->cuw);
@@ -1294,7 +1297,7 @@ static double mode_coding_unit(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int
     mode_cu_init(ctx, core, x, y, log2_cuw, log2_cuh, cud);
 
     core->avail_lr = xeve_check_nev_avail(core->x_scu, core->y_scu, (1 << log2_cuw), (1 << log2_cuh), ctx->w_scu, ctx->h_scu, ctx->map_scu, ctx->map_tidx);
-    xeve_get_ctx_some_flags(core->x_scu, core->y_scu, 1 << log2_cuw, 1 << log2_cuh, ctx->w_scu, ctx->map_scu, ctx->map_cu_mode, core->ctx_flags, ctx->sh.slice_type, ctx->sps.tool_cm_init
+    xeve_get_ctx_some_flags(core->x_scu, core->y_scu, 1 << log2_cuw, 1 << log2_cuh, ctx->w_scu, ctx->map_scu, ctx->map_cu_mode, core->ctx_flags, ctx->sh->slice_type, ctx->sps.tool_cm_init
                          , ctx->param.use_ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
 
     cost_best = MAX_COST;
@@ -1462,7 +1465,7 @@ int check_nev_block(XEVE_CTX *ctx, int x0, int y0, int log2_cuw, int log2_cuh, i
         max_depth = tmp > max_depth ? tmp : max_depth;
     }
 
-    if(avail_cu)
+    if(avail_cu && (max_depth - min_depth < 3))
     {
         if(cud < min_depth - 1)
         {
@@ -1527,7 +1530,7 @@ void calc_delta_dist_filter_boundary(XEVE_CTX* ctx, XEVE_PIC *pic_rec, XEVE_PIC 
     int y_begin = ((ctx->tile[core->tile_num].ctba_rs_first) / ctx->w_lcu) << ctx->log2_max_cuwh;
     int y_begin_uv = (((ctx->tile[core->tile_num].ctba_rs_first) / ctx->w_lcu) << ctx->log2_max_cuwh)>> h_shift;
 
-    if(ctx->sh.deblocking_filter_on)
+    if(ctx->sh->deblocking_filter_on)
     {
         do_filter = 1;
     }
@@ -1883,7 +1886,7 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
         check_min_cu = ctx->param.preset->min_cu_inter;
     }
 
-    set_lambda(ctx, core, &ctx->sh, ctx->tile[core->tile_idx].qp);
+    set_lambda(ctx, core, ctx->sh, ctx->tile[core->tile_idx].qp);
 
     core->tree_cons = tree_cons;
     core->avail_lr = avail_lr;
@@ -1907,8 +1910,8 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
         cost_temp = 0.0;
         init_cu_data(&core->cu_data_temp[log2_cuw - 2][log2_cuh - 2], log2_cuw, log2_cuh, ctx->qp, ctx->qp, ctx->qp);
 
-        ctx->sh.qp_prev_mode = core->dqp_data[log2_cuw - 2][log2_cuh - 2].prev_qp;
-        best_dqp = ctx->sh.qp_prev_mode;
+        ctx->sh->qp_prev_mode = core->dqp_data[log2_cuw - 2][log2_cuh - 2].prev_qp;
+        best_dqp = ctx->sh->qp_prev_mode;
         split_mode = NO_SPLIT;
         if(split_allow[split_mode] && (cuw <= check_max_cu && cuh <= check_max_cu))
         {
@@ -1933,7 +1936,7 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
 
                 if (ctx->param.aq_mode != 0 || ctx->param.cutree != 0)
                 {
-                    set_lambda(ctx, core, &ctx->sh, core->qp);
+                    set_lambda(ctx, core, ctx->sh, core->qp);
                 }
 
                 core->dqp_curr_best[log2_cuw - 2][log2_cuh - 2].curr_qp = core->qp;
@@ -2006,7 +2009,7 @@ static double mode_coding_tree(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int y0, i
         next_split = 0;
     }
 
-    if(cost_best != MAX_COST && ctx->sh.slice_type == SLICE_I)
+    if(cost_best != MAX_COST && ctx->sh->slice_type == SLICE_I)
     {
         int dist_cu = core->dist_cu_best;
         int dist_cu_th = 1 << (log2_cuw + log2_cuh + 7);
@@ -2212,7 +2215,7 @@ int mode_init_lcu(XEVE_CTX *ctx, XEVE_CORE *core)
     int ret;
 
     /*initialize lambda for lcu */
-    set_lambda(ctx, core, &ctx->sh, ctx->sh.qp);
+    set_lambda(ctx, core, ctx->sh, ctx->sh->qp);
     /* initialize pintra */
     if(ctx->fn_pintra_init_lcu)
     {
@@ -2577,10 +2580,10 @@ void xeve_set_qp(XEVE_CTX *ctx, XEVE_CORE *core, u8 qp)
     u8 qp_i_cb, qp_i_cr;
     core->qp = qp;
     core->qp_y = GET_LUMA_QP(core->qp, ctx->sps.bit_depth_luma_minus8);
-    qp_i_cb = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh.qp_u_offset);
-    qp_i_cr = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh.qp_v_offset);
-    core->qp_u = xeve_qp_chroma_dynamic[0][qp_i_cb] + 6 * ctx->sps.bit_depth_chroma_minus8;
-    core->qp_v = xeve_qp_chroma_dynamic[1][qp_i_cr] + 6 * ctx->sps.bit_depth_chroma_minus8;
+    qp_i_cb = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh->qp_u_offset);
+    qp_i_cr = XEVE_CLIP3(-6 * ctx->sps.bit_depth_chroma_minus8, 57, core->qp + ctx->sh->qp_v_offset);
+    core->qp_u = ctx->param.qp_chroma_dynamic[0][qp_i_cb] + 6 * ctx->sps.bit_depth_chroma_minus8;
+    core->qp_v = ctx->param.qp_chroma_dynamic[1][qp_i_cr] + 6 * ctx->sps.bit_depth_chroma_minus8;
 }
 
 MODE_CONS xeve_derive_mode_cons(XEVE_CTX *ctx, int lcu_num, int cup)

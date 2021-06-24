@@ -31,8 +31,8 @@
 #ifndef _XEVE_MC_SSE_H_
 #define _XEVE_MC_SSE_H_
 #if X86_SSE
-extern XEVE_MC_L xeve_tbl_mc_l_sse[2][2];
-extern XEVE_MC_C xeve_tbl_mc_c_sse[2][2];
+extern const XEVE_MC_L xeve_tbl_mc_l_sse[2][2];
+extern const XEVE_MC_C xeve_tbl_mc_c_sse[2][2];
 void xeve_average_16b_no_clip_sse(s16 *src, s16 *ref, s16 *dst, int s_src, int s_ref, int s_dst, int wd, int ht);
 void mc_filter_c_4pel_vert_sse(s16 *ref, int src_stride, s16 *pred, int dst_stride, const s16 *coeff, int width
                              , int height, int min_val, int max_val, int offset, int shift, s8  is_last);

@@ -73,6 +73,12 @@ operation: if(val < 0) return 1, else return 0 */
 operation: if(sign == 0) return val, else if(sign == 1) return -val */
 #define XEVE_SIGN_SET16(val, sign)  (((val) ^ ((s16)((sign)<<15)>>15)) + (sign))
 
+/* macro to clipping addition */
+#define XEVE_CLIP16_ADD(a,b)        (XEVE_MIN((a)+(b),0xffff))
+
+/* macro to modulo index */
+#define XEVE_MOD_IDX(num, mod)      (((num) + (mod)) % (mod))
+
 /* change to log value */
 #define XEVE_LOG2(v)                (xeve_tbl_log2[v])
 #define XEVE_ALIGN_VAL(val, align)  ((((val)+(align)-1)/(align))*(align))
@@ -122,8 +128,6 @@ typedef struct _XEVE_SPLIT_STRUCT
 void xeve_split_get_part_structure(int split_mode, int x0, int y0, int cuw, int cuh, int cup, int cud, int log2_culine, XEVE_SPLIT_STRUCT* split_struct);
 void xeve_get_mv_dir(XEVE_REFP refp[REFP_NUM], u32 poc, int scup, int c_scu, u16 w_scu, u16 h_scu, s16 mvp[REFP_NUM][MV_D], int sps_admvp_flag);
 int  xeve_get_avail_cu(int neb_scua[MAX_NEB2], u32 * map_cu, u8 * map_tidx);
-int  xeve_scan_tbl_init();
-int  xeve_scan_tbl_delete();
 int  xeve_get_split_mode(s8* split_mode, int cud, int cup, int cuw, int cuh, int lcu_s, s8(*split_mode_buf)[NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU]);
 void xeve_set_split_mode(s8  split_mode, int cud, int cup, int cuw, int cuh, int lcu_s, s8(*split_mode_buf)[NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU]);
 u16  xeve_check_nev_avail(int x_scu, int y_scu, int cuw, int cuh, int w_scu, int h_scu, u32 * map_scu, u8* map_tidx);
@@ -239,4 +243,5 @@ int  xeve_check_frame_delay(XEVE_CTX * ctx);
 int  xeve_check_more_frames(XEVE_CTX * ctx);
 int  xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int chroma_format_idc);
 int  xeve_delete_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh);
+void xeve_set_tile_in_slice(XEVE_CTX * ctx);
 #endif /* __XEVE_UTIL_H__ */

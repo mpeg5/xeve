@@ -77,7 +77,7 @@ struct _XEVE_IBC_HASH
 };
 
 XEVE_IBC_HASH * xeve_ibc_hash_create(XEVE_CTX * ctx, int pic_width, int pic_height);
-void              xeve_ibc_hash_init(XEVE_CTX * ctx, XEVE_IBC_HASH * ibc_hash, const int pic_width, const int pic_height);
+int               xeve_ibc_hash_init(XEVE_CTX * ctx, XEVE_IBC_HASH * ibc_hash, const int pic_width, const int pic_height);
 void              xeve_ibc_hash_destroy(XEVE_IBC_HASH * ibc_hash);
 void              xeve_ibc_hash_clear(XEVE_IBC_HASH * ibc_hash);
 void              xeve_ibc_hash_insert(XEVE_IBC_HASH * ibc_hash, u32 key, u16 x, u16 y);
