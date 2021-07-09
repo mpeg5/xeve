@@ -1020,11 +1020,11 @@ int xeve_rdoq_method_adcc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s1
     const int ns_shift = ((log2_cuw + log2_cuh) & 1) ? 7 : 0;
     const int ns_scale = ((log2_cuw + log2_cuh) & 1) ? 181 : 1;
     const int qp_rem = qp % 6;
-    const int q_value = (xeve_quant_scale[core->ctx->cdsc.ext->tool_iqt][qp_rem] * ns_scale) >> ns_shift;
+    const int q_value = (xeve_quant_scale[core->ctx->param.tool_iqt][qp_rem] * ns_scale) >> ns_shift;
     const int log2_size = (log2_cuw + log2_cuh) >> 1;
     const int tr_shift = MAX_TX_DYNAMIC_RANGE - bit_depth - (log2_size);
 
-    s64 err_scale = core->ctx->param.err_scale[qp_rem][log2_size - 1];
+    s64 err_scale = core->ctx->err_scale[qp_rem][log2_size - 1];
     s64 lambda = (s64)(d_lambda * (double)(1 << SCALE_BITS) + 0.5);
     int q_bits;
     const int width = (1 << log2_cuw);
@@ -1456,16 +1456,16 @@ int xevem_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DI
                         coef_temp[c] = coef[c];
                     }
 
-                    int scale = xeve_quant_scale[ctx->cdsc.ext->tool_iqt][qp[c] % 6];
+                    int scale = xeve_quant_scale[ctx->param.tool_iqt][qp[c] % 6];
                     if(c == 0)
                     {
                     core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, slice_type, c, is_intra, ctx->sps.tool_cm_init, ctx->sps.tool_iqt
-                                                               , ats_intra_cu_on, ats_mode_idx, ctx->sps.tool_adcc, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.preset->rdoq);
+                                                               , ats_intra_cu_on, ats_mode_idx, ctx->sps.tool_adcc, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.rdoq);
                     }
                     else
                     {
                         core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale, slice_type, c, is_intra, ctx->sps.tool_cm_init, ctx->sps.tool_iqt
-                            , ats_intra_cu_on, ats_mode_idx, ctx->sps.tool_adcc, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.preset->rdoq);
+                            , ats_intra_cu_on, ats_mode_idx, ctx->sps.tool_adcc, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.rdoq);
                     }
                     nnz_temp[c] += core->nnz_sub[c][(j << 1) | i];
 

@@ -322,9 +322,9 @@ struct _XEVE_PINTER
     /* Ref idx predictor */
     s8                  refi_pred[REFP_NUM][MAX_NUM_MVP]; 
     u8                  mvp_idx[PRED_NUM][REFP_NUM];
-    s16                 mvp_scale[REFP_NUM][MAX_NUM_ACTIVE_REF_FRAME][MAX_NUM_MVP][MV_D];
-    s16                 mv_scale[REFP_NUM][MAX_NUM_ACTIVE_REF_FRAME][MV_D];
-    u8                  mvp_idx_temp_for_bi[PRED_NUM][REFP_NUM][MAX_NUM_ACTIVE_REF_FRAME];
+    s16                 mvp_scale[REFP_NUM][XEVE_MAX_NUM_ACTIVE_REF_FRAME][MAX_NUM_MVP][MV_D];
+    s16                 mv_scale[REFP_NUM][XEVE_MAX_NUM_ACTIVE_REF_FRAME][MV_D];
+    u8                  mvp_idx_temp_for_bi[PRED_NUM][REFP_NUM][XEVE_MAX_NUM_ACTIVE_REF_FRAME];
     int                 best_index[PRED_NUM][4];
     s16                 mmvd_idx[PRED_NUM];
     u8                  mvr_idx[PRED_NUM];
@@ -334,9 +334,9 @@ struct _XEVE_PINTER
     u8                  bi_idx[PRED_NUM];
     u8                  curr_bi;
     int                 max_search_range;
-    s16                 affine_mvp_scale[REFP_NUM][MAX_NUM_ACTIVE_REF_FRAME][MAX_NUM_MVP][VER_NUM][MV_D];
-    s16                 affine_mv_scale[REFP_NUM][MAX_NUM_ACTIVE_REF_FRAME][VER_NUM][MV_D];
-    u8                  mvp_idx_scale[REFP_NUM][MAX_NUM_ACTIVE_REF_FRAME];
+    s16                 affine_mvp_scale[REFP_NUM][XEVE_MAX_NUM_ACTIVE_REF_FRAME][MAX_NUM_MVP][VER_NUM][MV_D];
+    s16                 affine_mv_scale[REFP_NUM][XEVE_MAX_NUM_ACTIVE_REF_FRAME][VER_NUM][MV_D];
+    u8                  mvp_idx_scale[REFP_NUM][XEVE_MAX_NUM_ACTIVE_REF_FRAME];
     s16                 affine_mvp[REFP_NUM][MAX_NUM_MVP][VER_NUM][MV_D];
     s16                 affine_mv[PRED_NUM][REFP_NUM][VER_NUM][MV_D];
     s16                 affine_mvd[PRED_NUM][REFP_NUM][VER_NUM][MV_D];
@@ -490,89 +490,6 @@ typedef struct _XEVE_PIBC
     int               * ndata[4];
 } XEVE_PIBC;
 
-/* XEVE parameter */
-typedef struct _XEVE_PARAM
-{
-    /* picture size of input sequence (width) */
-    int                 w;
-    /* picture size of input sequence (height) */
-    int                 h;
-    /* qp value for I- and P- slice */
-    int                 qp;
-    /* frame per second */
-    int                 fps;
-    /* Enable deblocking filter or not
-       - 0: Disable deblocking filter
-       - 1: Enable deblocking filter
-    */
-    int                 use_deblock;
-    int                 deblock_alpha_offset;
-    int                 deblock_beta_offset;
-    /* I-frame period */
-    int                 i_period;
-    /* force I-frame */
-    int                 f_ifrm;
-    /* Maximum qp value */
-    int                 qp_max;
-    /* Minimum qp value */
-    int                 qp_min;
-    /* use picture signature embedding */
-    int                 use_pic_sign;
-    int                 max_b_frames;
-    int                 ref_pic_gap_length;
-    /* start bumping process if force_output is on */
-    int                 force_output;
-    int                 gop_size;
-    int                 aq_mode;
-    int                 cutree;
-    int                 lookahead;
-    int                 use_fcst;
-    int                 use_closed_gop;
-    int                 use_ibc_flag;
-    int                 ibc_search_range_x;
-    int                 ibc_search_range_y;
-    int                 ibc_hash_search_flag;
-    int                 ibc_hash_search_max_cand;
-    int                 ibc_hash_search_range_4smallblk;
-    int                 ibc_fast_method;
-    int                 use_hgop;
-    /* config parameter for cu_qp_delta_area*/
-    int                 cu_qp_delta_area;
-    int                 qp_incread_frame;           /* 10 bits*/
-    /* number of tile' columns (1-20)*/
-    int                 tile_columns;
-    /* number of tile' rows (1-22) */
-    int                 tile_rows;
-    /* flag for uniform spacing tiles */
-    int                 uniform_spacing_tiles;
-    int                 num_slice_in_pic;
-    /* Array for storing slice boundaries*/ 
-    /* In XEVE slices are rectangular only (No rasterscan tiles)
-    Slice boundaries stores the tile index of top left and bottom right tiles */
-    int                 slice_boundary_array[2 * 600];
-    int                 tile_array_in_slice[2 * 600];
-    int                 arbitrary_slice_flag;
-    u32                 num_remaining_tiles_in_slice_minus1[600];
-    u8                  rdo_dbk_switch;
-    const XEVE_PRESET * preset;
-    int                 rc_type;
-    int                 bps;
-    int                 use_filler_flag;
-    int                 num_pre_analysis_frames;
-    /* Rate control type (Off CBR ABR) */
-    int                 vbv_enabled;
-    /* vbv parameters */
-    int                 vbv_buffer_size;
-    /* vbv buffer size */
-    int                 chroma_format_idc;
-    int                 cs_w_shift;
-    int                 cs_h_shift;
-    u16                 split_check[SPLIT_CHECK_NUM][2];
-    s64                 err_scale[6][NUM_CU_LOG2 + 1];
-    int                 qp_chroma_dynamic_ext[2][MAX_QP_TABLE_SIZE_EXT];
-    int               * qp_chroma_dynamic[2];    // pointer to [12th position in xeve_tbl_qp_chroma_dynamic_ext]
-} XEVE_PARAM;
-
 /*****************************************************************************
 * rate control structure for bits estimating
 *****************************************************************************/
@@ -600,6 +517,7 @@ typedef struct _XEVE_SBAC
     u8                  is_bitcount;
     u32                 bin_counter;
 } XEVE_SBAC;
+
 typedef struct _XEVE_DQP
 {
     s8                  prev_qp;
@@ -607,6 +525,21 @@ typedef struct _XEVE_DQP
     s8                  cu_qp_delta_is_coded;
     s8                  cu_qp_delta_code;
 } XEVE_DQP;
+
+/* tile & slice information*/
+typedef struct _XEVE_TS_INFO
+{
+    int                 tile_uniform_spacing_flag;
+    int                 tile_columns;
+    int                 tile_rows;
+    int                 tile_column_width_array[XEVE_MAX_NUM_TILE_WIDTH];
+    int                 tile_row_height_array[XEVE_MAX_NUM_TILE_HEIGHT];
+    int                 num_slice_in_pic;
+    int                 tile_array_in_slice[XEVE_MAX_NUM_TILES];
+    int                 arbitrary_slice_flag;
+    int                 num_remaining_tiles_in_slice_minus1[XEVE_MAX_NUM_TILES >> 1];
+} XEVE_TS_INFO;
+
 typedef struct _XEVE_CU_DATA
 {
     s8                 split_mode[NUM_CU_DEPTH][NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU];
@@ -810,7 +743,7 @@ struct _XEVE_CTX
     /* picture address for mode decision */
     XEVE_PIC         * pic_m;
     /* reference picture (0: foward, 1: backward) */
-    XEVE_REFP          refp[MAX_NUM_REF_PICS][REFP_NUM];
+    XEVE_REFP          refp[XEVE_MAX_NUM_REF_PICS][REFP_NUM];
     /* encoding parameter */
     XEVE_PARAM         param;
     /* bitstream structure */
@@ -834,13 +767,8 @@ struct _XEVE_CTX
     XEVE_SH          * sh_array;
     /* reference picture manager */
     XEVE_PM            rpm;
-    /* create descriptor */
-    XEVE_CDSC          cdsc;
     /* quantization value of current encoding slice */
     u8                 qp;
-    /* offset value of alpha and beta for deblocking filter */
-    u8                 deblock_alpha_offset;
-    u8                 deblock_beta_offset;
     /* encoding picture width */
     u16                w;
     /* encoding picture height */
@@ -879,8 +807,6 @@ struct _XEVE_CTX
     u8                 slice_depth;
     /* flag whether current picture is refecened picture or not */
     u8                 slice_ref_flag;
-    /* distance between ref pics in addition to closest ref ref pic in LD*/
-    int                ref_pic_gap_length;
     /* maximum CU depth */
     u8                 max_cud;
     /* address of inbufs */
@@ -957,6 +883,16 @@ struct _XEVE_CTX
     XEVE_MODE          mode[XEVE_MAX_TASK_CNT];
     XEVE_PINTRA        pintra[XEVE_MAX_TASK_CNT];
     XEVE_PINTER        pinter[XEVE_MAX_TASK_CNT];
+
+
+    /* qp table */
+    XEVE_CHROMA_TABLE chroma_qp_table_struct;
+    int             * qp_chroma_dynamic[2];
+    int               qp_chroma_dynamic_ext[2][MAX_QP_TABLE_SIZE_EXT];
+
+    u16               split_check[SPLIT_CHECK_NUM][2];
+    s64               err_scale[6][NUM_CU_LOG2 + 1];
+    XEVE_TS_INFO      ts_info;
 
     int   (*fn_ready)(XEVE_CTX * ctx);
     void  (*fn_flush)(XEVE_CTX * ctx);

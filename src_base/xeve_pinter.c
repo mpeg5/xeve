@@ -1551,10 +1551,10 @@ static int pinter_init_mt(XEVE_CTX *ctx, int thread_idx)
     size = sizeof(s8) * REFP_NUM * MAX_NUM_MVP;
     xeve_mset(pi->mvp_idx, 0, size);
 
-    size = sizeof(s16) * REFP_NUM * MAX_NUM_ACTIVE_REF_FRAME * MAX_NUM_MVP * MV_D;
+    size = sizeof(s16) * REFP_NUM * XEVE_MAX_NUM_ACTIVE_REF_FRAME * MAX_NUM_MVP * MV_D;
     xeve_mset(pi->mvp_scale, 0, size);
 
-    size = sizeof(s16) * REFP_NUM * MAX_NUM_ACTIVE_REF_FRAME * MV_D;
+    size = sizeof(s16) * REFP_NUM * XEVE_MAX_NUM_ACTIVE_REF_FRAME * MV_D;
     xeve_mset(pi->mv_scale, 0, size);
 
     size = sizeof(s16) * N_C * MAX_CU_DIM;
@@ -1701,7 +1701,7 @@ double xeve_pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int 
     }
 
     if (core->cu_mode == MODE_SKIP && pi->best_ssd >
-        ((s64)1 << (log2_cuw + log2_cuh + ctx->sps.bit_depth_luma_minus8 + ctx->sps.bit_depth_luma_minus8)) * ctx->param.preset->skip_th)
+        ((s64)1 << (log2_cuw + log2_cuh + ctx->sps.bit_depth_luma_minus8 + ctx->sps.bit_depth_luma_minus8)) * ctx->param.skip_th)
     {
         if(pi->slice_type == SLICE_B)
         {
@@ -1870,25 +1870,25 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
 {
     XEVE_PINTER *pi;
 
-    for (int i = 0; i < ctx->cdsc.threads; i++)
+    for (int i = 0; i < ctx->param.threads; i++)
     {
         pi = &ctx->pinter[i];
-        pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : ctx->param.preset->me_range;
+        pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : ctx->param.me_range;
         pi->search_range_ipel[MV_X] = pi->max_search_range;
         pi->search_range_ipel[MV_Y] = pi->max_search_range;
-        pi->search_range_spel[MV_X] = ctx->param.preset->me_sub_range;
-        pi->search_range_spel[MV_Y] = ctx->param.preset->me_sub_range;
+        pi->search_range_spel[MV_X] = ctx->param.me_sub_range;
+        pi->search_range_spel[MV_Y] = ctx->param.me_sub_range;
         pi->search_pattern_hpel = tbl_search_pattern_hpel_partial;
-        pi->search_pattern_hpel_cnt = ctx->param.preset->me_sub_pos;
+        pi->search_pattern_hpel_cnt = ctx->param.me_sub_pos;
         pi->search_pattern_qpel = tbl_search_pattern_qpel_8point;
-        pi->search_pattern_qpel_cnt = ctx->param.preset->me_sub_pos;
+        pi->search_pattern_qpel_cnt = ctx->param.me_sub_pos;
         ctx->fn_pinter_analyze_cu = xeve_pinter_analyze_cu;
-        pi->me_level = ctx->param.preset->me_sub;
+        pi->me_level = ctx->param.me_sub;
         pi->fn_me = pinter_me_epzs;
         pi->complexity = complexity;
         pi->fn_mc = pinter_mc;
-        pi->skip_merge_cand_num = ctx->param.preset->merge_num;
-        pi->me_complexity = ctx->param.preset->me_algo;
+        pi->skip_merge_cand_num = ctx->param.merge_num;
+        pi->me_complexity = ctx->param.me_algo;
     }
     return XEVE_OK;
 }
@@ -1901,7 +1901,7 @@ int xeve_pinter_create(XEVE_CTX *ctx, int complexity)
     ctx->fn_pinter_set_complexity = pinter_set_complexity;
 
     XEVE_PINTER * pi;
-    for (int i = 0; i < ctx->cdsc.threads; i++)
+    for (int i = 0; i < ctx->param.threads; i++)
     {
         pi = &ctx->pinter[i];
         /* set maximum/minimum value of search range */

@@ -111,7 +111,7 @@ static int xeve_eco_tree(XEVE_CTX * ctx, XEVE_CORE * core, int x0, int y0, int c
             {
 
                 xeve_get_ctx_some_flags(PEL2SCU(x0), PEL2SCU(y0), cuw, cuh, ctx->w_scu, ctx->map_scu, ctx->map_cu_mode , core->ctx_flags, ctx->sh->slice_type, ctx->sps.tool_cm_init
-                                     , ctx->param.use_ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
+                                     , ctx->param.ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
                 xevem_eco_mode_constr(bs, split_struct.tree_cons.mode_cons, core->ctx_flags[CNID_MODE_CONS]);
             }
         }
@@ -217,7 +217,7 @@ static int ctu_mt_core(void * arg)
         xeve_assert_rv(ret == XEVE_OK, ret)
 
         ctx->tile[i].qp_prev_eco[core->thread_cnt] = bef_cu_qp;
-        if (ctx->param.preset->cabac_refine)
+        if (ctx->param.cabac_refine)
         {
             /* entropy coding ************************************************/
             int split_mode_child[4];
@@ -250,11 +250,11 @@ static int tile_mt_core(void * arg)
     int i;
     int res, ret;
     int temp_store_total_ctb = ctx->tile[core->tile_idx].f_ctb;
-    int parallel_task = ctx->tile_cnt == 1 ? ((ctx->cdsc.threads > ctx->tile[core->tile_idx].h_ctb) ?
-                                             ctx->tile[core->tile_idx].h_ctb : ctx->cdsc.threads): 1;
+    int parallel_task = ctx->tile_cnt == 1 ? ((ctx->param.threads > ctx->tile[core->tile_idx].h_ctb) ?
+                                             ctx->tile[core->tile_idx].h_ctb : ctx->param.threads): 1;
     ctx->parallel_rows = parallel_task;
     ctx->tile[core->tile_idx].qp = ctx->sh->qp;
-    for (i = 0; i < ctx->cdsc.threads; i++)
+    for (i = 0; i < ctx->param.threads; i++)
     {
         ctx->tile[core->tile_idx].qp_prev_eco[i] = ctx->sh->qp;
     }
@@ -387,11 +387,11 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         ctx->lcu_cnt = ctx->f_lcu;
 
         /* Set nalu header */
-        xeve_set_nalu(&ctx->nalu, ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.use_closed_gop) ? XEVE_IDR_NUT : XEVE_NONIDR_NUT, ctx->nalu.nuh_temporal_id);
+        xeve_set_nalu(&ctx->nalu, ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.closed_gop) ? XEVE_IDR_NUT : XEVE_NONIDR_NUT, ctx->nalu.nuh_temporal_id);
 
         core->qp_y = ctx->sh->qp + 6 * ctx->sps.bit_depth_luma_minus8;
-        core->qp_u = ctx->param.qp_chroma_dynamic[0][sh->qp_u] + 6 * ctx->sps.bit_depth_chroma_minus8;
-        core->qp_v = ctx->param.qp_chroma_dynamic[1][sh->qp_v] + 6 * ctx->sps.bit_depth_chroma_minus8;
+        core->qp_u = ctx->qp_chroma_dynamic[0][sh->qp_u] + 6 * ctx->sps.bit_depth_chroma_minus8;
+        core->qp_v = ctx->qp_chroma_dynamic[1][sh->qp_v] + 6 * ctx->sps.bit_depth_chroma_minus8;
 
         core->bs_temp.pdata[1] = &core->s_temp_run;
 
@@ -437,13 +437,13 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         //Code for CTU parallel encoding
         while (total_tiles_in_slice)
         {
-            parallel_task = (ctx->cdsc.threads > total_tiles_in_slice) ? total_tiles_in_slice : ctx->cdsc.threads;
+            parallel_task = (ctx->param.threads > total_tiles_in_slice) ? total_tiles_in_slice : ctx->param.threads;
             for (thread_cnt = 0; (thread_cnt < parallel_task - 1); thread_cnt++)
             {
                 i = tiles_in_slice[thread_cnt + task_completed];
 
                 ctx->tile[i].qp = ctx->sh->qp;
-                for (j = 0; j < (u32)ctx->cdsc.threads; j++)
+                for (j = 0; j < (u32)ctx->param.threads; j++)
                 {
                     ctx->tile[i].qp_prev_eco[j] = ctx->sh->qp;
                 }
@@ -457,7 +457,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             ctx->tile[i].qp = ctx->sh->qp;
             ctx->core[thread_cnt]->tile_idx = i;
 
-            for (j = 0; j < (u32)ctx->cdsc.threads; j++)
+            for (j = 0; j < (u32)ctx->param.threads; j++)
             {
                 ctx->tile[i].qp_prev_eco[j] = ctx->sh->qp;
             }
@@ -544,7 +544,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
                 xeve_assert_rv(ret == XEVE_OK, ret);
             }
         }
-        
+
         /* Encode DRA in APS */
         if ((ctx->sps.tool_dra) && aps_dra->signal_flag)
         {
@@ -754,20 +754,20 @@ XEVE xeve_create(XEVE_CDSC * cdsc, int * err)
     xeve_assert_gv(ctx != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
 
     /* set default value for encoding parameter */
-    ret = xevem_set_init_param(cdsc, &ctx->param);
+    xeve_mcpy(&ctx->param, &(cdsc->param), sizeof(XEVE_PARAM));
+    ret = xevem_set_init_param(ctx, &ctx->param);
     xeve_assert_g(ret == XEVE_OK, ERR);
-    xeve_mcpy(&ctx->cdsc, cdsc, sizeof(XEVE_CDSC));
 
     ret = xevem_platform_init(ctx);
     xeve_assert_g(ret == XEVE_OK, ERR);
 
-    ret = xeve_create_bs_buf(ctx);
+    ret = xeve_create_bs_buf(ctx, cdsc->max_bs_buf_size);
     xeve_assert_g(ret == XEVE_OK, ERR);
 
-    xeve_init_err_scale(ctx, cdsc->codec_bit_depth);
+    xeve_init_err_scale(ctx);
 
     xeve_split_tbl_init(ctx);
-    xeve_set_chroma_qp_tbl_loc(ctx, cdsc->codec_bit_depth);
+    xeve_set_chroma_qp_tbl_loc(ctx);
 
     if(ctx->fn_ready != NULL)
     {
@@ -783,7 +783,7 @@ XEVE xeve_create(XEVE_CDSC * cdsc, int * err)
 ERR:
     if(ctx)
     {
-        if (cdsc->profile)
+        if (cdsc->param.profile)
         {
             xevem_platform_deinit(ctx);
         }
@@ -816,7 +816,7 @@ void xeve_delete(XEVE id)
         ctx->fn_flush(ctx);
     }
 
-    if (ctx->cdsc.profile)
+    if (ctx->param.profile)
     {
         xevem_platform_deinit(ctx);
     }
@@ -911,7 +911,7 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
             t0 = *((int *)buf);
             xeve_assert_rv(t0 >= 0, XEVE_ERR_INVALID_ARGUMENT);
-            ctx->param.i_period = t0;
+            ctx->param.iperiod = t0;
             break;
         case XEVE_CFG_SET_QP_MIN:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
@@ -963,7 +963,7 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             break;
         case XEVE_CFG_GET_I_PERIOD:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = ctx->param.i_period;
+            *((int *)buf) = ctx->param.iperiod;
             break;
         case XEVE_CFG_GET_RECON:
             xeve_assert_rv(*size == sizeof(XEVE_IMGB**), XEVE_ERR_INVALID_ARGUMENT);
@@ -1004,11 +1004,11 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             break;
         case XEVE_CFG_GET_CLOSED_GOP:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = ctx->param.use_closed_gop;
+            *((int *)buf) = ctx->param.closed_gop;
             break;
         case XEVE_CFG_GET_HIERARCHICAL_GOP:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = ctx->param.use_hgop;
+            *((int *)buf) = ctx->param.disable_hgop;
             break;
         case XEVE_CFG_GET_DEBLOCK_A_OFFSET:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
@@ -1020,7 +1020,18 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             break;
         case XEVE_CFG_GET_SUPPORT_PROF:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = PROFILE_MAIN;
+            *((int *)buf) = XEVE_PROFILE_MAIN;
+            break;
+        case XEVE_CFG_GET_BPS:
+            xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
+            if (ctx->rc != NULL)
+            {
+                *((int*)buf) = (int)ctx->rc->bitrate;
+            }
+            else
+            {
+                *((int*)buf) = 0;
+            }
             break;
         default:
             xeve_trace("unknown config value (%d)\n", cfg);
@@ -1029,3 +1040,196 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
 
     return XEVE_OK;
 }
+
+int xeve_param_default(XEVE_PARAM *param)
+{
+    return xeve_param_init(param);
+}
+
+int xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune)
+{
+    if (preset == XEVE_PRESET_DEFAULT)
+    {
+        preset = XEVE_PRESET_MEDIUM;
+    }
+
+    if (profile == XEVE_PROFILE_BASELINE)
+    {
+        return xeve_param_apply_ppt_baseline(param, profile, preset, tune);
+    }
+
+    if (profile != XEVE_PROFILE_MAIN)
+    {
+        return XEVE_ERR;
+    }
+
+    param->profile = XEVE_PROFILE_MAIN;
+    param->ibc_flag = 0;
+    param->ibc_search_range_x = 64;
+    param->ibc_search_range_y = 64;
+    param->ibc_hash_search_flag = 0;
+    param->ibc_hash_search_max_cand = 64;
+    param->ibc_hash_search_range_4smallblk = 64;
+    param->ibc_fast_method = 0x02;
+    param->toolset_idc_h = 0x1FFFFF;
+    param->toolset_idc_l = 0;
+    param->btt = 1;
+    param->suco = 1;
+    param->framework_cb_max = 7;
+    param->framework_cb_min = 2;
+    param->framework_cu14_max = 6;
+    param->framework_tris_max = 6;
+    param->framework_tris_min = 4;
+    param->framework_suco_max = 6;
+    param->framework_suco_min = 4;
+    param->tool_amvr = 1;
+    param->tool_mmvd = 1;
+    param->tool_affine = 1;
+    param->tool_dmvr = 1;
+    param->tool_addb = 1;
+    param->tool_alf = 1;
+    param->tool_htdf = 1;
+    param->tool_admvp = 1;
+    param->tool_hmvp = 1;
+    param->tool_eipd = 1;
+    param->tool_iqt = 1;
+    param->tool_cm_init = 1;
+    param->tool_adcc = 1;
+    param->tool_rpl = 1;
+    param->tool_pocs = 1;
+    param->cu_qp_delta_area = 10;
+    param->tool_ats = 1;
+
+    if (preset == XEVE_PRESET_FAST)
+    {
+        param->max_cu_intra      = 64;
+        param->min_cu_intra      = 4;
+        param->max_cu_inter      = 64;
+        param->min_cu_inter      = 4;
+        param->me_ref_num        = 2;
+        param->me_algo           = 2;
+        param->me_range          = 256;
+        param->me_sub            = 3;
+        param->me_sub_pos        = 4;
+        param->me_sub_range      = 3;
+        param->skip_th           = 0;
+        param->merge_num         = 4;
+        param->rdoq              = 1;
+        param->cabac_refine      = 1;
+        param->rdo_dbk_switch    = 1;
+
+        param->btt                = 0;
+        param->ats_intra_fast     = 1;
+        param->me_fast            = 1;
+
+    }
+    else if (preset == XEVE_PRESET_MEDIUM)
+    {
+        param->max_cu_intra      = 128;
+        param->min_cu_intra      = 4;
+        param->max_cu_inter      = 128;
+        param->min_cu_inter      = 4;
+        param->me_ref_num        = 2;
+        param->me_algo           = 2;
+        param->me_range          = 256;
+        param->me_sub            = 3;
+        param->me_sub_pos        = 4;
+        param->me_sub_range      = 3;
+        param->skip_th           = 0;
+        param->merge_num         = 4;
+        param->rdoq              = 1;
+        param->cabac_refine      = 1;
+        param->rdo_dbk_switch    = 1;
+
+        param->btt                = 1;
+        param->framework_cb_max   = 7;
+        param->framework_cb_min   = 2;
+        param->framework_cu14_max = 0;
+        param->framework_tris_max = 4;
+        param->framework_tris_min = 5;
+        param->ats_intra_fast     = 1;
+        param->me_fast            = 0;
+    }
+    else if (preset == XEVE_PRESET_SLOW)
+    {
+        param->max_cu_intra      = 128;
+        param->min_cu_intra      = 4;
+        param->max_cu_inter      = 128;
+        param->min_cu_inter      = 4;
+        param->me_ref_num        = 2;
+        param->me_algo           = 2;
+        param->me_range          = 256;
+        param->me_sub            = 3;
+        param->me_sub_pos        = 4;
+        param->me_sub_range      = 3;
+        param->skip_th           = 0;
+        param->merge_num         = 4;
+        param->rdoq              = 1;
+        param->cabac_refine      = 1;
+        param->rdo_dbk_switch    = 1;
+
+        param->btt                = 1;
+        param->framework_cb_max   = 7;
+        param->framework_cb_min   = 2;
+        param->framework_cu14_max = 5;
+        param->framework_tris_max = 5;
+        param->framework_tris_min = 4;
+        param->ats_intra_fast     = 1;
+        param->me_fast            = 0;
+    }
+    else if (preset == XEVE_PRESET_PLACEBO)
+    {
+        param->max_cu_intra      = 128;
+        param->min_cu_intra      = 4;
+        param->max_cu_inter      = 128;
+        param->min_cu_inter      = 4;
+        param->me_ref_num        = 2;
+        param->me_algo           = 2;
+        param->me_range          = 384;
+        param->me_sub            = 3;
+        param->me_sub_pos        = 8;
+        param->me_sub_range      = 3;
+        param->skip_th           = 0;
+        param->merge_num         = 4;
+        param->rdoq              = 1;
+        param->cabac_refine      = 1;
+        param->rdo_dbk_switch    = 1;
+
+        param->btt                = 1;
+        param->framework_cb_max   = 7;
+        param->framework_cb_min   = 2;
+        param->framework_cu14_max = 6;
+        param->framework_tris_max = 6;
+        param->framework_tris_min = 4;
+        param->ats_intra_fast     = 0;
+        param->me_fast            = 1;
+    }
+    else
+    {
+        return XEVE_ERR;
+    }
+
+    if (tune != XEVE_TUNE_NONE)
+    {
+        if (tune == XEVE_TUNE_ZEROLATENCY)
+        {
+            param->aq_mode = 1;
+            param->lookahead = 0;
+            param->cutree = 0;
+            param->max_b_frames = 0;
+            param->ref_pic_gap_length = 4;
+            param->use_fcst = 1;
+        }
+        else if (tune == XEVE_TUNE_PSNR)
+        {
+            param->aq_mode = 0;
+        }
+        else
+        {
+            return XEVE_ERR;
+        }
+    }
+
+    return XEVE_OK;
+}
+

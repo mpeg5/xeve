@@ -43,6 +43,6 @@ extern const int xeve_quant_scale[2][6];
 int xeve_rdoq_set_ctx_cc(XEVE_CORE * core, int ch_type, int prev_level);
 int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, int slice_type, int nnz[N_C], int is_intra, int run_stats);
 int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s16 *dst_tmp, int log2_cuw, int log2_cuh, int ch_type, XEVE_CORE * core, int bit_depth);
-void xeve_init_err_scale(XEVE_CTX * ctx, int bit_depth);
+void xeve_init_err_scale(XEVE_CTX * ctx);
 
 #endif /* _XEVE_TQ_H_ */

@@ -1441,7 +1441,7 @@ int xeve_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int c
     XEVE_TRACE_STR("\n");
 
     xeve_get_ctx_some_flags(core->x_scu, core->y_scu, cuw, cuh, ctx->w_scu, ctx->map_scu, ctx->map_cu_mode, core->ctx_flags
-                            , ctx->sh->slice_type, ctx->sps.tool_cm_init, ctx->param.use_ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
+                            , ctx->sh->slice_type, ctx->sps.tool_cm_init, ctx->param.ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
 
     if (core->skip_flag == 0)
     {

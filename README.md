@@ -125,6 +125,48 @@ XEVE supports all profiles of EVC. Examples of configure file of coding structur
 	$xeve_app -i RaceHorses_416x240_30.yuv -w 416 -h 240 -z 30 -o xeve.evc
 	$xeve_app -i RaceHorses_416x240_30.y4m -o xeve.evc
 
+## Programming Guide
+The following code is a pseudo code for understanding how to use the library
+```c
+#include <xeve.h>
+
+#define MAX_BITSTREAM_SIZE (10*1000*1000) /* 10Mbyte, need to be set properly */
+
+/* prepare coding parameters ***************************/
+XEVE_CDSC cdsc;
+cdsc.max_bs_buf_size = MAX_BITSTREAM_SIZE;
+
+/* get default parameters */
+xeve_param_default(&cdsc.param);
+
+/* set specific profile, preset, tune, if needs */
+xeve_param_ppt(&cdsc.param, XEVE_PROFILE_BASELINE, XEVE_PRESET_SLOW, XEVE_TUNE_NONE);
+
+/* create new instance *********************************/
+XEVE id = xeve_create(&cdsc, NULL);
+
+/* encode pictures *************************************/
+XEVE_BITB bitb; /* bitstream buffer */
+memset(&bitb, 0, sizeof(XEVE_BITB));
+bitb.addr = malloc(MAX_BITSTREAM_SIZE); /* assign buffer */
+bitb.bsize = MAX_BITSTREAM_SIZE;
+
+XEVE_STAT stat; /* encoding status */
+XEVE_IMGB image; /* input picture */
+
+while (!end_of_sequence)
+{
+    end_of_seqeunce = read_image(&image); /* read new image */
+    
+    xeve_push(id, &image); /* input new image to encoder */
+    xeve_encode(id, &bitb, &stat); /* actual encode image to bitstream */
+    
+    write_bitstream(bitb.addr, stat.write); /* write encoded bitstream */
+}
+
+/* clean-up ********************************************/
+xeve_delete(id);
+```
 
 ## License
 See [COPYING](COPYING) file for details.

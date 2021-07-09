@@ -163,7 +163,8 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
     int             ctb_cnt_in_tile = 0;
     int             col_bd = 0;
     int             num_slice_in_pic = ctx->param.num_slice_in_pic;
-    u8            * tiles_in_slice, total_tiles_in_slice;
+    u8            * tiles_in_slice;
+    u16             total_tiles_in_slice;
     int             tile_cnt = 0;
     u8            * curr_temp = ctx->bs[0].cur;;
     int             last_intra_poc = INT_MAX;
@@ -211,11 +212,11 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         ctx->lcu_cnt = ctx->f_lcu;
 
         /* Set nalu header */
-        xeve_set_nalu(&ctx->nalu, ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.use_closed_gop) ? XEVE_IDR_NUT : XEVE_NONIDR_NUT, ctx->nalu.nuh_temporal_id);
+        xeve_set_nalu(&ctx->nalu, ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.closed_gop) ? XEVE_IDR_NUT : XEVE_NONIDR_NUT, ctx->nalu.nuh_temporal_id);
 
         core->qp_y = ctx->sh->qp + 6 * ctx->sps.bit_depth_luma_minus8;
-        core->qp_u = ctx->param.qp_chroma_dynamic[0][sh->qp_u] + 6 * ctx->sps.bit_depth_chroma_minus8;
-        core->qp_v = ctx->param.qp_chroma_dynamic[1][sh->qp_v] + 6 * ctx->sps.bit_depth_chroma_minus8;
+        core->qp_u = ctx->qp_chroma_dynamic[0][sh->qp_u] + 6 * ctx->sps.bit_depth_chroma_minus8;
+        core->qp_v = ctx->qp_chroma_dynamic[1][sh->qp_v] + 6 * ctx->sps.bit_depth_chroma_minus8;
         core->bs_temp.pdata[1] = &core->s_temp_run;
 
         /* LCU encoding */
@@ -264,7 +265,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             //Limiting parallel task to the number of LCU rows
             i = tiles_in_slice[tile_cnt++];
             int temp_store_total_ctb = ctx->tile[i].f_ctb;
-            parallel_task = (ctx->cdsc.threads > ctx->tile[i].h_ctb) ? ctx->tile[i].h_ctb : ctx->cdsc.threads;
+            parallel_task = (ctx->param.threads > ctx->tile[i].h_ctb) ? ctx->tile[i].h_ctb : ctx->param.threads;
             ctx->parallel_rows = parallel_task;
             ctx->tile[i].qp = ctx->sh->qp;
 
@@ -542,28 +543,25 @@ XEVE xeve_create(XEVE_CDSC * cdsc, int * err)
     XEVE_TRACE_SET(1);
 #endif
 #endif
-
-    xeve_assert_rv(cdsc->profile == PROFILE_BASELINE, NULL);
     ctx = NULL;
 
     /* memory allocation for ctx and core structure */
     ctx = (XEVE_CTX*)xeve_ctx_alloc();
 
-    xeve_assert_gv(ctx != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mcpy(&ctx->cdsc, cdsc, sizeof(XEVE_CDSC));
-
     /* set default value for encoding parameter */
-    ret = xeve_set_init_param(cdsc, &ctx->param);
+    xeve_mcpy(&ctx->param, &(cdsc->param), sizeof(XEVE_PARAM));
+    ret = xeve_set_init_param(ctx, &ctx->param);
     xeve_assert_g(ret == XEVE_OK, ERR);
+    xeve_assert_g(ctx->param.profile == XEVE_PROFILE_BASELINE, ERR);
 
     ret = xeve_platform_init(ctx);
     xeve_assert_g(ret == XEVE_OK, ERR);
 
-    ret = xeve_create_bs_buf(ctx);
+    ret = xeve_create_bs_buf(ctx, cdsc->max_bs_buf_size);
     xeve_assert_g(ret == XEVE_OK, ERR);
 
-    xeve_init_err_scale(ctx, cdsc->codec_bit_depth);
-    xeve_set_chroma_qp_tbl_loc(ctx, cdsc->codec_bit_depth);
+    xeve_init_err_scale(ctx);
+    xeve_set_chroma_qp_tbl_loc(ctx);
 
     if(ctx->fn_ready != NULL)
     {
@@ -690,7 +688,7 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
             t0 = *((int *)buf);
             xeve_assert_rv(t0 >= 0, XEVE_ERR_INVALID_ARGUMENT);
-            ctx->param.i_period = t0;
+            ctx->param.iperiod = t0;
             break;
         case XEVE_CFG_SET_QP_MIN:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
@@ -742,7 +740,7 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             break;
         case XEVE_CFG_GET_I_PERIOD:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = ctx->param.i_period;
+            *((int *)buf) = ctx->param.iperiod;
             break;
         case XEVE_CFG_GET_RECON:
             xeve_assert_rv(*size == sizeof(XEVE_IMGB**), XEVE_ERR_INVALID_ARGUMENT);
@@ -770,11 +768,11 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             break;
         case XEVE_CFG_GET_CLOSED_GOP:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = ctx->param.use_closed_gop;
+            *((int *)buf) = ctx->param.closed_gop;
             break;
         case XEVE_CFG_GET_HIERARCHICAL_GOP:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = ctx->param.use_hgop;
+            *((int *)buf) = ctx->param.disable_hgop;
             break;
         case XEVE_CFG_GET_DEBLOCK_A_OFFSET:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
@@ -786,7 +784,7 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             break;
         case XEVE_CFG_GET_SUPPORT_PROF:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = PROFILE_BASELINE;
+            *((int *)buf) = XEVE_PROFILE_BASELINE;
             break;
         default:
             xeve_trace("unknown config value (%d)\n", cfg);
@@ -794,4 +792,18 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
     }
 
     return XEVE_OK;
+}
+
+int xeve_param_default(XEVE_PARAM *param)
+{
+    return xeve_param_init(param);
+}
+
+int xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune)
+{
+    if (preset == XEVE_PRESET_DEFAULT)
+    {
+        preset = XEVE_PRESET_MEDIUM;
+    }
+    return xeve_param_apply_ppt_baseline(param, profile, preset, tune);
 }

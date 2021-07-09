@@ -109,7 +109,7 @@ void xevem_rdo_bit_cnt_intra_ext(XEVE_CTX * ctx, XEVE_CORE * core)
 {
     if (((ctx->slice_type == SLICE_I) || xeve_check_only_intra(core->tree_cons))
         && xeve_check_luma(core->tree_cons)
-        && ctx->param.use_ibc_flag && core->log2_cuw <= ctx->sps.ibc_log_max_size && core->log2_cuh <= ctx->sps.ibc_log_max_size)
+        && ctx->param.ibc_flag && core->log2_cuw <= ctx->sps.ibc_log_max_size && core->log2_cuh <= ctx->sps.ibc_log_max_size)
     {
         xevem_eco_ibc_flag(&core->bs_temp, 0, core->ctx_flags[CNID_IBC_FLAG]);
     }
@@ -289,7 +289,7 @@ void xeve_rdo_bit_cnt_cu_inter_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
             xeve_eco_pred_mode(&core->bs_temp, MODE_INTER, core->ctx_flags[CNID_PRED_MODE]);
         }
         if (!xeve_check_only_inter(core->tree_cons) && xeve_check_luma(core->tree_cons) &&
-             ctx->param.use_ibc_flag && core->log2_cuw <= ctx->sps.ibc_log_max_size && core->log2_cuh <= ctx->sps.ibc_log_max_size)
+             ctx->param.ibc_flag && core->log2_cuw <= ctx->sps.ibc_log_max_size && core->log2_cuh <= ctx->sps.ibc_log_max_size)
         {
             xevem_eco_ibc_flag(&core->bs_temp, 0, core->ctx_flags[CNID_IBC_FLAG]);
         }
@@ -828,7 +828,7 @@ void copy_to_cu_data_main(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi, s16 coe
         {
             for (i = 0; i < core->cuw >> MIN_CU_LOG2; i++)
             {
-                if (ctx->param.use_ibc_flag)
+                if (ctx->param.ibc_flag)
                 {
                     cu_data->ibc_flag[idx + i] = mcore->ibc_flag;
                     if (mcore->ibc_flag)
@@ -1048,7 +1048,7 @@ static double mode_check_ibc(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int l
     int        end_comp = xeve_check_chroma(core->tree_cons) ? N_C : U_C;
     int        i, s_rec[N_C];
 
-    if (ctx->param.use_ibc_flag == 1 && (core->nnz[Y_C] != 0 || core->nnz[U_C] != 0 || core->nnz[V_C] != 0 || cost_best == MAX_COST)
+    if (ctx->param.ibc_flag == 1 && (core->nnz[Y_C] != 0 || core->nnz[U_C] != 0 || core->nnz[V_C] != 0 || cost_best == MAX_COST)
         && (!xeve_check_only_inter(core->tree_cons)) && xeve_check_luma(core->tree_cons))
     {
         if (log2_cuw <= ctx->sps.ibc_log_max_size && log2_cuh <= ctx->sps.ibc_log_max_size)
@@ -1120,7 +1120,7 @@ static double mode_coding_unit_main(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y
 
     core->avail_lr = xeve_check_nev_avail(core->x_scu, core->y_scu, (1 << log2_cuw), (1 << log2_cuh), ctx->w_scu, ctx->h_scu, ctx->map_scu, ctx->map_tidx);
     xeve_get_ctx_some_flags(core->x_scu, core->y_scu, 1 << log2_cuw, 1 << log2_cuh, ctx->w_scu, ctx->map_scu, ctx->map_cu_mode, core->ctx_flags, ctx->sh->slice_type, ctx->sps.tool_cm_init
-                         , ctx->param.use_ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
+                         , ctx->param.ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
 
     cost_best = MAX_COST;
     core->cost_best = MAX_COST;
@@ -1456,13 +1456,13 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
     int check_max_cu, check_min_cu;
     if (ctx->slice_type == SLICE_I)
     {
-        check_max_cu = ctx->param.preset->max_cu_intra;
-        check_min_cu = ctx->param.preset->min_cu_intra;
+        check_max_cu = ctx->param.max_cu_intra;
+        check_min_cu = ctx->param.min_cu_intra;
     }
     else
     {
-        check_max_cu = ctx->param.preset->max_cu_inter;
-        check_min_cu = ctx->param.preset->min_cu_inter;
+        check_max_cu = ctx->param.max_cu_inter;
+        check_min_cu = ctx->param.min_cu_inter;
     }
 
     set_lambda(ctx, core, ctx->sh, ctx->tile[core->tile_idx].qp);
@@ -2141,7 +2141,7 @@ static int xevem_mode_init_mt(XEVE_CTX *ctx, int thread_idx)
     ret = xeve_mode_init_mt(ctx, thread_idx);
     xeve_assert_rv(ret == XEVE_OK, ret);
 
-    if (ctx->param.use_ibc_flag)
+    if (ctx->param.ibc_flag)
     {
         /* initialize pibc */
         if (mctx->fn_pibc_init_tile)
@@ -2169,7 +2169,7 @@ static int mode_init_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
 
     xeve_mset(mctx->ats_inter_num_pred[core->thread_cnt], 0, sizeof(u8) * num_size_idx * num_size_idx * (ctx->max_cuwh >> MIN_CU_LOG2) * (ctx->max_cuwh >> MIN_CU_LOG2));
 
-    if (ctx->param.use_ibc_flag)
+    if (ctx->param.ibc_flag)
     {
         /* initialize pibc */
         if (mctx->fn_pibc_init_lcu)
@@ -2206,7 +2206,7 @@ static int mode_init_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
             mcore->mmvd_opt.poc_to_idx[i] = -1;
         }
         mcore->mmvd_opt.enabled = 1;
-        if (ctx->param.i_period <= 0 || ctx->param.i_period >= PRED_MAX_REF_FRAMES)
+        if (ctx->param.iperiod <= 0 || ctx->param.iperiod >= PRED_MAX_REF_FRAMES)
         {
             mcore->mmvd_opt.enabled = 0;
         }
@@ -2224,7 +2224,7 @@ static int mode_post_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
         copy_history_buffer(&mcore->history_buffer, &mcore->best_mot_lut[ctx->log2_max_cuwh - 2][ctx->log2_max_cuwh - 2]);
     }
 
-    if (ctx->param.use_ibc_flag && (ctx->param.ibc_fast_method & IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE) && ctx->param.ibc_hash_search_flag)
+    if (ctx->param.ibc_flag && (ctx->param.ibc_fast_method & IBC_FAST_METHOD_ADAPTIVE_SEARCHRANGE) && ctx->param.ibc_hash_search_flag)
     {
         reset_ibc_search_range(ctx, core->x_pel, core->y_pel, ctx->log2_max_cuwh, ctx->log2_max_cuwh, core);
     }
@@ -2360,7 +2360,7 @@ static int mode_analyze_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
     map_scu = ctx->map_scu + ((u32)core->y_scu * ctx->w_scu) + core->x_scu;
     w = XEVE_MIN(1 << (ctx->log2_max_cuwh - MIN_CU_LOG2), ctx->w_scu - core->x_scu);
     h = XEVE_MIN(1 << (ctx->log2_max_cuwh - MIN_CU_LOG2), ctx->h_scu - core->y_scu);
-    if (ctx->param.preset->cabac_refine)
+    if (ctx->param.cabac_refine)
     {
         int i, j;
         for (i = 0; i < h; i++)
@@ -2507,53 +2507,14 @@ void xeve_mode_rdo_dbk_map_set(XEVE_CTX * ctx, XEVE_CORE *core, int log2_cuw, in
 
 void xeve_split_tbl_init(XEVE_CTX *ctx)
 {
-    if (ctx->cdsc.ext->framework_cb_max)
-    {
-        ctx->param.split_check[BLOCK_11][IDX_MAX] = ctx->cdsc.ext->framework_cb_max;
-    }
-    else
-    {
-        ctx->param.split_check[BLOCK_11][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cb_max;
-
-    }
-    if (ctx->cdsc.ext->framework_cb_min)
-    {
-        ctx->param.split_check[BLOCK_11][IDX_MIN] = ctx->cdsc.ext->framework_cb_min;
-    }
-    else
-    {
-        ctx->param.split_check[BLOCK_11][IDX_MIN] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cb_min;
-    }
-    
-    ctx->param.split_check[BLOCK_12][IDX_MAX] = ctx->param.split_check[BLOCK_11][IDX_MAX];
-    ctx->param.split_check[BLOCK_12][IDX_MIN] = ctx->param.split_check[BLOCK_11][IDX_MIN] + 1;
-    if (ctx->cdsc.ext->framework_cu14_max)
-    {
-        ctx->param.split_check[BLOCK_14][IDX_MAX] = ctx->cdsc.ext->framework_cu14_max;
-    }
-    else
-    {
-        ctx->param.split_check[BLOCK_14][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_cu14_max;
-    }
-    ctx->param.split_check[BLOCK_14][IDX_MIN] = ctx->param.split_check[BLOCK_12][IDX_MIN] + 1;
-
-    if (ctx->cdsc.ext->framework_tris_max)
-    {
-        ctx->param.split_check[BLOCK_TT][IDX_MAX] = ctx->cdsc.ext->framework_tris_max;
-    }
-    else
-    {
-        ctx->param.split_check[BLOCK_TT][IDX_MAX] = ((XEVEM_PRESET*)ctx->param.preset)->btt_tris_max;
-    }
-
-    if (ctx->cdsc.ext->framework_tris_min)
-    {
-        ctx->param.split_check[BLOCK_TT][IDX_MIN] = ctx->cdsc.ext->framework_tris_min;
-    }
-    else
-    {
-        ctx->param.split_check[BLOCK_TT][IDX_MIN] = ((XEVEM_PRESET*)ctx->param.preset)->btt_tris_min;
-    }
+    ctx->split_check[BLOCK_11][IDX_MAX] = ctx->param.framework_cb_max;
+    ctx->split_check[BLOCK_11][IDX_MIN] = ctx->param.framework_cb_min;
+    ctx->split_check[BLOCK_12][IDX_MAX] = ctx->split_check[BLOCK_11][IDX_MAX];
+    ctx->split_check[BLOCK_12][IDX_MIN] = ctx->split_check[BLOCK_11][IDX_MIN] + 1;
+    ctx->split_check[BLOCK_14][IDX_MAX] = ctx->param.framework_cu14_max;
+    ctx->split_check[BLOCK_14][IDX_MIN] = ctx->split_check[BLOCK_12][IDX_MIN] + 1;
+    ctx->split_check[BLOCK_TT][IDX_MAX] = ctx->param.framework_tris_max;
+    ctx->split_check[BLOCK_TT][IDX_MIN] = ctx->param.framework_tris_min;
 }
 
 void xeve_mode_create_main(XEVE_CTX *ctx)

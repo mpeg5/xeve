@@ -113,7 +113,7 @@ typedef struct _XEVEM_CTX
 {
     XEVE_CTX bctx;
 
-    DRA_CONTROL      * dra_control;
+    DRA_CONTROL        dra_control;
     SIG_PARAM_DRA    * dra_array;
 
     /* ibc prediction analysis */
@@ -144,28 +144,6 @@ typedef struct _XEVEM_CTX
     u8               * ats_inter_num_pred[XEVE_MAX_TASK_CNT];
 
 }XEVEM_CTX;
-
-/*****************************************************************************
- * Encoder preset
- *****************************************************************************/
-typedef struct _XEVEM_PRESET
-{
-    XEVE_PRESET preset;
-
-    /* BTT */
-    u8 btt_cb_max;
-    u8 btt_cb_min;
-    u8 btt_cu14_max;
-    u8 btt_tris_max;
-    u8 btt_tris_min;
-
-    /* Fast Option */
-    u8 ats_intra_fast;
-    u8 mmvd_fast;
-    u8 me_fast;
-    u8 use_btt;
-
-} XEVEM_PRESET;
 
 #include "xevem_alf.h"
 #include "xevem_df.h"

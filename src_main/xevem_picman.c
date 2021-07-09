@@ -36,7 +36,7 @@
 #include "xevem_picman.h"
 
 
-const XEVE_RPL pre_define_rpls[2][3][2][MAX_NUM_RPLS] = 
+const XEVE_RPL pre_define_rpls[2][3][2][XEVE_MAX_NUM_RPLS] = 
 {
     /* Disable redordering (LD) */
     {
@@ -279,7 +279,7 @@ void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     {
         for (int i = gopSize; i < ctx->sps.num_ref_pic_lists_in_sps0; i++)
         {
-            int pocIdx = ctx->param.i_period == 0 ? ctx->poc.poc_val : (ctx->poc.poc_val % ctx->param.i_period == 0) ? ctx->param.i_period : ctx->poc.poc_val % ctx->param.i_period;
+            int pocIdx = ctx->param.iperiod == 0 ? ctx->poc.poc_val : (ctx->poc.poc_val % ctx->param.iperiod == 0) ? ctx->param.iperiod : ctx->poc.poc_val % ctx->param.iperiod;
             if (pocIdx == ctx->sps.rpls_l0[i].poc)
             {
                 sh->rpl_l0_idx = i;
@@ -290,7 +290,7 @@ void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     }
     if (ctx->slice_type != SLICE_I)
     {
-        ctx->slice_type = ctx->cdsc.inter_slice_type;
+        ctx->slice_type = ctx->param.inter_slice_type;
     }
     //Copy RPL0 from the candidate in SPS to this SH
     sh->rpl_l0.poc = ctx->poc.poc_val;
@@ -465,7 +465,7 @@ static int create_explicit_rpl(XEVE_PM *pm, XEVE_SH *sh, int poc_val)
 
 int xeve_picman_refp_rpl_based_init(XEVE_PM *pm, XEVE_SH *sh, int poc_val, XEVE_REFP(*refp)[REFP_NUM])
 {
-    for (int i = 0; i < MAX_NUM_REF_PICS; i++)
+    for (int i = 0; i < XEVE_MAX_NUM_REF_PICS; i++)
         refp[i][REFP_0].pic = refp[i][REFP_1].pic = NULL;
     pm->num_refp[REFP_0] = pm->num_refp[REFP_1] = 0;
 

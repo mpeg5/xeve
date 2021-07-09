@@ -38,8 +38,8 @@
 
 #include "xevem_type.h"
 
-#define ALLOW_SPLIT_RATIO(long_side, block_ratio) (block_ratio <= BLOCK_14 && (long_side <= ctx->param.split_check[block_ratio][IDX_MAX] && long_side >= ctx->param.split_check[block_ratio][IDX_MIN]) ? 1 : 0)
-#define ALLOW_SPLIT_TRI(long_side) ((long_side <= ctx->param.split_check[BLOCK_TT][IDX_MAX] && long_side >= ctx->param.split_check[BLOCK_TT][IDX_MIN]) ? 1 : 0)
+#define ALLOW_SPLIT_RATIO(long_side, block_ratio) (block_ratio <= BLOCK_14 && (long_side <= ctx->split_check[block_ratio][IDX_MAX] && long_side >= ctx->split_check[block_ratio][IDX_MIN]) ? 1 : 0)
+#define ALLOW_SPLIT_TRI(long_side) ((long_side <= ctx->split_check[BLOCK_TT][IDX_MAX] && long_side >= ctx->split_check[BLOCK_TT][IDX_MIN]) ? 1 : 0)
 void xeve_check_split_mode(XEVE_CTX * ctx, int *split_allow, int log2_cuw, int log2_cuh, int boundary, int boundary_r, int log2_max_cuwh
                          , int x, int y, int im_w, int im_h, int sps_btt_flag, MODE_CONS mode_cons);
 u16  xeve_get_avail_ibc(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int cuw, int cuh, u32 * map_scu, u8* map_tidx);
@@ -107,7 +107,7 @@ void set_cu_cbf_flags(u8 cbf_y, u8 ats_inter_info, int log2_cuw, int log2_cuh, u
 
 XEVEM_CTX  * xevem_ctx_alloc(void);
 XEVEM_CORE * xevem_core_alloc(int chroma_format_idc);
-int  xevem_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param);
+int  xevem_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param);
 void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps);
 void xevem_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps);
 void xevem_set_sh(XEVE_CTX *ctx, XEVE_SH *sh);
@@ -128,7 +128,6 @@ void xevem_platform_deinit(XEVE_CTX * ctx);
 int  xevem_encode_sps(XEVE_CTX * ctx);
 int  xevem_encode_pps(XEVE_CTX * ctx);
 int  xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps);
-int  xevem_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 #if GRAB_STAT
 void enc_stat_header(int pic_w, int pic_h);
 #endif

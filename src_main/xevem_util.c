@@ -472,16 +472,16 @@ static void get_mv_collocated(XEVE_REFP(*refp)[REFP_NUM], u32 poc, int scup, int
                 mvp[REFP_1][MV_X] = 0;
                 mvp[REFP_1][MV_Y] = 0;
             }
-        
+
     }
 
-    
+
         int maxX = PIC_PAD_SIZE_L + (w_scu << MIN_CU_LOG2) - 1;
         int maxY = PIC_PAD_SIZE_L + (h_scu << MIN_CU_LOG2) - 1;
         int x = (c_scu % w_scu) << MIN_CU_LOG2;
         int y = (c_scu / w_scu) << MIN_CU_LOG2;
         clip_mv_pic(x, y, maxX, maxY, mvp);
-    
+
 
     int flag = REFI_IS_VALID(ver_refi[REFP_0]) + (REFI_IS_VALID(ver_refi[REFP_1]) << 1);
     *available_pred_idx = flag; // combines flag and indication on what type of prediction is ( 0 - not available, 1 = uniL0, 2 = uniL1, 3 = Bi)
@@ -757,7 +757,7 @@ void xeve_get_motion_from_mvr(u8 mvr_idx, int poc, int scup, int lidx, s8 cur_re
                             , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER * history_buffer, int hmvp_flag, u8* map_tidx)
 {
     int i, t0, poc_refi_cur;
-    int ratio[MAX_NUM_REF_PICS];
+    int ratio[XEVE_MAX_NUM_REF_PICS];
     int neb_addr[MAX_NUM_POSSIBLE_SCAND], valid_flag[MAX_NUM_POSSIBLE_SCAND];
     int rounding = mvr_idx > 0 ? 1 << (mvr_idx - 1) : 0;
     s8 default_refi;
@@ -2909,34 +2909,147 @@ XEVEM_CORE * xevem_core_alloc(int chroma_format_idc)
     return mcore;
 }
 
-int xevem_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param)
+static int parse_dra_param(XEVE_CTX* ctx)
+{
+    XEVEM_CTX   * mctx = (XEVEM_CTX*)ctx;
+    DRA_CONTROL * dra_control = &mctx->dra_control;
+
+    /* parsing */
+    dra_control->dra_hist_norm = atof(strtok(ctx->param.dra_hist_norm, " "));
+    dra_control->num_ranges = ctx->param.dra_number_ranges;
+    dra_control->dra_scale_map.dra_scale_map_y[0][0] = atoi(strtok(ctx->param.dra_range, " "));
+    int j = 1;
+    do
+    {
+        char* val = strtok(NULL, " \r");
+        if (!val)
+            break;
+        dra_control->dra_scale_map.dra_scale_map_y[j++][0] = atoi(val);
+    } while (1);
+    assert(dra_control->num_ranges == j);
+
+    dra_control->dra_scale_map.dra_scale_map_y[0][1] = atof(strtok(ctx->param.dra_scale, " "));
+    j = 1;
+    do
+    {
+        char* val = strtok(NULL, " \r");
+        if (!val)
+            break;
+        dra_control->dra_scale_map.dra_scale_map_y[j++][1] = atof(val);
+    } while (1);
+    assert(dra_control->num_ranges == j);
+
+    dra_control->dra_scale_map.dra_scale_map_y[dra_control->num_ranges][0] = 1024;
+    dra_control->dra_scale_map.dra_scale_map_y[dra_control->num_ranges][1] = dra_control->dra_scale_map.dra_scale_map_y[dra_control->num_ranges - 1][1];
+
+    dra_control->chroma_qp_model.cb_qp_scale      = atof(ctx->param.dra_chroma_cb_scale);
+    dra_control->chroma_qp_model.cr_qp_scale      = atof(ctx->param.dra_chroma_cr_scale);
+    dra_control->chroma_qp_model.chroma_qp_scale  = atof(ctx->param.dra_chroma_qp_scale);
+    dra_control->chroma_qp_model.chroma_qp_offset = atof(ctx->param.dra_chroma_qp_offset);
+
+    /* init */
+    dra_control->dra_hist_norm = dra_control->dra_hist_norm == 0 ? 1 : dra_control->dra_hist_norm;
+
+    if (ctx->param.chroma_format_idc == 0)
+    {
+        dra_control->chroma_qp_model.cb_qp_scale = 1;
+        dra_control->chroma_qp_model.cr_qp_scale = 1;
+    }
+
+    dra_control->chroma_qp_model.dra_table_idx = ctx->param.qp;
+    dra_control->chroma_qp_model.dra_cb_qp_offset = ctx->param.qp_cb_offset;
+    dra_control->chroma_qp_model.dra_cr_qp_offset = ctx->param.qp_cr_offset;
+    dra_control->chroma_qp_model.enabled = 1;
+    dra_control->dra_descriptor2 = DRA_SCALE_NUMFBITS;
+    dra_control->dra_descriptor1 = 4;
+
+    return XEVE_OK;
+}
+
+static char get_pic_type(char* in)
+{
+    int len = (int)strlen(in);
+    char type = 0;
+    for (int i = 0; i < len; i++) {
+        if (in[i] == 'P') {
+            type = 'P';
+            break;
+        }
+        else if (in[i] == 'B') {
+            type = 'B';
+            break;
+        }
+    }
+    if (type == 0) {
+        return 0;
+    }
+    return type;
+}
+
+static int parse_rpl_param(XEVE_CTX * ctx)
+{
+    XEVE_SPS   * sps = &ctx->sps;
+    XEVE_PARAM * param = &ctx->param;
+
+    for (int i = 0; i < XEVE_MAX_NUM_RPLS && param->rpl0[i][0] != 0; ++i)
+    {
+        sps->rpls_l0[i].pic_type = get_pic_type(strtok(param->rpl0[i], " "));
+        sps->rpls_l0[i].poc = atoi(strtok(NULL, " "));
+        sps->rpls_l0[i].tid = atoi(strtok(NULL, " "));
+        sps->rpls_l0[i].ref_pic_active_num = atoi(strtok(NULL, " "));
+
+        int j = 0;
+        do
+        {
+            char* val = strtok(NULL, " \r");
+            if (!val)
+                break;
+            sps->rpls_l0[i].ref_pics[j++] = atoi(val);
+        } while (1);
+
+        sps->rpls_l0[i].ref_pic_num = j;
+        ++param->rpls_l0_cfg_num;
+    }
+
+    for (int i = 0; i < XEVE_MAX_NUM_RPLS && param->rpl1[i][0] != 0; ++i)
+    {
+        sps->rpls_l1[i].pic_type = get_pic_type(strtok(param->rpl1[i], " "));
+        sps->rpls_l1[i].poc = atoi(strtok(NULL, " "));
+        sps->rpls_l1[i].tid = atoi(strtok(NULL, " "));
+        sps->rpls_l1[i].ref_pic_active_num = atoi(strtok(NULL, " "));
+
+        int j = 0;
+        do
+        {
+            char* val = strtok(NULL, " ");
+            if (!val)
+                break;
+            sps->rpls_l1[i].ref_pics[j++] = atoi(val);
+        } while (1);
+
+        sps->rpls_l1[i].ref_pic_num = j;
+        ++param->rpls_l1_cfg_num;
+    }
+
+    return XEVE_OK;
+}
+
+int xevem_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
 {
     int ret;
-    ret = xeve_set_init_param(cdsc, param);
+    ret = xeve_set_init_param(ctx, param);
     xeve_assert_rv(ret == XEVE_OK, ret);
 
-    if (cdsc->profile == PROFILE_MAIN)
-    {
-        param->preset = (XEVE_PRESET *)(&xevem_tbl_preset[cdsc->preset]);
-        cdsc->ext->btt = ((XEVEM_PRESET*)param->preset)->use_btt;
-    }
-    else /* cdsc->profile == PROFILE_BASELINE */
-    {
-        param->preset = &xeve_tbl_preset[cdsc->preset];
-    }
-
-    param->rdo_dbk_switch = param->use_deblock ? param->preset->rdo_dbk : 0;
-
     /* check input parameters */
-    int pic_m = XEVE_MAX(1 << cdsc->ext->framework_cb_min, 8);
-    xeve_assert_rv(cdsc->w > 0 && cdsc->h > 0, XEVE_ERR_INVALID_ARGUMENT);
-    xeve_assert_rv((cdsc->w & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
-    xeve_assert_rv((cdsc->h & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
+    int pic_m = XEVE_MAX(1 << param->framework_cb_min, 8);
+    xeve_assert_rv(param->w > 0 && param->h > 0, XEVE_ERR_INVALID_ARGUMENT);
+    xeve_assert_rv((param->w & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
+    xeve_assert_rv((param->h & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
 
-    if (!cdsc->chroma_qp_table_struct.chroma_qp_table_present_flag)
+    if (!ctx->chroma_qp_table_struct.chroma_qp_table_present_flag)
     {
         const int * qp_chroma_ajudst;
-        if (cdsc->ext->tool_iqt == 0)
+        if (param->tool_iqt == 0)
         {
             qp_chroma_ajudst = xeve_tbl_qp_chroma_ajudst;
         }
@@ -2944,46 +3057,17 @@ int xevem_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param)
         {
             qp_chroma_ajudst = xevem_tbl_qp_chroma_ajudst;
         }
-        xeve_mcpy(&(param->qp_chroma_dynamic_ext[0][6 *( cdsc->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
-        xeve_mcpy(&(param->qp_chroma_dynamic_ext[1][6 * (cdsc->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
+        xeve_mcpy(&(ctx->qp_chroma_dynamic_ext[0][6 *( param->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
+        xeve_mcpy(&(ctx->qp_chroma_dynamic_ext[1][6 * (param->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
     }
 
-    param->deblock_alpha_offset = cdsc->ext->deblock_aplha_offset;
-    param->deblock_beta_offset  = cdsc->ext->deblock_beta_offset;
-    param->cu_qp_delta_area = cdsc->ext->cu_qp_delta_area;
-    param->use_ibc_flag = cdsc->ext->ibc_flag;
-    param->ibc_search_range_x = cdsc->ext->ibc_search_range_x;
-    param->ibc_search_range_y = cdsc->ext->ibc_search_range_y;
-    param->ibc_hash_search_flag = cdsc->ext->ibc_hash_search_flag;
-    param->ibc_hash_search_max_cand = cdsc->ext->ibc_hash_search_max_cand;
-    param->ibc_hash_search_range_4smallblk = cdsc->ext->ibc_hash_search_range_4smallblk;
-    param->ibc_fast_method  = cdsc->ext->ibc_fast_method;
-
-    param->tile_columns = cdsc->ext->tile_columns;
-    param->tile_rows = cdsc->ext->tile_rows;
-    param->uniform_spacing_tiles = cdsc->ext->tile_uniform_spacing_flag; //To be udpated when non-uniform tiles is implemeneted
-    param->num_slice_in_pic = cdsc->ext->num_slice_in_pic;
-    param->arbitrary_slice_flag = cdsc->ext->arbitrary_slice_flag;
-
-    if (param->arbitrary_slice_flag)
+    if (ctx->param.tool_dra)
     {
-        int cnt = 0;
-        for (int s = 0; s < param->num_slice_in_pic; s++)
-        {
-            param->num_remaining_tiles_in_slice_minus1[s] = cdsc->ext->num_remaining_tiles_in_slice_minus1[s];
-            for (u32 i = 0; i < param->num_remaining_tiles_in_slice_minus1[s] + 2 ; i++)
-            {
-                param->tile_array_in_slice[cnt] = cdsc->ext->tile_array_in_slice[cnt];
-                cnt++;
-            }
-        }
+        parse_dra_param(ctx);
     }
-    else
+    if (ctx->param.rpl_extern)
     {
-        for (int i = 0; i < (2 * param->num_slice_in_pic); i++)
-        {
-            param->slice_boundary_array[i] = cdsc->ext->tile_array_in_slice[i];
-        }
+        parse_rpl_param(ctx);
     }
 
     return XEVE_OK;
@@ -2993,28 +3077,28 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
 {
     xeve_set_sps(ctx, sps);
 
-    if(sps->profile_idc == PROFILE_BASELINE)
+    if(sps->profile_idc == PROFILE_IDC_BASELINE)
     {
         sps->toolset_idc_h = 0;
     }
-    else if(sps->profile_idc == PROFILE_MAIN)
+    else if(sps->profile_idc == PROFILE_IDC_MAIN)
     {
         sps->toolset_idc_h = 0x1FFFFF;
     }
 
     if(ctx->param.max_b_frames > 0)
     {
-        sps->max_num_ref_pics = ctx->param.preset->me_ref_num;
+        sps->max_num_ref_pics = ctx->param.me_ref_num;
     }
     else
     {
         sps->max_num_ref_pics = MAX_NUM_ACTIVE_REF_FRAME_LDB;
     }
 
-    if(sps->profile_idc == PROFILE_MAIN)
+    if(sps->profile_idc == PROFILE_IDC_MAIN)
     {
-        sps->sps_btt_flag = ctx->cdsc.ext->btt;
-        sps->sps_suco_flag = ctx->cdsc.ext->suco;
+        sps->sps_btt_flag = ctx->param.btt;
+        sps->sps_suco_flag = ctx->param.suco;
     }
     else
     {
@@ -3022,38 +3106,38 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
         sps->sps_suco_flag = 0;
     }
 
-    if(sps->profile_idc == PROFILE_MAIN)
+    if(sps->profile_idc == PROFILE_IDC_MAIN)
     {
-        sps->log2_min_cb_size_minus2 = ctx->param.split_check[BLOCK_11][IDX_MIN] - 2;
-        sps->log2_diff_ctu_max_14_cb_size = XEVE_MIN(ctx->log2_max_cuwh - ctx->param.split_check[BLOCK_14][IDX_MAX], 6);
-        sps->log2_diff_ctu_max_tt_cb_size = XEVE_MIN(ctx->log2_max_cuwh - ctx->param.split_check[BLOCK_TT][IDX_MAX], 6);
-        sps->log2_diff_min_cb_min_tt_cb_size_minus2 = ctx->param.split_check[BLOCK_TT][IDX_MIN] - ctx->param.split_check[BLOCK_11][IDX_MIN] - 2;
-        sps->log2_diff_ctu_size_max_suco_cb_size = ctx->log2_max_cuwh - XEVE_MIN(ctx->cdsc.ext->framework_suco_max, XEVE_MIN(6, ctx->log2_max_cuwh));
-        sps->log2_diff_max_suco_min_suco_cb_size = XEVE_MAX(ctx->log2_max_cuwh - sps->log2_diff_ctu_size_max_suco_cb_size - XEVE_MAX(ctx->cdsc.ext->framework_suco_min, XEVE_MAX(4, ctx->param.split_check[BLOCK_11][IDX_MIN])), 0);
+        sps->log2_min_cb_size_minus2 = ctx->split_check[BLOCK_11][IDX_MIN] - 2;
+        sps->log2_diff_ctu_max_14_cb_size = XEVE_MIN(ctx->log2_max_cuwh - ctx->split_check[BLOCK_14][IDX_MAX], 6);
+        sps->log2_diff_ctu_max_tt_cb_size = XEVE_MIN(ctx->log2_max_cuwh - ctx->split_check[BLOCK_TT][IDX_MAX], 6);
+        sps->log2_diff_min_cb_min_tt_cb_size_minus2 = ctx->split_check[BLOCK_TT][IDX_MIN] - ctx->split_check[BLOCK_11][IDX_MIN] - 2;
+        sps->log2_diff_ctu_size_max_suco_cb_size = ctx->log2_max_cuwh - XEVE_MIN(ctx->param.framework_suco_max, XEVE_MIN(6, ctx->log2_max_cuwh));
+        sps->log2_diff_max_suco_min_suco_cb_size = XEVE_MAX(ctx->log2_max_cuwh - sps->log2_diff_ctu_size_max_suco_cb_size - XEVE_MAX(ctx->param.framework_suco_min, XEVE_MAX(4, ctx->split_check[BLOCK_11][IDX_MIN])), 0);
     }
 
-    sps->tool_amvr = ctx->cdsc.ext->tool_amvr;
-    sps->tool_mmvd = ctx->cdsc.ext->tool_mmvd;
-    sps->tool_affine = ctx->cdsc.ext->tool_affine;
-    sps->tool_dmvr = ctx->cdsc.ext->tool_dmvr;
-    sps->tool_addb = ctx->cdsc.ext->tool_addb;
-    sps->tool_dra = ctx->cdsc.ext->tool_dra;
-    sps->tool_alf = ctx->cdsc.ext->tool_alf;
-    sps->tool_htdf = ctx->cdsc.ext->tool_htdf;
-    sps->tool_admvp = ctx->cdsc.ext->tool_admvp;
-    sps->tool_hmvp = ctx->cdsc.ext->tool_hmvp;
-    sps->tool_eipd = ctx->cdsc.ext->tool_eipd;
-    sps->tool_iqt = ctx->cdsc.ext->tool_iqt;
-    sps->tool_adcc = ctx->cdsc.ext->tool_adcc;
-    sps->tool_cm_init = ctx->cdsc.ext->tool_cm_init;
-    sps->tool_ats = ctx->cdsc.ext->tool_ats;
-    sps->tool_rpl = ctx->cdsc.ext->tool_rpl;
-    sps->tool_pocs = ctx->cdsc.ext->tool_pocs;
-    sps->dquant_flag = ctx->cdsc.profile == 0 ? 0 : 1;
-    sps->ibc_flag = ctx->cdsc.ext->ibc_flag;
+    sps->tool_amvr = ctx->param.tool_amvr;
+    sps->tool_mmvd = ctx->param.tool_mmvd;
+    sps->tool_affine = ctx->param.tool_affine;
+    sps->tool_dmvr = ctx->param.tool_dmvr;
+    sps->tool_addb = ctx->param.tool_addb;
+    sps->tool_dra = ctx->param.tool_dra;
+    sps->tool_alf = ctx->param.tool_alf;
+    sps->tool_htdf = ctx->param.tool_htdf;
+    sps->tool_admvp = ctx->param.tool_admvp;
+    sps->tool_hmvp = ctx->param.tool_hmvp;
+    sps->tool_eipd = ctx->param.tool_eipd;
+    sps->tool_iqt = ctx->param.tool_iqt;
+    sps->tool_adcc = ctx->param.tool_adcc;
+    sps->tool_cm_init = ctx->param.tool_cm_init;
+    sps->tool_ats = ctx->param.tool_ats;
+    sps->tool_rpl = ctx->param.tool_rpl;
+    sps->tool_pocs = ctx->param.tool_pocs;
+    sps->dquant_flag = ctx->param.profile == 0 ? 0 : 1;
+    sps->ibc_flag = ctx->param.ibc_flag;
     sps->ibc_log_max_size = IBC_MAX_CU_LOG2;
 
-    if(sps->profile_idc == PROFILE_MAIN)
+    if(sps->profile_idc == PROFILE_IDC_MAIN)
     {
         sps->log2_ctu_size_minus5 = ctx->log2_max_cuwh - 5;
     }
@@ -3066,38 +3150,34 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
     }
     else
     {
-        sps->num_ref_pic_lists_in_sps0 = ctx->cdsc.ext->rpls_l0_cfg_num;
-        sps->num_ref_pic_lists_in_sps1 = ctx->cdsc.ext->rpls_l1_cfg_num;
+        sps->num_ref_pic_lists_in_sps0 = ctx->param.rpls_l0_cfg_num;
+        sps->num_ref_pic_lists_in_sps1 = ctx->param.rpls_l1_cfg_num;
         sps->rpl1_same_as_rpl0_flag = 0;
 
-        if (ctx->cdsc.ext->rpl_extern)
+        if(!ctx->param.rpl_extern)
         {
-            xeve_mcpy(sps->rpls_l0, ctx->cdsc.ext->rpls_l0, ctx->cdsc.ext->rpls_l0_cfg_num * sizeof(sps->rpls_l0[0]));
-            xeve_mcpy(sps->rpls_l1, ctx->cdsc.ext->rpls_l1, ctx->cdsc.ext->rpls_l1_cfg_num * sizeof(sps->rpls_l1[0]));
-        }
-        else
-        {
-            int is_enable_reorder = ctx->cdsc.max_b_frames > 1 ? 1 : 0;
-            int gop_idx = is_enable_reorder ? XEVE_LOG2(ctx->param.gop_size) - 2 : XEVE_LOG2(ctx->ref_pic_gap_length) - 2;
-            ctx->cdsc.ext->rpls_l0_cfg_num = 0;
-            for (int i = 0; i < MAX_NUM_RPLS; i++)
+            int is_enable_reorder = ctx->param.max_b_frames > 1 ? 1 : 0;
+            int gop_idx = is_enable_reorder ? XEVE_LOG2(ctx->param.gop_size) - 2 : XEVE_LOG2(ctx->param.ref_pic_gap_length) - 2;
+            gop_idx = XEVE_MAX(gop_idx, 0);
+            ctx->param.rpls_l0_cfg_num = 0;
+            for (int i = 0; i < XEVE_MAX_NUM_RPLS; i++)
             {
                 if (pre_define_rpls[is_enable_reorder][gop_idx][0][i].poc != 0)
                 {
-                    ctx->cdsc.ext->rpls_l0_cfg_num++;
+                    ctx->param.rpls_l0_cfg_num++;
                 }
                 else
                 {
                     break;
                 }
             }
-            ctx->cdsc.ext->rpls_l1_cfg_num = ctx->cdsc.ext->rpls_l0_cfg_num;
+            ctx->param.rpls_l1_cfg_num = ctx->param.rpls_l0_cfg_num;
 
-            xeve_mcpy(sps->rpls_l0, pre_define_rpls[is_enable_reorder][gop_idx][0], ctx->cdsc.ext->rpls_l0_cfg_num * sizeof(sps->rpls_l0[0]));
-            xeve_mcpy(sps->rpls_l1, pre_define_rpls[is_enable_reorder][gop_idx][1], ctx->cdsc.ext->rpls_l1_cfg_num * sizeof(sps->rpls_l1[0]));
+            xeve_mcpy(sps->rpls_l0, pre_define_rpls[is_enable_reorder][gop_idx][0], ctx->param.rpls_l0_cfg_num * sizeof(sps->rpls_l0[0]));
+            xeve_mcpy(sps->rpls_l1, pre_define_rpls[is_enable_reorder][gop_idx][1], ctx->param.rpls_l1_cfg_num * sizeof(sps->rpls_l1[0]));
 
-            sps->num_ref_pic_lists_in_sps0 = ctx->cdsc.ext->rpls_l0_cfg_num;
-            sps->num_ref_pic_lists_in_sps1 = ctx->cdsc.ext->rpls_l1_cfg_num;
+            sps->num_ref_pic_lists_in_sps0 = ctx->param.rpls_l0_cfg_num;
+            sps->num_ref_pic_lists_in_sps1 = ctx->param.rpls_l1_cfg_num;
         }
     }
 }
@@ -3108,9 +3188,9 @@ void xevem_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps)
 
     int tile_columns, tile_rows, num_tiles;
 
-    pps->cu_qp_delta_area         = ctx->cdsc.ext->cu_qp_delta_area;
-    tile_rows = ctx->cdsc.ext->tile_rows;
-    tile_columns = ctx->cdsc.ext->tile_columns;
+    pps->cu_qp_delta_area         = ctx->param.cu_qp_delta_area;
+    tile_rows = ctx->param.tile_rows;
+    tile_columns = ctx->param.tile_columns;
 
     if (tile_rows > 1 || tile_columns > 1)
     {
@@ -3118,10 +3198,10 @@ void xevem_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps)
     }
     pps->num_tile_rows_minus1 = tile_rows - 1;
     pps->num_tile_columns_minus1 = tile_columns - 1;
-    pps->uniform_tile_spacing_flag = ctx->cdsc.ext->tile_uniform_spacing_flag;
-    pps->loop_filter_across_tiles_enabled_flag = ctx->cdsc.ext->loop_filter_across_tiles_enabled_flag;
+    pps->uniform_tile_spacing_flag = ctx->param.tile_uniform_spacing_flag;
+    pps->loop_filter_across_tiles_enabled_flag = ctx->param.loop_filter_across_tiles_enabled_flag;
     pps->tile_offset_lens_minus1 = 31;
-    pps->arbitrary_slice_present_flag = ctx->cdsc.ext->arbitrary_slice_flag;
+    pps->arbitrary_slice_present_flag = ctx->param.arbitrary_slice_flag;
     num_tiles = tile_rows * tile_columns;
     pps->tile_id_len_minus1 = 0;
     while (num_tiles > (1 << pps->tile_id_len_minus1))
@@ -3136,24 +3216,24 @@ void xevem_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps)
 
         for (int i = 0; i < pps->num_tile_columns_minus1; i++)
         {
-            pps->tile_column_width_minus1[i] = ctx->cdsc.ext->tile_column_width_array[i] - 1;
+            pps->tile_column_width_minus1[i] = ctx->ts_info.tile_column_width_array[i] - 1;
             pps->tile_column_width_minus1[pps->num_tile_columns_minus1] -= (pps->tile_column_width_minus1[i] + 1);
 
         }
         for (int i = 0; i < pps->num_tile_rows_minus1; i++)
         {
-            pps->tile_row_height_minus1[i] = ctx->cdsc.ext->tile_row_height_array[i] - 1;
+            pps->tile_row_height_minus1[i] = ctx->ts_info.tile_row_height_array[i] - 1;
             pps->tile_row_height_minus1[pps->num_tile_rows_minus1] -= (pps->tile_row_height_minus1[i] + 1);
         }
     }
 
     if(ctx->sps.tool_rpl)
     {
-        int hist[REFP_NUM][MAX_NUM_RPLS + 1];
+        int hist[REFP_NUM][XEVE_MAX_NUM_RPLS + 1];
         int tmp_num_ref_idx_default_active[REFP_NUM] = {0, 0};
         int max_val[REFP_NUM] = {0, 0};
 
-        for(int i = 0; i < (MAX_NUM_RPLS + 1); i++)
+        for(int i = 0; i < (XEVE_MAX_NUM_RPLS + 1); i++)
         {
             hist[REFP_0][i] = 0;
             hist[REFP_1][i] = 0;
@@ -3165,7 +3245,7 @@ void xevem_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps)
             hist[REFP_1][ctx->sps.rpls_l1->ref_pic_active_num]++;
         }
 
-        for(int i = 0; i < (MAX_NUM_RPLS + 1); i++)
+        for(int i = 0; i < (XEVE_MAX_NUM_RPLS + 1); i++)
         {
             for(int j = 0; j < REFP_NUM; j++)
             {
@@ -3206,8 +3286,8 @@ void xevem_set_sh(XEVE_CTX *ctx, XEVE_SH *sh)
 {
     xeve_set_sh(ctx, sh);
 
-    sh->sh_deblock_alpha_offset = ctx->cdsc.ext->deblock_aplha_offset;
-    sh->sh_deblock_beta_offset = ctx->cdsc.ext->deblock_beta_offset;
+    sh->sh_deblock_alpha_offset = ctx->param.deblock_alpha_offset;
+    sh->sh_deblock_beta_offset = ctx->param.deblock_beta_offset;
 
     if (ctx->sps.tool_pocs)
     {
@@ -3221,24 +3301,24 @@ void xevem_set_sh(XEVE_CTX *ctx, XEVE_SH *sh)
         sh->num_ref_idx_active_override_flag = 1;
     }
 
-    if (ctx->param.arbitrary_slice_flag == 1)
+    if (ctx->ts_info.arbitrary_slice_flag == 1)
     {
         ctx->sh->arbitrary_slice_flag = 1;
-        sh->num_remaining_tiles_in_slice_minus1 = ctx->param.num_remaining_tiles_in_slice_minus1[ctx->slice_num];
+        sh->num_remaining_tiles_in_slice_minus1 = ctx->ts_info.num_remaining_tiles_in_slice_minus1[ctx->slice_num];
         if (ctx->tile_cnt > 1)
         {
             sh->single_tile_in_slice_flag = 0;
             int bef_tile_num = 0;
             for (int i = 0; i < ctx->slice_num; ++i)
             {
-                bef_tile_num += ctx->param.num_remaining_tiles_in_slice_minus1[i] + 2;
+                bef_tile_num += ctx->ts_info.num_remaining_tiles_in_slice_minus1[i] + 2;
             }
 
             sh->first_tile_id = ctx->param.tile_array_in_slice[bef_tile_num];
             for (int i = 0; i < sh->num_remaining_tiles_in_slice_minus1 + 1; ++i)
             {
-                sh->delta_tile_id_minus1[i] = ctx->param.tile_array_in_slice[bef_tile_num + i + 1] -
-                                              ctx->param.tile_array_in_slice[bef_tile_num + i    ] - 1;
+                sh->delta_tile_id_minus1[i] = ctx->ts_info.tile_array_in_slice[bef_tile_num + i + 1] -
+                                              ctx->ts_info.tile_array_in_slice[bef_tile_num + i    ] - 1;
             }
         }
     }
@@ -3247,8 +3327,8 @@ void xevem_set_sh(XEVE_CTX *ctx, XEVE_SH *sh)
         if (ctx->tile_cnt > 1)
         {
             sh->single_tile_in_slice_flag = 0;
-            sh->first_tile_id = ctx->param.slice_boundary_array[2 * ctx->slice_num];
-            sh->last_tile_id = ctx->param.slice_boundary_array[2 * ctx->slice_num + 1];
+            sh->first_tile_id = ctx->ts_info.tile_array_in_slice[2 * ctx->slice_num];
+            sh->last_tile_id = ctx->ts_info.tile_array_in_slice[2 * ctx->slice_num + 1];
         }
     }
 }
@@ -3280,8 +3360,8 @@ int xevem_set_tile_info(XEVE_CTX * ctx)
 
     for (i = 0; i < (2 * num_slice_in_pic); i = i + 2)
     {
-        first_tile_in_slice = ctx->param.slice_boundary_array[i];
-        last_tile_in_slice = ctx->param.slice_boundary_array[i + 1];
+        first_tile_in_slice = ctx->ts_info.tile_array_in_slice[i];
+        last_tile_in_slice = ctx->ts_info.tile_array_in_slice[i + 1];
 
         first_tile_col_idx = first_tile_in_slice % w_tile;
         last_tile_col_idx = last_tile_in_slice % w_tile;
@@ -3329,7 +3409,7 @@ int xevem_set_tile_info(XEVE_CTX * ctx)
     xeve_mset(ctx->tile, 0, size);
 
     /* set tile information */
-    if (ctx->param.uniform_spacing_tiles)
+    if (ctx->param.tile_uniform_spacing_flag)
     {
         for (i = 0; i<w_tile; i++)
         {
@@ -3349,7 +3429,7 @@ int xevem_set_tile_info(XEVE_CTX * ctx)
         //Non-uniform tile case
         for (i = 0, t0 = 0; i<(w_tile - 1); i++)
         {
-            col_w[i] = ctx->cdsc.ext->tile_column_width_array[i];
+            col_w[i] = ctx->ts_info.tile_column_width_array[i];
             t0 += col_w[i];
             if (col_w[i] < 1 )
                 xeve_assert_rv(0, XEVE_ERR_UNSUPPORTED);
@@ -3360,7 +3440,7 @@ int xevem_set_tile_info(XEVE_CTX * ctx)
 
         for (j = 0, t0 = 0; j<(h_tile - 1); j++)
         {
-            row_h[j] = ctx->cdsc.ext->tile_row_height_array[j];
+            row_h[j] = ctx->ts_info.tile_row_height_array[j];
             if (row_h[j] < 1 )
                 xeve_assert_rv(0, XEVE_ERR_UNSUPPORTED);
             t0 += row_h[j];
@@ -3432,7 +3512,7 @@ int xevem_ready(XEVE_CTX * ctx)
 
     mctx->map_ats_inter = NULL;
 
-    for (int i = 0; i < ctx->cdsc.threads; i++)
+    for (int i = 0; i < ctx->param.threads; i++)
     {
         mctx->ats_inter_info_pred[i] = NULL;
         mctx->ats_inter_num_pred[i] = NULL;
@@ -3442,7 +3522,7 @@ int xevem_ready(XEVE_CTX * ctx)
     {
 
         /* set various value */
-        for (int i = 0; i < ctx->cdsc.threads; i++)
+        for (int i = 0; i < ctx->param.threads; i++)
         {
             mcore = xevem_core_alloc(ctx->param.chroma_format_idc);
             xeve_assert_gv(mcore != NULL, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
@@ -3455,16 +3535,16 @@ int xevem_ready(XEVE_CTX * ctx)
     ctx->h = ctx->param.h;
     ctx->f = ctx->w * ctx->h;
 
-    if (ctx->cdsc.ext->btt)
+    if (ctx->param.btt)
     {
-        ctx->max_cuwh = 1 << ctx->param.split_check[BLOCK_11][IDX_MAX];
+        ctx->max_cuwh = 1 << ctx->split_check[BLOCK_11][IDX_MAX];
         if (ctx->w < ctx->max_cuwh * 2 && ctx->h < ctx->max_cuwh * 2)
         {
             ctx->max_cuwh = ctx->max_cuwh >> 1;
         }
 
-        ctx->min_cuwh = 1 << ctx->param.split_check[BLOCK_11][IDX_MIN];
-        ctx->log2_min_cuwh = (u8)ctx->param.split_check[BLOCK_11][IDX_MIN];
+        ctx->min_cuwh = 1 << ctx->split_check[BLOCK_11][IDX_MIN];
+        ctx->log2_min_cuwh = (u8)ctx->split_check[BLOCK_11][IDX_MIN];
     }
     else
     {
@@ -3484,9 +3564,9 @@ int xevem_ready(XEVE_CTX * ctx)
     ctx->log2_culine = ctx->log2_max_cuwh - MIN_CU_LOG2;
     ctx->log2_cudim = ctx->log2_culine << 1;
 
-    ctx->cdsc.ext->framework_suco_max = XEVE_MIN(ctx->log2_max_cuwh, ctx->cdsc.ext->framework_suco_max);
-    mctx->enc_alf = xeve_alf_create_buf(ctx->cdsc.codec_bit_depth);
-    xeve_alf_create(mctx->enc_alf, ctx->w, ctx->h, ctx->max_cuwh, ctx->max_cuwh, 5, ctx->param.chroma_format_idc, ctx->cdsc.codec_bit_depth);
+    ctx->param.framework_suco_max = XEVE_MIN(ctx->log2_max_cuwh, ctx->param.framework_suco_max);
+    mctx->enc_alf = xeve_alf_create_buf(ctx->param.codec_bit_depth);
+    xeve_alf_create(mctx->enc_alf, ctx->w, ctx->h, ctx->max_cuwh, ctx->max_cuwh, 5, ctx->param.chroma_format_idc, ctx->param.codec_bit_depth);
 
     if (xeve_ready(ctx) != XEVE_OK)
     {
@@ -3508,11 +3588,11 @@ int xevem_ready(XEVE_CTX * ctx)
     ctx->sync_block = get_synchronized_object();
     xeve_assert_gv(ctx->sync_block != NULL, ret, XEVE_ERR_UNKNOWN, ERR);
 
-    if (ctx->cdsc.threads >= 1)
+    if (ctx->param.threads >= 1)
     {
         ctx->tc = xeve_malloc(sizeof(THREAD_CONTROLLER));
-        init_thread_controller(ctx->tc, ctx->cdsc.threads);
-        for (int i = 0; i < ctx->cdsc.threads; i++)
+        init_thread_controller(ctx->tc, ctx->param.threads);
+        for (int i = 0; i < ctx->param.threads; i++)
         {
             ctx->thread_pool[i] = ctx->tc->create(ctx->tc, i);
             xeve_assert_gv(ctx->thread_pool[i] != NULL, ret, XEVE_ERR_UNKNOWN, ERR);
@@ -3558,8 +3638,8 @@ int xevem_ready(XEVE_CTX * ctx)
         xeve_mset(mctx->map_ats_inter, -1, size);
     }
 
-    int num_tiles = (ctx->cdsc.ext->tile_columns) * (ctx->cdsc.ext->tile_rows);
-    for (int i = 0; i < ctx->cdsc.threads; i++)
+    int num_tiles = (ctx->param.tile_columns) * (ctx->param.tile_rows);
+    for (int i = 0; i < ctx->param.threads; i++)
     {
         if (mctx->ats_inter_info_pred[i] == NULL)
         {
@@ -3577,18 +3657,14 @@ int xevem_ready(XEVE_CTX * ctx)
         }
     }
 
-
-    ctx->deblock_alpha_offset = ctx->param.deblock_alpha_offset;
-    ctx->deblock_beta_offset = ctx->param.deblock_beta_offset;
-
-    if (ctx->cdsc.ext->tool_alf || ctx->cdsc.ext->tool_dra)
+    if (ctx->param.tool_alf || ctx->param.tool_dra)
     {
         ctx->aps_gen_array = (XEVE_APS_GEN*)xeve_malloc(sizeof(XEVE_APS_GEN) * 2);
         xeve_assert_gv(ctx->aps_gen_array, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
         xeve_mset(ctx->aps_gen_array, 0, sizeof(XEVE_APS_GEN) * 2);
         xeve_reset_aps_gen_read_buffer(ctx->aps_gen_array);
 
-        if (ctx->cdsc.ext->tool_alf)
+        if (ctx->param.tool_alf)
         {
             ctx->aps_gen_array[0].aps_data = (XEVE_ALF_SLICE_PARAM*)xeve_malloc(sizeof(XEVE_ALF_SLICE_PARAM));
             xeve_assert_gv(ctx->aps_gen_array[0].aps_data, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
@@ -3596,34 +3672,10 @@ int xevem_ready(XEVE_CTX * ctx)
         }
     }
 
-    if (ctx->cdsc.ext->tool_dra)
+    if (ctx->param.tool_dra)
     {
-        mctx->dra_control = (DRA_CONTROL*)xeve_malloc(sizeof(DRA_CONTROL));
-        xeve_assert_gv(mctx->dra_control, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
-        xeve_mset(mctx->dra_control, 0, sizeof(DRA_CONTROL));
-
-        mctx->dra_control->dra_hist_norm = ctx->cdsc.ext->dra_hist_norm;
-        mctx->dra_control->num_ranges = ctx->cdsc.ext->dra_num_ranges;
-        xeve_mcpy(mctx->dra_control->dra_scale_map.dra_scale_map_y, ctx->cdsc.ext->dra_scale_map_y, sizeof(double) * 256 * 2);
-        mctx->dra_control->dra_hist_norm = mctx->dra_control->dra_hist_norm == 0 ? 1 : mctx->dra_control->dra_hist_norm;
-        mctx->dra_control->chroma_qp_model.cb_qp_scale = ctx->cdsc.ext->dra_cb_qp_scale;
-        mctx->dra_control->chroma_qp_model.cr_qp_scale = ctx->cdsc.ext->dra_cr_qp_scale;
-        if(ctx->param.chroma_format_idc == 0)
-        {
-            mctx->dra_control->chroma_qp_model.cb_qp_scale = 1;
-            mctx->dra_control->chroma_qp_model.cr_qp_scale = 1;
-        }
-        mctx->dra_control->chroma_qp_model.chroma_qp_scale = ctx->cdsc.ext->dra_chroma_qp_scale;
-        mctx->dra_control->chroma_qp_model.chroma_qp_offset = ctx->cdsc.ext->dra_chroma_qp_offset;
-        mctx->dra_control->chroma_qp_model.dra_table_idx = ctx->cdsc.qp;
-        mctx->dra_control->chroma_qp_model.dra_cb_qp_offset = ctx->cdsc.qp_cb_offset;
-        mctx->dra_control->chroma_qp_model.dra_cr_qp_offset = ctx->cdsc.qp_cr_offset;
-        mctx->dra_control->chroma_qp_model.enabled = 1;
-        mctx->dra_control->dra_descriptor2 = DRA_SCALE_NUMFBITS;
-        mctx->dra_control->dra_descriptor1 = 4;
-
-        xeve_init_dra(mctx->dra_control, 0, NULL, NULL, ctx->sps.bit_depth_luma_minus8 + 8);
-        xeve_analyze_input_pic(ctx, mctx->dra_control, ctx->sps.bit_depth_luma_minus8 + 8);
+        xeve_init_dra(&mctx->dra_control, 0, NULL, NULL, ctx->sps.bit_depth_luma_minus8 + 8);
+        xeve_analyze_input_pic(ctx, &mctx->dra_control, ctx->sps.bit_depth_luma_minus8 + 8);
 
         mctx->dra_array = (SIG_PARAM_DRA*)xeve_malloc(sizeof(SIG_PARAM_DRA) * APS_MAX_NUM);
         xeve_assert_gv(mctx->dra_array, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
@@ -3634,19 +3686,14 @@ int xevem_ready(XEVE_CTX * ctx)
             mctx->dra_array[i].signal_dra_flag = -1;
         }
 
-        xeve_generate_dra_array(ctx, mctx->dra_array, mctx->dra_control, 1, ctx->sps.bit_depth_luma_minus8 + 8);
+        xeve_generate_dra_array(ctx, mctx->dra_array, &mctx->dra_control, 1, ctx->sps.bit_depth_luma_minus8 + 8);
 
-        if (ctx->cdsc.ext->tool_dra)
+        if (ctx->param.tool_dra)
         {
-            ctx->aps_gen_array[1].aps_data = (void*)(&mctx->dra_control->signalled_dra);
-
+            ctx->aps_gen_array[1].aps_data = (void*)(&mctx->dra_control.signalled_dra);
             ctx->aps_gen_array[1].signal_flag = 1;
             ctx->aps_gen_array[1].aps_id = 0;   // initial DRA APS
         }
-    }
-    else
-    {
-        mctx->dra_control = NULL;
     }
 
     return XEVE_OK;
@@ -3657,8 +3704,8 @@ ERR:
     xeve_mfree_fast(mctx->map_ats_mode_v);
     xeve_mfree_fast(mctx->map_ats_inter);
 
-    num_tiles = (ctx->cdsc.ext->tile_columns) * (ctx->cdsc.ext->tile_rows);
-    for (int i = 0; i < ctx->cdsc.threads; i++)
+    num_tiles = (ctx->param.tile_columns) * (ctx->param.tile_rows);
+    for (int i = 0; i < ctx->param.threads; i++)
     {
         xeve_mfree_fast(mctx->ats_inter_pred_dist[i]);
         xeve_mfree_fast(mctx->ats_inter_info_pred[i]);
@@ -3668,22 +3715,18 @@ ERR:
     xeve_mfree_fast(ctx->map_tidx);
     xeve_mfree_fast((void*) ctx->sync_flag);
 
-    if (ctx->cdsc.ext->tool_dra)
+    if (ctx->param.tool_dra)
     {
-        if (mctx->dra_control)
-        {
-            xeve_mfree(mctx->dra_control);
-        }
         if (mctx->dra_array)
         {
             xeve_mfree(mctx->dra_array);
         }
     }
 
-    if (ctx->cdsc.ext->tool_alf || ctx->cdsc.ext->tool_dra)
+    if (ctx->param.tool_alf || ctx->param.tool_dra)
     {
 
-        if (ctx->cdsc.ext->tool_alf)
+        if (ctx->param.tool_alf)
         {
             if (ctx->aps_gen_array[0].aps_data)
             {
@@ -3702,7 +3745,7 @@ ERR:
         mctx->ibc_hash = NULL;
     }
 
-    if (ctx->cdsc.ext->tool_alf)
+    if (ctx->param.tool_alf)
     {
         xeve_alf_destroy(mctx->enc_alf);
         xeve_alf_delete_buf(mctx->enc_alf);
@@ -3726,8 +3769,8 @@ void xevem_flush(XEVE_CTX * ctx)
     xeve_mfree_fast(mctx->map_ats_mode_v);
     xeve_mfree_fast(mctx->map_ats_inter);
 
-    int num_tiles = (ctx->cdsc.ext->tile_columns) * (ctx->cdsc.ext->tile_rows);
-    for (int i = 0; i < ctx->cdsc.threads; i++)
+    int num_tiles = (ctx->param.tile_columns) * (ctx->param.tile_rows);
+    for (int i = 0; i < ctx->param.threads; i++)
     {
         xeve_mfree_fast(mctx->ats_inter_pred_dist[i]);
         xeve_mfree_fast(mctx->ats_inter_info_pred[i]);
@@ -3736,22 +3779,18 @@ void xevem_flush(XEVE_CTX * ctx)
 
     xeve_mfree_fast(ctx->map_tidx);
 
-    if (ctx->cdsc.ext->tool_dra)
+    if (ctx->param.tool_dra)
     {
-        if (mctx->dra_control)
-        {
-            xeve_mfree(mctx->dra_control);
-        }
         if (mctx->dra_array)
         {
             xeve_mfree(mctx->dra_array);
         }
     }
 
-    if (ctx->cdsc.ext->tool_alf || ctx->cdsc.ext->tool_dra)
+    if (ctx->param.tool_alf || ctx->param.tool_dra)
     {
 
-        if (ctx->cdsc.ext->tool_alf)
+        if (ctx->param.tool_alf)
         {
             if (ctx->aps_gen_array[0].aps_data)
             {
@@ -3770,7 +3809,7 @@ void xevem_flush(XEVE_CTX * ctx)
         mctx->ibc_hash = NULL;
     }
 
-    if (ctx->cdsc.ext->tool_alf)
+    if (ctx->param.tool_alf)
     {
         xeve_alf_destroy(mctx->enc_alf);
         xeve_alf_delete_buf(mctx->enc_alf);
@@ -3785,7 +3824,7 @@ int xevem_header(XEVE_CTX * ctx)
     xeve_assert_rv(ret == XEVE_OK, ret);
 
     /* encode parameter sets */
-    if (ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.use_closed_gop)) /* if nalu_type is IDR */
+    if (ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.closed_gop)) /* if nalu_type is IDR */
     {
         if (ctx->sps.tool_dra)
         {
@@ -3872,7 +3911,7 @@ void xevem_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_
 void xevem_pic_filt(XEVE_CTX * ctx, XEVE_IMGB * img)
 {
     XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
-    if (ctx->cdsc.ext->tool_dra)
+    if (ctx->param.tool_dra)
     {
         xeve_apply_dra_from_array(ctx, img, img, mctx->dra_array, ctx->aps_gen_array[1].aps_id, 0);
     }
@@ -3936,13 +3975,13 @@ int xevem_platform_init(XEVE_CTX * ctx)
     xeve_assert_rv(XEVE_OK == ret, ret);
 
 
-    if (ctx->cdsc.profile == PROFILE_MAIN)
+    if (ctx->param.profile == XEVE_PROFILE_MAIN)
     {
         ret = xevem_pinter_create(ctx, 0);
         xeve_assert_rv(XEVE_OK == ret, ret);
     }
 
-    if (ctx->param.use_ibc_flag)
+    if (ctx->param.ibc_flag)
     {
         /* create ibc prediction analyzer */
         ret = xevem_pibc_create(ctx, 0);
@@ -4032,8 +4071,6 @@ int xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps)
 
     return XEVE_OK;
 }
-
-
 int xevem_encode_pps(XEVE_CTX * ctx)
 {
     XEVE_BSW * bs = &ctx->bs[0];
@@ -4059,6 +4096,7 @@ int xevem_encode_pps(XEVE_CTX * ctx)
 
     return XEVE_OK;
 }
+
 #if GRAB_STAT
 void enc_stat_header(int pic_w, int pic_h)
 {

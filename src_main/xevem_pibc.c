@@ -1201,7 +1201,7 @@ static int pibc_set_complexity(XEVE_CTX *ctx, int complexity)
     XEVE_PIBC *pi;
     XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
 
-    for (int i = 0; i < ctx->cdsc.threads; i++)
+    for (int i = 0; i < ctx->param.threads; i++)
     {
         pi = &mctx->pibc[i];
         pi->search_range_x = ctx->param.ibc_search_range_x;
@@ -1223,7 +1223,7 @@ int xevem_pibc_create(XEVE_CTX *ctx, int complexity)
     mctx->fn_pibc_init_lcu = pibc_init_lcu;
     mctx->fn_pibc_set_complexity = pibc_set_complexity;
 
-    for (int i = 0; i < ctx->cdsc.threads; i++)
+    for (int i = 0; i < ctx->param.threads; i++)
     {
         pi = &mctx->pibc[i];
         pi->min_clip[MV_X] = -MAX_CU_SIZE + 1;

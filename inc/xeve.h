@@ -168,29 +168,16 @@
 #define XEVE_ST_I                        (2)
 
 /*****************************************************************************
- * Encoder optimization level control
- *****************************************************************************/
-enum XEVE_PRESET
-{
-    XEVE_PRESET_FAST,
-    XEVE_PRESET_MEDIUM,
-    XEVE_PRESET_SLOW,
-    XEVE_PRESET_PLACEBO,
-    XEVE_PRESET_MAX /* number of PRESETs */
-};
-
-enum XEVE_TUNE
-{
-    XEVE_TUNE_NONE,
-    XEVE_TUNE_ZEROLATENCY,
-    XEVE_TUNE_PSNR,
-    XEVE_TUNE_MAX /* number of TUNEs*/
-};
-
-/*****************************************************************************
  * type and macro for media time
  *****************************************************************************/
 typedef long long                        XEVE_MTIME; /* in 100-nanosec unit */
+
+/*****************************************************************************
+ * profiles
+ *****************************************************************************/
+#define XEVE_PROFILE_BASELINE            (0)
+#define XEVE_PROFILE_MAIN                (1)
+
 
 /*****************************************************************************
  * image buffer format
@@ -305,38 +292,31 @@ typedef struct _XEVE_BITB
 
 } XEVE_BITB;
 
-#define MAX_NUM_REF_PICS                   21
-#define MAX_NUM_ACTIVE_REF_FRAME           5
-#define MAX_NUM_RPLS                       32
-
-/* rpl structure */
-typedef struct _XEVE_RPL
-{
-    int             poc;
-    int             tid;
-    int             ref_pic_num;
-    int             ref_pic_active_num;
-    int             ref_pics[MAX_NUM_REF_PICS];
-    char            pic_type;
-} XEVE_RPL;
-
-/* chromaQP table structure */
-typedef struct _XEVE_CHROMA_TABLE
-{
-    int             chroma_qp_table_present_flag;
-    int             same_qp_table_for_chroma;
-    int             global_offset_flag;
-    int             num_points_in_qp_table_minus1[2];
-    int             delta_qp_in_val_minus1[2][MAX_QP_TABLE_SIZE];
-    int             delta_qp_out_val[2][MAX_QP_TABLE_SIZE];
-} XEVE_CHROMA_TABLE;
+#define XEVE_MAX_NUM_TILE_WIDTH                 120
+#define XEVE_MAX_NUM_TILE_HEIGHT                64
+#define XEVE_MAX_NUM_TILES                      (XEVE_MAX_NUM_TILE_WIDTH * XEVE_MAX_NUM_TILE_HEIGHT)
 
 /*****************************************************************************
- * description for creating
+ * optimization level control
  *****************************************************************************/
-typedef struct _XEVE_CDSC_EXT XEVE_CDSC_EXT;
+#define XEVE_PRESET_DEFAULT                     0
+#define XEVE_PRESET_FAST                        1
+#define XEVE_PRESET_MEDIUM                      2
+#define XEVE_PRESET_SLOW                        3
+#define XEVE_PRESET_PLACEBO                     4
 
-typedef struct _XEVE_CDSC
+/*****************************************************************************
+ * tuning for a specific use-case
+ *****************************************************************************/
+
+#define XEVE_TUNE_NONE                          0
+#define XEVE_TUNE_ZEROLATENCY                   1
+#define XEVE_TUNE_PSNR                          2
+
+/*****************************************************************************
+ * coding parameters
+ *****************************************************************************/
+typedef struct _XEVE_PARAM
 {
     /* width of input frame */
     int            w;
@@ -351,23 +331,30 @@ typedef struct _XEVE_CDSC
     int            iperiod;
     /* quantization parameter */
     int            qp;
-	/* quantization parameter offset for CB */
+    /* quantization parameter offset for CB */
     int            qp_cb_offset;
-	/* quantization parameter offset for CR */
+    /* quantization parameter offset for CR */
     int            qp_cr_offset;
-	/* Rate control type */
+    /* Rate control type */
     int            rc_type;
-	/* bitrate */
-    int            bps;
-	/* VBV buffer size for rate control*/
-    int            vbv_buf_size;
+    /* bitrate */
+    char           bps[256];
+    /* VBV buffer size for rate control*/
+    char           vbv_buf_size[256];
+    int            vbv_buf_msec;
     int            use_filler_flag;
-    int            num_pre_analysis_frames;
-    XEVE_CHROMA_TABLE chroma_qp_table_struct;
+    //XEVE_CHROMA_TABLE chroma_qp_table_struct;
+    int            chroma_qp_table_present_flag;
+    char           chroma_qp_num_points_in_table[256];
+    char           chroma_qp_delta_in_val_cb[256];
+    char           chroma_qp_delta_out_val_cb[256];
+    char           chroma_qp_delta_in_val_cr[256];
+    char           chroma_qp_delta_out_val_cr[256];
     /* color space of input image */
     int            cs;
     int            max_b_frames;
     int            disable_hgop;
+    /* distance between ref pics in addition to closest ref ref pic in LD*/
     int            ref_pic_gap_length;
     /* use closed GOP sturcture
        - 0 : use open GOP (default)
@@ -389,20 +376,37 @@ typedef struct _XEVE_CDSC
     int            picture_crop_top_offset;
     int            picture_crop_bottom_offset;
     int            rdo_dbk_switch;
-    int            add_qp_frame;
-    int            bitstream_buf_size;
-    int            preset;
-    int            tune;
+    int            qp_incread_frame;
+    int            use_pic_sign;
+    int            f_ifrm;
+    int            qp_max;
+    int            qp_min;
+    int            gop_size;
+    int            force_output;
+    int            use_fcst;
+    int            vbv_enabled;
+    int            chroma_format_idc;
+    int            cs_w_shift;
+    int            cs_h_shift;
+    /* preset parameter */
+    int            max_cu_intra;
+    int            min_cu_intra;
+    int            max_cu_inter;
+    int            min_cu_inter;
+    int            me_ref_num;
+    int            me_algo;
+    int            me_range;
+    int            me_sub;
+    int            me_sub_pos;
+    int            me_sub_range;
+    double         skip_th;             // Use it carefully. If this value is greater than zero, a huge quality drop occurs
+    int            merge_num;
+    int            rdoq;
+    int            cabac_refine;
 
-    XEVE_CDSC_EXT * ext;
-} XEVE_CDSC;
-
-
-struct _XEVE_CDSC_EXT
-{
-    /* enable intra-block copy feature
-    - 0 : disable IBC (default)
-    - 1 : enable IBC featuer */
+/*****************************************************************************
+* Main Profile Parameters
+*****************************************************************************/
     int            ibc_flag;
     int            ibc_search_range_x;
     int            ibc_search_range_y;
@@ -438,33 +442,49 @@ struct _XEVE_CDSC_EXT
     int            tool_pocs;
     int            cu_qp_delta_area;
     int            tool_ats;
-    int            deblock_aplha_offset;
+    int            deblock_alpha_offset;
     int            deblock_beta_offset;
+    int            loop_filter_across_tiles_enabled_flag;
+    int            tool_dra;
+    int            dra_enable_flag;
+    int            dra_number_ranges;
+    char           dra_range[256];
+    char           dra_scale[256];
+    char           dra_chroma_qp_scale[256];
+    char           dra_chroma_qp_offset[256];
+    char           dra_chroma_cb_scale[256];
+    char           dra_chroma_cr_scale[256];
+    char           dra_hist_norm[256];
     int            tile_uniform_spacing_flag;
     int            tile_columns;
     int            tile_rows;
-    int            tile_column_width_array[20];
-    int            tile_row_height_array[22];
+    char           tile_column_width_array[XEVE_MAX_NUM_TILE_WIDTH];
+    char           tile_row_height_array[XEVE_MAX_NUM_TILE_HEIGHT];
     int            num_slice_in_pic;
-    int            tile_array_in_slice[2 * 600];
+    char           tile_array_in_slice[XEVE_MAX_NUM_TILES];
     int            arbitrary_slice_flag;
-    int            num_remaining_tiles_in_slice_minus1[600];
-    int            loop_filter_across_tiles_enabled_flag;
-    void         * dra_mapping_app;
-    int            tool_dra;
-    double         dra_hist_norm;
-    int            dra_num_ranges;
-    double         dra_scale_map_y[256][2];
-    double         dra_cb_qp_scale;
-    double         dra_cr_qp_scale;
-    double         dra_chroma_qp_scale;
-    double         dra_chroma_qp_offset;
+    char           num_remaining_tiles_in_slice_minus1[XEVE_MAX_NUM_TILES >> 1];
     int            rpl_extern;
-    XEVE_RPL       rpls_l0[MAX_NUM_RPLS];
-    XEVE_RPL       rpls_l1[MAX_NUM_RPLS];
+    /* max num of RPL is 32 */
+    char           rpl0[32][256];
+    char           rpl1[32][256];
     int            rpls_l0_cfg_num;
     int            rpls_l1_cfg_num;
-};
+    /* preset parameter */
+    int            ats_intra_fast;
+    int            me_fast;
+} XEVE_PARAM;
+
+/*****************************************************************************
+ * description for creating
+ *****************************************************************************/
+typedef struct _XEVE_CDSC_EXT XEVE_CDSC_EXT;
+
+typedef struct _XEVE_CDSC
+{
+    int            max_bs_buf_size;
+    XEVE_PARAM     param;
+} XEVE_CDSC;
 
 /*****************************************************************************
  * status
@@ -498,14 +518,15 @@ typedef struct _XEVE_STAT
  * API for XEVE
  *****************************************************************************/
 
-/* XEVE instance identifier */
-typedef void  * XEVE;
+typedef void  * XEVE; /* XEVE instance identifier */
 
 XEVE XEVE_EXPORT xeve_create(XEVE_CDSC * cdsc, int * err);
 void XEVE_EXPORT xeve_delete(XEVE id);
 int  XEVE_EXPORT xeve_push(XEVE id, XEVE_IMGB * imgb);
 int  XEVE_EXPORT xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  XEVE_EXPORT xeve_config(XEVE id, int cfg, void * buf, int * size);
+int  XEVE_EXPORT xeve_param_default(XEVE_PARAM* param);
+int  XEVE_EXPORT xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune);
 
 #endif /* _XEVE_H_ */
 

@@ -524,7 +524,7 @@ int xeve_pintra_set_complexity(XEVE_CTX * ctx, int complexity)
     XEVE_PINTRA * pi;
 
    
-    for (int i = 0; i < ctx->cdsc.threads; i++)
+    for (int i = 0; i < ctx->param.threads; i++)
     {
         pi = &ctx->pintra[i];
         pi->complexity = complexity;
