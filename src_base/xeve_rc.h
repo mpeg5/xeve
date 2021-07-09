@@ -102,6 +102,11 @@ struct _XEVE_RCORE
     int          avg_dqp;
     /* use filler for write extra byte */
     int          filler_byte;
+
+    /* Bits amortization after I slice and scenecuts */
+    int          amortize_flag;
+    int          amortized_frames;
+    int          residue_cost;
 };
 
 /*****************************************************************************
@@ -173,11 +178,20 @@ struct _XEVE_RC
     double       prev_bpf;
     int          st_idx;
     int          prev_adpt;
+    /* access type */
+    int          encoding_mode;
 
     const XEVE_RC_PARAM * param;
 };
 
 extern const XEVE_RC_PARAM tbl_rc_param;
+
+enum ACCESS_TYPE 
+{
+    XEVE_RA,
+    XEVE_AI,
+    XEVE_LD
+};
 
 enum RC_TYPE
 {

@@ -264,67 +264,6 @@ const int xeve_tbl_qp_chroma_ajudst[MAX_QP_TABLE_SIZE] =
     39, 39, 40, 40, 40, 41, 41, 41
 };
 
-// ChromaQP offset for U and V components
-void xeve_set_chroma_qp_tbl_loc(XEVE_CTX * ctx, int bit_depth)
-{
-    for(int i = 0; i < 6 * (bit_depth - 8); i++)
-    {
-        ctx->param.qp_chroma_dynamic_ext[0][i] = i - 6 * (bit_depth - 8);
-        ctx->param.qp_chroma_dynamic_ext[1][i] = i - 6 * (bit_depth - 8);
-    }
-    ctx->param.qp_chroma_dynamic[0] = &(ctx->param.qp_chroma_dynamic_ext[0][6 * (bit_depth - 8)]);
-    ctx->param.qp_chroma_dynamic[1] = &(ctx->param.qp_chroma_dynamic_ext[1][6 * (bit_depth - 8)]);
-}
-
-void xeve_tbl_derived_chroma_qp_mapping(XEVE_PARAM * param, XEVE_CHROMA_TABLE *structChromaQP, int bit_depth)
-{
-    int MAX_QP = MAX_QP_TABLE_SIZE - 1;
-    int qpInVal[MAX_QP_TABLE_SIZE_EXT] = { 0 };
-    int qpOutVal[MAX_QP_TABLE_SIZE_EXT] = { 0 };
-    int qp_bd_offset_c = 6 * (bit_depth - 8);
-    int startQp = (structChromaQP->global_offset_flag == 1) ? 16 : -qp_bd_offset_c;
-
-    for (int i = 0; i < (structChromaQP->same_qp_table_for_chroma ? 1 : 2); i++)
-    {
-        qpInVal[0] = startQp + structChromaQP->delta_qp_in_val_minus1[i][0];
-        qpOutVal[0] = startQp + structChromaQP->delta_qp_in_val_minus1[i][0] + structChromaQP->delta_qp_out_val[i][0];
-        for (int j = 1; j <= structChromaQP->num_points_in_qp_table_minus1[i]; j++)
-        {
-            qpInVal[j] = qpInVal[j - 1] + structChromaQP->delta_qp_in_val_minus1[i][j] + 1;
-            qpOutVal[j] = qpOutVal[j - 1] + (structChromaQP->delta_qp_in_val_minus1[i][j] + 1 + structChromaQP->delta_qp_out_val[i][j]);
-        }
-
-        for (int j = 0; j <= structChromaQP->num_points_in_qp_table_minus1[i]; j++)
-        {
-            assert(qpInVal[j] >= -qp_bd_offset_c && qpInVal[j]  <= MAX_QP);
-            assert(qpOutVal[j] >= -qp_bd_offset_c && qpOutVal[j] <= MAX_QP);
-        }
-
-        param->qp_chroma_dynamic[i][qpInVal[0]] = qpOutVal[0];
-        for (int k = qpInVal[0] - 1; k >= -qp_bd_offset_c; k--)
-        {
-            param->qp_chroma_dynamic[i][k] = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP, param->qp_chroma_dynamic[i][k + 1] - 1);
-        }
-        for (int j = 0; j < structChromaQP->num_points_in_qp_table_minus1[i]; j++)
-        {
-            int sh = (structChromaQP->delta_qp_in_val_minus1[i][j + 1] + 1) >> 1;
-            for (int k = qpInVal[j] + 1, m = 1; k <= qpInVal[j + 1]; k++, m++)
-            {
-                param->qp_chroma_dynamic[i][k] = param->qp_chroma_dynamic[i][qpInVal[j]]
-                    + ((qpOutVal[j + 1] - qpOutVal[j]) * m + sh) / (structChromaQP->delta_qp_in_val_minus1[i][j + 1] + 1);
-            }
-        }
-        for (int k = qpInVal[structChromaQP->num_points_in_qp_table_minus1[i]] + 1; k <= MAX_QP; k++)
-        {
-            param->qp_chroma_dynamic[i][k] = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP, param->qp_chroma_dynamic[i][k - 1] + 1);
-        }
-    }
-    if (structChromaQP->same_qp_table_for_chroma)
-    {
-        xeve_mcpy(&(param->qp_chroma_dynamic[1][-qp_bd_offset_c]), &(param->qp_chroma_dynamic[0][-qp_bd_offset_c]), MAX_QP_TABLE_SIZE_EXT * sizeof(int));
-    }
-}
-
 const int xeve_min_in_group[LAST_SIGNIFICANT_GROUPS] = { 0,1,2,3,4,6,8,12,16,24,32,48,64,96 };
 const int xeve_group_idx[MAX_TR_SIZE] = { 0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9, 10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11 };
 
@@ -582,14 +521,6 @@ const u8 xeve_tbl_mvp_idx_bits[5][4] =
     { 1,  1, },
     { 1,  2,  2, },
     { 1,  2,  3,  3 }
-};
-
-const XEVE_PRESET xeve_tbl_preset[XEVE_PRESET_MAX] =
-{
-    { 32, 4, 64, 8, 1, 1, 32,  2, 2, 1, 0, 2, 1, 1, 5, 0},
-    { 32, 4, 64, 8, 1, 1, 64,  2, 4, 1, 0, 3, 1, 1, 5, 0},
-    { 32, 4, 64, 8, 1, 1, 128, 3, 4, 2, 0, 3, 1, 1, 5, 1},
-    { 64, 4, 64, 4, 2, 2, 384, 3, 8, 3, 0, 4, 1, 1, 5, 1},
 };
 
 const s8 xeve_tbl_slice_depth_P[5][16] =

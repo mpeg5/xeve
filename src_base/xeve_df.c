@@ -465,12 +465,12 @@ void xeve_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, in
     if(is_hor_edge)
     {
         xeve_deblock_cu_hor(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, core->tree_cons, ctx->map_tidx, boundary_filtering
-                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
+                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->qp_chroma_dynamic);
     }
     else
     {
         xeve_deblock_cu_ver(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->map_cu_mode, core->tree_cons, ctx->map_tidx, boundary_filtering
-                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
+                          , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->qp_chroma_dynamic);
     }
 }
 

@@ -35,8 +35,8 @@
 #include "xeve_port.h"
 
 /* Profiles definitions */
-#define PROFILE_BASELINE                             0
-#define PROFILE_MAIN                                 1
+#define PROFILE_IDC_BASELINE                         0
+#define PROFILE_IDC_MAIN                             1
 
 //fast algorithm
 #define FAST_ALG_EXT                                 0
@@ -391,11 +391,11 @@ extern int fp_trace_started;
 /* for GOP 16 test, increase to 32 */
 
 /* DPB Extra size */
-#define EXTRA_FRAME                        MAX_NUM_ACTIVE_REF_FRAME
+#define EXTRA_FRAME                        XEVE_MAX_NUM_ACTIVE_REF_FRAME
 
 /* maximum picture buffer size */
 #define DRA_FRAME 1
-#define MAX_PB_SIZE                       (MAX_NUM_REF_PICS + EXTRA_FRAME + DRA_FRAME)
+#define MAX_PB_SIZE                       (XEVE_MAX_NUM_REF_PICS + EXTRA_FRAME + DRA_FRAME)
 
 /* Neighboring block availability flag bits */
 #define AVAIL_BIT_UP                       0
@@ -819,6 +819,21 @@ typedef struct _XEVE_SBAC_CTX
 #define NEB_I                              9  /* low-right */
 #define MAX_NEB2                           10
 
+/* rpl structure */
+#define XEVE_MAX_NUM_REF_PICS                   21
+#define XEVE_MAX_NUM_ACTIVE_REF_FRAME           5
+#define XEVE_MAX_NUM_RPLS                       32
+
+typedef struct _XEVE_RPL
+{
+    int             poc;
+    int             tid;
+    int             ref_pic_num;
+    int             ref_pic_active_num;
+    int             ref_pics[XEVE_MAX_NUM_REF_PICS];
+    char            pic_type;
+} XEVE_RPL;
+
 /* picture store structure */
 typedef struct _XEVE_PIC
 {
@@ -863,7 +878,7 @@ typedef struct _XEVE_PIC
     s16            (*map_unrefined_mv)[REFP_NUM][MV_D];
     s8             (*map_refi)[REFP_NUM];
     s8              *map_dqp_lah;
-    u32              list_poc[MAX_NUM_REF_PICS];
+    u32              list_poc[XEVE_MAX_NUM_REF_PICS];
     u8               m_alfCtuEnableFlag[3][510];
     int              pic_deblock_alpha_offset;
     int              pic_deblock_beta_offset;
@@ -906,7 +921,7 @@ typedef struct _XEVE_PM
     /* picture store (including reference and non-reference) */
     XEVE_PIC       * pic[MAX_PB_SIZE];
     /* address of reference pictures */
-    XEVE_PIC       * pic_ref[MAX_NUM_REF_PICS];
+    XEVE_PIC       * pic_ref[XEVE_MAX_NUM_REF_PICS];
     /* maximum reference picture count */
     u8               max_num_ref_pics;
     /* current count of available reference pictures in PB */
@@ -939,6 +954,17 @@ typedef struct _XEVE_REFP
     s8             (*map_refi)[REFP_NUM];
     u32             *list_poc;
 } XEVE_REFP;
+
+/* chromaQP table structure */
+typedef struct _XEVE_CHROMA_TABLE
+{
+    int                chroma_qp_table_present_flag;
+    int                same_qp_table_for_chroma;
+    int                global_offset_flag;
+    int                num_points_in_qp_table_minus1[2];
+    int                delta_qp_in_val_minus1[2][MAX_QP_TABLE_SIZE];
+    int                delta_qp_out_val[2][MAX_QP_TABLE_SIZE];
+} XEVE_CHROMA_TABLE;
 
 /*****************************************************************************
  * NALU header
@@ -1064,9 +1090,9 @@ typedef struct _XEVE_SPS
     /* HLS_RPL  */
     int              rpl1_same_as_rpl0_flag;
     int              num_ref_pic_lists_in_sps0;
-    XEVE_RPL         rpls_l0[MAX_NUM_RPLS];
+    XEVE_RPL         rpls_l0[XEVE_MAX_NUM_RPLS];
     int              num_ref_pic_lists_in_sps1;
-    XEVE_RPL         rpls_l1[MAX_NUM_RPLS];
+    XEVE_RPL         rpls_l1[XEVE_MAX_NUM_RPLS];
     int              picture_cropping_flag;
     int              picture_crop_left_offset;
     int              picture_crop_right_offset;
@@ -1405,31 +1431,6 @@ enum TQC_RUN {
     RUN_CB = 2,
     RUN_CR = 4
 };
-
-/*****************************************************************************
- * Encoder preset
- *****************************************************************************/
-typedef struct _XEVE_PRESET
-{
-    /* log2 scale of Min/Max CU size */
-    int    max_cu_intra;
-    int    min_cu_intra;
-    int    max_cu_inter;
-    int    min_cu_inter;
-    int    me_ref_num;
-    int    me_algo;
-    int    me_range;
-    int    me_sub;
-    int    me_sub_pos;
-    int    me_sub_range;
-    double skip_th;             // Use it carefully. If this value is greater than zero, a huge quality drop occurs
-    int    merge_num;
-    int    rdoq;
-    int    cabac_refine;
-    int    bframe;
-    int    rdo_dbk;
-
-} XEVE_PRESET;
 
 #include "xeve_thread_pool.h"
 #include "xeve_recon.h"

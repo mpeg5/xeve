@@ -204,8 +204,7 @@ void xeve_ctx_free(XEVE_CTX * ctx);
 XEVE_CORE * xeve_core_alloc(int chroma_format_idc);
 void xeve_core_free(XEVE_CORE * core);
 void xeve_copy_chroma_qp_mapping_params(XEVE_CHROMA_TABLE *dst, XEVE_CHROMA_TABLE *src);
-void xeve_parse_chroma_qp_mapping_params(XEVE_CHROMA_TABLE *dst_struct, XEVE_CHROMA_TABLE *src_struct, int bit_depth);
-int  xeve_set_init_param(XEVE_CDSC * cdsc, XEVE_PARAM * param);
+int  xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param);
 int  xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat);
 void xeve_set_nalu(XEVE_NALU * nalu, int nalu_type, int nuh_temporal_id);
 void xeve_set_vui(XEVE_CTX * ctx, XEVE_VUI * vui);
@@ -235,7 +234,7 @@ void xeve_run_itdq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], 
 void xeve_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
 void xeve_platform_init_func();
 int  xeve_platform_init(XEVE_CTX * ctx);
-int  xeve_create_bs_buf(XEVE_CTX  * ctx);
+int  xeve_create_bs_buf(XEVE_CTX  * ctx, int max_bs_buf_size);
 int  xeve_delete_bs_buf(XEVE_CTX  * ctx);
 int  xeve_encode_sps(XEVE_CTX * ctx);
 int  xeve_encode_pps(XEVE_CTX * ctx);
@@ -244,4 +243,8 @@ int  xeve_check_more_frames(XEVE_CTX * ctx);
 int  xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int chroma_format_idc);
 int  xeve_delete_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh);
 void xeve_set_tile_in_slice(XEVE_CTX * ctx);
+void xeve_set_chroma_qp_tbl_loc(XEVE_CTX* ctx);
+int  xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, int tune);
+int  xeve_parse_param_bit(char* input_param);
+int  xeve_param_init(XEVE_PARAM* param);
 #endif /* __XEVE_UTIL_H__ */

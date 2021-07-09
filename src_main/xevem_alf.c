@@ -1220,7 +1220,7 @@ void xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEV
             enc_alf->alf.first_idx_poc = ctx->poc.poc_val;
         }
         enc_alf->alf.last_idr_poc = ctx->poc.poc_val;  // store current pointer of the reset poc
-        enc_alf->alf.i_period = ctx->param.i_period; // store i-period for current pic.
+        enc_alf->alf.i_period = ctx->param.iperiod; // store i-period for current pic.
     }
 
     enc_alf->alf.pending_ras_init = FALSE;
@@ -2339,11 +2339,11 @@ void xeve_alf_temporal_enc_aps_comp(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, A
             int buf_idx = buf_idx2;
             buf_idx = alf->alf_idx_in_scan_order[buf_idx2];
             {
-                if ((stored_alf_param[buf_idx].t_layer > temp_layer_id) && (ctx->param.i_period != 0))
+                if ((stored_alf_param[buf_idx].t_layer > temp_layer_id) && (ctx->param.iperiod != 0))
                 {
                     continue;
                 }
-                if ((alf->curr_poc > stored_alf_param[buf_idx].max_idr_poc + ctx->param.i_period) && (ctx->param.i_period != 0))
+                if ((alf->curr_poc > stored_alf_param[buf_idx].max_idr_poc + ctx->param.iperiod) && (ctx->param.iperiod != 0))
                 {
                     continue;
                 }

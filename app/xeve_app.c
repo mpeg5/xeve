@@ -58,14 +58,16 @@ typedef struct _Y4M_PARAMS
     int fps;
     int cs;
     int bit_depth;
-
-
-}Y4M_PARAMS;
+}Y4M_INFO;
 
 static void print_usage(void)
 {
     int i;
     char str[1024];
+
+    XEVE_PARAM default_param;
+    xeve_param_default(&default_param);
+    set_variables_to_parse_val(&default_param);
 
     logv0("< Usage >\n");
 
@@ -76,556 +78,128 @@ static void print_usage(void)
     }
 }
 
-static char get_pic_type(char * in)
-{
-    int len = (int)strlen(in);
-    char type = 0;
-    for (int i = 0; i < len; i++) {
-        if (in[i] == 'P'){
-            type = 'P';
-            break;
-        } else if (in[i] == 'B') {
-            type = 'B';
-            break;
-        }
-    }
-    if (type == 0){
-        return 0;
-    }
-    return type;
-}
-
-static int get_conf(XEVE_CDSC * cdsc, Y4M_PARAMS * y4m, int is_y4m)
+static int set_cdsc(XEVE_CDSC * cdsc, int is_y4m)
 {
     int result = 0;
     int color_format = 0;
 
+    cdsc->max_bs_buf_size = MAX_BS_BUF;
+
     if (!is_y4m)
     {
-        cdsc->w = op_w;
-        cdsc->h = op_h;
-        cdsc->fps = op_fps;
-        color_format = op_chroma_format_idc == 0 ? XEVE_CF_YCBCR400 : (op_chroma_format_idc == 1 ? XEVE_CF_YCBCR420 :
-            (op_chroma_format_idc == 2 ? XEVE_CF_YCBCR422 : (op_chroma_format_idc == 3 ? XEVE_CF_YCBCR444 : XEVE_CF_UNKNOWN)));
+        color_format = op_chroma_format_idc == 0 ? XEVE_CF_YCBCR400 : \
+            (op_chroma_format_idc == 1 ? XEVE_CF_YCBCR420 : \
+            (op_chroma_format_idc == 2 ? XEVE_CF_YCBCR422 : \
+            (op_chroma_format_idc == 3 ? XEVE_CF_YCBCR444 : XEVE_CF_UNKNOWN)));
         if (color_format == XEVE_CF_UNKNOWN)
         {
-            return XEVE_ERR;
+            return -1;
         }
-        cdsc->cs = XEVE_CS_SET(color_format, op_codec_bit_depth, 0);
+        cdsc->param.cs = XEVE_CS_SET(color_format, op_codec_bit_depth, 0);
     }
-    else
-    {
-        cdsc->w = y4m->w;
-        cdsc->h = y4m->h;
-        cdsc->fps = y4m->fps;
-        cdsc->cs = y4m->cs;
-        op_inp_bit_depth = y4m->bit_depth;
-    }
-
-    cdsc->qp = op_qp;
-    cdsc->qp_cb_offset = op_qp_cb_offset;
-    cdsc->qp_cr_offset = op_qp_cr_offset;
-    cdsc->iperiod = op_iperiod;
-    cdsc->max_b_frames = op_max_b_frames;
-    cdsc->level = op_level;
-    cdsc->aq_mode = op_aq_mode;
-    cdsc->lookahead= op_num_pre_analysis_frames;
-    cdsc->cutree= op_cutree;
-    cdsc->ref_pic_gap_length = op_ref_pic_gap_length;
-    cdsc->codec_bit_depth = op_codec_bit_depth;
-    cdsc->constrained_intra_pred = op_constrained_intra_pred;
-    cdsc->use_deblock = op_tool_deblocking;
-
-    if (strcmp(op_profile, "main") == 0)
-    {
-        cdsc->profile = 1;
-    }
-    else if (strcmp(op_profile, "baseline") == 0)
-    {
-        cdsc->profile = 0;
-    }
-    else
-    {
-        return XEVE_ERR_INVALID_ARGUMENT;
-    }
-
-    if (op_out_bit_depth == 0)
-    {
-        op_out_bit_depth = op_codec_bit_depth;
-    }
-
-    if(op_disable_hgop)
-    {
-        cdsc->disable_hgop = 1;
-    }
-    if(op_closed_gop)
-    {
-        cdsc->closed_gop = 1;
-    }
-
-    cdsc->threads = (op_threads > XEVE_MAX_TASK_CNT) ? XEVE_MAX_TASK_CNT : op_threads;
-    cdsc->rdo_dbk_switch = op_rdo_dbk_switch;
-    cdsc->inter_slice_type = op_inter_slice_type == 0 ? 0/*SLICE_B*/ : 1/*SLICE_P*/;
-    cdsc->add_qp_frame = op_add_qp_frames;
-    cdsc->rc_type = op_rc_type; //rc_off =0 , rc_cbr = 1
-
-    if (strchr(op_bps, 'K') || strchr(op_bps, 'k'))
-    {
-        char *tmp = strtok(op_bps, "Kk ");
-        cdsc->bps = (int)(atof(tmp) * 1000);
-    }
-    else if (strchr(op_bps, 'M') || strchr(op_bps, 'm'))
-    {
-        char *tmp = strtok(op_bps, "Mm ");
-        cdsc->bps = (int)(atof(tmp) * 1000000);
-    }
-    else
-    {
-        cdsc->bps = atoi(op_bps) * 1000;
-    }
-    sprintf(op_bps, "%d", cdsc->bps);
-
-    if (strchr(op_vbv_buf_size, 'K') || strchr(op_vbv_buf_size, 'k'))
-    {
-        char *tmp = strtok(op_vbv_buf_size, "Kk ");
-        cdsc->vbv_buf_size = (int)(atof(tmp) * 1000);
-    }
-    else if (strchr(op_vbv_buf_size, 'M') || strchr(op_vbv_buf_size, 'm'))
-    {
-        char *tmp = strtok(op_vbv_buf_size, "Mm ");
-        cdsc->vbv_buf_size = (int)(atof(tmp) * 1000000);
-    }
-    else
-    {
-        cdsc->vbv_buf_size = atoi(op_vbv_buf_size) * 1000;
-    }
-
-    if (cdsc->vbv_buf_size < 0)
-    {
-        cdsc->vbv_buf_size =   (int)((cdsc->bps) *(op_vbv_msec/ 1000.0));
-    }
-    sprintf(op_vbv_buf_size, "%d", cdsc->vbv_buf_size);
-
-    cdsc->use_filler_flag = 0;
-    cdsc->num_pre_analysis_frames = 0;
-    cdsc->picture_cropping_flag = op_picture_cropping_flag;
-    cdsc->picture_crop_left_offset = op_picture_crop_left_offset;
-    cdsc->picture_crop_right_offset = op_picture_crop_right_offset;
-    cdsc->picture_crop_top_offset = op_picture_crop_top_offset;
-    cdsc->picture_crop_bottom_offset = op_picture_crop_bottom_offset;
-    cdsc->bitstream_buf_size = MAX_BS_BUF;
-
-    if (strcmp(op_preset, "fast") == 0)
-    {
-        cdsc->preset = XEVE_PRESET_FAST;
-    }
-    else if (strcmp(op_preset, "medium") == 0)
-    {
-        cdsc->preset = XEVE_PRESET_MEDIUM;
-    }
-    else if (strcmp(op_preset, "slow") == 0)
-    {
-        cdsc->preset = XEVE_PRESET_SLOW;
-    }
-    else if (strcmp(op_preset, "placebo") == 0)
-    {
-        cdsc->preset = XEVE_PRESET_PLACEBO;
-    }
-    else
-    {
-        return XEVE_ERR_INVALID_ARGUMENT;
-    }
-
-    if (strcmp(op_tune, "none") == 0)
-    {
-        cdsc->tune = XEVE_TUNE_NONE;
-    }
-    else if (strcmp(op_tune, "psnr") == 0)
-    {
-        cdsc->tune = XEVE_TUNE_PSNR;
-    }
-    else if (strcmp(op_tune, "zerolatency") == 0)
-    {
-        cdsc->tune = XEVE_TUNE_ZEROLATENCY;
-    }
-    else
-    {
-        return XEVE_ERR_INVALID_ARGUMENT;
-    }
-
-    XEVE_CDSC_EXT * cdsc_ext = (XEVE_CDSC_EXT*)malloc(sizeof(XEVE_CDSC_EXT));
-    if(cdsc_ext == NULL)
-    {
-        logerr("cannot allocate cdsc_ext, size=%lu", sizeof(XEVE_CDSC_EXT));
-        return -1;
-    }
-    memset(cdsc_ext, 0, sizeof(XEVE_CDSC_EXT));
-    cdsc->ext = cdsc_ext;
-
-    if (cdsc->profile == 0)
-    {
-        cdsc_ext->tile_columns = op_num_tile_columns;
-        cdsc_ext->tile_rows = op_num_tile_rows;
-
-        cdsc_ext->tile_array_in_slice[0] = 0;
-        cdsc_ext->tile_array_in_slice[1] = (cdsc_ext->tile_columns * cdsc_ext->tile_rows) - 1;
-        cdsc_ext->num_remaining_tiles_in_slice_minus1[0] = op_num_remaining_tiles_in_slice[0] - 1;
-        cdsc_ext->num_slice_in_pic = op_num_slice_in_pic;
-        cdsc_ext->cu_qp_delta_area = op_cu_qp_delta_area;
-    }
-    else
-    {
-        if (op_enable_ibc)
-        {
-            cdsc_ext->ibc_flag = 1;
-        }
-
-        if (cdsc_ext->ibc_flag)
-        {
-            cdsc_ext->ibc_search_range_x = op_ibc_search_range_x;
-            cdsc_ext->ibc_search_range_y = op_ibc_search_range_y;
-            cdsc_ext->ibc_hash_search_flag = op_ibc_hash_search_flag;
-            cdsc_ext->ibc_hash_search_max_cand = op_ibc_hash_search_max_cand;
-            cdsc_ext->ibc_hash_search_range_4smallblk = op_ibc_hash_search_range_4smallblk;
-            cdsc_ext->ibc_fast_method = op_ibc_fast_method;
-        }
-
-        cdsc_ext->btt = op_btt;
-        cdsc_ext->suco = op_suco;
-        cdsc_ext->cu_qp_delta_area = op_cu_qp_delta_area;
-
-        cdsc_ext->framework_cb_max = op_framework_cb_max;
-        cdsc_ext->framework_cb_min = op_framework_cb_min;
-        cdsc_ext->framework_cu14_max = op_framework_cu14_max;
-        cdsc_ext->framework_tris_max = op_framework_tris_max;
-        cdsc_ext->framework_tris_min = op_framework_tris_min;
-        cdsc_ext->framework_suco_max = op_framework_suco_max;
-        cdsc_ext->framework_suco_min = op_framework_suco_min;
-        cdsc_ext->tool_amvr = op_tool_amvr;
-        cdsc_ext->tool_mmvd = op_tool_mmvd;
-        cdsc_ext->tool_affine = op_tool_affine;
-        cdsc_ext->tool_dmvr = op_tool_dmvr;
-        cdsc_ext->tool_addb = op_tool_addb;
-        cdsc_ext->tool_alf = op_tool_alf;
-        cdsc_ext->tool_admvp = op_tool_admvp;
-        cdsc_ext->tool_hmvp = op_tool_hmvp;
-        cdsc_ext->tool_htdf = op_tool_htdf;
-        cdsc_ext->tool_eipd = op_tool_eipd;
-        cdsc_ext->tool_iqt = op_tool_iqt;
-        cdsc_ext->tool_cm_init = op_tool_cm_init;
-        cdsc_ext->tool_adcc = op_tool_adcc;
-        cdsc_ext->tool_rpl = op_tool_rpl;
-        cdsc_ext->tool_pocs = op_tool_pocs;
-        cdsc_ext->tool_ats = op_tool_ats;
-        cdsc_ext->deblock_aplha_offset = op_deblock_alpha_offset;
-        cdsc_ext->deblock_beta_offset = op_deblock_beta_offset;
-        cdsc_ext->tool_dra = op_dra_enable_flag;
-        cdsc_ext->tile_uniform_spacing_flag = op_tile_uniform_spacing;
-        cdsc_ext->tile_columns = op_num_tile_columns;
-        cdsc_ext->tile_rows = op_num_tile_rows;
-        cdsc_ext->num_slice_in_pic = op_num_slice_in_pic;
-        cdsc_ext->arbitrary_slice_flag = op_arbitrary_slice_flag;
-        cdsc_ext->loop_filter_across_tiles_enabled_flag = op_loop_filter_across_tiles_enabled_flag;
-
-        if (!cdsc_ext->tile_uniform_spacing_flag)
-        {
-            cdsc_ext->tile_column_width_array[0] = atoi(strtok(op_tile_column_width_array, " "));
-            int j = 1;
-            do
-            {
-                char* val = strtok(NULL, " \r");
-                if (!val)
-                    break;
-                cdsc_ext->tile_column_width_array[j++] = atoi(val);
-            } while (1);
-
-            cdsc_ext->tile_row_height_array[0] = atoi(strtok(op_tile_row_height_array, " "));
-            j = 1;
-            do
-            {
-                char* val = strtok(NULL, " \r");
-                if (!val)
-                    break;
-                cdsc_ext->tile_row_height_array[j++] = atoi(val);
-            } while (1);
-        }
-
-        if (cdsc_ext->num_slice_in_pic == 1)
-        {
-            cdsc_ext->tile_array_in_slice[0] = 0;
-            cdsc_ext->tile_array_in_slice[1] = (cdsc_ext->tile_columns * cdsc_ext->tile_rows) - 1;
-            cdsc_ext->num_remaining_tiles_in_slice_minus1[0] = op_num_remaining_tiles_in_slice[0] - 1;
-        }
-        else /* There are more than one slice in the picture */
-        {
-            cdsc_ext->tile_array_in_slice[0] = atoi(strtok(op_tile_array_in_slice, " "));
-            int j = 1;
-            do
-            {
-                char* val = strtok(NULL, " \r");
-                if (!val)
-                    break;
-                cdsc_ext->tile_array_in_slice[j++] = atoi(val);
-            } while (1);
-
-            if (cdsc_ext->arbitrary_slice_flag)
-            {
-                cdsc_ext->num_remaining_tiles_in_slice_minus1[0] = atoi(strtok(op_num_remaining_tiles_in_slice, " ")) - 1;
-                int j = 1;
-                do
-                {
-                    char* val = strtok(NULL, " \r");
-                    if (!val)
-                        break;
-                    cdsc_ext->num_remaining_tiles_in_slice_minus1[j++] = atoi(val) - 1;
-                } while (1);
-            }
-        }
-        int num_tiles = cdsc_ext->tile_columns * cdsc_ext->tile_rows;
-        if (num_tiles < cdsc_ext->num_slice_in_pic) result = -1;
-
-        XEVE_CHROMA_TABLE l_chroma_qp_table;
-        memset(&l_chroma_qp_table, 0, sizeof(XEVE_CHROMA_TABLE));
-
-        l_chroma_qp_table.chroma_qp_table_present_flag = op_chroma_qp_table_present_flag;
-        if (l_chroma_qp_table.chroma_qp_table_present_flag)
-        {
-            l_chroma_qp_table.num_points_in_qp_table_minus1[0] = atoi(strtok(op_chroma_qp_num_points_in_table, " ")) - 1;
-            l_chroma_qp_table.num_points_in_qp_table_minus1[1] = atoi(strtok(NULL, " \r")) - 1;
-
-            { /* input pivot points */
-                l_chroma_qp_table.delta_qp_in_val_minus1[0][0] = atoi(strtok(op_chroma_qp_delta_in_val_cb, " "));
-                int j = 1;
-                do
-                {
-                    char* val = strtok(NULL, " \r");
-                    if (!val)
-                        break;
-                    l_chroma_qp_table.delta_qp_in_val_minus1[0][j++] = atoi(val);
-                } while (1);
-                if (l_chroma_qp_table.num_points_in_qp_table_minus1[0] + 1 == j);
-
-                l_chroma_qp_table.delta_qp_in_val_minus1[1][0] = atoi(strtok(op_chroma_qp_delta_in_val_cr, " "));
-                j = 1;
-                do
-                {
-                    char* val = strtok(NULL, " \r");
-                    if (!val)
-                        break;
-                    l_chroma_qp_table.delta_qp_in_val_minus1[1][j++] = atoi(val);
-                } while (1);
-                assert(l_chroma_qp_table.num_points_in_qp_table_minus1[1] + 1 == j);
-            }
-            {/* output pivot points */
-                l_chroma_qp_table.delta_qp_out_val[0][0] = atoi(strtok(op_chroma_qp_delta_out_val_cb, " "));
-                int j = 1;
-                do
-                {
-                    char* val = strtok(NULL, " \r");
-                    if (!val)
-                        break;
-                    l_chroma_qp_table.delta_qp_out_val[0][j++] = atoi(val);
-                } while (1);
-                assert(l_chroma_qp_table.num_points_in_qp_table_minus1[0] + 1 == j);
-
-                l_chroma_qp_table.delta_qp_out_val[1][0] = atoi(strtok(op_chroma_qp_delta_out_val_cr, " "));
-                j = 1;
-                do
-                {
-                    char* val = strtok(NULL, " \r");
-                    if (!val)
-                        break;
-                    l_chroma_qp_table.delta_qp_out_val[1][j++] = atoi(val);
-                } while (1);
-                assert(l_chroma_qp_table.num_points_in_qp_table_minus1[1] + 1 == j);
-            }
-
-            memcpy(&(cdsc->chroma_qp_table_struct), &l_chroma_qp_table, sizeof(XEVE_CHROMA_TABLE));
-        }
-
-        cdsc_ext->rpl_extern = op_rpl_extern;
-        if(cdsc_ext->rpl_extern)
-        {
-            for (int i = 0; i < MAX_NUM_RPLS && op_rpl0[i][0] != 0; ++i)
-            {
-                cdsc_ext->rpls_l0[i].pic_type = get_pic_type(strtok(op_rpl0[i], " "));
-                cdsc_ext->rpls_l0[i].poc = atoi(strtok(NULL, " "));
-                cdsc_ext->rpls_l0[i].tid = atoi(strtok(NULL, " "));
-                cdsc_ext->rpls_l0[i].ref_pic_active_num = atoi(strtok(NULL, " "));
-
-                int j = 0;
-                do
-                {
-                    char* val = strtok(NULL, " \r");
-                    if (!val)
-                        break;
-                    cdsc_ext->rpls_l0[i].ref_pics[j++] = atoi(val);
-                } while (1);
-
-                cdsc_ext->rpls_l0[i].ref_pic_num = j;
-                ++cdsc_ext->rpls_l0_cfg_num;
-            }
-
-            for (int i = 0; i < MAX_NUM_RPLS && op_rpl1[i][0] != 0; ++i)
-            {
-                cdsc_ext->rpls_l1[i].pic_type = get_pic_type(strtok(op_rpl1[i], " "));
-                cdsc_ext->rpls_l1[i].poc = atoi(strtok(NULL, " "));
-                cdsc_ext->rpls_l1[i].tid = atoi(strtok(NULL, " "));
-                cdsc_ext->rpls_l1[i].ref_pic_active_num = atoi(strtok(NULL, " "));
-
-                int j = 0;
-                do
-                {
-                    char* val = strtok(NULL, " ");
-                    if (!val)
-                        break;
-                    cdsc_ext->rpls_l1[i].ref_pics[j++] = atoi(val);
-                } while (1);
-
-                cdsc_ext->rpls_l1[i].ref_pic_num = j;
-                ++cdsc_ext->rpls_l1_cfg_num;
-            }
-        }
-
-        if (op_dra_enable_flag)
-        {
-            cdsc_ext->dra_hist_norm = atof(strtok(op_dra_hist_norm, " "));
-            cdsc_ext->dra_num_ranges = op_dra_number_ranges;
-            cdsc_ext->dra_scale_map_y[0][0] = atoi(strtok(op_dra_range, " "));
-            int j = 1;
-            do
-            {
-                char* val = strtok(NULL, " \r");
-                if (!val)
-                    break;
-                cdsc_ext->dra_scale_map_y[j++][0] = atoi(val);
-            } while (1);
-            assert(cdsc_ext->dra_num_ranges == j);
-
-            cdsc_ext->dra_scale_map_y[0][1] = atof(strtok(op_dra_scale, " "));
-            j = 1;
-            do
-            {
-                char* val = strtok(NULL, " \r");
-                if (!val)
-                    break;
-                cdsc_ext->dra_scale_map_y[j++][1] = atof(val);
-            } while (1);
-            assert(cdsc_ext->dra_num_ranges == j);
-
-            cdsc_ext->dra_scale_map_y[cdsc_ext->dra_num_ranges][0] = 1024;
-            cdsc_ext->dra_scale_map_y[cdsc_ext->dra_num_ranges][1] = cdsc_ext->dra_scale_map_y[cdsc_ext->dra_num_ranges - 1][1];
-
-            cdsc_ext->dra_cb_qp_scale = atof(op_dra_chroma_cb_scale);
-            cdsc_ext->dra_cr_qp_scale = atof(op_dra_chroma_cr_scale);
-            cdsc_ext->dra_chroma_qp_scale = atof(op_dra_chroma_qp_scale);
-            cdsc_ext->dra_chroma_qp_offset = atof(op_dra_chroma_qp_offset);
-        }
-    }
-
-    return XEVE_OK;
+    return 0;
 }
 
-static void print_enc_conf(XEVE_CDSC * cdsc)
+static void print_conf(XEVE_CDSC * cdsc)
 {
-    logv2("AMVR: %d, ",        cdsc->ext->tool_amvr);
-    logv2("MMVD: %d, ",        cdsc->ext->tool_mmvd);
-    logv2("AFFINE: %d, ",      cdsc->ext->tool_affine);
-    logv2("DMVR: %d, ",        cdsc->ext->tool_dmvr);
-    logv2("DBF.ADDB: %d.%d, ", cdsc->use_deblock, cdsc->ext->tool_addb);
-    logv2("ALF: %d, ",         cdsc->ext->tool_alf);
-    logv2("ADMVP: %d, ",       cdsc->ext->tool_admvp);
-    logv2("HMVP: %d, ",        cdsc->ext->tool_hmvp);
-    logv2("HTDF: %d ",         cdsc->ext->tool_htdf);
-    logv2("EIPD: %d, ",        cdsc->ext->tool_eipd);
-    logv2("IQT: %d, ",         cdsc->ext->tool_iqt);
-    logv2("CM_INIT: %d, ",     cdsc->ext->tool_cm_init);
-    logv2("ADCC: %d, ",        cdsc->ext->tool_adcc);
-    logv2("IBC: %d, ",         cdsc->ext->ibc_flag);
-    logv2("ATS: %d, ",         cdsc->ext->tool_ats);
-    logv2("RPL: %d, ",         cdsc->ext->tool_rpl);
-    logv2("POCS: %d, ",        cdsc->ext->tool_pocs);
-    logv2("CONSTRAINED_INTRA_PRED: %d, ", cdsc->constrained_intra_pred);
-    logv2("Uniform Tile Spacing: %d, ",   cdsc->ext->tile_uniform_spacing_flag);
-    logv2("Number of Tile Columns: %d, ", cdsc->ext->tile_columns);
-    logv2("Number of Tile  Rows: %d, ",   cdsc->ext->tile_rows);
-    logv2("Number of Slices: %d, ",       cdsc->ext->num_slice_in_pic);
-    logv2("Loop Filter Across Tile Enabled: %d, ", cdsc->ext->loop_filter_across_tiles_enabled_flag);
-    logv2("ChromaQPTable: %d, ",                   cdsc->chroma_qp_table_struct.chroma_qp_table_present_flag);
-    logv2("DRA: %d ",                              cdsc->ext->tool_dra);
+    logv2("AMVR: %d, ",        cdsc->param.tool_amvr);
+    logv2("MMVD: %d, ",        cdsc->param.tool_mmvd);
+    logv2("AFFINE: %d, ",      cdsc->param.tool_affine);
+    logv2("DMVR: %d, ",        cdsc->param.tool_dmvr);
+    logv2("DBF.ADDB: %d.%d, ", cdsc->param.use_deblock, cdsc->param.tool_addb);
+    logv2("ALF: %d, ",         cdsc->param.tool_alf);
+    logv2("ADMVP: %d, ",       cdsc->param.tool_admvp);
+    logv2("HMVP: %d, ",        cdsc->param.tool_hmvp);
+    logv2("HTDF: %d ",         cdsc->param.tool_htdf);
+    logv2("EIPD: %d, ",        cdsc->param.tool_eipd);
+    logv2("IQT: %d, ",         cdsc->param.tool_iqt);
+    logv2("CM_INIT: %d, ",     cdsc->param.tool_cm_init);
+    logv2("ADCC: %d, ",        cdsc->param.tool_adcc);
+    logv2("IBC: %d, ",         cdsc->param.ibc_flag);
+    logv2("ATS: %d, ",         cdsc->param.tool_ats);
+    logv2("RPL: %d, ",         cdsc->param.tool_rpl);
+    logv2("POCS: %d, ",        cdsc->param.tool_pocs);
+    logv2("CONSTRAINED_INTRA_PRED: %d, ", cdsc->param.constrained_intra_pred);
+    logv2("Uniform Tile Spacing: %d, ",   cdsc->param.tile_uniform_spacing_flag);
+    logv2("Number of Tile Columns: %d, ", cdsc->param.tile_columns);
+    logv2("Number of Tile  Rows: %d, ",   cdsc->param.tile_rows);
+    logv2("Number of Slices: %d, ",       cdsc->param.num_slice_in_pic);
+    logv2("Loop Filter Across Tile Enabled: %d, ", cdsc->param.loop_filter_across_tiles_enabled_flag);
+    logv2("ChromaQPTable: %d, ",                   cdsc->param.chroma_qp_table_present_flag);
+    logv2("DRA: %d ",                              cdsc->param.tool_dra);
     logv2("\n");
 }
 
 int check_conf(XEVE_CDSC* cdsc)
 {
-    int success = 1;
+    int ret = 0;
     int min_block_size = 4;
-    if(cdsc->profile == 0 /*PROFILE_BASELINE*/ && cdsc->ext != NULL)
+    if(cdsc->param.profile == 0)
     {
-        if (cdsc->ext->tool_amvr    == 1) { logv0("AMVR cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_mmvd    == 1) { logv0("MMVD cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_affine  == 1) { logv0("Affine cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_dmvr    == 1) { logv0("DMVR cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_admvp   == 1) { logv0("ADMVP cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_hmvp    == 1) { logv0("HMVP cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_addb    == 1) { logv0("ADDB cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_alf     == 1) { logv0("ALF cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_htdf    == 1) { logv0("HTDF cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->btt          == 1) { logv0("BTT cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->suco         == 1) { logv0("SUCO cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_eipd    == 1) { logv0("EIPD cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_iqt     == 1) { logv0("IQT cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_cm_init == 1) { logv0("CM_INIT cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_adcc    == 1) { logv0("ADCC cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_ats     == 1) { logv0("ATS_INTRA cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->ibc_flag     == 1) { logv0("IBC cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_rpl     == 1) { logv0("RPL cannot be on in base profile\n"); success = 0; }
-        if (cdsc->ext->tool_pocs    == 1) { logv0("POCS cannot be on in base profile\n"); success = 0; }
+        if (cdsc->param.tool_amvr    == 1) { logv0("AMVR cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_mmvd    == 1) { logv0("MMVD cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_affine  == 1) { logv0("Affine cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_dmvr    == 1) { logv0("DMVR cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_admvp   == 1) { logv0("ADMVP cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_hmvp    == 1) { logv0("HMVP cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_addb    == 1) { logv0("ADDB cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_alf     == 1) { logv0("ALF cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_htdf    == 1) { logv0("HTDF cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.btt          == 1) { logv0("BTT cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.suco         == 1) { logv0("SUCO cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_eipd    == 1) { logv0("EIPD cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_iqt     == 1) { logv0("IQT cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_cm_init == 1) { logv0("CM_INIT cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_adcc    == 1) { logv0("ADCC cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_ats     == 1) { logv0("ATS_INTRA cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.ibc_flag     == 1) { logv0("IBC cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_rpl     == 1) { logv0("RPL cannot be on in base profile\n"); ret = -1; }
+        if (cdsc->param.tool_pocs    == 1) { logv0("POCS cannot be on in base profile\n"); ret = -1; }
     }
     else
     {
-        if (cdsc->ext->tool_admvp   == 0 && cdsc->ext->tool_affine == 1) { logv0("AFFINE cannot be on when ADMVP is off\n"); success = 0; }
-        if (cdsc->ext->tool_admvp   == 0 && cdsc->ext->tool_amvr   == 1) { logv0("AMVR cannot be on when ADMVP is off\n"); success = 0; }
-        if (cdsc->ext->tool_admvp   == 0 && cdsc->ext->tool_dmvr   == 1) { logv0("DMVR cannot be on when ADMVP is off\n"); success = 0; }
-        if (cdsc->ext->tool_admvp   == 0 && cdsc->ext->tool_mmvd   == 1) { logv0("MMVD cannot be on when ADMVP is off\n"); success = 0; }
-        if (cdsc->ext->tool_eipd    == 0 && cdsc->ext->ibc_flag    == 1) { logv0("IBC cannot be on when EIPD is off\n"); success = 0; }
-        if (cdsc->ext->tool_iqt     == 0 && cdsc->ext->tool_ats    == 1) { logv0("ATS cannot be on when IQT is off\n"); success = 0; }
-        if (cdsc->ext->tool_cm_init == 0 && cdsc->ext->tool_adcc   == 1) { logv0("ADCC cannot be on when CM_INIT is off\n"); success = 0; }
+        if (cdsc->param.tool_admvp   == 0 && cdsc->param.tool_affine == 1) { logv0("AFFINE cannot be on when ADMVP is off\n"); ret = -1; }
+        if (cdsc->param.tool_admvp   == 0 && cdsc->param.tool_amvr   == 1) { logv0("AMVR cannot be on when ADMVP is off\n"); ret = -1; }
+        if (cdsc->param.tool_admvp   == 0 && cdsc->param.tool_dmvr   == 1) { logv0("DMVR cannot be on when ADMVP is off\n"); ret = -1; }
+        if (cdsc->param.tool_admvp   == 0 && cdsc->param.tool_mmvd   == 1) { logv0("MMVD cannot be on when ADMVP is off\n"); ret = -1; }
+        if (cdsc->param.tool_eipd    == 0 && cdsc->param.ibc_flag    == 1) { logv0("IBC cannot be on when EIPD is off\n"); ret = -1; }
+        if (cdsc->param.tool_iqt     == 0 && cdsc->param.tool_ats    == 1) { logv0("ATS cannot be on when IQT is off\n"); ret = -1; }
+        if (cdsc->param.tool_cm_init == 0 && cdsc->param.tool_adcc   == 1) { logv0("ADCC cannot be on when CM_INIT is off\n"); ret = -1; }
     }
 
-    if (cdsc->ext->btt == 1)
+    if (cdsc->param.btt == 1)
     {
-        if (cdsc->ext->framework_cb_max && cdsc->ext->framework_cb_max < 5) { logv0("Maximun Coding Block size cannot be smaller than 5\n"); success = 0; }
-        if (cdsc->ext->framework_cb_max > 7) { logv0("Maximun Coding Block size cannot be greater than 7\n"); success = 0; }
-        if (cdsc->ext->framework_cb_min && cdsc->ext->framework_cb_min < 2) { logv0("Minimum Coding Block size cannot be smaller than 2\n"); success = 0; }
-        if ((cdsc->ext->framework_cb_max || cdsc->ext->framework_cb_min) &&
-            cdsc->ext->framework_cb_min > cdsc->ext->framework_cb_max) { logv0("Minimum Coding Block size cannot be greater than Maximum coding Block size\n"); success = 0; }
-        if (cdsc->ext->framework_cu14_max > 6) { logv0("Maximun 1:4 Coding Block size cannot be greater than 6\n"); success = 0; }
-        if ((cdsc->ext->framework_cb_max || cdsc->ext->framework_cu14_max) &&
-            cdsc->ext->framework_cu14_max > cdsc->ext->framework_cb_max) { logv0("Maximun 1:4 Coding Block size cannot be greater than Maximum coding Block size\n"); success = 0; }
-        if (cdsc->ext->framework_tris_max > 6) { logv0("Maximun Tri-split Block size be greater than 6\n"); success = 0; }
-        if ((cdsc->ext->framework_tris_max || cdsc->ext->framework_cb_max) &&
-            cdsc->ext->framework_tris_max > cdsc->ext->framework_cb_max) { logv0("Maximun Tri-split Block size cannot be greater than Maximum coding Block size\n"); success = 0; }
-        if ((cdsc->ext->framework_tris_min || cdsc->ext->framework_cb_min) &&
-            cdsc->ext->framework_tris_min < cdsc->ext->framework_cb_min + 2) { logv0("Maximun Tri-split Block size cannot be smaller than Minimum Coding Block size plus two\n"); success = 0; }
-        if(cdsc->ext->framework_cb_min) min_block_size = 1 << cdsc->ext->framework_cb_min;
+        if (cdsc->param.framework_cb_max && cdsc->param.framework_cb_max < 5) { logv0("Maximun Coding Block size cannot be smaller than 5\n"); ret = -1; }
+        if (cdsc->param.framework_cb_max > 7) { logv0("Maximun Coding Block size cannot be greater than 7\n"); ret = -1; }
+        if (cdsc->param.framework_cb_min && cdsc->param.framework_cb_min < 2) { logv0("Minimum Coding Block size cannot be smaller than 2\n"); ret = -1; }
+        if ((cdsc->param.framework_cb_max || cdsc->param.framework_cb_min) &&
+            cdsc->param.framework_cb_min > cdsc->param.framework_cb_max) { logv0("Minimum Coding Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
+        if (cdsc->param.framework_cu14_max > 6) { logv0("Maximun 1:4 Coding Block size cannot be greater than 6\n"); ret = -1; }
+        if ((cdsc->param.framework_cb_max || cdsc->param.framework_cu14_max) &&
+            cdsc->param.framework_cu14_max > cdsc->param.framework_cb_max) { logv0("Maximun 1:4 Coding Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
+        if (cdsc->param.framework_tris_max > 6) { logv0("Maximun Tri-split Block size be greater than 6\n"); ret = -1; }
+        if ((cdsc->param.framework_tris_max || cdsc->param.framework_cb_max) &&
+            cdsc->param.framework_tris_max > cdsc->param.framework_cb_max) { logv0("Maximun Tri-split Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
+        if ((cdsc->param.framework_tris_min || cdsc->param.framework_cb_min) &&
+            cdsc->param.framework_tris_min < cdsc->param.framework_cb_min + 2) { logv0("Maximun Tri-split Block size cannot be smaller than Minimum Coding Block size plus two\n"); ret = -1; }
+        if(cdsc->param.framework_cb_min) min_block_size = 1 << cdsc->param.framework_cb_min;
         else min_block_size = 8;
     }
 
-    if (cdsc->ext->suco == 1)
+    if (cdsc->param.suco == 1)
     {
-        if (cdsc->ext->framework_suco_max > 6) { logv0("Maximun SUCO size cannot be greater than 6\n"); success = 0; }
-        if (cdsc->ext->framework_cb_max && cdsc->ext->framework_suco_max > cdsc->ext->framework_cb_max) { logv0("Maximun SUCO size cannot be greater than Maximum coding Block size\n"); success = 0; }
-        if (cdsc->ext->framework_suco_min < 4) { logv0("Minimun SUCO size cannot be smaller than 4\n"); success = 0; }
-        if (cdsc->ext->framework_cb_min && cdsc->ext->framework_suco_min < cdsc->ext->framework_cb_min) { logv0("Minimun SUCO size cannot be smaller than Minimum coding Block size\n"); success = 0; }
-        if (cdsc->ext->framework_suco_min > cdsc->ext->framework_suco_max) { logv0("Minimum SUCO size cannot be greater than Maximum SUCO size\n"); success = 0; }
+        if (cdsc->param.framework_suco_max > 6) { logv0("Maximun SUCO size cannot be greater than 6\n"); ret = -1; }
+        if (cdsc->param.framework_cb_max && cdsc->param.framework_suco_max > cdsc->param.framework_cb_max) { logv0("Maximun SUCO size cannot be greater than Maximum coding Block size\n"); ret = -1; }
+        if (cdsc->param.framework_suco_min < 4) { logv0("Minimun SUCO size cannot be smaller than 4\n"); ret = -1; }
+        if (cdsc->param.framework_cb_min && cdsc->param.framework_suco_min < cdsc->param.framework_cb_min) { logv0("Minimun SUCO size cannot be smaller than Minimum coding Block size\n"); ret = -1; }
+        if (cdsc->param.framework_suco_min > cdsc->param.framework_suco_max) { logv0("Minimum SUCO size cannot be greater than Maximum SUCO size\n"); ret = -1; }
     }
 
     int pic_m = (8 > min_block_size) ? min_block_size : 8;
-    if ((cdsc->w & (pic_m - 1)) != 0) { logv0("Current encoder does not support picture width, not multiple of max(8, minimum CU size)\n"); success = 0; }
-    if ((cdsc->h & (pic_m - 1)) != 0) { logv0("Current encoder does not support picture height, not multiple of max(8, minimum CU size)\n"); success = 0; }
+    if ((cdsc->param.w & (pic_m - 1)) != 0) { logv0("Current encoder does not support picture width, not multiple of max(8, minimum CU size)\n"); ret = -1; }
+    if ((cdsc->param.h & (pic_m - 1)) != 0) { logv0("Current encoder does not support picture height, not multiple of max(8, minimum CU size)\n"); ret = -1; }
 
-    return success;
+    return ret;
 }
 
 static int set_extra_config(XEVE id)
@@ -650,7 +224,7 @@ static int set_extra_config(XEVE id)
 static void print_stat_init(void)
 {
     if(op_verbose < VERBOSE_FRAME) return;
-	logv2_line("");
+    logv2_line("");
     logv2("  Input YUV file          : %s \n", op_fname_inp);
     if(op_flag[OP_FLAG_FNAME_OUT])
     {
@@ -664,12 +238,12 @@ static void print_stat_init(void)
     {
         logv2("  PSNR is calculated as 10-bit (Input YUV bitdepth: %d)\n", op_inp_bit_depth);
     }
-	logv2_line("Stat");
+    logv2_line("Stat");
 
     logv2("POC   Tid   Ftype   QP   PSNR-Y    PSNR-U    PSNR-V    Bits      EncT(ms)  ");
     logv2("Ref. List\n");
 
-	logv2_line("");
+    logv2_line("");
 }
 
 static void print_config(XEVE id)
@@ -678,12 +252,14 @@ static void print_config(XEVE id)
 
     if(op_verbose < VERBOSE_FRAME) return;
 
-	logv2_line("Configurations");
+    logv2_line("Configurations");
     if(op_flag[OP_FLAG_FNAME_CFG])
     {
-    logv2("\tconfig file name         = %s\n", op_fname_cfg);
+        logv2("\tconfig file name         = %s\n", op_fname_cfg);
     }
+    logv2("\tprofile                  = %s\n", op_profile);
     logv2("\tpreset                   = %s\n", op_preset);
+    logv2("\ttune                     = %s\n", op_tune);
     s = sizeof(int);
     xeve_config(id, XEVE_CFG_GET_WIDTH, (void *)(&v), &s);
     logv2("\twidth                    = %d\n", v);
@@ -707,7 +283,8 @@ static void print_config(XEVE id)
 
     if(op_flag[OP_RC_TYPE])
     {
-    logv2("\tBit_Rate                 = %s\n", op_bps);
+        xeve_config(id, XEVE_CFG_GET_BPS, (void*)(&v), &s);
+        logv2("\tBit_Rate                 = %d\n", v);
     }
 }
 
@@ -809,7 +386,7 @@ static int y4m_test(FILE * ip_y4m)
 }
 
 
-static int y4m_parse_tags(Y4M_PARAMS * y4m, char *_tags)
+static int y4m_parse_tags(Y4M_INFO * y4m, char *_tags)
 {
 
     char *p;
@@ -875,10 +452,16 @@ static int y4m_parse_tags(Y4M_PARAMS * y4m, char *_tags)
         }
     }
 
-    if (!(found_w == 1 && found_h == 1 && found_cs == 1))
+    if (!(found_w == 1 && found_h == 1))
     {
         logerr("Mandatory arugments are not found in y4m header");
         return XEVE_ERR;
+    }
+    //Setting default colorspace to yuv420 and input_bd to 8 if header info. is NA
+    if (!found_cs)
+    {
+        y4m->cs = XEVE_CF_YCBCR420;
+        y4m->bit_depth = 8;
     }
 
     if (strcmp(t_buff, "420jpeg") == 0 || strcmp(t_buff, "420") == 0 || \
@@ -917,17 +500,13 @@ static int y4m_parse_tags(Y4M_PARAMS * y4m, char *_tags)
         y4m->cs = XEVE_CF_YCBCR400;
         y4m->bit_depth  = 8;
     }
-    else
-    {
-        logerr("can not support this colorspace ", op_fname_inp);
-        return XEVE_ERR;
-    }
+
     y4m->cs = XEVE_CS_SET(y4m->cs, op_codec_bit_depth, 0);
     return XEVE_OK;
 }
 
 
-int y4m_header_parser(FILE * ip_y4m, Y4M_PARAMS * y4m)
+int y4m_header_parser(FILE * ip_y4m, Y4M_INFO * y4m)
 {
     char buffer[80] = { 0 };
     int ret;
@@ -963,9 +542,22 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_PARAMS * y4m)
         return ret;
     }
 
-    return XEVE_OK;
+    return 0;
 }
 
+static void y4m_update_param(Y4M_INFO * y4m, XEVE_PARAM * param)
+{
+    param->w = y4m->w;
+    param->h = y4m->h;
+    param->fps = y4m->fps;
+    param->cs = y4m->cs;
+    op_inp_bit_depth = y4m->bit_depth;
+
+    ARGS_SET_FLAG(options, OP_FLAG_IN_BIT_DEPTH, 1);
+    ARGS_SET_FLAG(options, OP_FLAG_WIDTH_INP, 1);
+    ARGS_SET_FLAG(options, OP_FLAG_HEIGHT_INP, 1);
+    ARGS_SET_FLAG(options, OP_FLAG_FPS, 1);
+}
 
 int main(int argc, const char **argv)
 {
@@ -989,54 +581,89 @@ int main(int argc, const char **argv)
     IMGB_LIST        * ilist_t = NULL;
     static int         is_first_enc = 1;
     int                is_y4m = 0;
-    Y4M_PARAMS         y4m;
+    Y4M_INFO           y4m;
+    int                profile, preset, tune;
+    char             * err_arg = NULL;
 
-    /* parse options */
-    ret = args_parse_all(argc, argv, options);
-    if (ret != 0)
+    logv1("XEVE: eXtra-fast Essential Video Encoder\n");
+
+    /* help message */
+    if(argc < 2 || !strcmp(argv[1], "--help"))
     {
-        if (ret > 0)
-        {
-            logerr("-%c argument should be set\n", ret);
-        }
-        if (ret < 0) logerr("config error\n");
         print_usage();
+        return 0;
+    }
+
+    /* set default parameters */
+    memset(&cdsc, 0, sizeof(XEVE_CDSC));
+    ret = xeve_param_default(&cdsc.param);
+    if (XEVE_FAILED(ret))
+    {
+        logerr("cannot set default parameter\n");
         return -1;
     }
 
-     /* open input file */
+    /* parse command line */
+    ret = args_parse_all(argc, argv, options, &cdsc.param);
+    if (ret != 0)
+    {
+        logerr("command parsing error\n");
+        print_usage();
+        return -1;
+    }
+    /* open input file */
+    if(!op_flag[OP_FLAG_FNAME_INP])
+    {
+        logerr("input file should be set\n");
+        return -1;
+    }
     fp_inp = fopen(op_fname_inp, "rb");
     if(fp_inp == NULL)
     {
         logerr("cannot open original file (%s)\n", op_fname_inp);
-        print_usage();
         return -1;
     }
 
+    /* y4m header parsing  */
     is_y4m = y4m_test(fp_inp);
-    if (is_y4m == 0)
+    if (is_y4m)
     {
-        if (op_w == 0)
+        if (y4m_header_parser(fp_inp, &y4m))
         {
-            logerr("-w argument should be set\n");
-            print_usage();
+            logerr("This y4m is not supported (%s)\n", op_fname_inp);
             return -1;
         }
-        if (op_h == 0)
-        {
-            logerr("-h argument should be set\n");
-            print_usage();
-            return -1;
-        }
-        if (op_fps == 0)
-        {
-            logerr("-z argument should be set\n");
-            print_usage();
-            return -1;
-        }
+        y4m_update_param(&y4m, &cdsc.param);
     }
-
-    logv1("eXtra-fast Essential Video Encoder\n");
+    /* check mandatory parameters */
+    if (args_check_mandatory_param(options, &err_arg)) {
+        logerr("[%s] argument should be set\n", err_arg);
+        return -1;
+    }
+    /* apply preset and tune parameters */
+    if (args_get_profile_preset_tune(&profile, &preset, &tune))
+    {
+        logerr("wrong profile, preset, tune value\n");
+        return -1;
+    }
+    ret = xeve_param_ppt(&cdsc.param, profile, preset, tune);
+    if (XEVE_FAILED(ret))
+    {
+        logerr("cannot set profile, preset, tune to parameter\n");
+        return -1;
+    }
+    /* prepare CDSC and check values */
+    if (set_cdsc(&cdsc, is_y4m))
+    {
+        logerr("Cannot set CDSC properly\n");
+        return -1;
+    }
+    if (check_conf(&cdsc))
+    {
+        logv0("invalid configuration\n");
+        return -1;
+    }
+    print_conf(&cdsc);
 
     if(op_flag[OP_FLAG_FNAME_OUT])
     {
@@ -1064,45 +691,11 @@ int main(int argc, const char **argv)
         fclose(fp);
     }
 
-
     /* allocate bitstream buffer */
     bs_buf = (unsigned char*)malloc(MAX_BS_BUF);
     if(bs_buf == NULL)
     {
         logerr("cannot allocate bitstream buffer, size=%d", MAX_BS_BUF);
-        return -1;
-    }
-
-
-    int val = 0;
-    memset(&cdsc, 0, sizeof(XEVE_CDSC));
-
-
-    /***********************y4m header parsing *********************/
-    if (is_y4m)
-    {
-        val = y4m_header_parser(fp_inp, &y4m);
-
-
-    }
-    if (val != XEVE_OK)
-    {
-         logerr("This y4m is not supported (%s)\n", op_fname_inp);
-        return -1;
-    }
-    /* read configurations and set values for create descriptor */
-    val = get_conf(&cdsc, &y4m, is_y4m);
-    if (val != XEVE_OK)
-    {
-        print_usage();
-        return -1;
-    }
-
-    print_enc_conf(&cdsc);
-
-    if (!check_conf(&cdsc))
-    {
-        logv0("invalid configuration\n");
         return -1;
     }
 
@@ -1121,12 +714,12 @@ int main(int argc, const char **argv)
     }
 
     /* create image lists */
-    if(imgb_list_alloc(ilist_org, cdsc.w, cdsc.h, op_inp_bit_depth, XEVE_CS_GET_FORMAT(cdsc.cs)))
+    if(imgb_list_alloc(ilist_org, cdsc.param.w, cdsc.param.h, op_inp_bit_depth, XEVE_CS_GET_FORMAT(cdsc.param.cs)))
     {
         logv0("cannot allocate image list for original image\n");
         return -1;
     }
-    if(imgb_list_alloc(ilist_rec, cdsc.w, cdsc.h, op_out_bit_depth, XEVE_CS_GET_FORMAT(cdsc.cs)))
+    if(imgb_list_alloc(ilist_rec, cdsc.param.w, cdsc.param.h, op_out_bit_depth, XEVE_CS_GET_FORMAT(cdsc.param.cs)))
     {
         logv0("cannot allocate image list for reconstructed image\n");
         return -1;
@@ -1297,7 +890,7 @@ int main(int argc, const char **argv)
                 total_time = total_time % 60;
                 int s = total_time;
                 double curr_bitrate = bitrate;
-                curr_bitrate *= (cdsc.fps * 8);
+                curr_bitrate *= (cdsc.param.fps * 8);
                 curr_bitrate /= (encod_frames + 1);
                 curr_bitrate /= 1000;
                 logv1("[ %d / %d frames ] [ %.2f frame/sec ] [ %.4f kbps ] [ %2dh %2dm %2ds ] \r"
@@ -1361,7 +954,7 @@ int main(int argc, const char **argv)
     logv2("  PSNR U(dB)       : %-5.4f\n", psnr_avg[1]);
     logv2("  PSNR V(dB)       : %-5.4f\n", psnr_avg[2]);
     logv2("  Total bits(bits) : %.0f\n", bitrate * 8);
-    bitrate *= (cdsc.fps * 8);
+    bitrate *= (cdsc.param.fps * 8);
     bitrate /= pic_ocnt;
     bitrate /= 1000;
 

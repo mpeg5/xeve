@@ -2365,7 +2365,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
     XEVE_TRACE_STR("\n");
 
     xeve_get_ctx_some_flags(core->x_scu, core->y_scu, cuw, cuh, ctx->w_scu, ctx->map_scu, ctx->map_cu_mode, core->ctx_flags
-                         , ctx->sh->slice_type, ctx->sps.tool_cm_init , ctx->param.use_ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
+                         , ctx->sh->slice_type, ctx->sps.tool_cm_init , ctx->param.ibc_flag, ctx->sps.ibc_log_max_size, ctx->map_tidx);
 
     if (ctx->sps.tool_admvp && core->log2_cuw == MIN_CU_LOG2 && core->log2_cuh == MIN_CU_LOG2)
     {
@@ -2394,7 +2394,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
     }
 
     /* entropy coding a CU */
-    if(slice_type != SLICE_I && (ctx->sps.tool_admvp == 0 || !(core->log2_cuw <= MIN_CU_LOG2 && core->log2_cuh <= MIN_CU_LOG2) || ctx->param.use_ibc_flag) && !xeve_check_only_intra(core->tree_cons) )
+    if(slice_type != SLICE_I && (ctx->sps.tool_admvp == 0 || !(core->log2_cuw <= MIN_CU_LOG2 && core->log2_cuh <= MIN_CU_LOG2) || ctx->param.ibc_flag) && !xeve_check_only_intra(core->tree_cons) )
     {
         if(!(ctx->sps.tool_admvp && core->log2_cuw == MIN_CU_LOG2 && core->log2_cuh == MIN_CU_LOG2))
         {
@@ -2453,7 +2453,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
                 != MODE_INTRA) || (ctx->sps.tool_admvp && core->log2_cuw == MIN_CU_LOG2 && core->log2_cuh == MIN_CU_LOG2))
                 && !xeve_check_only_inter(core->tree_cons) )
                 && xeve_check_luma(core->tree_cons)
-                && ctx->param.use_ibc_flag && core->log2_cuw <= ctx->sps.ibc_log_max_size && core->log2_cuh <= ctx->sps.ibc_log_max_size)
+                && ctx->param.ibc_flag && core->log2_cuw <= ctx->sps.ibc_log_max_size && core->log2_cuh <= ctx->sps.ibc_log_max_size)
             {
                 xevem_eco_ibc_flag(bs, mcore->ibc_flag, core->ctx_flags[CNID_IBC_FLAG]);
             }
@@ -2656,7 +2656,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
             }
         }
     }
-    else if (((ctx->sh->slice_type == SLICE_I || xeve_check_only_intra(core->tree_cons)) && ctx->param.use_ibc_flag))
+    else if (((ctx->sh->slice_type == SLICE_I || xeve_check_only_intra(core->tree_cons)) && ctx->param.ibc_flag))
     {
         if (core->skip_flag == 0 && xeve_check_luma(core->tree_cons))
         {

@@ -130,7 +130,6 @@ int xeve_rc_delete(XEVE_CTX * ctx)
 
 int xeve_rc_rcore_set(XEVE_CTX * ctx)
 {
-    XEVE_PARAM * param = &ctx->param;
     XEVE_RCORE * rcore = ctx->rcore;
     XEVE_RC    * rc    = ctx->rc;
 
@@ -142,8 +141,8 @@ int xeve_rc_rcore_set(XEVE_CTX * ctx)
 
     for (int i = 0; i < RC_NUM_SLICE_TYPE; i++)
     {
-        rcore->qf_min[i] = qp_to_qf(param->qp_min);
-        rcore->qf_max[i] = qp_to_qf(param->qp_max);
+        rcore->qf_min[i] = qp_to_qf(ctx->param.qp_min);
+        rcore->qf_max[i] = qp_to_qf(ctx->param.qp_max);
     }
 
     return XEVE_OK;
@@ -181,12 +180,11 @@ double rc_bpf_ld[3][10] =
 
 void xeve_init_rc_bpf_tbl(XEVE_CTX * ctx)
 {
-    XEVE_PARAM    * param = &ctx->param;
     XEVE_RC       * rc = ctx->rc;
 
     int ld_struct = ctx->param.ref_pic_gap_length;
     int fnum_in_sec[10];
-    int ngop_in_sec = (param->fps + ld_struct - 1) / ld_struct;
+    int ngop_in_sec = (ctx->param.fps + ld_struct - 1) / ld_struct;
 
     for (int i = ld_struct; i > 0; i = i >> 1)
     {
@@ -198,22 +196,21 @@ void xeve_init_rc_bpf_tbl(XEVE_CTX * ctx)
 
 void xeve_set_rc_bpf(XEVE_CTX * ctx)
 {
-    XEVE_PARAM    * param = &ctx->param;
     XEVE_RC       * rc = ctx->rc;
 
     /*
     RC_CBR_EQUAL should be deprecated
-    if (param->rc_type == RC_CBR_EQUAL ||   param->i_period == 1) // AI
+    if (param->rc_type == RC_CBR_EQUAL ||   param->iperiod == 1) // AI
     */
 
-    if (param->i_period == 1) // AI
+    if (ctx->param.iperiod == 1) // AI
     {
         for (int i = 0; i < 6; i++)
         {
             rc->bpf_tid[i] = rc->bitrate / rc->fps;
         }
     }
-    else if (param->max_b_frames > 0) // RA
+    else if (ctx->param.max_b_frames > 0) // RA
     {
         for (int i = 0; i < 6; i++)
         {
@@ -224,14 +221,13 @@ void xeve_set_rc_bpf(XEVE_CTX * ctx)
     {
         for (int i = 0; i < 6; i++)
         {
-            rc->bpf_tid[i] = rc->bitrate * rc_bpf_ld[rc->st_idx][i] / 100;
+            rc->bpf_tid[i] = rc->bitrate / rc->fps; // not ref_pic_gap_length relevance in LD
         }
     }
 }
 
 void xeve_init_rc(XEVE_CTX * ctx)
 {
-    XEVE_PARAM    * param = &ctx->param;
     XEVE_RC       * rc = ctx->rc;
 
     for (int i = 0; i < RC_NUM_SLICE_TYPE; i++)
@@ -261,7 +257,14 @@ void xeve_init_rc(XEVE_CTX * ctx)
         rc->prev_qf[PREV0][i] = qp_to_qf(rc->param->init_qp);
         rc->prev_qf[PREV1][i] = qp_to_qf(rc->param->init_qp);
 
-        rc->rc_model[i].k_param = (double)(32 * pow(ctx->w * ctx->h / 256.0, 0.5));
+        if (rc->encoding_mode != XEVE_LD)
+        {
+            rc->rc_model[i].k_param = (double)(32 * pow(ctx->w * ctx->h / 256.0, 0.5));
+        }
+        else
+        {
+            rc->rc_model[i].k_param = (double)(12 * pow(ctx->w * ctx->h / 256.0, 0.5)); // tuned for lower QP at the beginning in LD
+        }
         rc->rc_model[i].target_bits = 0;
         rc->rc_model[i].qp_cnt = 0.01;
         rc->rc_model[i].qp_sum = rc->param->init_qp * rc->rc_model[i].qp_cnt;
@@ -277,7 +280,7 @@ void xeve_init_rc(XEVE_CTX * ctx)
     rc->prev_st[PREV0] = SLICE_I;
     rc->prev_st[PREV1] = -1;
 
-    if (param->gop_size == 1 && param->ref_pic_gap_length != 0)
+    if (ctx->param.gop_size == 1 && ctx->param.ref_pic_gap_length != 0)
     {
         xeve_init_rc_bpf_tbl(ctx);
     }
@@ -285,33 +288,45 @@ void xeve_init_rc(XEVE_CTX * ctx)
 
 int xeve_rc_set(XEVE_CTX * ctx)
 {
-    XEVE_PARAM    * param = &ctx->param;
     XEVE_RC       * rc = ctx->rc;
     XEVE_RCORE    * rcore = ctx->rcore;
     double          max1, max2;
 
     /* set default value */
     rc->param        = &tbl_rc_param;
-    rc->fps          = param->fps;
-    rc->bitrate      = param->bps;
-    rc->fps_idx      = (((int)rc->fps + (param->gop_size >> 1)) / param->gop_size) - 1;
+    rc->fps          = ctx->param.fps;
+    rc->bitrate      = (double)xeve_parse_param_bit(ctx->param.bps);
+    rc->fps_idx      = (((int)rc->fps + (ctx->param.gop_size >> 1)) / ctx->param.gop_size) - 1;
     rc->prev_bpf     = 0;
     rc->frame_bits   = 0;
     rc->total_frames = 0;
     rc->prev_adpt    = 0;
     
 
-    if (param->i_period == 0 && param->ref_pic_gap_length > 0) // LD Case
+    if (ctx->param.iperiod == 0 && ctx->param.ref_pic_gap_length > 0) // LD Case
     {
-        rc->st_idx = XEVE_LOG2(param->ref_pic_gap_length) - 1;
+        rc->st_idx = XEVE_LOG2(ctx->param.ref_pic_gap_length) - 1;
     }
-    else if (param->max_b_frames > 0)
+    else if (ctx->param.max_b_frames > 0)
     {
-        rc->st_idx = XEVE_LOG2(param->gop_size) - 2;
+        rc->st_idx = XEVE_LOG2(ctx->param.gop_size) - 2;
     }
     else
     {
         rc->st_idx = 0;
+    }
+
+    if (ctx->param.iperiod == 1) // AI
+    {
+        rc->encoding_mode = XEVE_AI;
+    }
+    else if (ctx->param.max_b_frames > 0) // RA
+    {
+        rc->encoding_mode = XEVE_RA;
+    }
+    else // LD 
+    {
+        rc->encoding_mode = XEVE_LD;
     }
 
     xeve_init_rc(ctx);
@@ -324,11 +339,15 @@ int xeve_rc_set(XEVE_CTX * ctx)
     max2 = XEVE_MAX(rc->bitrate * rc->param->max_frm_bits_per_br, rc->bpf * 5);
     rc->max_frm_bits = XEVE_MIN(max1, max2);
 
-    rc->vbv_enabled = param->vbv_enabled;
+    rc->vbv_enabled = ctx->param.vbv_enabled;
         
     if (rc->vbv_enabled)
     {
-        rc->vbv_buf_size = param->vbv_buffer_size;
+        rc->vbv_buf_size = (double)xeve_parse_param_bit(ctx->param.vbv_buf_size);
+        if (rc->vbv_buf_size == 0)
+        {
+            rc->vbv_buf_size = ((rc->bitrate) * (ctx->param.vbv_buf_msec / 1000.0));
+        }
         rc->vbv_buf_fullness = 0;
     }
     else
@@ -347,7 +366,6 @@ int xeve_rc_set(XEVE_CTX * ctx)
 static double get_vbv_qfactor_fcst(XEVE_CTX *ctx, XEVE_RCORE * rcore, s32 slice_type, double q)
 {
     XEVE_RC    * rc = ctx->rc;
-    XEVE_PARAM * param;
     XEVE_PICO  * pico_loop;
     XEVE_RCBE  * bit_estimator;
     s32          i, tot_cnt, over_flag, und_flag, stype, sdepth, pic_cnt, tot_loop;
@@ -370,8 +388,7 @@ static double get_vbv_qfactor_fcst(XEVE_CTX *ctx, XEVE_RCORE * rcore, s32 slice_
     buf_over_bottom = XEVE_MAX(buf_over_bottom, buf_size / 2);
     
 
-    param = &ctx->param;
-    tot_loop = param->num_pre_analysis_frames - param->max_b_frames;
+    tot_loop = ctx->param.lookahead - ctx->param.max_b_frames;
     bit_estimator = (slice_type != SLICE_B) ? &rc->bit_estimator[slice_type] : &rc->bit_estimator[SLICE_I + ctx->slice_depth];
     
     for (s32 loop_fcst = 0; loop_fcst < 250 && (und_flag || over_flag); loop_fcst++)
@@ -391,7 +408,7 @@ static double get_vbv_qfactor_fcst(XEVE_CTX *ctx, XEVE_RCORE * rcore, s32 slice_
         bfrm_num = 0;
 
         /* calculate fullness of future buffer */
-        for (i = 1; fur_buf < buf_size && fur_buf > 0 && i < param->num_pre_analysis_frames - param->max_b_frames; i++)
+        for (i = 1; fur_buf < buf_size && fur_buf > 0 && i < ctx->param.lookahead - ctx->param.max_b_frames; i++)
         {
             pico_loop = ctx->pico_buf[pic_cnt];
             stype = pico_loop->sinfo.slice_type;
@@ -474,13 +491,11 @@ double get_qfactor_clip(XEVE_CTX *ctx, XEVE_RCORE * rcore, double qf)
     double       overflow, qf_min, qf_max, accum_buf;
     double       q_model, q_avg, prev_qf_rate, q_avg_factor, t_d;
     XEVE_RC    * rc  = ctx->rc;
-    XEVE_PARAM * param;
     XEVE_PICO  * pico;
     s32          fcost = 0;
 
-    param = &ctx->param;
     accum_buf = 2 * rc->bitrate;
-    i_period = param->i_period != 0? param->i_period: MAX_INTRA_PERIOD_RC;
+    i_period = ctx->param.iperiod != 0? ctx->param.iperiod : MAX_INTRA_PERIOD_RC;
     stype = rcore->stype;
     overflow = 1.0;
     pico = NULL;
@@ -509,10 +524,10 @@ double get_qfactor_clip(XEVE_CTX *ctx, XEVE_RCORE * rcore, double qf)
             qf = (rc->param->prev_q_factor)* qf + (1 - rc->param->prev_q_factor) * rc->prev_qf[PREV0][SLICE_P];
         }
 
-        if (param->num_pre_analysis_frames >= 24)
+        if (ctx->param.lookahead >= 24)
         {
             /* when encount scene change just after IDR, raise up qp to bits */
-            t0 = param->fps >> 3;
+            t0 = ctx->param.fps >> 3;
             t1 = i_period >> 3;
 
             thd_distance = XEVE_MIN(t0, t1);
@@ -540,7 +555,7 @@ double get_qfactor_clip(XEVE_CTX *ctx, XEVE_RCORE * rcore, double qf)
         if (rcore->scene_type == SCENE_HIGH)
         {
             /* when encount scene change just before IDR, raise up qp to bits */
-            t0 = param->fps >> 3;
+            t0 = ctx->param.fps >> 3;
             t1 = i_period >> 3;
 
             thd_distance = XEVE_MIN(t0, t1);
@@ -609,7 +624,7 @@ double get_qfactor_clip(XEVE_CTX *ctx, XEVE_RCORE * rcore, double qf)
             qf_min = rc->prev_qf[PREV0][rc->prev_st[PREV0]] / rcore->qf_limit;
             qf_max = rc->prev_qf[PREV0][rc->prev_st[PREV0]] * rcore->qf_limit;
 
-            if (overflow > 1.1 && (int)ctx->pico->pic_icnt >= param->gop_size)
+            if (overflow > 1.1 && (int)ctx->pico->pic_icnt >= ctx->param.gop_size)
             {
                 qf_max *= rcore->qf_limit;
             }
@@ -753,18 +768,16 @@ static double get_qf(XEVE_CTX *ctx, XEVE_RCORE *rcore)
     /* update target bits */
     rc->prev_bpf = rc->bpf;
     rc->bpf = rc->bpf_tid[ctx->slice_depth];
-    if (ctx->pico->sinfo.icnt[0] >= 0.8 * ctx->fcst.f_blk)
+    rc->rcm->target_bits += rc->bpf;
+    if (rc->encoding_mode != XEVE_LD)
+        rc->rcm->target_bits *= rc->rcm->bpf_decayed;
+
+    if (rc->encoding_mode == XEVE_LD && ctx->pico->sinfo.icnt[0] >= 0.8 * ctx->fcst.f_blk)
     {
         // if 80% of the blocks have less intra cost then considering it as scenecut
         scene_cut = 1;
     }
-    if (ctx->param.max_b_frames == 0 && (rc->rcm->cpx_sum == 0 || scene_cut))
-    {
-        // currently for LD
-        rc->bpf = rc->bpf_tid[0];
-    }
-    rc->rcm->target_bits += rc->bpf;
-    rc->rcm->target_bits *= rc->rcm->bpf_decayed;
+
 
     /* target bits */
     target_bits = rc->rcm->target_bits;
@@ -774,7 +787,7 @@ static double get_qf(XEVE_CTX *ctx, XEVE_RCORE *rcore)
     if (ctx->slice_type == SLICE_I)
     {
         rcore->cpx_frm = pico->sinfo.uni_est_cost[INTRA];
-        if (ctx->param.i_period != 1)
+        if (ctx->param.iperiod != 1)
         {
             target_bits *= rc->param->intra_rate_ratio;
         }
@@ -785,9 +798,9 @@ static double get_qf(XEVE_CTX *ctx, XEVE_RCORE *rcore)
     }
     else /* SLICE_B */
     {
-        if (pico->pic_icnt == 1 || (ctx->param.gop_size == 1 && ctx->param.i_period != 1) ) //LD case
+        if (pico->pic_icnt == 1 || (ctx->param.gop_size == 1 && ctx->param.iperiod != 1) ) //LD case
         {
-            rcore->cpx_frm = (ctx->param.max_b_frames > 0) ? pico->sinfo.uni_est_cost[INTER_UNI2] : pico->sinfo.uni_est_cost[INTER_UNI0];
+            rcore->cpx_frm = ((ctx->param.max_b_frames > 0) ? pico->sinfo.uni_est_cost[INTER_UNI2] : pico->sinfo.uni_est_cost[INTER_UNI0]) / (rc->encoding_mode == XEVE_LD && scene_cut ? 2 : 1);
         }
         else
         {
@@ -802,17 +815,6 @@ static double get_qf(XEVE_CTX *ctx, XEVE_RCORE *rcore)
         min_cp = qp_to_qf(rc->param->init_qp - 4.0) * cpx_rate * (target_bits / rc->rcm->k_param);
         max_cp = qp_to_qf(ctx->param.qp_max) * (target_bits / rc->rcm->k_param);
         rcore->cpx_pow = XEVE_CLIP3(min_cp, max_cp, rcore->cpx_pow);
-    }
-    else if (ctx->param.max_b_frames == 0 && ctx->slice_type != SLICE_I && (rc->rcm->cpx_sum == 0 || scene_cut)) // LD start or LD-scenecut case
-    {
-        target_bits *= rc->param->intra_rate_ratio; //treating like SLICE_I during rc start and scene cuts.. also updating the actual rcm for that tid
-        XEVE_RCM *init = &ctx->rc->rc_model[SLICE_I - 1];
-        rc->rcm->cpx_sum = (init->cpx_sum * rc->param->df_cplx_sum) + rcore->cpx_frm;
-        rc->rcm->cpx_cnt = (init->cpx_cnt * rc->param->df_cplx_sum) + 1;
-        init->cpx_sum = rc->rcm->cpx_sum;
-        init->cpx_cnt = rc->rcm->cpx_cnt;
-        cpx = rc->rcm->cpx_sum / rc->rcm->cpx_cnt;
-        rcore->cpx_pow = pow(cpx, rc->param->pow_cplx);
     }
     else
     {
@@ -829,10 +831,18 @@ static double get_qf(XEVE_CTX *ctx, XEVE_RCORE *rcore)
         qf *= XEVE_CLIP3(0.9, 1.0, qp_to_qf(rc->param->init_qp - 8.0) * cpx_rate / qf);
     }
 
-    if ((rcore->stype == SLICE_I && rcore->scene_type != SCENE_EX_LOW) || (ctx->param.max_b_frames == 0 && rcore->stype != SLICE_I && scene_cut))
+    if ((rcore->stype == SLICE_I && rcore->scene_type != SCENE_EX_LOW) || (rc->encoding_mode == XEVE_LD && scene_cut))
     {
-        rc->rcm->cpx_sum -= rcore->cpx_frm * 0.5;
-        rcore->cpx_pow = pow(rc->rcm->cpx_sum / rc->rcm->cpx_cnt, rc->param->pow_cplx);
+        if (rc->encoding_mode != XEVE_LD)
+        {
+            rc->rcm->cpx_sum -= rcore->cpx_frm * 0.5;
+            rcore->cpx_pow = pow(rc->rcm->cpx_sum / rc->rcm->cpx_cnt, rc->param->pow_cplx);
+        }
+        else 
+        {
+            rcore->amortize_flag = 1;
+        }
+        
     }
     else if (rcore->scene_type == SCENE_HIGH)
     {
@@ -896,7 +906,7 @@ static void update_bit_estimator(XEVE_RCBE * est_bits, double q, double cpx,
     est_bits->coef += coef;
 }
 
-static void update_rc_model(XEVE_RCORE *rcore, XEVE_RC * rc, s32 bits, s32 max_b_frm)
+static void update_rc_model(XEVE_RCORE *rcore, XEVE_RC * rc, s32 bits, s32 max_b_frm, int i_period)
 {
     double eb, bpft;
     double df1 = 0.9975, df2 = 0.9945;
@@ -940,10 +950,30 @@ static void update_rc_model(XEVE_RCORE *rcore, XEVE_RC * rc, s32 bits, s32 max_b
         rc->rcm->bpf_decayed = XEVE_CLIP3(1.0 - bpft*1.5, 1.0 - bpft*0.1, rc->rcm->bpf_decayed);
     }
 
-    
-    rc->rcm->k_param += (stype != SLICE_B) ? bits * qp_to_qf(rcore->qp) / rcore->cpx_pow :
-        bits * qp_to_qf(rcore->qp) / (rcore->cpx_pow * pow(0.92, sdepth + 1));
-    rc->rcm->k_param *= rc->rcm->bpf_decayed;
+    if (rc->encoding_mode == XEVE_LD && rcore->amortize_flag) // currently tested for LD
+    {
+        int prev_residue_cost = rcore->residue_cost * rcore->amortized_frames;
+        rcore->amortized_frames += (i_period != 0 ? i_period : 32); // distributing the bits generated by i-frames over i-period or 32 frames if iperiod not specified.
+        rcore->residue_cost = (prev_residue_cost + (int)((bits * 0.85))) / rcore->amortized_frames;
+        bits *= 0.15;
+        rcore->amortize_flag = 0;
+    }
+    else if (rcore->amortized_frames > 0)
+    {
+        bits += rcore->residue_cost;
+        rcore->amortized_frames--;
+    }
+
+    if (rc->encoding_mode != XEVE_LD)
+    {
+        rc->rcm->k_param += (stype != SLICE_B) ? bits * qp_to_qf(rcore->qp) / rcore->cpx_pow :
+            bits * qp_to_qf(rcore->qp) / (rcore->cpx_pow * pow(0.92, sdepth + 1));
+        rc->rcm->k_param *= rc->rcm->bpf_decayed;
+    }
+    else
+    {
+        rc->rcm->k_param += bits * qp_to_qf(rcore->qp) / rcore->cpx_pow;
+    }
 
     /* update qp_sum */
     rc->rcm->qp_sum *= rc->param->df_qp_sum;
@@ -970,7 +1000,7 @@ static double get_qfactor(XEVE_CTX *ctx)
     {
         /* clipping  qstep min and max before vbv cliping */
         qf = (frm_qf_min == frm_qf_max) ? frm_qf_min : XEVE_CLIP3(frm_qf_min, frm_qf_max, qf);
-        qf = (ctx->param.num_pre_analysis_frames > 1) ? get_vbv_qfactor_fcst(ctx, rcore, rcore->stype, qf) : get_vbv_qfactor(ctx, rcore, rcore->stype, qf);
+        qf = (ctx->param.lookahead > 1) ? get_vbv_qfactor_fcst(ctx, rcore, rcore->stype, qf) : get_vbv_qfactor(ctx, rcore, rcore->stype, qf);
     }
     qf = (frm_qf_min == frm_qf_max) ? frm_qf_min : XEVE_CLIP3(frm_qf_min, frm_qf_max, qf);
     update_prev_qf(rc, rcore->stype, qf, ctx->pico->pic_icnt);
@@ -981,7 +1011,10 @@ static double get_qfactor(XEVE_CTX *ctx)
 int xeve_rc_get_frame_qp(XEVE_CTX *ctx)
 {
     double qp;
-    ctx->rc->rcm = (ctx->slice_type != SLICE_B) ? &ctx->rc->rc_model[ctx->slice_type - 1] : &ctx->rc->rc_model[SLICE_I + ctx->slice_depth];
+    if (ctx->rc->encoding_mode != XEVE_LD)
+        ctx->rc->rcm = (ctx->slice_type != SLICE_B) ? &ctx->rc->rc_model[ctx->slice_type - 1] : &ctx->rc->rc_model[SLICE_I + ctx->slice_depth];
+    else
+        ctx->rc->rcm = &ctx->rc->rc_model[1];
 
     /* qp from qf */
     qp = qf_to_qp(get_qfactor(ctx));
@@ -1042,7 +1075,7 @@ void xeve_rc_update_frame(XEVE_CTX *ctx, XEVE_RC * rc, XEVE_RCORE * rcore)
     if (rcore->scene_type != SCENE_EX_LOW)
     {
         /* update RC model */
-        update_rc_model(rcore, rc, (int)bits, ctx->param.max_b_frames);
+        update_rc_model(rcore, rc, (int)bits, ctx->param.max_b_frames, ctx->param.iperiod);
 
         /* update bits estimated predictor */
         (stype != SLICE_B) ? update_bit_estimator(&rc->bit_estimator[stype], 

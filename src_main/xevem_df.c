@@ -913,16 +913,16 @@ void xevem_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, i
 
             xevem_deblock_cu_hor(pic, x, y, cuw, cuh >> 1, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh, ctx->refp, 0
                                , core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->qp_chroma_dynamic);
             xevem_deblock_cu_hor(pic, x, y + MAX_TR_SIZE, cuw, cuh >> 1, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh, ctx->refp, 0
                                , core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->qp_chroma_dynamic);
         }
         else
         {
             xevem_deblock_cu_hor(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh, ctx->refp, 0
                                , core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->qp_chroma_dynamic);
         }
     }
     else
@@ -931,16 +931,16 @@ void xevem_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, i
         {
             xevem_deblock_cu_ver(pic, x, y, cuw >> 1, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh
                                , ctx->map_cu_mode, ctx->refp, 0, core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->qp_chroma_dynamic);
             xevem_deblock_cu_ver(pic, x + MAX_TR_SIZE, y, cuw >> 1, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh
                                , ctx->map_cu_mode, ctx->refp, 0, core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->qp_chroma_dynamic);
         }
         else
         {
             xevem_deblock_cu_ver(pic, x, y, cuw, cuh, ctx->map_scu, ctx->map_refi, ctx->map_unrefined_mv, ctx->w_scu, ctx->log2_max_cuwh
                                , ctx->map_cu_mode, ctx->refp, 0, core->tree_cons, ctx->map_tidx, boundary_filtering, ctx->sps.tool_addb, mctx->map_ats_inter
-                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->param.qp_chroma_dynamic);
+                               , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.bit_depth_chroma_minus8 + 8, ctx->sps.chroma_format_idc, ctx->qp_chroma_dynamic);
         }
     }
 }

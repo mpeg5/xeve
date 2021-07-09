@@ -45,8 +45,6 @@ extern const s8   xeve_tbl_tm64[64][64];
 extern const int  xeve_tbl_dq_scale_b[6];
 extern const u8   xeve_tbl_df_st[4][52];
 extern const int  xeve_tbl_qp_chroma_ajudst[MAX_QP_TABLE_SIZE];
-void              xeve_tbl_derived_chroma_qp_mapping(XEVE_PARAM * param, XEVE_CHROMA_TABLE *structChromaQP, int bit_depth);
-void              xeve_set_chroma_qp_tbl_loc(XEVE_CTX * ctx, int bit_depth);
 
 extern const int  xeve_min_in_group[LAST_SIGNIFICANT_GROUPS];
 extern const int  xeve_group_idx[MAX_TR_SIZE];
@@ -59,8 +57,6 @@ extern const int  xeve_quant_scale[2][6];
 
 #define RATE_TO_COST_LAMBDA(l, r)       ((double)r * l)
 #define RATE_TO_COST_SQRT_LAMBDA(l, r)  ((double)r * l)
-
-extern const XEVE_PRESET xeve_tbl_preset[XEVE_PRESET_MAX];
 
 extern const s8 xeve_tbl_slice_depth_P[5][16];
 extern const s8 xeve_tbl_slice_depth[5][15];

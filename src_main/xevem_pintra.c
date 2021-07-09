@@ -339,7 +339,7 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
     u8 ats_intra_usage = ctx->sps.tool_ats ? 2 : 1;
     u8 ats_intra_cu_flag = 0;
     u8 ats_intra_zero_cu_flag = 0;
-    u8 ats_intra_fast = ((XEVEM_PRESET*)ctx->param.preset)->ats_intra_fast;
+    u8 ats_intra_fast = ctx->param.ats_intra_fast;
     int best_nnz = 1;
     double cost_ipd[IPD_CNT];
     int w_shift = ctx->param.cs_w_shift;

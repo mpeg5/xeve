@@ -102,12 +102,10 @@ static const u16 tbl_inv_qscale[41]=
 
 s32 xeve_fcst_get_scene_type(XEVE_CTX * ctx, XEVE_PICO * pico)
 {
-    XEVE_PARAM* param;
     s32          fc_intra, fc_inter, cpx_thd, scn_thd;
     s32          i, ridx, dist_to_p, icnt_mode, stype, scene_type;
 
     /* init */
-    param = &ctx->param;
     stype = pico->sinfo.slice_type;
     fc_intra = pico->sinfo.uni_est_cost[INTRA];
     fc_inter = 0;
@@ -141,7 +139,7 @@ s32 xeve_fcst_get_scene_type(XEVE_CTX * ctx, XEVE_PICO * pico)
     else /* SLICE_P */
     {
         fc_inter = pico->sinfo.uni_est_cost[INTER_UNI0];
-        dist_to_p = param->max_b_frames + 1;
+        dist_to_p = ctx->param.max_b_frames + 1;
 
         if (dist_to_p > 1)
         {
@@ -179,9 +177,9 @@ s32 xeve_fcst_get_scene_type(XEVE_CTX * ctx, XEVE_PICO * pico)
     }
 
     /* if there is any scene_change in a gop, P frame is handled as scene_change */
-    if (dist_to_p == param->max_b_frames + 1)
+    if (dist_to_p == ctx->param.max_b_frames + 1)
     {
-        for (i = 1; i < param->max_b_frames + 1; i++)
+        for (i = 1; i < ctx->param.max_b_frames + 1; i++)
         {
             ridx = XEVE_MOD_IDX(pico->pic_icnt - i, ctx->pico_max_cnt);
 
@@ -676,17 +674,15 @@ void fill_blk_scu_frm(XEVE_CTX* ctx,XEVE_PICO * pico, int log2_cuwh)
 static void blk_tree_fixed_gop(XEVE_CTX * ctx)
 {
     int          i,  bframes, pic_idx;
-    XEVE_PARAM * param;
     XEVE_PICO  * pico, * pico_l0, * pico_l1;
     int         pic_icnt_last, depth,  gop_size, max_depth;
     int         blk_num, sum_blk = 0;
     s8          offset_dqp;
     s32        * qp_offset;
 
-    bframes        = 0;
-    param         = &ctx->param;
+    bframes       = 0;
     pic_icnt_last = ctx->pico->pic_icnt;
-    gop_size = param->max_b_frames + 1;
+    gop_size = ctx->param.max_b_frames + 1;
 
     max_depth = 0;
     int offset = pic_icnt_last == gop_size ? 1 : 0;
@@ -948,7 +944,7 @@ static s32 xeve_est_intra_cost(XEVE_CTX * ctx, s32 x0, s32 y0)
         for (mode = 0; mode < IPD_CNT_B; mode++)
         {
             xeve_ipred(buf_le0, (buf_up0 + 1), NULL, 0, pred, mode, 1 << log2_cuwh, 1 << log2_cuwh);
-            cost = xeve_sad_16b(log2_cuwh, log2_cuwh, pred, org, cuwh, s_o, ctx->cdsc.codec_bit_depth);
+            cost = xeve_sad_16b(log2_cuwh, log2_cuwh, pred, org, cuwh, s_o, ctx->param.codec_bit_depth);
 
             if (cost < cost_best)
             {
@@ -1210,7 +1206,7 @@ static s32 est_inter_cost(XEVE_CTX * ctx, s32 x, s32 y, XEVE_PICO * pico_cur
 
             set_mv_bound(mvp[MV_X] >> 2, mvp[MV_Y] >> 2, sub_w, sub_h, min_mv, max_mv);
             cost = fcst_me_ipel(pico_cur->spic, pico_ref->spic, min_mv, max_mv, x, y
-                                 , log2_cuwh, mvp, lambda, mv, ctx->cdsc.codec_bit_depth);
+                                 , log2_cuwh, mvp, lambda, mv, ctx->param.codec_bit_depth);
 
             if (cost < min_cost)
             {
@@ -1526,16 +1522,14 @@ void set_subpic(XEVE_CTX * ctx, XEVE_PICO* pico, int is_intra_pic)
 
 void get_fcost_fixed_gop(XEVE_CTX * ctx, int is_intra_pic)
 {
-    XEVE_PARAM * param;
     XEVE_PICO* pico, * pico_ref, * pico_l0, * pico_l1;
     int           pico_ridx, pic_icnt;
     int        i, pic_icnt_last, depth, refp_l0, refp_l1, gop_size;
 
-    param         = &ctx->param;
     pic_icnt_last = ctx->pico->pic_icnt;
-    gop_size = param->max_b_frames + 1;
+    gop_size = ctx->param.max_b_frames + 1;
 
-    if (ctx->param.gop_size == 1 && ctx->param.i_period != 1) //LD case
+    if (ctx->param.gop_size == 1 && ctx->param.iperiod != 1) //LD case
     {
          pic_icnt = XEVE_MOD_IDX(ctx->pico->pic_icnt, ctx->pico_max_cnt);
          pico = ctx->pico_buf[pic_icnt];
@@ -1578,8 +1572,7 @@ void get_fcost_fixed_gop(XEVE_CTX * ctx, int is_intra_pic)
                     xeve_mset(pico->sinfo.map_mv_pga, 0, sizeof(s16) * ctx->f_lcu * REFP_NUM * MV_D);
 
                     /* get PGA cost */
-                    pico_ridx = XEVE_MOD_IDX(((pic_icnt - 1) / param->gop_size) *
-                        param->gop_size, ctx->pico_max_cnt);
+                    pico_ridx = XEVE_MOD_IDX(((pic_icnt - 1) / ctx->param.gop_size) * ctx->param.gop_size, ctx->pico_max_cnt);
                     pico_ref = ctx->pico_buf[pico_ridx];
                     uni_direction_cost_estimation(ctx, pico, pico_ref, pico->sinfo.slice_type == SLICE_I, 0, INTER_UNI2);
                 }
@@ -1591,15 +1584,13 @@ void get_fcost_fixed_gop(XEVE_CTX * ctx, int is_intra_pic)
 int xeve_forecast_fixed_gop(XEVE_CTX* ctx)
 {
     XEVE_PICO * pico;
-    XEVE_PARAM * param;
     int        i_period, is_intra_pic = 0;
     int        pic_icnt;
 
-    pico = ctx->pico;
-    pic_icnt = ctx->pico->pic_icnt;
-    param = &ctx->param;
-    i_period = param->i_period;
-    int gop_size = param->max_b_frames + 1;
+    pico      = ctx->pico;
+    pic_icnt  = ctx->pico->pic_icnt;
+    i_period  = ctx->param.iperiod;
+    int gop_size = ctx->param.max_b_frames + 1;
 
     if ((i_period == 0 && pic_icnt == 0) || (i_period > 0 && pic_icnt % i_period == 0))
     {

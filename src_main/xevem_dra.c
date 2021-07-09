@@ -187,7 +187,7 @@ int xeve_get_scaled_chroma_qp2(XEVE_CTX * ctx, int comp_id, int unscaledChromaQP
 {
     int qp_bd_offset_c = 6 * (bit_depth - 8);
     int qp_value = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP_TABLE_SIZE - 1, unscaledChromaQP);
-    qp_value = ctx->param.qp_chroma_dynamic[comp_id - 1][qp_value];
+    qp_value = ctx->qp_chroma_dynamic[comp_id - 1][qp_value];
     return qp_value;
 }
 
