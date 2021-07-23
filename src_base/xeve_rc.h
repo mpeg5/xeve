@@ -180,6 +180,8 @@ struct _XEVE_RC
     int          prev_adpt;
     /* access type */
     int          encoding_mode;
+    int          scene_cut;
+    double       basecplx;
 
     const XEVE_RC_PARAM * param;
 };
@@ -197,6 +199,7 @@ enum RC_TYPE
 {
     RC_OFF,
     RC_CBR_FIXED_HIERARCHY,
+    RC_CRF,
     RC_CBR_EQUAL,
 };
 

@@ -186,7 +186,7 @@ void set_frac_bits(QUANT_PARAM_DRA *value_this, int const nBits)
 int xeve_get_scaled_chroma_qp2(XEVE_CTX * ctx, int comp_id, int unscaledChromaQP, int bit_depth)
 {
     int qp_bd_offset_c = 6 * (bit_depth - 8);
-    int qp_value = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP_TABLE_SIZE - 1, unscaledChromaQP);
+    int qp_value = XEVE_CLIP3(-qp_bd_offset_c, XEVE_MAX_QP_TABLE_SIZE - 1, unscaledChromaQP);
     qp_value = ctx->qp_chroma_dynamic[comp_id - 1][qp_value];
     return qp_value;
 }

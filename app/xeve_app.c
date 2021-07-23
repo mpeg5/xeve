@@ -38,10 +38,6 @@
 #include <unistd.h>
 #endif
 
-#define VERBOSE_NONE               VERBOSE_0
-#define VERBOSE_SIMPLE             VERBOSE_1
-#define VERBOSE_FRAME              VERBOSE_2
-
 #define MAX_BS_BUF                 (16*1024*1024)
 
 typedef enum _STATES {
@@ -56,157 +52,120 @@ typedef struct _Y4M_PARAMS
     int w;
     int h;
     int fps;
-    int cs;
+    int color_format;
     int bit_depth;
 }Y4M_INFO;
 
-static void print_usage(void)
+static void print_usage(const char **argv)
 {
     int i;
     char str[1024];
-
+    ARGS_PARSER * args;
     XEVE_PARAM default_param;
+
     xeve_param_default(&default_param);
-    set_variables_to_parse_val(&default_param);
+    args = args_create();
+    if (args == NULL) goto ERR;
+    if (args->init(args, &default_param)) goto ERR;
 
-    logv0("< Usage >\n");
+    logv2("Syntax: \n");
+    logv2("  %s -i 'input-file' [ options ] \n\n", "xeve_app");
 
-    for(i=0; i<NUM_ARG_OPTION; i++)
+    logv2("Options:\n");
+    logv2("  --help\n    : list options\n");
+    for(i=0; i<args->num_option; i++)
     {
-        if(args_get_help(options, i, str) < 0) return;
-        logv0("%s\n", str);
+        if(args->get_help(args, i, str) < 0) return;
+        logv2("%s\n", str);
     }
-}
+    args->release(args);
+    return;
 
-static int set_cdsc(XEVE_CDSC * cdsc, int is_y4m)
-{
-    int result = 0;
-    int color_format = 0;
-
-    cdsc->max_bs_buf_size = MAX_BS_BUF;
-
-    if (!is_y4m)
-    {
-        color_format = op_chroma_format_idc == 0 ? XEVE_CF_YCBCR400 : \
-            (op_chroma_format_idc == 1 ? XEVE_CF_YCBCR420 : \
-            (op_chroma_format_idc == 2 ? XEVE_CF_YCBCR422 : \
-            (op_chroma_format_idc == 3 ? XEVE_CF_YCBCR444 : XEVE_CF_UNKNOWN)));
-        if (color_format == XEVE_CF_UNKNOWN)
-        {
-            return -1;
-        }
-        cdsc->param.cs = XEVE_CS_SET(color_format, op_codec_bit_depth, 0);
-    }
-    return 0;
-}
-
-static void print_conf(XEVE_CDSC * cdsc)
-{
-    logv2("AMVR: %d, ",        cdsc->param.tool_amvr);
-    logv2("MMVD: %d, ",        cdsc->param.tool_mmvd);
-    logv2("AFFINE: %d, ",      cdsc->param.tool_affine);
-    logv2("DMVR: %d, ",        cdsc->param.tool_dmvr);
-    logv2("DBF.ADDB: %d.%d, ", cdsc->param.use_deblock, cdsc->param.tool_addb);
-    logv2("ALF: %d, ",         cdsc->param.tool_alf);
-    logv2("ADMVP: %d, ",       cdsc->param.tool_admvp);
-    logv2("HMVP: %d, ",        cdsc->param.tool_hmvp);
-    logv2("HTDF: %d ",         cdsc->param.tool_htdf);
-    logv2("EIPD: %d, ",        cdsc->param.tool_eipd);
-    logv2("IQT: %d, ",         cdsc->param.tool_iqt);
-    logv2("CM_INIT: %d, ",     cdsc->param.tool_cm_init);
-    logv2("ADCC: %d, ",        cdsc->param.tool_adcc);
-    logv2("IBC: %d, ",         cdsc->param.ibc_flag);
-    logv2("ATS: %d, ",         cdsc->param.tool_ats);
-    logv2("RPL: %d, ",         cdsc->param.tool_rpl);
-    logv2("POCS: %d, ",        cdsc->param.tool_pocs);
-    logv2("CONSTRAINED_INTRA_PRED: %d, ", cdsc->param.constrained_intra_pred);
-    logv2("Uniform Tile Spacing: %d, ",   cdsc->param.tile_uniform_spacing_flag);
-    logv2("Number of Tile Columns: %d, ", cdsc->param.tile_columns);
-    logv2("Number of Tile  Rows: %d, ",   cdsc->param.tile_rows);
-    logv2("Number of Slices: %d, ",       cdsc->param.num_slice_in_pic);
-    logv2("Loop Filter Across Tile Enabled: %d, ", cdsc->param.loop_filter_across_tiles_enabled_flag);
-    logv2("ChromaQPTable: %d, ",                   cdsc->param.chroma_qp_table_present_flag);
-    logv2("DRA: %d ",                              cdsc->param.tool_dra);
-    logv2("\n");
+ERR:
+    logerr("Cannot show help message\n");
+    if(args) args->release(args);
 }
 
 int check_conf(XEVE_CDSC* cdsc)
 {
+    XEVE_PARAM * param;
     int ret = 0;
     int min_block_size = 4;
-    if(cdsc->param.profile == 0)
+    param = &cdsc->param;
+
+    if(param->profile == 0)
     {
-        if (cdsc->param.tool_amvr    == 1) { logv0("AMVR cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_mmvd    == 1) { logv0("MMVD cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_affine  == 1) { logv0("Affine cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_dmvr    == 1) { logv0("DMVR cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_admvp   == 1) { logv0("ADMVP cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_hmvp    == 1) { logv0("HMVP cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_addb    == 1) { logv0("ADDB cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_alf     == 1) { logv0("ALF cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_htdf    == 1) { logv0("HTDF cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.btt          == 1) { logv0("BTT cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.suco         == 1) { logv0("SUCO cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_eipd    == 1) { logv0("EIPD cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_iqt     == 1) { logv0("IQT cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_cm_init == 1) { logv0("CM_INIT cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_adcc    == 1) { logv0("ADCC cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_ats     == 1) { logv0("ATS_INTRA cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.ibc_flag     == 1) { logv0("IBC cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_rpl     == 1) { logv0("RPL cannot be on in base profile\n"); ret = -1; }
-        if (cdsc->param.tool_pocs    == 1) { logv0("POCS cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_amvr    == 1) { logerr("AMVR cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_mmvd    == 1) { logerr("MMVD cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_affine  == 1) { logerr("Affine cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_dmvr    == 1) { logerr("DMVR cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_admvp   == 1) { logerr("ADMVP cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_hmvp    == 1) { logerr("HMVP cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_addb    == 1) { logerr("ADDB cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_alf     == 1) { logerr("ALF cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_htdf    == 1) { logerr("HTDF cannot be on in base profile\n"); ret = -1; }
+        if (param->btt          == 1) { logerr("BTT cannot be on in base profile\n"); ret = -1; }
+        if (param->suco         == 1) { logerr("SUCO cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_eipd    == 1) { logerr("EIPD cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_iqt     == 1) { logerr("IQT cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_cm_init == 1) { logerr("CM_INIT cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_adcc    == 1) { logerr("ADCC cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_ats     == 1) { logerr("ATS_INTRA cannot be on in base profile\n"); ret = -1; }
+        if (param->ibc_flag     == 1) { logerr("IBC cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_rpl     == 1) { logerr("RPL cannot be on in base profile\n"); ret = -1; }
+        if (param->tool_pocs    == 1) { logerr("POCS cannot be on in base profile\n"); ret = -1; }
     }
     else
     {
-        if (cdsc->param.tool_admvp   == 0 && cdsc->param.tool_affine == 1) { logv0("AFFINE cannot be on when ADMVP is off\n"); ret = -1; }
-        if (cdsc->param.tool_admvp   == 0 && cdsc->param.tool_amvr   == 1) { logv0("AMVR cannot be on when ADMVP is off\n"); ret = -1; }
-        if (cdsc->param.tool_admvp   == 0 && cdsc->param.tool_dmvr   == 1) { logv0("DMVR cannot be on when ADMVP is off\n"); ret = -1; }
-        if (cdsc->param.tool_admvp   == 0 && cdsc->param.tool_mmvd   == 1) { logv0("MMVD cannot be on when ADMVP is off\n"); ret = -1; }
-        if (cdsc->param.tool_eipd    == 0 && cdsc->param.ibc_flag    == 1) { logv0("IBC cannot be on when EIPD is off\n"); ret = -1; }
-        if (cdsc->param.tool_iqt     == 0 && cdsc->param.tool_ats    == 1) { logv0("ATS cannot be on when IQT is off\n"); ret = -1; }
-        if (cdsc->param.tool_cm_init == 0 && cdsc->param.tool_adcc   == 1) { logv0("ADCC cannot be on when CM_INIT is off\n"); ret = -1; }
+        if (param->tool_admvp   == 0 && param->tool_affine == 1) { logerr("AFFINE cannot be on when ADMVP is off\n"); ret = -1; }
+        if (param->tool_admvp   == 0 && param->tool_amvr   == 1) { logerr("AMVR cannot be on when ADMVP is off\n"); ret = -1; }
+        if (param->tool_admvp   == 0 && param->tool_dmvr   == 1) { logerr("DMVR cannot be on when ADMVP is off\n"); ret = -1; }
+        if (param->tool_admvp   == 0 && param->tool_mmvd   == 1) { logerr("MMVD cannot be on when ADMVP is off\n"); ret = -1; }
+        if (param->tool_eipd    == 0 && param->ibc_flag    == 1) { logerr("IBC cannot be on when EIPD is off\n"); ret = -1; }
+        if (param->tool_iqt     == 0 && param->tool_ats    == 1) { logerr("ATS cannot be on when IQT is off\n"); ret = -1; }
+        if (param->tool_cm_init == 0 && param->tool_adcc   == 1) { logerr("ADCC cannot be on when CM_INIT is off\n"); ret = -1; }
     }
 
-    if (cdsc->param.btt == 1)
+    if (param->btt == 1)
     {
-        if (cdsc->param.framework_cb_max && cdsc->param.framework_cb_max < 5) { logv0("Maximun Coding Block size cannot be smaller than 5\n"); ret = -1; }
-        if (cdsc->param.framework_cb_max > 7) { logv0("Maximun Coding Block size cannot be greater than 7\n"); ret = -1; }
-        if (cdsc->param.framework_cb_min && cdsc->param.framework_cb_min < 2) { logv0("Minimum Coding Block size cannot be smaller than 2\n"); ret = -1; }
-        if ((cdsc->param.framework_cb_max || cdsc->param.framework_cb_min) &&
-            cdsc->param.framework_cb_min > cdsc->param.framework_cb_max) { logv0("Minimum Coding Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
-        if (cdsc->param.framework_cu14_max > 6) { logv0("Maximun 1:4 Coding Block size cannot be greater than 6\n"); ret = -1; }
-        if ((cdsc->param.framework_cb_max || cdsc->param.framework_cu14_max) &&
-            cdsc->param.framework_cu14_max > cdsc->param.framework_cb_max) { logv0("Maximun 1:4 Coding Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
-        if (cdsc->param.framework_tris_max > 6) { logv0("Maximun Tri-split Block size be greater than 6\n"); ret = -1; }
-        if ((cdsc->param.framework_tris_max || cdsc->param.framework_cb_max) &&
-            cdsc->param.framework_tris_max > cdsc->param.framework_cb_max) { logv0("Maximun Tri-split Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
-        if ((cdsc->param.framework_tris_min || cdsc->param.framework_cb_min) &&
-            cdsc->param.framework_tris_min < cdsc->param.framework_cb_min + 2) { logv0("Maximun Tri-split Block size cannot be smaller than Minimum Coding Block size plus two\n"); ret = -1; }
-        if(cdsc->param.framework_cb_min) min_block_size = 1 << cdsc->param.framework_cb_min;
+        if (param->framework_cb_max && param->framework_cb_max < 5) { logerr("Maximun Coding Block size cannot be smaller than 5\n"); ret = -1; }
+        if (param->framework_cb_max > 7) { logerr("Maximun Coding Block size cannot be greater than 7\n"); ret = -1; }
+        if (param->framework_cb_min && param->framework_cb_min < 2) { logerr("Minimum Coding Block size cannot be smaller than 2\n"); ret = -1; }
+        if ((param->framework_cb_max || param->framework_cb_min) &&
+            param->framework_cb_min > param->framework_cb_max) { logerr("Minimum Coding Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
+        if (param->framework_cu14_max > 6) { logerr("Maximun 1:4 Coding Block size cannot be greater than 6\n"); ret = -1; }
+        if ((param->framework_cb_max || param->framework_cu14_max) &&
+            param->framework_cu14_max > param->framework_cb_max) { logerr("Maximun 1:4 Coding Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
+        if (param->framework_tris_max > 6) { logerr("Maximun Tri-split Block size be greater than 6\n"); ret = -1; }
+        if ((param->framework_tris_max || param->framework_cb_max) &&
+            param->framework_tris_max > param->framework_cb_max) { logerr("Maximun Tri-split Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
+        if ((param->framework_tris_min || param->framework_cb_min) &&
+            param->framework_tris_min < param->framework_cb_min + 2) { logerr("Maximun Tri-split Block size cannot be smaller than Minimum Coding Block size plus two\n"); ret = -1; }
+        if(param->framework_cb_min) min_block_size = 1 << param->framework_cb_min;
         else min_block_size = 8;
     }
 
-    if (cdsc->param.suco == 1)
+    if (param->suco == 1)
     {
-        if (cdsc->param.framework_suco_max > 6) { logv0("Maximun SUCO size cannot be greater than 6\n"); ret = -1; }
-        if (cdsc->param.framework_cb_max && cdsc->param.framework_suco_max > cdsc->param.framework_cb_max) { logv0("Maximun SUCO size cannot be greater than Maximum coding Block size\n"); ret = -1; }
-        if (cdsc->param.framework_suco_min < 4) { logv0("Minimun SUCO size cannot be smaller than 4\n"); ret = -1; }
-        if (cdsc->param.framework_cb_min && cdsc->param.framework_suco_min < cdsc->param.framework_cb_min) { logv0("Minimun SUCO size cannot be smaller than Minimum coding Block size\n"); ret = -1; }
-        if (cdsc->param.framework_suco_min > cdsc->param.framework_suco_max) { logv0("Minimum SUCO size cannot be greater than Maximum SUCO size\n"); ret = -1; }
+        if (param->framework_suco_max > 6) { logerr("Maximun SUCO size cannot be greater than 6\n"); ret = -1; }
+        if (param->framework_cb_max && param->framework_suco_max > param->framework_cb_max) { logerr("Maximun SUCO size cannot be greater than Maximum coding Block size\n"); ret = -1; }
+        if (param->framework_suco_min < 4) { logerr("Minimun SUCO size cannot be smaller than 4\n"); ret = -1; }
+        if (param->framework_cb_min && param->framework_suco_min < param->framework_cb_min) { logerr("Minimun SUCO size cannot be smaller than Minimum coding Block size\n"); ret = -1; }
+        if (param->framework_suco_min > param->framework_suco_max) { logerr("Minimum SUCO size cannot be greater than Maximum SUCO size\n"); ret = -1; }
     }
 
     int pic_m = (8 > min_block_size) ? min_block_size : 8;
-    if ((cdsc->param.w & (pic_m - 1)) != 0) { logv0("Current encoder does not support picture width, not multiple of max(8, minimum CU size)\n"); ret = -1; }
-    if ((cdsc->param.h & (pic_m - 1)) != 0) { logv0("Current encoder does not support picture height, not multiple of max(8, minimum CU size)\n"); ret = -1; }
+    if ((param->w & (pic_m - 1)) != 0) { logerr("Current encoder does not support picture width, not multiple of max(8, minimum CU size)\n"); ret = -1; }
+    if ((param->h & (pic_m - 1)) != 0) { logerr("Current encoder does not support picture height, not multiple of max(8, minimum CU size)\n"); ret = -1; }
 
     return ret;
 }
 
-static int set_extra_config(XEVE id)
+static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
 {
     int  ret, size, value;
 
-    if(op_use_pic_signature)
+    if(args->hash)
     {
         value = 1;
         size = 4;
@@ -221,93 +180,141 @@ static int set_extra_config(XEVE id)
     return 0;
 }
 
-static void print_stat_init(void)
+static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
+    int * preset, int *tune)
 {
-    if(op_verbose < VERBOSE_FRAME) return;
-    logv2_line("");
-    logv2("  Input YUV file          : %s \n", op_fname_inp);
-    if(op_flag[OP_FLAG_FNAME_OUT])
-    {
-        logv2("  Output XEVE bitstream   : %s \n", op_fname_out);
-    }
-    if(op_flag[OP_FLAG_FNAME_REC])
-    {
-        logv2("  Output YUV file         : %s \n", op_fname_rec);
-    }
-    if (op_inp_bit_depth == 8 && op_out_bit_depth != 8)
-    {
-        logv2("  PSNR is calculated as 10-bit (Input YUV bitdepth: %d)\n", op_inp_bit_depth);
-    }
-    logv2_line("Stat");
+    int tprofile, tpreset, ttune, flag;
 
-    logv2("POC   Tid   Ftype   QP   PSNR-Y    PSNR-U    PSNR-V    Bits      EncT(ms)  ");
-    logv2("Ref. List\n");
+    if (strlen(args->profile) == 0) tprofile = XEVE_PROFILE_BASELINE; /* default */
+    else if (!strcmp(args->profile, "baseline")) tprofile = XEVE_PROFILE_BASELINE;
+    else if (!strcmp(args->profile, "main")) tprofile = XEVE_PROFILE_MAIN;
+    else return -1;
 
-    logv2_line("");
+    if (strlen(args->preset) == 0) tprofile = XEVE_PRESET_MEDIUM; /* default */
+    else if (!strcmp(args->preset, "fast")) tpreset = XEVE_PRESET_FAST;
+    else if (!strcmp(args->preset, "medium")) tpreset = XEVE_PRESET_MEDIUM;
+    else if (!strcmp(args->preset, "slow")) tpreset = XEVE_PRESET_SLOW;
+    else if (!strcmp(args->preset, "placebo")) tpreset = XEVE_PRESET_PLACEBO;
+    else return -1;
+
+    if (strlen(args->tune) == 0) ttune = XEVE_TUNE_NONE;
+    else if (!strcmp(args->tune, "zerolatency")) ttune = XEVE_TUNE_ZEROLATENCY;
+    else if (!strcmp(args->tune, "psnr")) ttune = XEVE_TUNE_PSNR;
+    else return -1;
+
+    *profile = tprofile;
+    *preset = tpreset;
+    *tune = ttune;
+
+    return 0;
 }
 
-static void print_config(XEVE id)
+
+static void print_stat_init(ARGS_PARSER * args)
 {
-    int s, v;
+    if(op_verbose < VERBOSE_FRAME) return;
+    logv3_line("Stat");
+
+    logv3("POC   Tid   Ftype   QP   PSNR-Y    PSNR-U    PSNR-V    Bits      EncT(ms)  ");
+    logv3("Ref. List\n");
+
+    logv3_line("");
+}
+
+static void print_config(ARGS_PARSER * args, XEVE_PARAM * param)
+{
+    int s, v, flag;
 
     if(op_verbose < VERBOSE_FRAME) return;
 
-    logv2_line("Configurations");
-    if(op_flag[OP_FLAG_FNAME_CFG])
+    logv3_line("Configurations");
+    logv2("Input : %s \n", args->fname_inp);
+    if(strlen(args->fname_out) > 0)
     {
-        logv2("\tconfig file name         = %s\n", op_fname_cfg);
+        logv2("Output : %s \n", args->fname_out);
     }
-    logv2("\tprofile                  = %s\n", op_profile);
-    logv2("\tpreset                   = %s\n", op_preset);
-    logv2("\ttune                     = %s\n", op_tune);
-    s = sizeof(int);
-    xeve_config(id, XEVE_CFG_GET_WIDTH, (void *)(&v), &s);
-    logv2("\twidth                    = %d\n", v);
-    xeve_config(id, XEVE_CFG_GET_HEIGHT, (void *)(&v), &s);
-    logv2("\theight                   = %d\n", v);
-    xeve_config(id, XEVE_CFG_GET_FPS, (void *)(&v), &s);
-    logv2("\tFPS                      = %d\n", v);
-    xeve_config(id, XEVE_CFG_GET_I_PERIOD, (void *)(&v), &s);
-    logv2("\tintra picture period     = %d\n", v);
-    xeve_config(id, XEVE_CFG_GET_QP, (void *)(&v), &s);
-    logv2("\tQP                       = %d\n", v);
-
-    logv2("\tframes                   = %d\n", op_max_frm_num);
-    xeve_config(id, XEVE_CFG_GET_USE_DEBLOCK, (void *)(&v), &s);
-    logv2("\tdeblocking filter        = %s\n", v? "enabled": "disabled");
-    xeve_config(id, XEVE_CFG_GET_CLOSED_GOP, (void *)(&v), &s);
-    logv2("\tGOP type                 = %s\n", v? "closed": "open");
-
-    xeve_config(id, XEVE_CFG_GET_HIERARCHICAL_GOP, (void *)(&v), &s);
-    logv2("\thierarchical GOP         = %s\n", v? "enabled": "disabled");
-
-    if(op_flag[OP_RC_TYPE])
+    if(strlen(args->fname_rec) > 0)
     {
-        xeve_config(id, XEVE_CFG_GET_BPS, (void*)(&v), &s);
-        logv2("\tBit_Rate                 = %d\n", v);
+        logv2("Output YUV file         : %s \n", args->fname_rec);
     }
+
+    if (strlen(args->fname_cfg) > 0)
+    {
+        logv2("\tconfig file name         = %s\n", args->fname_cfg);
+    }
+    logv2("\tprofile                  = %s\n", args->profile);
+    logv2("\tpreset                   = %s\n", args->preset);
+    if (strlen(args->tune) > 0)
+    {
+        logv2("\ttune                     = %s\n", args->tune);
+    }
+    logv2("\twidth                    = %d\n", param->w);
+    logv2("\theight                   = %d\n", param->h);
+    logv2("\tFPS                      = %d\n", param->fps);
+    logv2("\tintra picture period     = %d\n", param->keyint);
+    if (param->rc_type == XEVE_RC_CRF)
+    {
+        logv2("\tCRF                      = %d\n", param->crf);
+    }
+    else
+    {
+        logv2("\tQP                       = %d\n", param->qp);
+    }
+    logv2("\tframes                   = %d\n", args->frames);
+    logv2("\tdeblocking filter        = %s\n", param->use_deblock? "enabled": "disabled");
+    logv2("\tGOP type                 = %s\n", param->closed_gop? "closed": "open");
+    logv2("\thierarchical GOP         = %s\n", param->disable_hgop? "disabled": "enabled");
+    logv2("\trate-control type        = %s\n", (param->rc_type == XEVE_RC_ABR)? "ABR": (param->rc_type == XEVE_RC_CRF) ? "CRF" : "CQP");
+    if (param->rc_type == XEVE_RC_ABR) /* CBR */
+    {
+        logv2("\tBit_Rate                 = %s\n", param->bitrate);
+    }
+    if (args->input_depth == 8 && param->codec_bit_depth > 8)
+    {
+        logv2("Note: PSNR is calculated as 10-bit (Input YUV bitdepth: %d)\n", args->input_depth);
+    }
+    logv3("\n");
+    logv2("AMVR: %d, ",        param->tool_amvr);
+    logv2("MMVD: %d, ",        param->tool_mmvd);
+    logv2("AFFINE: %d, ",      param->tool_affine);
+    logv2("DMVR: %d, ",        param->tool_dmvr);
+    logv3("DBF.ADDB: %d.%d, ", param->use_deblock, param->tool_addb);
+    logv2("ALF: %d, ",         param->tool_alf);
+    logv2("ADMVP: %d, ",       param->tool_admvp);
+    logv2("HMVP: %d, ",        param->tool_hmvp);
+    logv2("HTDF: %d ",         param->tool_htdf);
+    logv2("EIPD: %d, ",        param->tool_eipd);
+    logv2("IQT: %d, ",         param->tool_iqt);
+    logv2("CM_INIT: %d, ",     param->tool_cm_init);
+    logv2("ADCC: %d, ",        param->tool_adcc);
+    logv2("IBC: %d, ",         param->ibc_flag);
+    logv2("ATS: %d, ",         param->tool_ats);
+    logv2("RPL: %d, ",         param->tool_rpl);
+    logv2("POCS: %d, ",        param->tool_pocs);
+    logv2("CONSTRAINED_INTRA_PRED: %d, ", param->constrained_intra_pred);
+    logv2("Uniform Tile Spacing: %d, ",   param->tile_uniform_spacing_flag);
+    logv2("Number of Tile Columns: %d, ", param->tile_columns);
+    logv2("Number of Tile  Rows: %d, ",   param->tile_rows);
+    logv2("Number of Slices: %d, ",       param->num_slice_in_pic);
+    logv2("Loop Filter Across Tile Enabled: %d, ", param->loop_filter_across_tiles_enabled_flag);
+    logv2("ChromaQPTable: %d, ",                   param->chroma_qp_table_present_flag);
+    logv2("DRA: %d ",                              param->tool_dra);
+    logv3("\n");
+
 }
 
-static int write_rec(IMGB_LIST *list, XEVE_MTIME ts)
+static int remove_file_contents(char * filename)
 {
-    int i;
-
-    for(i=0; i<MAX_BUMP_FRM_CNT; i++)
+    /* reconstruction file - remove contents and close */
+    FILE * fp;
+    fp = fopen(filename, "wb");
+    if(fp == NULL)
     {
-        if(list[i].ts == ts && list[i].used == 1)
-        {
-            if(op_flag[OP_FLAG_FNAME_REC])
-            {
-                if(imgb_write(op_fname_rec, list[i].imgb))
-                {
-                    logerr("cannot write reconstruction image\n");
-                    return XEVE_ERR;
-                }
-            }
-            return XEVE_OK;
-        }
+        logerr("cannot remove file (%s)\n", filename);
+        return -1;
     }
-    return XEVE_OK_FRM_DELAYED;
+    fclose(fp);
+    return 0;
 }
 
 void print_psnr(XEVE_STAT * stat, double * psnr, int bitrate, XEVE_CLK clk_end)
@@ -334,7 +341,7 @@ void print_psnr(XEVE_STAT * stat, double * psnr, int bitrate, XEVE_CLK clk_end)
         break;
     }
 
-    logv2("%-7d%-5d(%c)     %-5d%-10.4f%-10.4f%-10.4f%-10d%-10d", \
+    logv3("%-7d%-5d(%c)     %-5d%-10.4f%-10.4f%-10.4f%-10d%-10d", \
         stat->poc, stat->tid, stype, stat->qp, psnr[0], psnr[1], psnr[2], \
         bitrate, xeve_clk_msec(clk_end));
 
@@ -342,10 +349,10 @@ void print_psnr(XEVE_STAT * stat, double * psnr, int bitrate, XEVE_CLK clk_end)
     {
         logv2("[L%d ", i);
         for(j=0; j < stat->refpic_num[i]; j++) logv2("%d ",stat->refpic[i][j]);
-        logv2("] ");
+        logv3("] ");
     }
 
-    logv2("\n");
+    logv3("\n");
 
     fflush(stdout);
     fflush(stderr);
@@ -355,47 +362,43 @@ int setup_bumping(XEVE id)
 {
     int val, size;
 
-    logv2("Entering bumping process...\n");
+    logv3("Entering bumping process...\n");
     val  = 1;
     size = sizeof(int);
     if(XEVE_FAILED(xeve_config(id, XEVE_CFG_SET_FORCE_OUT, (void *)(&val), &size)))
     {
-        logv0("failed to fource output\n");
+        logerr("failed to fource output\n");
         return -1;
     }
     return 0;
 }
 
-static int y4m_test(FILE * ip_y4m)
+static int y4m_test(FILE * fp)
 {
 
     char buffer[9] = { 0 };
 
     /*Peek to check if y4m header is present*/
-    if (!fread(buffer, 1, 8, ip_y4m)) return -1;
-    fseek( ip_y4m, 0, SEEK_SET );
+    if (!fread(buffer, 1, 8, fp)) return -1;
+    fseek( fp, 0, SEEK_SET );
     buffer[8] = '\0';
     if (memcmp(buffer, "YUV4MPEG", 8))
     {
-
         return 0;
     }
     return 1;
-
-
 }
 
-
-static int y4m_parse_tags(Y4M_INFO * y4m, char *_tags)
+static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
 {
 
     char *p;
     char *q;
     char t_buff[20];
-    int found_w = 0, found_h = 0, found_cs = 0;
+    int found_w = 0, found_h = 0, found_cf = 0;
     int fps_n, fps_d, pix_ratio_n, pix_ratio_d, interlace;
 
-    for (p = _tags;; p = q)
+    for (p = tags;; p = q)
     {
 
         /*Skip any leading spaces.*/
@@ -445,7 +448,7 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char *_tags)
             if (q - p > 16) return XEVE_ERR;
             memcpy(t_buff, p + 1, q - p - 1);
             t_buff[q - p - 1] = '\0';
-            found_cs = 1;
+            found_cf = 1;
             break;
         }
         /*Ignore unknown tags.*/
@@ -457,51 +460,49 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char *_tags)
         logerr("Mandatory arugments are not found in y4m header");
         return XEVE_ERR;
     }
-    //Setting default colorspace to yuv420 and input_bd to 8 if header info. is NA
-    if (!found_cs)
+    /* Setting default colorspace to yuv420 and input_bd to 8 if header info. is NA */
+    if (!found_cf)
     {
-        y4m->cs = XEVE_CF_YCBCR420;
+        y4m->color_format = XEVE_CF_YCBCR420;
         y4m->bit_depth = 8;
     }
 
     if (strcmp(t_buff, "420jpeg") == 0 || strcmp(t_buff, "420") == 0 || \
         strcmp(t_buff, "420mpeg2") == 0 || strcmp(t_buff, "420paidv") == 0)
     {
-         y4m->cs = XEVE_CF_YCBCR420;
+         y4m->color_format = XEVE_CF_YCBCR420;
          y4m->bit_depth = 8;
     }
     else if (strcmp(t_buff, "422") == 0)
     {
-         y4m->cs = XEVE_CF_YCBCR422;
+         y4m->color_format = XEVE_CF_YCBCR422;
          y4m->bit_depth  = 8;
     }
     else if (strcmp(t_buff, "444") == 0)
     {
-         y4m->cs= XEVE_CF_YCBCR444;
+         y4m->color_format= XEVE_CF_YCBCR444;
          y4m->bit_depth  = 8;
     }
     else if (strcmp(t_buff, "420p10") == 0)
     {
-        y4m->cs = XEVE_CF_YCBCR420;
+        y4m->color_format = XEVE_CF_YCBCR420;
         y4m->bit_depth  = 10;
     }
     else if (strcmp(t_buff, "422p10") == 0)
     {
-        y4m->cs = XEVE_CF_YCBCR422;
+        y4m->color_format = XEVE_CF_YCBCR422;
         y4m->bit_depth  = 10;
     }
     else if (strcmp(t_buff, "444p10") == 0)
     {
-        y4m->cs = XEVE_CF_YCBCR444;
+        y4m->color_format = XEVE_CF_YCBCR444;
         y4m->bit_depth  = 10;
     }
     else if (strcmp(t_buff, "mono") == 0)
     {
-        y4m->cs = XEVE_CF_YCBCR400;
+        y4m->color_format = XEVE_CF_YCBCR400;
         y4m->bit_depth  = 8;
     }
-
-    y4m->cs = XEVE_CS_SET(y4m->cs, op_codec_bit_depth, 0);
     return XEVE_OK;
 }
 
@@ -545,18 +546,12 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_INFO * y4m)
     return 0;
 }
 
-static void y4m_update_param(Y4M_INFO * y4m, XEVE_PARAM * param)
+static void y4m_update_param(ARGS_PARSER * args, Y4M_INFO * y4m, XEVE_PARAM * param)
 {
-    param->w = y4m->w;
-    param->h = y4m->h;
-    param->fps = y4m->fps;
-    param->cs = y4m->cs;
-    op_inp_bit_depth = y4m->bit_depth;
-
-    ARGS_SET_FLAG(options, OP_FLAG_IN_BIT_DEPTH, 1);
-    ARGS_SET_FLAG(options, OP_FLAG_WIDTH_INP, 1);
-    ARGS_SET_FLAG(options, OP_FLAG_HEIGHT_INP, 1);
-    ARGS_SET_FLAG(options, OP_FLAG_FPS, 1);
+    args->set_int(args, "width", y4m->w);
+    args->set_int(args, "height", y4m->h);
+    args->set_int(args, "fps", y4m->fps);
+    args->set_int(args, "input-depth", y4m->bit_depth);
 }
 
 int main(int argc, const char **argv)
@@ -566,6 +561,7 @@ int main(int argc, const char **argv)
     FILE             * fp_inp = NULL;
     XEVE               id;
     XEVE_CDSC          cdsc;
+    XEVE_PARAM       * param = NULL;
     XEVE_BITB          bitb;
     XEVE_IMGB        * imgb_rec = NULL;
     XEVE_STAT          stat;
@@ -584,44 +580,62 @@ int main(int argc, const char **argv)
     Y4M_INFO           y4m;
     int                profile, preset, tune;
     char             * err_arg = NULL;
+    ARGS_PARSER      * args = NULL;
+    char               fname_inp[128], fname_out[128], fname_rec[128];
+    int                is_out = 0, is_rec = 0;
+    int                max_frames = 0;
+    int                skip_frames = 0;
+    int                is_max_frames = 0, is_skip_frames = 0;
+    char             * errstr = NULL;
+    int                color_format;
 
-    logv1("XEVE: eXtra-fast Essential Video Encoder\n");
+    logv2("XEVE: eXtra-fast Essential Video Encoder\n");
 
     /* help message */
     if(argc < 2 || !strcmp(argv[1], "--help"))
     {
-        print_usage();
+        print_usage(argv);
         return 0;
     }
 
     /* set default parameters */
     memset(&cdsc, 0, sizeof(XEVE_CDSC));
-    ret = xeve_param_default(&cdsc.param);
+    param = &cdsc.param;
+    ret = xeve_param_default(param);
     if (XEVE_FAILED(ret))
     {
         logerr("cannot set default parameter\n");
-        return -1;
+        ret = -1; goto ERR;
     }
 
     /* parse command line */
-    ret = args_parse_all(argc, argv, options, &cdsc.param);
-    if (ret != 0)
+    args = args_create();
+    if (args == NULL)
     {
-        logerr("command parsing error\n");
-        print_usage();
-        return -1;
+        logerr("cannot create argument parser\n");
+        ret = -1; goto ERR;
     }
-    /* open input file */
-    if(!op_flag[OP_FLAG_FNAME_INP])
+    if (args->init(args, param))
+    {
+        logerr("cannot initialize argument parser\n");
+        ret = -1; goto ERR;
+    }
+    if (args->parse(args, argc, argv, &errstr))
+    {
+        logerr("command parsing error (%s)\n", errstr);
+        ret = -1; goto ERR;
+    }
+    /* try to open input file */
+    if (args->get_str(args, "input", fname_inp, NULL))
     {
         logerr("input file should be set\n");
-        return -1;
+        ret = -1; goto ERR;
     }
-    fp_inp = fopen(op_fname_inp, "rb");
+    fp_inp = fopen(fname_inp, "rb");
     if(fp_inp == NULL)
     {
-        logerr("cannot open original file (%s)\n", op_fname_inp);
-        return -1;
+        logerr("cannot open input file (%s)\n", fname_inp);
+        ret = -1; goto ERR;
     }
 
     /* y4m header parsing  */
@@ -630,65 +644,86 @@ int main(int argc, const char **argv)
     {
         if (y4m_header_parser(fp_inp, &y4m))
         {
-            logerr("This y4m is not supported (%s)\n", op_fname_inp);
-            return -1;
+            logerr("This y4m is not supported (%s)\n", fname_inp);
+            ret = -1; goto ERR;
         }
-        y4m_update_param(&y4m, &cdsc.param);
+        y4m_update_param(args, &y4m, param);
+        color_format = y4m.color_format;
     }
+    else
+    {
+        int csp;
+        if (args->get_int(args, "input-csp", &csp, NULL))
+        {
+            logerr("cannot get input-csp value");
+            ret = -1; goto ERR;
+        }
+        color_format = (csp == 0 ? XEVE_CF_YCBCR400 : \
+            (csp == 1 ? XEVE_CF_YCBCR420 : \
+            (csp == 2 ? XEVE_CF_YCBCR422 : \
+            (csp == 3 ? XEVE_CF_YCBCR444 : XEVE_CF_UNKNOWN))));
+        if (color_format == XEVE_CF_UNKNOWN)
+        {
+            logerr("Unknow color format\n");
+            ret = -1; goto ERR;
+        }
+    }
+    /* coding color space should follow codec internal bit depth */
+    param->cs = XEVE_CS_SET(color_format, param->codec_bit_depth, 0);
+
     /* check mandatory parameters */
-    if (args_check_mandatory_param(options, &err_arg)) {
+    if (args->check_mandatory(args, &err_arg)) {
         logerr("[%s] argument should be set\n", err_arg);
-        return -1;
+        ret = -1; goto ERR;
     }
     /* apply preset and tune parameters */
-    if (args_get_profile_preset_tune(&profile, &preset, &tune))
+    if (get_profile_preset_tune(args, &profile, &preset, &tune))
     {
         logerr("wrong profile, preset, tune value\n");
-        return -1;
+        ret = -1; goto ERR;
     }
-    ret = xeve_param_ppt(&cdsc.param, profile, preset, tune);
+    ret = xeve_param_ppt(param, profile, preset, tune);
     if (XEVE_FAILED(ret))
     {
         logerr("cannot set profile, preset, tune to parameter\n");
-        return -1;
+        ret = -1; goto ERR;
     }
-    /* prepare CDSC and check values */
-    if (set_cdsc(&cdsc, is_y4m))
-    {
-        logerr("Cannot set CDSC properly\n");
-        return -1;
-    }
+
+    cdsc.max_bs_buf_size = MAX_BS_BUF; /* maximum bitstream buffer size */
+
     if (check_conf(&cdsc))
     {
-        logv0("invalid configuration\n");
-        return -1;
-    }
-    print_conf(&cdsc);
-
-    if(op_flag[OP_FLAG_FNAME_OUT])
-    {
-        /* bitstream file - remove contents and close */
-        FILE * fp;
-        fp = fopen(op_fname_out, "wb");
-        if(fp == NULL)
-        {
-            logerr("cannot open bitstream file (%s)\n", op_fname_out);
-            return -1;
-        }
-        fclose(fp);
+        logerr("invalid configuration\n");
+        ret = -1; goto ERR;
     }
 
-    if(op_flag[OP_FLAG_FNAME_REC])
+    if (args->get_str(args, "output", fname_out, &is_out))
     {
-        /* reconstruction file - remove contents and close */
-        FILE * fp;
-        fp = fopen(op_fname_rec, "wb");
-        if(fp == NULL)
-        {
-            logerr("cannot open reconstruction file (%s)\n", op_fname_rec);
-            return -1;
-        }
-        fclose(fp);
+        logerr("cannot get 'output' option\n");
+        ret = -1; goto ERR;
+    }
+    if (is_out)
+    {
+        remove_file_contents(fname_out);
+    }
+    if (args->get_str(args, "recon", fname_rec, &is_rec))
+    {
+        logerr("cannot get 'recon' option\n");
+        ret = -1; goto ERR;
+    }
+    if (is_rec)
+    {
+        remove_file_contents(fname_rec);
+    }
+    if (args->get_int(args, "frames", &max_frames, &is_max_frames))
+    {
+        logerr("cannot get 'frames' option\n");
+        ret = -1; goto ERR;
+    }
+    if (args->get_int(args, "seek", &skip_frames, &is_skip_frames))
+    {
+        logerr("cannot get 'seek' option\n");
+        ret = -1; goto ERR;
     }
 
     /* allocate bitstream buffer */
@@ -696,43 +731,43 @@ int main(int argc, const char **argv)
     if(bs_buf == NULL)
     {
         logerr("cannot allocate bitstream buffer, size=%d", MAX_BS_BUF);
-        return -1;
+        ret = -1; goto ERR;
     }
 
     /* create encoder */
     id = xeve_create(&cdsc, NULL);
-    if(id == NULL)
+    if (id == NULL)
     {
-        logv0("cannot create XEVE encoder\n");
-        return -1;
+        logerr("cannot create XEVE encoder\n");
+        ret = -1; goto ERR;
     }
 
-    if(set_extra_config(id))
+    if (set_extra_config(id, args, param))
     {
-        logv0("cannot set extra configurations\n");
-        return -1;
+        logerr("cannot set extra configurations\n");
+        ret = -1; goto ERR;
     }
 
     /* create image lists */
-    if(imgb_list_alloc(ilist_org, cdsc.param.w, cdsc.param.h, op_inp_bit_depth, XEVE_CS_GET_FORMAT(cdsc.param.cs)))
+    if(imgb_list_alloc(ilist_org, param->w, param->h, args->input_depth, color_format))
     {
-        logv0("cannot allocate image list for original image\n");
-        return -1;
+        logerr("cannot allocate image list for input pictures\n");
+        ret = -1; goto ERR;
     }
-    if(imgb_list_alloc(ilist_rec, cdsc.param.w, cdsc.param.h, op_out_bit_depth, XEVE_CS_GET_FORMAT(cdsc.param.cs)))
+    if(imgb_list_alloc(ilist_rec, param->w, param->h, param->codec_bit_depth, color_format))
     {
-        logv0("cannot allocate image list for reconstructed image\n");
-        return -1;
+        logerr("cannot allocate image list for reconstructed pictures\n");
+        ret = -1; goto ERR;
     }
 
-    print_config(id);
-    print_stat_init();
+    print_config(args, param);
+    print_stat_init(args);
 
     bitrate = 0;
     bitb.addr = bs_buf;
     bitb.bsize = MAX_BS_BUF;
 
-    if(op_flag[OP_FLAG_SKIP_FRAMES] && op_skip_frames > 0)
+    if(is_skip_frames && skip_frames > 0)
     {
         state = STATE_SKIPPING;
     }
@@ -747,18 +782,18 @@ int main(int argc, const char **argv)
     {
         if(state == STATE_SKIPPING)
         {
-            if(pic_skip < op_skip_frames)
+            if(pic_skip < skip_frames)
             {
                 ilist_t = imgb_list_get_empty(ilist_org);
                 if(ilist_t == NULL)
                 {
                     logerr("cannot get empty orignal buffer\n");
-                    goto ERR;
+                    ret = -1; goto ERR;
                 }
                 if(imgb_read(fp_inp, ilist_t->imgb, is_y4m))
                 {
-                    logv2("reached end of original file (or reading error)\n");
-                    goto ERR;
+                    logv3("reached end of original file (or reading error)\n");
+                    ret = -1; goto ERR;
                 }
             }
             else
@@ -776,13 +811,13 @@ int main(int argc, const char **argv)
             if(ilist_t == NULL)
             {
                 logerr("cannot get empty orignal buffer\n");
-                return -1;
+                ret = -1; goto ERR;
             }
-
             /* read original image */
-            if ((op_max_frm_num && pic_icnt >= op_max_frm_num) || imgb_read(fp_inp, ilist_t->imgb, is_y4m))
+            ret = imgb_read(fp_inp, ilist_t->imgb, is_y4m);
+            if ((ret < 0))
             {
-                logv2("reached end of original file (or reading error)\n");
+                logv3("reached out the end of input file\n");
                 state = STATE_BUMPING;
                 setup_bumping(id);
                 continue;
@@ -793,8 +828,8 @@ int main(int argc, const char **argv)
             ret = xeve_push(id, ilist_t->imgb);
             if(XEVE_FAILED(ret))
             {
-                logv0("xeve_push() failed\n");
-                return -1;
+                logerr("xeve_push() failed\n");
+                ret = -1; goto ERR;
             }
             pic_icnt++;
         }
@@ -804,8 +839,8 @@ int main(int argc, const char **argv)
         ret = xeve_encode(id, &bitb, &stat);
         if(XEVE_FAILED(ret))
         {
-            logv0("xeve_encode() failed\n");
-            return -1;
+            logerr("xeve_encode() failed\n");
+            ret = -1; goto ERR;
         }
 
         clk_end = xeve_clk_from(clk_beg);
@@ -814,17 +849,17 @@ int main(int argc, const char **argv)
         /* store bitstream */
         if (ret == XEVE_OK_OUT_NOT_AVAILABLE)
         {
-            /* logv2("--> RETURN OK BUT PICTURE IS NOT AVAILABLE YET\n"); */
+            /* logv3("--> RETURN OK BUT PICTURE IS NOT AVAILABLE YET\n"); */
             continue;
         }
         else if(ret == XEVE_OK)
         {
-            if(op_flag[OP_FLAG_FNAME_OUT] && stat.write > 0)
+            if(is_out && stat.write > 0)
             {
-                if(write_data(op_fname_out, bs_buf, stat.write))
+                if(write_data(fname_out, bs_buf, stat.write))
                 {
-                    logv0("cannot write bitstream\n");
-                    return -1;
+                    logerr("cannot write bitstream\n");
+                    ret = -1; goto ERR;
                 }
             }
 
@@ -833,26 +868,26 @@ int main(int argc, const char **argv)
             ret = xeve_config(id, XEVE_CFG_GET_RECON, (void *)&imgb_rec, &size);
             if(XEVE_FAILED(ret))
             {
-                logv0("failed to get reconstruction image\n");
-                return -1;
+                logerr("failed to get reconstruction image\n");
+                ret = -1; goto ERR;
             }
 
             /* store reconstructed image to list */
             ilist_t = imgb_list_put(ilist_rec, imgb_rec, imgb_rec->ts[0]);
             if(ilist_t == NULL)
             {
-                logv0("cannot put reconstructed image to list\n");
-                return -1;
+                logerr("cannot put reconstructed image to list\n");
+                ret = -1; goto ERR;
             }
 
             /* calculate PSNR */
-            if (op_verbose == VERBOSE_FRAME)
+            if (op_verbose  == VERBOSE_FRAME)
             {
                 if(cal_psnr(ilist_org, ilist_t->imgb, ilist_t->ts,
-                    op_inp_bit_depth, op_out_bit_depth, psnr))
+                    args->input_depth, param->codec_bit_depth, psnr))
                 {
-                    logv0("cannot calculate PSNR\n");
-                    return -1;
+                    logerr("cannot calculate PSNR\n");
+                    ret = -1; goto ERR;
                 }
                 if (is_first_enc)
                 {
@@ -866,17 +901,21 @@ int main(int argc, const char **argv)
                 for (i = 0; i < 3; i++) psnr_avg[i] += psnr[i];
             }
             /* release original image */
-            imgb_list_make_unused(ilist_org, ilist_t->ts);
-            ret = write_rec(ilist_rec, pic_ocnt);
-            if (ret == XEVE_ERR)
+            imgb_list_find_and_make_unused(ilist_org, ilist_t->ts);
+
+            /* release recon image */
+            ilist_t = imgb_list_find(ilist_rec, pic_ocnt);
+            if (ilist_t != NULL)
             {
-                logv0("cannot write reconstruction image\n");
-                return -1;
-            }
-            else if (ret == XEVE_OK)
-            {
-                /* release recon image */
-                imgb_list_make_unused(ilist_rec, pic_ocnt);
+                if(is_rec)
+                {
+                    if(imgb_write(args->fname_rec, ilist_t->imgb))
+                    {
+                        logerr("cannot write reconstruction image\n");
+                        ret = -1; goto ERR;
+                    }
+                }
+                imgb_list_make_unused(ilist_t);
                 pic_ocnt++;
             }
             bitrate += (stat.write - stat.sei_size);
@@ -890,11 +929,11 @@ int main(int argc, const char **argv)
                 total_time = total_time % 60;
                 int s = total_time;
                 double curr_bitrate = bitrate;
-                curr_bitrate *= (cdsc.param.fps * 8);
+                curr_bitrate *= (param->fps * 8);
                 curr_bitrate /= (encod_frames + 1);
                 curr_bitrate /= 1000;
-                logv1("[ %d / %d frames ] [ %.2f frame/sec ] [ %.4f kbps ] [ %2dh %2dm %2ds ] \r"
-                       , encod_frames, op_max_frm_num, ((float)(encod_frames + 1) * 1000) / ((float)xeve_clk_msec(clk_tot))
+                logv2("[ %d / %d frames ] [ %.2f frame/sec ] [ %.4f kbps ] [ %2dh %2dm %2ds ] \r"
+                       , encod_frames, max_frames, ((float)(encod_frames + 1) * 1000) / ((float)xeve_clk_msec(clk_tot))
                        , curr_bitrate, h, m, s);
                 fflush(stdout);
                 encod_frames++;
@@ -904,6 +943,7 @@ int main(int argc, const char **argv)
             if (imgb_rec)
             {
                 imgb_rec->release(imgb_rec);
+                imgb_rec = NULL;
             }
         }
         else if (ret == XEVE_OK_NO_MORE_FRM)
@@ -916,7 +956,7 @@ int main(int argc, const char **argv)
             return -1;
         }
 
-        if(op_flag[OP_FLAG_MAX_FRM_NUM] && pic_icnt >= op_max_frm_num
+        if(is_max_frames && pic_icnt >= max_frames
             && state == STATE_ENCODING)
         {
             state = STATE_BUMPING;
@@ -927,65 +967,67 @@ int main(int argc, const char **argv)
     /* store remained reconstructed pictures in output list */
     while(pic_icnt - pic_ocnt > 0)
     {
-        ret = write_rec(ilist_rec, pic_ocnt);
-        if (ret == XEVE_ERR)
+        /* release recon image */
+        ilist_t = imgb_list_find(ilist_rec, pic_ocnt);
+        if (ilist_t != NULL)
         {
-            logv0("cannot write reconstruction image\n");
-            return -1;
-        }
-        else if (ret == XEVE_OK)
-        {
-            /* release recon image */
-            imgb_list_make_unused(ilist_rec, pic_ocnt);
+            if(is_rec)
+            {
+                if(imgb_write(args->fname_rec, ilist_t->imgb))
+                {
+                    logerr("cannot write reconstruction image\n");
+                    ret = -1; goto ERR;
+                }
+            }
+            imgb_list_make_unused(ilist_t);
             pic_ocnt++;
         }
     }
     if(pic_icnt != pic_ocnt)
     {
-        logv2("number of input(=%d) and output(=%d) is not matched\n", (int)pic_icnt, (int)pic_ocnt);
+        logv3("number of input(=%d) and output(=%d) is not matched\n", (int)pic_icnt, (int)pic_ocnt);
     }
 
-    logv1_line("Summary");
+    logv2_line("Summary");
     psnr_avg[0] /= pic_ocnt;
     psnr_avg[1] /= pic_ocnt;
     psnr_avg[2] /= pic_ocnt;
 
-    logv2("  PSNR Y(dB)       : %-5.4f\n", psnr_avg[0]);
-    logv2("  PSNR U(dB)       : %-5.4f\n", psnr_avg[1]);
-    logv2("  PSNR V(dB)       : %-5.4f\n", psnr_avg[2]);
-    logv2("  Total bits(bits) : %.0f\n", bitrate * 8);
-    bitrate *= (cdsc.param.fps * 8);
+    logv3("  PSNR Y(dB)       : %-5.4f\n", psnr_avg[0]);
+    logv3("  PSNR U(dB)       : %-5.4f\n", psnr_avg[1]);
+    logv3("  PSNR V(dB)       : %-5.4f\n", psnr_avg[2]);
+    logv3("  Total bits(bits) : %.0f\n", bitrate * 8);
+    bitrate *= (param->fps * 8);
     bitrate /= pic_ocnt;
     bitrate /= 1000;
 
-    logv2("  Labeles          : br,kbps\tPSNR,Y\tPSNR,U\tPSNR,V\t\n");
-    logv2("  Summary          : %-5.4f\t%-5.4f\t%-5.4f\t%-5.4f\n", bitrate, psnr_avg[0], psnr_avg[1], psnr_avg[2]);
+    logv3("  Labeles          : br,kbps\tPSNR,Y\tPSNR,U\tPSNR,V\t\n");
+    logv3("  Summary          : %-5.4f\t%-5.4f\t%-5.4f\t%-5.4f\n", bitrate, psnr_avg[0], psnr_avg[1], psnr_avg[2]);
 
-    logv1("Bitrate                           = %.4f kbps\n", bitrate);
-    logv1("Encoded frame count               = %d\n", (int)pic_ocnt);
-    logv1("Total encoding time               = %.3f msec,",
+    logv2("Bitrate                           = %.4f kbps\n", bitrate);
+    logv2("Encoded frame count               = %d\n", (int)pic_ocnt);
+    logv2("Total encoding time               = %.3f msec,",
         (float)xeve_clk_msec(clk_tot));
-    logv1(" %.3f sec\n", (float)(xeve_clk_msec(clk_tot)/1000.0));
+    logv2(" %.3f sec\n", (float)(xeve_clk_msec(clk_tot)/1000.0));
 
-    logv1("Average encoding time for a frame = %.3f msec\n",
+    logv2("Average encoding time for a frame = %.3f msec\n",
         (float)xeve_clk_msec(clk_tot)/pic_ocnt);
-    logv1("Average encoding speed            = %.3f frames/sec\n",
+    logv2("Average encoding speed            = %.3f frames/sec\n",
         ((float)pic_ocnt * 1000) / ((float)xeve_clk_msec(clk_tot)));
-    logv1_line(NULL);
+    logv2_line(NULL);
 
-    if (op_max_frm_num != 0 && pic_ocnt != op_max_frm_num)
+    if (is_max_frames && pic_ocnt != max_frames)
     {
-        logv2("Wrong frames count: should be %d was %d\n", op_max_frm_num, (int)pic_ocnt);
+        logv3("Wrong frames count: should be %d was %d\n", max_frames, (int)pic_ocnt);
     }
 
 ERR:
-    xeve_delete(id);
-
+    if(id) xeve_delete(id);
     imgb_list_free(ilist_org);
     imgb_list_free(ilist_rec);
-
     if(fp_inp) fclose(fp_inp);
     if(bs_buf) free(bs_buf); /* release bitstream buffer */
-    return 0;
+    if(args) args->release(args);
+    return ret;
 }
 

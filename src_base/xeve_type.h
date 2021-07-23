@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -101,7 +101,7 @@ typedef struct _XEVE_MODE
     u8    bi_idx;
     s16   mmvd_idx;
     /* mv difference */
-    s16   mvd[REFP_NUM][MV_D];    
+    s16   mvd[REFP_NUM][MV_D];
     /* mv */
     s16   dmvr_mv[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D];
     /* mv */
@@ -320,7 +320,7 @@ struct _XEVE_PINTER
     /* temporary buffer for analyze_cu */
     s8                  refi[PRED_NUM][REFP_NUM];
     /* Ref idx predictor */
-    s8                  refi_pred[REFP_NUM][MAX_NUM_MVP]; 
+    s8                  refi_pred[REFP_NUM][MAX_NUM_MVP];
     u8                  mvp_idx[PRED_NUM][REFP_NUM];
     s16                 mvp_scale[REFP_NUM][XEVE_MAX_NUM_ACTIVE_REF_FRAME][MAX_NUM_MVP][MV_D];
     s16                 mv_scale[REFP_NUM][XEVE_MAX_NUM_ACTIVE_REF_FRAME][MV_D];
@@ -555,8 +555,8 @@ typedef struct _XEVE_CU_DATA
     u8               * skip_flag;
     u8               * ibc_flag;
     u8               * dmvr_flag;
-    s8              ** refi;    
-    u8              ** mvp_idx; 
+    s8              ** refi;
+    u8              ** mvp_idx;
     u8               * mvr_idx;
     u8               * bi_idx;
     s16              * mmvd_idx;
@@ -576,8 +576,8 @@ typedef struct _XEVE_CU_DATA
     u8               * ats_inter_info;
     u32              * map_cu_mode;
     s8               * depth;
-    s16              * coef[N_C]; 
-    pel              * reco[N_C]; 
+    s16              * coef[N_C];
+    pel              * reco[N_C];
 #if TRACE_ENC_CU_DATA
     u64                trace_idx[MAX_CU_CNT_IN_LCU];
 #endif
@@ -696,7 +696,7 @@ struct _XEVE_CORE
     XEVE_CTX         * ctx;
     int                thread_cnt;
     TREE_CONS          tree_cons; //!< Tree status
-    u8                 ctx_flags[NUM_CNID]; 
+    u8                 ctx_flags[NUM_CNID];
     int                split_mode_child[4];
     int                parent_split_allow[6];
     //one picture that arranges cu pixels and neighboring pixels for deblocking (just to match the interface of deblocking functions)
@@ -868,27 +868,27 @@ struct _XEVE_CTX
     /* rate control for sequence */
     XEVE_RC          * rc;
     /* temporary tile bitstream store buffer if needed */
-    u8               * bs_tbuf[MAX_NUM_TILES_ROW * MAX_NUM_TILES_COL];
+    u8               * bs_tbuf[XEVE_MAX_NUM_TILES_ROW * XEVE_MAX_NUM_TILES_COL];
     /* bs_tbuf byte size for one tile */
     int                bs_tbuf_size;
     THREAD_CONTROLLER * tc;
-    POOL_THREAD        thread_pool[XEVE_MAX_TASK_CNT];
+    POOL_THREAD        thread_pool[XEVE_MAX_THREADS];
     int                parallel_rows;
     volatile s32     * sync_flag;
     SYNC_OBJ           sync_block;
     /* address of core structure */
-    XEVE_CORE        * core[XEVE_MAX_TASK_CNT];
-    XEVE_BSW           bs[XEVE_MAX_TASK_CNT];
-    XEVE_SBAC          sbac_enc[XEVE_MAX_TASK_CNT];
-    XEVE_MODE          mode[XEVE_MAX_TASK_CNT];
-    XEVE_PINTRA        pintra[XEVE_MAX_TASK_CNT];
-    XEVE_PINTER        pinter[XEVE_MAX_TASK_CNT];
+    XEVE_CORE        * core[XEVE_MAX_THREADS];
+    XEVE_BSW           bs[XEVE_MAX_THREADS];
+    XEVE_SBAC          sbac_enc[XEVE_MAX_THREADS];
+    XEVE_MODE          mode[XEVE_MAX_THREADS];
+    XEVE_PINTRA        pintra[XEVE_MAX_THREADS];
+    XEVE_PINTER        pinter[XEVE_MAX_THREADS];
 
 
     /* qp table */
     XEVE_CHROMA_TABLE chroma_qp_table_struct;
     int             * qp_chroma_dynamic[2];
-    int               qp_chroma_dynamic_ext[2][MAX_QP_TABLE_SIZE_EXT];
+    int               qp_chroma_dynamic_ext[2][XEVE_MAX_QP_TABLE_SIZE_EXT];
 
     u16               split_check[SPLIT_CHECK_NUM][2];
     s64               err_scale[6][NUM_CU_LOG2 + 1];
@@ -958,9 +958,9 @@ struct _XEVE_CTX
     /* tile index map (width in SCU x height in SCU) of
        raster scan order in a frame */
     u8               * map_tidx;
-    u8                 tile_to_slice_map[MAX_NUM_TILES_COL * MAX_NUM_TILES_ROW];
-    u8                 tiles_in_slice[MAX_NUM_TILES_COL * MAX_NUM_TILES_ROW];
-    u8                 tile_order[MAX_NUM_TILES_COL * MAX_NUM_TILES_ROW];
+    u8                 tile_to_slice_map[XEVE_MAX_NUM_TILES_COL * XEVE_MAX_NUM_TILES_ROW];
+    u8                 tiles_in_slice[XEVE_MAX_NUM_TILES_COL * XEVE_MAX_NUM_TILES_ROW];
+    u8                 tile_order[XEVE_MAX_NUM_TILES_COL * XEVE_MAX_NUM_TILES_ROW];
 
 };
 

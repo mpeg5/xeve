@@ -1412,7 +1412,7 @@ static double pinter_residue_rdo_mmvd(XEVE_CTX *ctx, XEVE_CORE *core, int x, int
 
     /* prediction */
     xeve_mc_mmvd(x, y, ctx->w, ctx->h, w, h, pi->refi[pidx], pi->mv[pidx], pi->refp, pred, ctx->sps.bit_depth_luma_minus8 + 8, &mcore->mmvd_opt);
- 
+
     /* get distortion */
     y_org = pi->o[Y_C] + x + y * pi->s_o[Y_C];
     cost = xeve_satd_16b(log2_w, log2_h, pred[0][Y_C], y_org, w, pi->s_o[Y_C], ctx->sps.bit_depth_luma_minus8 + 8);
@@ -4565,7 +4565,7 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
         get_mmvd_mvp_list(ctx->map_refi, ctx->refp[0], ctx->map_mv, ctx->w_scu, ctx->h_scu, core->scup, core->avail_cu, log2_cuw, log2_cuh, ctx->slice_type, real_mv, ctx->map_scu, REF_SET, core->avail_lr
                         , ctx->poc.poc_val, ctx->rpm.num_refp
                         , mcore->history_buffer, ctx->sps.tool_admvp, ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
-  
+
         mmvd_base_skip(ctx, core, real_mv, log2_cuw, log2_cuh, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], ctx->w_scu, core->avail_cu, REF_SET
                      , ctx->h_scu, ctx->map_scu, core->avail_lr, mcore->history_buffer, ctx->sps.tool_admvp, ctx->sh, ctx->log2_max_cuwh, ctx->poc.poc_val);
     }
@@ -5478,7 +5478,7 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
     for(int i = 0; i < ctx->param.threads; i++)
     {
         pi = &ctx->pinter[i];
-        pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : ctx->param.me_range;
+        pi->max_search_range = ctx->param.bframes == 0 ? SEARCH_RANGE_IPEL_LD : ctx->param.me_range;
         pi->search_range_ipel[MV_X] = pi->max_search_range;
         pi->search_range_ipel[MV_Y] = pi->max_search_range;
         pi->search_range_spel[MV_X] = ctx->param.me_sub_range;

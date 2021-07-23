@@ -44,6 +44,12 @@
 #include <math.h>
 #include <stdarg.h>
 
+#define VERBOSE_NONE               0
+#define VERBOSE_ERROR              1
+#define VERBOSE_SIMPLE             2
+#define VERBOSE_FRAME              3
+
+
 /* logging functions */
 static void log_msg(char * filename, int line, const char *fmt, ...)
 {
@@ -58,15 +64,20 @@ static void log_msg(char * filename, int line, const char *fmt, ...)
 
 static void log_line(char * pre)
 {
+    int i, len;
     char str[128]={'\0',};
     const int chars = 80;
-    int len = (pre == NULL)? 0: (int)strlen(pre);
+    for(i = 0 ; i< 3; i++) {str[i] = '=';}
+    str[i] = '\0';
+
+    len = (pre == NULL)? 0: (int)strlen(pre);
     if(len > 0)
     {
-        sprintf(str, "%s ", pre);
+        sprintf(str + 3, " %s ", pre);
         len = (int)strlen(str);
     }
-    for(int i = len ; i< chars; i++) {str[i] = '=';}
+
+    for(i = len ; i< chars; i++) {str[i] = '=';}
     str[chars] = '\0';
     printf("%s\n", str);
 }
@@ -74,31 +85,25 @@ static void log_line(char * pre)
 #if defined(__GNUC__)
 #define __FILENAME__ \
     (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define logerr(args...) log_msg(__FILENAME__, __LINE__, args)
 
-#define logv0(args...) {if(op_verbose >= VERBOSE_0) {log_msg(NULL, -1, args);}}
-#define logv1(args...) {if(op_verbose >= VERBOSE_1) {log_msg(NULL, -1, args);}}
-#define logv2(args...) {if(op_verbose >= VERBOSE_2) {log_msg(NULL, -1, args);}}
+#define logerr(args...) {if(op_verbose >= VERBOSE_ERROR) {log_msg(__FILENAME__, __LINE__, args);}}
+#define logv2(args...) {if(op_verbose >= VERBOSE_SIMPLE) {log_msg(NULL, -1, args);}}
+#define logv3(args...) {if(op_verbose >= VERBOSE_FRAME) {log_msg(NULL, -1, args);}}
 #else
 #define __FILENAME__ \
     (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
-#define logerr(args, ...) log_msg(__FILENAME__, __LINE__, args, __VA_ARGS__)
-#define logv0(args,...) \
-    {if(op_verbose >= VERBOSE_0){log_msg(NULL, -1, args,__VA_ARGS__);}}
-#define logv1(args,...) \
-    {if(op_verbose >= VERBOSE_1){log_msg(NULL, -1, args,__VA_ARGS__);}}
+#define logerr(args,...) \
+    {if(op_verbose >= VERBOSE_ERROR){log_msg(__FILENAME__, __LINE__, args, __VA_ARGS__);}}
 #define logv2(args,...) \
-    {if(op_verbose >= VERBOSE_2){log_msg(NULL, -1, args,__VA_ARGS__);}}
+    {if(op_verbose >= VERBOSE_SIMPLE){log_msg(NULL, -1, args,__VA_ARGS__);}}
+#define logv3(args,...) \
+    {if(op_verbose >= VERBOSE_FRAME){log_msg(NULL, -1, args,__VA_ARGS__);}}
 #endif
-#define logv1_line(pre) {if(op_verbose >= VERBOSE_1) {log_line(pre);}}
-#define logv2_line(pre) {if(op_verbose >= VERBOSE_2) {log_line(pre);}}
+#define logv2_line(pre) {if(op_verbose >= VERBOSE_SIMPLE) {log_line(pre);}}
+#define logv3_line(pre) {if(op_verbose >= VERBOSE_FRAME) {log_line(pre);}}
 
 
-#define VERBOSE_0                  0
-#define VERBOSE_1                  1
-#define VERBOSE_2                  2
-
-static int op_verbose = VERBOSE_1;
+static int op_verbose = VERBOSE_SIMPLE;
 
 /* Clocks */
 #if defined(_WIN64) || defined(_WIN32)
@@ -150,8 +155,8 @@ static int imgb_read(FILE * fp, XEVE_IMGB * img, int is_y4m)
 {
     int f_w, f_h;
     int y_size, u_size, v_size;
-    
-    /************Handling Y4M files ********************/
+
+    /* handling Y4M frame header */
     char t_buf[10];
     if (is_y4m)
     {
@@ -168,8 +173,7 @@ static int imgb_read(FILE * fp, XEVE_IMGB * img, int is_y4m)
         }
     }
 
-    /************Handling Y4M files ********************/
-
+    /* reading YUV format */
     int chroma_format = XEVE_CS_GET_FORMAT(img->cs);
     int bit_depth = XEVE_CS_GET_BIT_DEPTH(img->cs);
     int w_shift = (chroma_format == XEVE_CF_YCBCR420) || (chroma_format == XEVE_CF_YCBCR422) ? 1 : 0;
@@ -221,7 +225,7 @@ static int imgb_read(FILE * fp, XEVE_IMGB * img, int is_y4m)
     }
     else
     {
-        logv0("not supported color space\n");
+        logerr("not supported color space\n");
         return -1;
     }
 
@@ -240,7 +244,7 @@ static int imgb_write(char * fname, XEVE_IMGB * imgb)
     fp = fopen(fname, "ab");
     if(fp == NULL)
     {
-        logv0("cannot open file = %s\n", fname);
+        logerr("cannot open file = %s\n", fname);
         return -1;
     }
     if(bit_depth == 8 && (chroma_format == XEVE_CF_YCBCR400 || chroma_format == XEVE_CF_YCBCR420 || chroma_format == XEVE_CF_YCBCR422 || chroma_format == XEVE_CF_YCBCR444))
@@ -257,7 +261,7 @@ static int imgb_write(char * fname, XEVE_IMGB * imgb)
     }
     else
     {
-        logv0("cannot support the color space\n");
+        logerr("cannot support the color space\n");
         fclose(fp);
         return -1;
     }
@@ -438,7 +442,7 @@ static void imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src)
     }
     else
     {
-        logv0("ERROR: unsupported image copy\n");
+        logerr("ERROR: unsupported image copy\n");
         return;
     }
     for(i = 0; i < XEVE_IMGB_MAX_PLANE; i++)
@@ -497,7 +501,7 @@ XEVE_IMGB * imgb_alloc(int w, int h, int cs)
         imgb->np = 3;
         break;
     default:
-        logv2("unsupported color format\n");
+        logv3("unsupported color format\n");
         goto ERR;
     }
 
@@ -515,7 +519,7 @@ XEVE_IMGB * imgb_alloc(int w, int h, int cs)
     return imgb;
 
 ERR:
-    logv0("cannot create image buffer\n");
+    logerr("cannot create image buffer\n");
     if(imgb)
     {
         for (int i = 0; i < XEVE_IMGB_MAX_PLANE; i++)
@@ -599,21 +603,45 @@ static IMGB_LIST *imgb_list_get_empty(IMGB_LIST *list)
     return NULL;
 }
 
+static int imgb_list_find_idx(IMGB_LIST *list, XEVE_MTIME ts)
+{
+    int i;
+
+    for(i=0; i<MAX_BUMP_FRM_CNT; i++)
+    {
+        if(list[i].ts == ts && list[i].used == 1)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 static void imgb_list_make_used(IMGB_LIST *list, XEVE_MTIME ts)
 {
     list->used = 1;
     list->ts = list->imgb->ts[0] = ts;
 }
 
-static void imgb_list_make_unused(IMGB_LIST *list, XEVE_MTIME ts)
+static void imgb_list_make_unused(IMGB_LIST *list)
 {
-    int i;
-    for(i = 0; i < MAX_BUMP_FRM_CNT; i++)
-    {
-        if(list[i].ts == ts) list[i].used = 0;
-    }
+    list->used = 0;
 }
 
+static void imgb_list_find_and_make_unused(IMGB_LIST *list, XEVE_MTIME ts)
+{
+    int idx;
+    idx = imgb_list_find_idx(list, ts);
+    if(idx >= 0) list[idx].used = 0;
+}
+
+static IMGB_LIST * imgb_list_find(IMGB_LIST *list, XEVE_MTIME ts)
+{
+    int idx;
+    idx = imgb_list_find_idx(list, ts);
+    if (idx >= 0) return &list[idx];
+    else return NULL;
+}
 
 static void find_psnr_16bit(XEVE_IMGB * org, XEVE_IMGB * rec, double psnr[3], int bit_depth)
 {
@@ -722,7 +750,7 @@ static int write_data(char * fname, unsigned char * data, int size)
     fp = fopen(fname, "ab");
     if(fp == NULL)
     {
-        logv0("cannot open an writing file=%s\n", fname);
+        logerr("cannot open an writing file=%s\n", fname);
         return -1;
     }
     fwrite(data, 1, size, fp);

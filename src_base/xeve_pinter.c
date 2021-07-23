@@ -1873,7 +1873,7 @@ static int pinter_set_complexity(XEVE_CTX *ctx, int complexity)
     for (int i = 0; i < ctx->param.threads; i++)
     {
         pi = &ctx->pinter[i];
-        pi->max_search_range = ctx->param.max_b_frames == 0 ? SEARCH_RANGE_IPEL_LD : ctx->param.me_range;
+        pi->max_search_range = ctx->param.bframes == 0 ? SEARCH_RANGE_IPEL_LD : ctx->param.me_range;
         pi->search_range_ipel[MV_X] = pi->max_search_range;
         pi->search_range_ipel[MV_Y] = pi->max_search_range;
         pi->search_range_spel[MV_X] = ctx->param.me_sub_range;

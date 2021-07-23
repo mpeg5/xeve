@@ -33,12 +33,9 @@
 
 #include <xeve_exports.h>
 
-#define XEVE_MAX_TASK_CNT               8
-#define MAX_NUM_TILES_ROW               22
-#define MAX_NUM_TILES_COL               20
-
-#define MAX_QP_TABLE_SIZE               58
-#define MAX_QP_TABLE_SIZE_EXT           94
+#define XEVE_MAX_THREADS                 (8)
+#define XEVE_MAX_NUM_TILES_ROW           (22)
+#define XEVE_MAX_NUM_TILES_COL           (20)
 
 /*****************************************************************************
  * return values and error code
@@ -120,7 +117,7 @@
 #define XEVE_CFG_SET_BPS                (202)
 #define XEVE_CFG_SET_VBV_SIZE           (203)
 #define XEVE_CFG_SET_FPS                (204)
-#define XEVE_CFG_SET_I_PERIOD           (207)
+#define XEVE_CFG_SET_KEYINT             (207)
 #define XEVE_CFG_SET_QP_MIN             (208)
 #define XEVE_CFG_SET_QP_MAX             (209)
 #define XEVE_CFG_SET_BU_SIZE            (210)
@@ -136,7 +133,7 @@
 #define XEVE_CFG_GET_RCT                (603)
 #define XEVE_CFG_GET_BPS                (604)
 #define XEVE_CFG_GET_FPS                (605)
-#define XEVE_CFG_GET_I_PERIOD           (608)
+#define XEVE_CFG_GET_KEYINT             (608)
 #define XEVE_CFG_GET_BU_SIZE            (609)
 #define XEVE_CFG_GET_USE_DEBLOCK        (610)
 #define XEVE_CFG_GET_CLOSED_GOP         (611)
@@ -308,10 +305,16 @@ typedef struct _XEVE_BITB
 /*****************************************************************************
  * tuning for a specific use-case
  *****************************************************************************/
-
 #define XEVE_TUNE_NONE                          0
 #define XEVE_TUNE_ZEROLATENCY                   1
 #define XEVE_TUNE_PSNR                          2
+
+/*****************************************************************************
+ * rate-control types
+ *****************************************************************************/
+#define XEVE_RC_CQP                             0
+#define XEVE_RC_ABR                             1
+#define XEVE_RC_CRF                             2
 
 /*****************************************************************************
  * coding parameters
@@ -324,13 +327,15 @@ typedef struct _XEVE_PARAM
     int            h;
     /* frame rate (Hz) */
     int            fps;
-    /* period of I-frame.
+    /* MAX I-frame period in frames.
     - 0: only one I-frame at the first time.
     - 1: every frame is coded in I-frame
     */
-    int            iperiod;
+    int            keyint;
     /* quantization parameter */
     int            qp;
+    /* CRF Value */
+    int            crf;
     /* quantization parameter offset for CB */
     int            qp_cb_offset;
     /* quantization parameter offset for CR */
@@ -338,11 +343,11 @@ typedef struct _XEVE_PARAM
     /* Rate control type */
     int            rc_type;
     /* bitrate */
-    char           bps[256];
+    char           bitrate[256];
     /* VBV buffer size for rate control*/
-    char           vbv_buf_size[256];
-    int            vbv_buf_msec;
-    int            use_filler_flag;
+    char           vbv_bufsize[256];
+    int            vbv_msec;
+    int            use_filler;
     //XEVE_CHROMA_TABLE chroma_qp_table_struct;
     int            chroma_qp_table_present_flag;
     char           chroma_qp_num_points_in_table[256];
@@ -352,7 +357,7 @@ typedef struct _XEVE_PARAM
     char           chroma_qp_delta_out_val_cr[256];
     /* color space of input image */
     int            cs;
-    int            max_b_frames;
+    int            bframes;
     int            disable_hgop;
     /* distance between ref pics in addition to closest ref ref pic in LD*/
     int            ref_pic_gap_length;
@@ -362,7 +367,7 @@ typedef struct _XEVE_PARAM
     int            closed_gop;
     int            codec_bit_depth;
     int            profile;
-    int            level;
+    int            level_idc;
     int            aq_mode;
     int            lookahead;
     int            cutree;

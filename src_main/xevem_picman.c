@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,7 +36,7 @@
 #include "xevem_picman.h"
 
 
-const XEVE_RPL pre_define_rpls[2][3][2][XEVE_MAX_NUM_RPLS] = 
+const XEVE_RPL pre_define_rpls[2][3][2][XEVE_MAX_NUM_RPLS] =
 {
     /* Disable redordering (LD) */
     {
@@ -133,7 +133,7 @@ const XEVE_RPL pre_define_rpls[2][3][2][XEVE_MAX_NUM_RPLS] =
                 { 8, 0, 4, 4, {1, 2, 8, 16}, 'B' },
                 { 1, 0, 4, 4, {1, 2, 9, 17}, 'B' },
             },
-        }, 
+        },
     },
     /* Enable redordering (RA) */
     {
@@ -279,7 +279,7 @@ void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     {
         for (int i = gopSize; i < ctx->sps.num_ref_pic_lists_in_sps0; i++)
         {
-            int pocIdx = ctx->param.iperiod == 0 ? ctx->poc.poc_val : (ctx->poc.poc_val % ctx->param.iperiod == 0) ? ctx->param.iperiod : ctx->poc.poc_val % ctx->param.iperiod;
+            int pocIdx = ctx->param.keyint == 0 ? ctx->poc.poc_val : (ctx->poc.poc_val % ctx->param.keyint == 0) ? ctx->param.keyint : ctx->poc.poc_val % ctx->param.keyint;
             if (pocIdx == ctx->sps.rpls_l0[i].poc)
             {
                 sh->rpl_l0_idx = i;

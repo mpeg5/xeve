@@ -3057,8 +3057,8 @@ int xevem_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
         {
             qp_chroma_ajudst = xevem_tbl_qp_chroma_ajudst;
         }
-        xeve_mcpy(&(ctx->qp_chroma_dynamic_ext[0][6 *( param->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
-        xeve_mcpy(&(ctx->qp_chroma_dynamic_ext[1][6 * (param->codec_bit_depth - 8)]), qp_chroma_ajudst, MAX_QP_TABLE_SIZE * sizeof(int));
+        xeve_mcpy(&(ctx->qp_chroma_dynamic_ext[0][6 *( param->codec_bit_depth - 8)]), qp_chroma_ajudst, XEVE_MAX_QP_TABLE_SIZE * sizeof(int));
+        xeve_mcpy(&(ctx->qp_chroma_dynamic_ext[1][6 * (param->codec_bit_depth - 8)]), qp_chroma_ajudst, XEVE_MAX_QP_TABLE_SIZE * sizeof(int));
     }
 
     if (ctx->param.tool_dra)
@@ -3086,7 +3086,7 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
         sps->toolset_idc_h = 0x1FFFFF;
     }
 
-    if(ctx->param.max_b_frames > 0)
+    if(ctx->param.bframes > 0)
     {
         sps->max_num_ref_pics = ctx->param.me_ref_num;
     }
@@ -3156,7 +3156,7 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
 
         if(!ctx->param.rpl_extern)
         {
-            int is_enable_reorder = ctx->param.max_b_frames > 1 ? 1 : 0;
+            int is_enable_reorder = ctx->param.bframes > 1 ? 1 : 0;
             int gop_idx = is_enable_reorder ? XEVE_LOG2(ctx->param.gop_size) - 2 : XEVE_LOG2(ctx->param.ref_pic_gap_length) - 2;
             gop_idx = XEVE_MAX(gop_idx, 0);
             ctx->param.rpls_l0_cfg_num = 0;
@@ -3206,7 +3206,7 @@ void xevem_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps)
     pps->tile_id_len_minus1 = 0;
     while (num_tiles > (1 << pps->tile_id_len_minus1))
     {
-        pps->tile_id_len_minus1++; //Ceil(log2(MAX_NUM_TILES_ROW * MAX_NUM_TILES_COLUMN)) - 1
+        pps->tile_id_len_minus1++; //Ceil(log2(XEVE_MAX_NUM_TILES_ROW * MAX_NUM_TILES_COLUMN)) - 1
     }
 
     if (!pps->uniform_tile_spacing_flag)
@@ -3337,7 +3337,7 @@ int xevem_set_tile_info(XEVE_CTX * ctx)
 {
     XEVE_TILE  * tile;
     int          i, j, size, x, y, w, h, w_tile, h_tile, w_lcu, h_lcu, tidx, t0;
-    int          col_w[MAX_NUM_TILES_COL], row_h[MAX_NUM_TILES_ROW], f_tile;
+    int          col_w[XEVE_MAX_NUM_TILES_COL], row_h[XEVE_MAX_NUM_TILES_ROW], f_tile;
     u8         * map_tidx;
     u32        * map_scu;
     u8         * tile_to_slice_map = ctx->tile_to_slice_map;
@@ -3579,7 +3579,7 @@ int xevem_ready(XEVE_CTX * ctx)
     }
 
     //initialize the threads to NULL
-    for (int i = 0; i < XEVE_MAX_TASK_CNT; i++)
+    for (int i = 0; i < XEVE_MAX_THREADS; i++)
     {
         ctx->thread_pool[i] = 0;
     }
