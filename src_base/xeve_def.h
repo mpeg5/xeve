@@ -955,6 +955,9 @@ typedef struct _XEVE_REFP
     u32             *list_poc;
 } XEVE_REFP;
 
+#define XEVE_MAX_QP_TABLE_SIZE           58
+#define XEVE_MAX_QP_TABLE_SIZE_EXT       94
+
 /* chromaQP table structure */
 typedef struct _XEVE_CHROMA_TABLE
 {
@@ -962,8 +965,8 @@ typedef struct _XEVE_CHROMA_TABLE
     int                same_qp_table_for_chroma;
     int                global_offset_flag;
     int                num_points_in_qp_table_minus1[2];
-    int                delta_qp_in_val_minus1[2][MAX_QP_TABLE_SIZE];
-    int                delta_qp_out_val[2][MAX_QP_TABLE_SIZE];
+    int                delta_qp_in_val_minus1[2][XEVE_MAX_QP_TABLE_SIZE];
+    int                delta_qp_out_val[2][XEVE_MAX_QP_TABLE_SIZE];
 } XEVE_CHROMA_TABLE;
 
 /*****************************************************************************
@@ -1121,13 +1124,13 @@ typedef struct _XEVE_PPS
     int              num_tile_columns_minus1;
     int              num_tile_rows_minus1;
     int              uniform_tile_spacing_flag;
-    int              tile_column_width_minus1[MAX_NUM_TILES_ROW];
-    int              tile_row_height_minus1[MAX_NUM_TILES_COL];
+    int              tile_column_width_minus1[XEVE_MAX_NUM_TILES_ROW];
+    int              tile_row_height_minus1[XEVE_MAX_NUM_TILES_COL];
     int              loop_filter_across_tiles_enabled_flag;
     int              tile_offset_lens_minus1;
     int              tile_id_len_minus1;
     int              explicit_tile_id_flag;
-    int              tile_id_val[MAX_NUM_TILES_ROW][MAX_NUM_TILES_COL];
+    int              tile_id_val[XEVE_MAX_NUM_TILES_ROW][XEVE_MAX_NUM_TILES_COL];
     int              arbitrary_slice_present_flag;
     int              constrained_intra_pred_flag;
     int              cu_qp_delta_enabled_flag;
@@ -1210,7 +1213,7 @@ typedef struct _XEVE_SH
     int              arbitrary_slice_flag;
     int              last_tile_id;
     int              num_remaining_tiles_in_slice_minus1;
-    int              delta_tile_id_minus1[MAX_NUM_TILES_ROW * MAX_NUM_TILES_COL];
+    int              delta_tile_id_minus1[XEVE_MAX_NUM_TILES_ROW * XEVE_MAX_NUM_TILES_COL];
     int              slice_type;
     int              no_output_of_prior_pics_flag;
     int              slice_alf_enabled_flag;
@@ -1236,7 +1239,7 @@ typedef struct _XEVE_SH
     int              qp_v;
     int              qp_u_offset;
     int              qp_v_offset;
-    u32              entry_point_offset_minus1[MAX_NUM_TILES_ROW * MAX_NUM_TILES_COL];
+    u32              entry_point_offset_minus1[XEVE_MAX_NUM_TILES_ROW * XEVE_MAX_NUM_TILES_COL];
     /*QP of previous cu in decoding order (used for dqp)*/
     u8               qp_prev_eco;
     u8               dqp;
@@ -1257,7 +1260,7 @@ typedef struct _XEVE_SH
     u32              alfChromaMapSignalled;
     u32              alfChroma2MapSignalled;
     int              aps_id_ch2;
-    u8               tile_order[MAX_NUM_TILES_COL * MAX_NUM_TILES_ROW];
+    u8               tile_order[XEVE_MAX_NUM_TILES_COL * XEVE_MAX_NUM_TILES_ROW];
 } XEVE_SH;
 
 /*****************************************************************************
@@ -1274,7 +1277,7 @@ typedef struct _XEVE_TILE
     /* first ctb address in raster scan order */
     u16              ctba_rs_first;
     u8               qp;
-    u8               qp_prev_eco[XEVE_MAX_TASK_CNT];
+    u8               qp_prev_eco[XEVE_MAX_THREADS];
 } XEVE_TILE;
 
 /*****************************************************************************/

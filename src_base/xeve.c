@@ -684,11 +684,11 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             xeve_assert_rv(t0 > 0, XEVE_ERR_INVALID_ARGUMENT);
             ctx->param.fps = t0;
             break;
-        case XEVE_CFG_SET_I_PERIOD:
+        case XEVE_CFG_SET_KEYINT:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
             t0 = *((int *)buf);
             xeve_assert_rv(t0 >= 0, XEVE_ERR_INVALID_ARGUMENT);
-            ctx->param.iperiod = t0;
+            ctx->param.keyint = t0;
             break;
         case XEVE_CFG_SET_QP_MIN:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
@@ -738,9 +738,9 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
             *((int *)buf) = ctx->param.fps;
             break;
-        case XEVE_CFG_GET_I_PERIOD:
+        case XEVE_CFG_GET_KEYINT:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = ctx->param.iperiod;
+            *((int *)buf) = ctx->param.keyint;
             break;
         case XEVE_CFG_GET_RECON:
             xeve_assert_rv(*size == sizeof(XEVE_IMGB**), XEVE_ERR_INVALID_ARGUMENT);

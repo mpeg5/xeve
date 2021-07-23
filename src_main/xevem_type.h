@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -117,19 +117,19 @@ typedef struct _XEVEM_CTX
     SIG_PARAM_DRA    * dra_array;
 
     /* ibc prediction analysis */
-    XEVE_PIBC          pibc[XEVE_MAX_TASK_CNT];
+    XEVE_PIBC          pibc[XEVE_MAX_THREADS];
     XEVE_IBC_HASH    * ibc_hash;
 
     int   (*fn_pibc_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
     double(*fn_pibc_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
     int   (*fn_pibc_set_complexity)(XEVE_CTX * ctx, int complexity);
     int   (*fn_pibc_init_tile)(XEVE_CTX * ctx, int tile_idx);
-    
+
     /* adaptive loop filter */
     XEVE_ALF         * enc_alf;
 
     int   (*fn_alf)(XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_SH* sh, XEVE_APS* aps);
-    
+
     /* affine map (width in SCU x height in SCU) of raster scan order in a frame */
     u32              * map_affine;
 
@@ -139,9 +139,9 @@ typedef struct _XEVEM_CTX
     u8               * map_ats_mode_v;
     u8               * map_ats_inter;
 
-    u32              * ats_inter_pred_dist[XEVE_MAX_TASK_CNT];
-    u8               * ats_inter_info_pred[XEVE_MAX_TASK_CNT];   //best-mode ats_inter info
-    u8               * ats_inter_num_pred[XEVE_MAX_TASK_CNT];
+    u32              * ats_inter_pred_dist[XEVE_MAX_THREADS];
+    u8               * ats_inter_info_pred[XEVE_MAX_THREADS];   //best-mode ats_inter info
+    u8               * ats_inter_num_pred[XEVE_MAX_THREADS];
 
 }XEVEM_CTX;
 

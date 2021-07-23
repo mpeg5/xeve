@@ -43,30 +43,520 @@
 #define ARGS_GET_CMD_OPT_VAL_TYPE(x)  ((x) & 0x0C)
 #define ARGS_GET_IS_OPT_TYPE_PPT(x)   (((x) >> 1) & 0x01)
 
+#define ARGS_END_KEY                  (0)
 #define ARGS_NO_KEY                   (127)
 #define ARGS_KEY_LONG_CONFIG          "config"
 #define ARGS_MAX_NUM_CONF_FILES       (16)
 
-typedef struct _ARGS_OPTION
+#define ARGS_MAX_KEY_LONG             (32)
+
+typedef struct _ARGS_OPT
 {
     char   key; /* option keyword. ex) -f */
-    char   key_long[32]; /* option long keyword, ex) --file */
+    char   key_long[ARGS_MAX_KEY_LONG]; /* option long keyword, ex) --file */
     int    val_type; /* value type */
-    int  * flag; /* flag to setting or not */
+    int    flag; /* flag to setting or not */
     void * val; /* actual value */
     char   desc[512]; /* description of option */
-} ARGS_OPTION;
+} ARGS_OPT;
 
-static int args_search_long_arg(ARGS_OPTION * opts, const char * argv)
+/* Define various command line options as a table */
+static const ARGS_OPT args_opt_table[] = \
+{
+    {
+        'v',  "verbose", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "verbose (log) level\n"
+        "      - 0: no message\n"
+        "      - 1: only error message\n"
+        "      - 2: simple messages\n"
+        "      - 3: frame-level messages"
+    },
+    /*
+    {
+        ARGS_NO_KEY, ARGS_KEY_LONG_CONFIG, ARGS_VAL_TYPE_STRING, 0, NULL,
+        "file name of configuration"
+    },
+    */
+    {
+        'i', "input", ARGS_VAL_TYPE_STRING | ARGS_VAL_TYPE_MANDATORY, 0, NULL,
+        "file name of input video"
+    },
+    {
+        'o', "output", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "file name of output bitstream"
+    },
+    {
+        'r', "recon", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "file name of reconstructed video"
+    },
+    {
+        'w',  "width", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY, 0, NULL,
+        "pixel width of input video"
+    },
+    {
+        'h',  "height", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY, 0, NULL,
+        "pixel height of input video"
+    },
+    {
+        'q',  "qp", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "QP value (0~51)"
+    },
+    {
+        'z',  "fps", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY, 0, NULL,
+        "frame rate (frame per second)"
+    },
+    {
+        'I',  "keyint", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "I-picture period"
+    },
+    {
+        'b',  "bframes", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "maximum number of B frames (1,3,7,15)"
+    },
+    {
+        'm',  "threads", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "force to use a specific number of threads"
+    },
+    {
+        'd',  "input-depth", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "input bit depth (8, 10) "
+    },
+    {
+        ARGS_NO_KEY,  "codec-bit-depth", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "codec internal bit depth (10, 12) "
+    },
+    {
+        ARGS_NO_KEY,  "input-csp", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "input color space (chroma format)\n"
+        "      - 0: YUV400\n"
+        "      - 1: YUV420"
+    },
+    {
+        ARGS_NO_KEY,  "profile", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "profile setting flag  (main, baseline)"
+    },
+    {
+        ARGS_NO_KEY,  "level-idc", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "level setting "
+    },
+    {
+        ARGS_NO_KEY,  "preset", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Encoder PRESET"
+        "\t [fast, medium, slow, placebo]"
+    },
+    {
+        ARGS_NO_KEY,  "tune", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Encoder TUNE"
+        "\t [psnr, zerolatency]"
+    },
+    {
+        ARGS_NO_KEY,  "aq-mode", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "use adaptive quantization block qp adaptation\n"
+        "      - 0: off\n"
+        "      - 1: adaptive quantization"
+    },
+    {
+        ARGS_NO_KEY,  "frames", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "maximum number of frames to be encoded"
+    },
+    {
+        ARGS_NO_KEY,  "seek", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "number of skipped frames before encoding"
+    },
+    {
+        ARGS_NO_KEY,  "hash", ARGS_VAL_TYPE_NONE, 0, NULL,
+        "embed picture signature (HASH) for conformance checking in decoding"
+    },
+    {
+        ARGS_NO_KEY,  "cutree", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "use cutree block qp adaptation\n"
+        "      - 0: off\n"
+        "      - 1: cutree"
+    },
+    {
+        ARGS_NO_KEY,  "cu-qp-delta-area", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "cu-qp-delta-area (>= 6)"
+    },
+    {
+        ARGS_NO_KEY,  "rdo-dbk-switch", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "switch to on/off rdo-dbk (0, 1) "
+    },
+    {
+        ARGS_NO_KEY,  "ref-pic-gap-length", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "reference picture gap length (1, 2, 4, 8, 16) only available when -b is 0"
+    },
+    {
+        ARGS_NO_KEY,  "closed-gop", ARGS_VAL_TYPE_NONE, 0, NULL,
+        "use closed GOP structure. if not set, open GOP is used"
+    },
+    {
+        ARGS_NO_KEY,  "ibc", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "use IBC feature. if not set, IBC feature is disabled"
+    },
+    {
+        ARGS_NO_KEY,  "ibc-search-range-x", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "set ibc search range in horizontal direction"
+    },
+    {
+        ARGS_NO_KEY,  "ibc-search-range-y", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "set ibc search range in vertical direction"
+    },
+    {
+        ARGS_NO_KEY,  "ibc-hash-search-flag", ARGS_VAL_TYPE_NONE, 0, NULL,
+        "use IBC hash based block matching search feature. if not set, it is disable"
+    },
+    {
+        ARGS_NO_KEY,  "ibc-hash-search-max-cand", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Max candidates for hash based IBC search"
+    },
+    {
+        ARGS_NO_KEY,  "ibc-hash-search-range-4smallblk", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Small block search range in IBC based search"
+    },
+    {
+        ARGS_NO_KEY,  "ibc-fast-method", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Fast methods for IBC\n"
+        "      - 1: Buffer IBC block vector (current not support)\n"
+        "      - 2: Adaptive search range"
+    },
+    {
+        ARGS_NO_KEY,  "disable-hgop", ARGS_VAL_TYPE_NONE, 0, NULL,
+        "disable hierarchical GOP. if not set, hierarchical GOP is used"
+    },
+    {
+        ARGS_NO_KEY,  "btt", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "binary and ternary splits on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "suco", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "split unit coding ordering on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "qp-add-frm", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "one more qp are added after this number of frames, disable:0"
+    },
+    {
+        ARGS_NO_KEY,  "ctu", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Max size of Coding Block (log scale)"
+    },
+    {
+        ARGS_NO_KEY,  "min-cu-size", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "MIN size of Coding Block (log scale)"
+    },
+    {
+        ARGS_NO_KEY,  "cu14-max", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Max size of 4N in 4NxN or Nx4N block (log scale)"
+    },
+    {
+        ARGS_NO_KEY,  "tris-max", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Max size of Tri-split allowed"
+    },
+    {
+        ARGS_NO_KEY,  "tris-min", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Min size of Tri-split allowed"
+    },
+    {
+        ARGS_NO_KEY,  "suco-max", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Max size of suco allowed from top"
+    },
+    {
+        ARGS_NO_KEY,  "suco-min", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Min size of suco allowed from top"
+    },
+    {
+        ARGS_NO_KEY,  "amvr", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "amvr on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "mmvd", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "mmvd on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "affine", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "affine on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "dmvr", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "dmvr on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "addb", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "addb on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "alf", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "alf on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "htdf", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "htdf on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "admvp", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "admvp on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "hmvp", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "hmvp on/off flag"
+    },
+
+    {
+        ARGS_NO_KEY,  "eipd", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "eipd on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "iqt", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "iqt on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "cm-init", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "cm-init on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "adcc", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "adcc on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "rpl", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "rpl on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "pocs", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "pocs on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "qp-cb-offset", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "cb qp offset"
+    },
+    {
+        ARGS_NO_KEY,  "qp-cr-offset", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "cr qp offset"
+    },
+    {
+        ARGS_NO_KEY, "ats", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "ats on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "constrained-intra-pred", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "constrained intra pred"
+    },
+    {
+        ARGS_NO_KEY,  "deblock", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Deblocking filter on/off flag"
+    },
+    {
+        ARGS_NO_KEY,  "dbfoffsetA", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "ADDB Deblocking filter offset for alpha"
+    },
+    {
+        ARGS_NO_KEY,  "dbfoffsetB", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "ADDB Deblocking filter offset for beta"
+    },
+    {
+        ARGS_NO_KEY,  "tile-uniform-spacing", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "uniform or non-uniform tile spacing"
+    },
+    {
+        ARGS_NO_KEY,  "num-tile-columns", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Number of tile columns"
+    },
+    {
+        ARGS_NO_KEY,  "num-tile-rows", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Number of tile rows"
+    },
+    {
+        ARGS_NO_KEY,  "tile-column-width-array", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of Tile Column Width"
+    },
+    {
+        ARGS_NO_KEY,  "tile-row-height-array", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of Tile Row Height"
+    },
+    {
+        ARGS_NO_KEY,  "num-slices-in-pic", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Number of slices in the pic"
+    },
+    {
+        ARGS_NO_KEY,  "tile-array-in-slice", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of Slice Boundaries"
+    },
+    {
+        ARGS_NO_KEY,  "arbitrary-slice-flag", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Array of Slice Boundaries"
+    },
+    {
+        ARGS_NO_KEY,  "num-remaining-tiles-in-slice", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of Slice Boundaries"
+    },
+    {
+        ARGS_NO_KEY,  "lp-filter-across-tiles-en-flag", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Loop filter across tiles enabled or disabled"
+    },
+    {
+        ARGS_NO_KEY,  "rc-type", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Rate control type, (0: OFF, 1: ABR, 2: CRF)"
+    },
+    {
+        ARGS_NO_KEY,  "bitrate", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Bitrate in terms of Bits per second: Kbps(none,K,k), Mbps(M,m)\n"
+        "      ex) 100 / 100K / 0.1M"
+    },
+    {
+        ARGS_NO_KEY,  "crf", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Constant Rate Factor CRF-value [10-49]"
+    },
+    {
+        ARGS_NO_KEY,  "vbv-msec", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "VBV buffer size in msec"
+    },
+    {
+        ARGS_NO_KEY,  "vbv-bufsize", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "VBV buffer size: Kbits(none,K,k), Mbits(M,m)\n"
+        "      ex) 100 / 100K / 0.1M"
+    },
+    {
+        ARGS_NO_KEY,  "use-filler", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "user filler flag"
+    },
+    {
+        ARGS_NO_KEY,  "lookahead", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "number of pre analysis frames for rate control and cutree, disable:0"
+    },
+    {
+        ARGS_NO_KEY,  "chroma-qp-table-present-flag", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "chroma-qp-table-present-flag"
+    },
+    {
+        ARGS_NO_KEY,  "chroma-qp-num-points-in-table", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Number of pivot points for Cb and Cr channels"
+    },
+    {
+        ARGS_NO_KEY,  "chroma-qp-delta-in-val-cb", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of input pivot points for Cb"
+    },
+    {
+        ARGS_NO_KEY,  "chroma-qp-delta-out-val-cb", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of input pivot points for Cb"
+    },
+    {
+        ARGS_NO_KEY,  "chroma-qp-delta-in-val-cr", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of input pivot points for Cr"
+    },
+    {
+        ARGS_NO_KEY,  "chroma-qp-delta-out-val-cr", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of input pivot points for Cr"
+    },
+
+    {
+        ARGS_NO_KEY,  "dra-enable-flag", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "DRA enable flag"
+    },
+    {
+        ARGS_NO_KEY,  "dra-number-ranges", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Number of DRA ranges"
+    },
+    {
+        ARGS_NO_KEY,  "dra-range", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of dra ranges"
+    },
+    {
+        ARGS_NO_KEY,  "dra-scale", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Array of input dra ranges"
+    },
+    {
+        ARGS_NO_KEY,  "dra-chroma-qp-scale", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "DRA chroma qp scale value"
+    },
+    {
+        ARGS_NO_KEY,  "dra-chroma-qp-offset", ARGS_VAL_TYPE_STRING,
+        0, NULL ,
+        "DRA chroma qp offset"
+    },
+    {
+        ARGS_NO_KEY,  "dra-chroma-cb-scale", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "DRA chroma cb scale"
+    },
+    {
+        ARGS_NO_KEY,  "dra-chroma-cr-scale", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "DRA chroma cr scale"
+    },
+    {
+        ARGS_NO_KEY,  "dra-hist-norm", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "DRA hist norm"
+    },
+    {
+        ARGS_NO_KEY,  "rpl-extern", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Whether to input external RPL"
+    },
+    {
+        ARGS_NO_KEY,  "inter-slice-type", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "INTER-SLICE-TYPE"
+    },
+    {
+        ARGS_NO_KEY,  "picture-cropping-flag", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "picture crop flag"
+    },
+    {
+        ARGS_NO_KEY,  "picture-crop-left", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "left offset of picture crop"
+    },
+    {
+        ARGS_NO_KEY,  "picture-crop-right", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "right offset of picture crop"
+    },
+    {
+        ARGS_NO_KEY,  "picture-crop-top", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "top offset of picture crop"
+    },
+    {
+        ARGS_NO_KEY,  "picture-crop-bottom", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "bottom offset of picture crop"
+    },
+    {ARGS_END_KEY, "", ARGS_VAL_TYPE_NONE, 0, NULL, ""} /* termination */
+};
+
+typedef struct _ARGS_PARSER ARGS_PARSER;
+struct _ARGS_PARSER
+{
+    int (*init)(ARGS_PARSER * args, XEVE_PARAM * param);
+    void (*release)(ARGS_PARSER * args);
+    int (*parse)(ARGS_PARSER * args, int argc, const char* argv[], char ** errstr);
+    int (*get_help)(ARGS_PARSER * args, int idx, char * help);
+    int (*get_str)(ARGS_PARSER * args, char * keyl, char * str, int *flag);
+    int (*get_int)(ARGS_PARSER * args, char * keyl, int * val, int *flag);
+    int (*set_int)(ARGS_PARSER * args, char * keyl, int val);
+    int (*set_flag)(ARGS_PARSER * args, char * keyl, int flag);
+    int (*check_mandatory)(ARGS_PARSER * args, char ** err_arg);
+    int (*get_profile_preset_tune)(ARGS_PARSER * args, int * profile,
+        int * preset, int *tune);
+
+    ARGS_OPT * opts;
+    int  num_option;
+
+    /* variables for options */
+    char fname_cfg[256];
+    char fname_inp[256];
+    char fname_out[256];
+    char fname_rec[256];
+    int frames;
+    int hash;
+    int input_depth;
+    int input_csp;
+    int seek;
+    char profile[32];
+    char preset[32];
+    char tune[32];
+};
+
+static int args_search_long_key(ARGS_OPT * opts, const char * key)
 {
     int oidx = 0;
-    ARGS_OPTION * o;
+    ARGS_OPT * o;
 
     o = opts;
-
-    while(o->key != 0)
+    while(o->key != ARGS_END_KEY)
     {
-        if(!strcmp(argv, o->key_long))
+        if(!strcmp(key, o->key_long))
         {
             return oidx;
         }
@@ -77,16 +567,16 @@ static int args_search_long_arg(ARGS_OPTION * opts, const char * argv)
 }
 
 
-static int args_search_short_arg(ARGS_OPTION * ops, const char argv)
+static int args_search_short_arg(ARGS_OPT * ops, const char key)
 {
     int oidx = 0;
-    ARGS_OPTION * o;
+    ARGS_OPT * o;
 
     o = ops;
 
-    while(o->key != 0)
+    while(o->key != ARGS_END_KEY)
     {
-        if(o->key != ARGS_NO_KEY && o->key == argv)
+        if(o->key != ARGS_NO_KEY && o->key == key)
         {
             return oidx;
         }
@@ -96,9 +586,12 @@ static int args_search_short_arg(ARGS_OPTION * ops, const char argv)
     return -1;
 }
 
-static int args_read_value(ARGS_OPTION * ops, const char * argv)
+static int args_read_value(ARGS_OPT * ops, const char * argv)
 {
-    if(argv == NULL) return -1;
+    if(argv == NULL || ops->val == NULL)
+    {
+        return -1;
+    }
     if(argv[0] == '-' && (argv[1] < '0' || argv[1] > '9')) return -1;
 
     switch(ARGS_GET_CMD_OPT_VAL_TYPE(ops->val_type))
@@ -117,50 +610,12 @@ static int args_read_value(ARGS_OPTION * ops, const char * argv)
     return 0;
 }
 
-static int args_get_help(ARGS_OPTION * ops, int idx, char * help)
-{
-    int optional = 0;
-    char vtype[32];
-    ARGS_OPTION * o = ops + idx;
-    char default_value[256] = { 0 };
 
-    switch(ARGS_GET_CMD_OPT_VAL_TYPE(o->val_type))
-    {
-        case ARGS_VAL_TYPE_INTEGER:
-            strcpy(vtype, "INTEGER");
-            sprintf(default_value, " [%d]", *(int*)(o->val));
-            break;
-        case ARGS_VAL_TYPE_STRING:
-            strcpy(vtype, "STRING");
-            sprintf(default_value, " [%s]", strlen((char*)(o->val)) == 0 ? "None" : (char*)(o->val));
-            break;
-        case ARGS_VAL_TYPE_NONE:
-        default:
-            strcpy(vtype, "FLAG");
-            sprintf(default_value, " [%s]", *(int*)(o->val) ? "On" : "Off");
-            break;
-    }
-    optional = !(o->val_type & ARGS_VAL_TYPE_MANDATORY);
-
-    if(o->key != ARGS_NO_KEY)
-    {
-        sprintf(help, "  -%c, --%s [%s]%s%s\n    : %s", o->key, o->key_long,
-                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", o->desc);
-    }
-    else
-    {
-        sprintf(help, "  --%s [%s]%s%s\n    : %s", o->key_long,
-                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", o->desc);
-    }
-
-    return 0;
-}
-
-static int args_get_arg(ARGS_OPTION * ops, int idx, char * result)
+static int args_get_arg(ARGS_OPT * ops, int idx, char * result)
 {
     char vtype[32];
     char value[512];
-    ARGS_OPTION * o = ops + idx;
+    ARGS_OPT * o = ops + idx;
 
     switch(ARGS_GET_CMD_OPT_VAL_TYPE(o->val_type))
     {
@@ -181,7 +636,7 @@ static int args_get_arg(ARGS_OPTION * ops, int idx, char * result)
             break;
     }
 
-    if(o->flag != NULL && (*o->flag))
+    if(o->flag)
     {
         strcat(value, " (SET)");
     }
@@ -240,1183 +695,7 @@ static int args_parse_int_x_int(char * str, int * num0, int * num1)
     return 0;
 }
 
-/*
- * Define various command line options for application
- */
-static char op_fname_cfg[256]    = "\0"; /* config file path name */
-static char op_fname_inp[256]    = "\0"; /* input original video */
-static char op_fname_out[256]    = "\0"; /* output bitstream */
-static char op_fname_rec[256]    = "\0"; /* reconstructed video */
-static int  op_max_frm_num       = 0;
-static int  op_skip_frames       = 0;
-static int  op_use_pic_signature = 0;
-static int  op_inp_bit_depth     = 8;
-static int  op_codec_bit_depth   = 10;
-static int  op_out_bit_depth     = 10; /* same as codec bit-depth */
-static int  op_chroma_format_idc = 1;
-static char op_profile[16]       = "baseline";
-static char op_preset[16]        = "medium";
-static char op_tune[16]          = "\0";
-
-typedef enum _OP_FLAGS
-{
-    OP_FLAG_FNAME_CFG,
-    OP_FLAG_FNAME_INP,
-    OP_FLAG_FNAME_OUT,
-    OP_FLAG_FNAME_REC,
-    OP_FLAG_WIDTH_INP,
-    OP_FLAG_HEIGHT_INP,
-    OP_FLAG_QP,
-    OP_FLAG_AQMODE,
-    OP_FLAG_CUTREE,
-    OP_FLAG_CU_QP_DELTA_AREA,
-    OP_FLAG_FPS,
-    OP_FLAG_IPERIOD,
-    OP_FLAG_MAX_B_FRAMES,
-    OP_THREADS,
-    OP_FLAG_MAX_FRM_NUM,
-    OP_FLAG_USE_PIC_SIGN,
-    OP_FLAG_VERBOSE,
-    OP_FLAG_IN_BIT_DEPTH,
-    OP_FLAG_CODEC_BIT_DEPTH,
-    OP_FLAG_CHROMA_FORMAT_IDC,
-    OP_FLAG_RDO_DBK_SWITCH,
-    OP_FLAG_OUT_BIT_DEPTH,
-    OP_REF_PIC_GAP,
-    OP_FLAG_CLOSED_GOP,
-    OP_FLAG_IBC,
-    OP_IBC_SEARCH_RNG_X,
-    OP_IBC_SEARCH_RND_Y,
-    OP_IBC_HASH_FLAG,
-    OP_IBC_HASH_SEARCH_MAX_CAND,
-    OP_IBC_HASH_SEARCH_RANGE_4SMALLBLK,
-    OP_IBC_FAST_METHOD,
-    OP_FLAG_DISABLE_HGOP,
-    OP_FLAG_SKIP_FRAMES,
-    OP_PROFILE,
-    OP_LEVEL,
-    OP_BTT,
-    OP_SUCO,
-    OP_FLAG_ADD_QP_FRAME,
-    OP_FRAMEWORK_CB_MAX,
-    OP_FRAMEWORK_CB_MIN,
-    OP_FRAMEWORK_CU14_MAX,
-    OP_FRAMEWORK_TRIS_MAX,
-    OP_FRAMEWORK_TRIS_MIN,
-    OP_FRAMEWORK_SUCO_MAX,
-    OP_FRAMEWORK_SUCO_MIN,
-    OP_TOOL_AMVR,
-    OP_TOOL_MMVD,
-    OP_TOOL_AFFINE,
-    OP_TOOL_DMVR,
-    OP_TOOL_ADDB,
-    OP_TOOL_ALF,
-    OP_TOOL_HTDF,
-    OP_TOOL_ADMVP,
-    OP_TOOL_HMVP,
-    OP_TOOL_EIPD,
-    OP_TOOL_IQT,
-    OP_TOOL_CM_INIT,
-    OP_TOOL_ADCC,
-    OP_TOOL_RPL,
-    OP_TOOL_POCS,
-    OP_QP_CB_OFFSET,
-    OP_QP_CR_OFFSET,
-    OP_TOOL_ATS,
-    OP_CONSTRAINED_INTRA_PRED,
-    OP_TOOL_DBF,
-    OP_TOOL_DBFOFFSET_A,
-    OP_TOOL_DBFOFFSET_B,
-    OP_TILE_UNIFORM_SPACING,
-    OP_NUM_TILE_COLUMNS,
-    OP_NUM_TILE_ROWS,
-    OP_TILE_COLUMN_WIDTH_ARRAY,
-    OP_TILE_ROW_HEIGHT_ARRAY,
-    OP_NUM_SLICE_IN_PIC,
-    OP_SLICE_BOUNDARY_ARRAY,
-    OP_ARBITRAY_SLICE_FLAG,
-    OP_NUM_REMAINING_TILES_IN_SLICE,
-    OP_LOOP_FILTER_ACROSS_TILES_ENABLED_FLAG,
-    OP_RC_TYPE,
-    OP_BPS,
-    OP_VBV_MSEC,
-    OP_VBV_BUF_SIZE,
-    OP_USE_FILLER_FLAG,
-    OP_NUM_PRE_ANALYSIS_FRAMES,
-    OP_CHROMA_QP_TABLE_PRESENT_FLAG,
-    OP_CHROMA_QP_NUM_POINTS_IN_TABLE,
-    OP_CHROMA_QP_DELTA_IN_VAL_CB,
-    OP_CHROMA_QP_DELTA_OUT_VAL_CB,
-    OP_CHROMA_QP_DELTA_IN_VAL_CR,
-    OP_CHROMA_QP_DELTA_OUT_VAL_CR,
-    OP_DRA_ENABLE_FLAG,
-    OP_DRA_NUMBER_RANGES,
-    OP_DRA_RANGE,
-    OP_DRA_SCALE,
-    OP_DRA_CHROMA_QP_SCALE,
-    OP_DRA_CHROMA_QP_OFFSET,
-    OP_DRA_CHROMA_CB_SCALE,
-    OP_DRA_CHROMA_CR_SCALE,
-    OP_DRA_HIST_NORM,
-    OP_FLAG_RPL_EXTERN,
-    OP_FLAG_RPL0_0,
-    OP_FLAG_RPL0_1,
-    OP_FLAG_RPL0_2,
-    OP_FLAG_RPL0_3,
-    OP_FLAG_RPL0_4,
-    OP_FLAG_RPL0_5,
-    OP_FLAG_RPL0_6,
-    OP_FLAG_RPL0_7,
-    OP_FLAG_RPL0_8,
-    OP_FLAG_RPL0_9,
-    OP_FLAG_RPL0_10,
-    OP_FLAG_RPL0_11,
-    OP_FLAG_RPL0_12,
-    OP_FLAG_RPL0_13,
-    OP_FLAG_RPL0_14,
-    OP_FLAG_RPL0_15,
-    OP_FLAG_RPL0_16,
-    OP_FLAG_RPL0_17,
-    OP_FLAG_RPL0_18,
-    OP_FLAG_RPL0_19,
-    OP_FLAG_RPL0_20,
-    OP_FLAG_RPL0_21,
-    OP_FLAG_RPL0_22,
-    OP_FLAG_RPL0_23,
-    OP_FLAG_RPL0_24,
-    OP_FLAG_RPL0_25,
-    //..OP_FLAG_RPL0_31,
-
-    OP_FLAG_RPL1_0,
-    OP_FLAG_RPL1_1,
-    OP_FLAG_RPL1_2,
-    OP_FLAG_RPL1_3,
-    OP_FLAG_RPL1_4,
-    OP_FLAG_RPL1_5,
-    OP_FLAG_RPL1_6,
-    OP_FLAG_RPL1_7,
-    OP_FLAG_RPL1_8,
-    OP_FLAG_RPL1_9,
-    OP_FLAG_RPL1_10,
-    OP_FLAG_RPL1_11,
-    OP_FLAG_RPL1_12,
-    OP_FLAG_RPL1_13,
-    OP_FLAG_RPL1_14,
-    OP_FLAG_RPL1_15,
-    OP_FLAG_RPL1_16,
-    OP_FLAG_RPL1_17,
-    OP_FLAG_RPL1_18,
-    OP_FLAG_RPL1_19,
-    OP_FLAG_RPL1_20,
-    OP_FLAG_RPL1_21,
-    OP_FLAG_RPL1_22,
-    OP_FLAG_RPL1_23,
-    OP_FLAG_RPL1_24,
-    OP_FLAG_RPL1_25,
-    //..OP_FLAG_RPL1_31,
-
-    OP_INTER_SLICE_TYPE,
-    OP_PIC_CROP_FLAG,
-    OP_PIC_CROP_LEFT,
-    OP_PIC_CROP_RIGHT,
-    OP_PIC_CROP_TOP,
-    OP_PIC_CROP_BOTTOM,
-    OP_PRESET,
-    OP_TUNE,
-
-    OP_FLAG_MAX
-} OP_FLAGS;
-
-static int op_flag[OP_FLAG_MAX] = {0};
-
-static ARGS_OPTION options[] = \
-{
-    {
-        ARGS_NO_KEY, ARGS_KEY_LONG_CONFIG, ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_FNAME_CFG], NULL,
-        "file name of configuration"
-    },
-    {
-        'i', "input", ARGS_VAL_TYPE_STRING | ARGS_VAL_TYPE_MANDATORY,
-        &op_flag[OP_FLAG_FNAME_INP], NULL,
-        "file name of input video"
-    },
-    {
-        'o', "output", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_FNAME_OUT], NULL,
-        "file name of output bitstream"
-    },
-    {
-        'r', "recon", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_FNAME_REC], NULL,
-        "file name of reconstructed video"
-    },
-    {
-        'w',  "width", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY,
-        &op_flag[OP_FLAG_WIDTH_INP], NULL,
-        "pixel width of input video"
-    },
-    {
-        'h',  "height", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY,
-        &op_flag[OP_FLAG_HEIGHT_INP], NULL,
-        "pixel height of input video"
-    },
-    {
-        'q',  "qp", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_QP], NULL,
-        "QP value (0~51)"
-    },
-    {
-        ARGS_NO_KEY,  "aq-mode", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_AQMODE], NULL,
-        "use adaptive quantization block qp adaptation\n"
-        "      - 0: off\n"
-        "      - 1: adaptive quantization"
-    },
-    {
-        ARGS_NO_KEY,  "cutree", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_CUTREE], NULL,
-        "use cutree block qp adaptation\n"
-        "      - 0: off\n"
-        "      - 1: cutree"
-    },
-    {
-        ARGS_NO_KEY,  "cu_qp_delta_area", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_CU_QP_DELTA_AREA], NULL,
-        "cu_qp_delta_area (>= 6)"
-    },
-    {
-        'z',  "fps", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY,
-        &op_flag[OP_FLAG_FPS], NULL,
-        "frame rate (frame per second)"
-    },
-    {
-        'I',  "keyint", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_IPERIOD], NULL,
-        "I-picture period"
-    },
-    {
-        'b',  "bframes", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_MAX_B_FRAMES], NULL,
-        "maximum number of B frames (1,3,7,15)"
-    },
-    {
-        'm',  "threads", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_THREADS], NULL,
-        "force to use a specific number of threads"
-    },
-    {
-        'f',  "frames", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_MAX_FRM_NUM], NULL,
-        "maximum number of frames to be encoded"
-    },
-    {
-        's',  "hash", ARGS_VAL_TYPE_NONE,
-        &op_flag[OP_FLAG_USE_PIC_SIGN], NULL,
-        "embed picture signature (HASH) for conformance checking in decoding"
-    },
-    {
-        'v',  "log-level", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_VERBOSE], NULL,
-        "verbose level\n"
-        "      - 0: no message\n"
-        "      - 1: simple messages\n"
-        "      - 2: frame-level messages"
-    },
-    {
-        'd',  "input-depth", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_IN_BIT_DEPTH], NULL,
-        "input bit depth (8, 10) "
-    },
-    {
-        ARGS_NO_KEY,  "codec_bit_depth", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_CODEC_BIT_DEPTH], NULL,
-        "codec internal bit depth (10, 12) "
-    },
-    {
-        ARGS_NO_KEY,  "input-csp", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_CHROMA_FORMAT_IDC], NULL,
-        "input color space(chroma format idc)\n"
-        "      - 0: YUV400\n"
-        "      - 1: YUV420"
-    },
-    {
-        ARGS_NO_KEY,  "rdo_dbk_switch", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_RDO_DBK_SWITCH], NULL,
-        "switch to on/off rdo_dbk (0, 1) "
-    },
-    {
-        ARGS_NO_KEY,  "output-depth", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_OUT_BIT_DEPTH], NULL,
-        "output bit depth (8, 10)"
-    },
-    {
-        ARGS_NO_KEY,  "ref_pic_gap_length", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_REF_PIC_GAP], NULL,
-        "reference picture gap length (1, 2, 4, 8, 16) only available when -b is 0"
-    },
-    {
-        ARGS_NO_KEY,  "closed_gop", ARGS_VAL_TYPE_NONE,
-        &op_flag[OP_FLAG_CLOSED_GOP], NULL,
-        "use closed GOP structure. if not set, open GOP is used"
-    },
-    {
-        ARGS_NO_KEY,  "ibc", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_IBC], NULL,
-        "use IBC feature. if not set, IBC feature is disabled"
-    },
-    {
-        ARGS_NO_KEY,  "ibc_search_range_x", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_IBC_SEARCH_RNG_X], NULL,
-        "set ibc search range in horizontal direction"
-    },
-    {
-        ARGS_NO_KEY,  "ibc_search_range_y", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_IBC_SEARCH_RND_Y], NULL,
-        "set ibc search range in vertical direction"
-    },
-    {
-        ARGS_NO_KEY,  "ibc_hash_search_flag", ARGS_VAL_TYPE_NONE,
-        &op_flag[OP_IBC_HASH_FLAG], NULL,
-        "use IBC hash based block matching search feature. if not set, it is disable"
-    },
-    {
-        ARGS_NO_KEY,  "ibc_hash_search_max_cand", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_IBC_HASH_SEARCH_MAX_CAND], NULL,
-        "Max candidates for hash based IBC search"
-    },
-    {
-        ARGS_NO_KEY,  "ibc_hash_search_range_4smallblk", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_IBC_HASH_SEARCH_RANGE_4SMALLBLK], NULL,
-        "Small block search range in IBC based search"
-    },
-    {
-        ARGS_NO_KEY,  "ibc_fast_method", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_IBC_FAST_METHOD], NULL,
-        "Fast methods for IBC\n"
-        "      - 1: Buffer IBC block vector (current not support)\n"
-        "      - 2: Adaptive search range"
-    },
-    {
-        ARGS_NO_KEY,  "disable_hgop", ARGS_VAL_TYPE_NONE,
-        &op_flag[OP_FLAG_DISABLE_HGOP], NULL,
-        "disable hierarchical GOP. if not set, hierarchical GOP is used"
-    },
-    {
-        ARGS_NO_KEY,  "seek", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_SKIP_FRAMES], NULL,
-        "number of skipped frames before encoding"
-    },
-    {
-        ARGS_NO_KEY,  "profile", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_PROFILE], NULL,
-        "profile setting flag  (main, baseline)"
-    },
-    {
-        ARGS_NO_KEY,  "level-idc", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_LEVEL], NULL,
-        "level setting "
-    },
-    {
-        ARGS_NO_KEY,  "btt", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_BTT], NULL,
-        "binary and ternary splits on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "suco", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_SUCO], NULL,
-        "split unit coding ordering on/off flag"
-    },
-    {
-        'a',  "qp_add_frm", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_ADD_QP_FRAME], NULL,
-        "one more qp are added after this number of frames, disable:0"
-    },
-    {
-        ARGS_NO_KEY,  "ctu", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FRAMEWORK_CB_MAX], NULL,
-        "Max size of Coding Block (log scale)"
-    },
-    {
-        ARGS_NO_KEY,  "min-cu-size", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FRAMEWORK_CB_MIN], NULL,
-        "MIN size of Coding Block (log scale)"
-    },
-    {
-        ARGS_NO_KEY,  "cu14_max", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FRAMEWORK_CU14_MAX], NULL,
-        "Max size of 4N in 4NxN or Nx4N block (log scale)"
-    },
-    {
-        ARGS_NO_KEY,  "tris_max", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FRAMEWORK_TRIS_MAX], NULL,
-        "Max size of Tri-split allowed"
-    },
-    {
-        ARGS_NO_KEY,  "tris_min", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FRAMEWORK_TRIS_MIN], NULL,
-        "Min size of Tri-split allowed"
-    },
-    {
-        ARGS_NO_KEY,  "suco_max", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FRAMEWORK_SUCO_MAX], NULL,
-        "Max size of suco allowed from top"
-    },
-    {
-        ARGS_NO_KEY,  "suco_min", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FRAMEWORK_SUCO_MIN], NULL,
-        "Min size of suco allowed from top"
-    },
-    {
-        ARGS_NO_KEY,  "amvr", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_AMVR], NULL,
-        "amvr on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "mmvd", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_MMVD], NULL,
-        "mmvd on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "affine", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_AFFINE], NULL,
-        "affine on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "dmvr", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_DMVR], NULL,
-        "dmvr on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "addb", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_ADDB], NULL,
-        "addb on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "alf", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_ALF], NULL,
-        "alf on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "htdf", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_HTDF], NULL,
-        "htdf on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "admvp", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_ADMVP], NULL,
-        "admvp on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "hmvp", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_HMVP], NULL,
-        "hmvp on/off flag"
-    },
-
-    {
-        ARGS_NO_KEY,  "eipd", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_EIPD], NULL,
-        "eipd on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "iqt", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_IQT], NULL,
-        "iqt on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "cm_init", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_CM_INIT], NULL,
-        "cm_init on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "adcc", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_ADCC], NULL,
-        "adcc on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "rpl", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_RPL], NULL,
-        "rpl on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "pocs", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_POCS], NULL,
-        "pocs on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "qp_cb_offset", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_QP_CB_OFFSET], NULL,
-        "cb qp offset"
-    },
-    {
-        ARGS_NO_KEY,  "qp_cr_offset", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_QP_CR_OFFSET], NULL,
-        "cr qp offset"
-    },
-    {
-        ARGS_NO_KEY, "ats", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_ATS], NULL,
-        "ats on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "constrained_intra_pred", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_CONSTRAINED_INTRA_PRED], NULL,
-        "constrained intra pred"
-    },
-    {
-        ARGS_NO_KEY,  "deblock", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_DBF], NULL,
-        "Deblocking filter on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "dbfoffsetA", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_DBFOFFSET_A], NULL,
-        "ADDB Deblocking filter offset for alpha"
-    },
-    {
-        ARGS_NO_KEY,  "dbfoffsetB", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TOOL_DBFOFFSET_B], NULL,
-        "ADDB Deblocking filter offset for beta"
-    },
-    {
-        ARGS_NO_KEY,  "tile_uniform_spacing", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_TILE_UNIFORM_SPACING], NULL,
-        "uniform or non-uniform tile spacing"
-    },
-    {
-        ARGS_NO_KEY,  "num_tile_columns", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_NUM_TILE_COLUMNS], NULL,
-        "Number of tile columns"
-    },
-    {
-        ARGS_NO_KEY,  "num_tile_rows", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_NUM_TILE_ROWS], NULL,
-        "Number of tile rows"
-    },
-    {
-        ARGS_NO_KEY,  "tile_column_width_array", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_TILE_COLUMN_WIDTH_ARRAY], NULL,
-        "Array of Tile Column Width"
-    },
-    {
-        ARGS_NO_KEY,  "tile_row_height_array", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_TILE_ROW_HEIGHT_ARRAY], NULL,
-        "Array of Tile Row Height"
-    },
-    {
-        ARGS_NO_KEY,  "num_slices_in_pic", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_NUM_SLICE_IN_PIC], NULL,
-        "Number of slices in the pic"
-    },
-    {
-        ARGS_NO_KEY,  "tile_array_in_slice", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_SLICE_BOUNDARY_ARRAY], NULL,
-        "Array of Slice Boundaries"
-    },
-    {
-        ARGS_NO_KEY,  "arbitrary_slice_flag", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_ARBITRAY_SLICE_FLAG], NULL,
-        "Array of Slice Boundaries"
-    },
-    {
-        ARGS_NO_KEY,  "num_remaining_tiles_in_slice", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_NUM_REMAINING_TILES_IN_SLICE], NULL,
-        "Array of Slice Boundaries"
-    },
-    {
-        ARGS_NO_KEY,  "lp_filter_across_tiles_en_flag", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_LOOP_FILTER_ACROSS_TILES_ENABLED_FLAG], NULL,
-        "Loop filter across tiles enabled or disabled"
-    },
-    {
-        ARGS_NO_KEY,  "rc-type", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_RC_TYPE], NULL,
-        "Rate control type, (0: OFF, 1: CBR)"
-    },
-    {
-        ARGS_NO_KEY,  "bitrate", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_BPS], NULL,
-        "Bitrate in terms of Bits per second: Kbps(none,K,k), Mbps(M,m)\n"
-        "      ex) 100 / 100K / 0.1M"
-    },
-    {
-        ARGS_NO_KEY,  "vbv-msec", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_VBV_MSEC], NULL,
-        "VBV buffer size in msec"
-    },
-    {
-        ARGS_NO_KEY,  "vbv-bufsize", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_VBV_BUF_SIZE], NULL,
-        "VBV buffer size: Kbits(none,K,k), Mbits(M,m)\n"
-        "      ex) 100 / 100K / 0.1M"
-    },
-    {
-        ARGS_NO_KEY,  "use_filler", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_USE_FILLER_FLAG], NULL,
-        "user filler flag"
-    },
-    {
-        ARGS_NO_KEY,  "lookahead", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_NUM_PRE_ANALYSIS_FRAMES], NULL,
-        "number of pre analysis frames for rate control and cutree, disable:0"
-    },
-    {
-        ARGS_NO_KEY,  "chroma_qp_table_present_flag", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_CHROMA_QP_TABLE_PRESENT_FLAG], NULL,
-        "chroma_qp_table_present_flag"
-    },
-    {
-        ARGS_NO_KEY,  "chroma_qp_num_points_in_table", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_CHROMA_QP_NUM_POINTS_IN_TABLE], NULL,
-        "Number of pivot points for Cb and Cr channels"
-    },
-    {
-        ARGS_NO_KEY,  "chroma_qp_delta_in_val_cb", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_CHROMA_QP_DELTA_IN_VAL_CB], NULL,
-        "Array of input pivot points for Cb"
-    },
-    {
-        ARGS_NO_KEY,  "chroma_qp_delta_out_val_cb", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_CHROMA_QP_DELTA_OUT_VAL_CB], NULL,
-        "Array of input pivot points for Cb"
-    },
-    {
-        ARGS_NO_KEY,  "chroma_qp_delta_in_val_cr", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_CHROMA_QP_DELTA_IN_VAL_CR], NULL,
-        "Array of input pivot points for Cr"
-    },
-    {
-        ARGS_NO_KEY,  "chroma_qp_delta_out_val_cr", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_CHROMA_QP_DELTA_OUT_VAL_CR], NULL,
-        "Array of input pivot points for Cr"
-    },
-
-    {
-        ARGS_NO_KEY,  "dra_enable_flag", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_DRA_ENABLE_FLAG], NULL,
-        "DRA enable flag"
-    },
-    {
-        ARGS_NO_KEY,  "dra_number_ranges", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_DRA_NUMBER_RANGES], NULL,
-        "Number of DRA ranges"
-    },
-    {
-        ARGS_NO_KEY,  "dra_range", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_DRA_RANGE], NULL,
-        "Array of dra ranges"
-    },
-    {
-        ARGS_NO_KEY,  "dra_scale", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_DRA_SCALE], NULL,
-        "Array of input dra ranges"
-    },
-    {
-        ARGS_NO_KEY,  "dra_chroma_qp_scale", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_DRA_CHROMA_QP_SCALE], NULL,
-        "DRA chroma qp scale value"
-    },
-    {
-        ARGS_NO_KEY,  "dra_chroma_qp_offset", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_DRA_CHROMA_QP_OFFSET], NULL ,
-        "DRA chroma qp offset"
-    },
-    {
-        ARGS_NO_KEY,  "dra_chroma_cb_scale", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_DRA_CHROMA_CB_SCALE], NULL,
-        "DRA chroma cb scale"
-    },
-    {
-        ARGS_NO_KEY,  "dra_chroma_cr_scale", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_DRA_CHROMA_CR_SCALE], NULL,
-        "DRA chroma cr scale"
-    },
-    {
-        ARGS_NO_KEY,  "dra_hist_norm", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_DRA_HIST_NORM], NULL,
-        "DRA hist norm"
-    },
-    {
-        ARGS_NO_KEY,  "rpl_extern", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_FLAG_RPL_EXTERN], NULL,
-        "Whether to input external RPL"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_0", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_0], NULL,
-        "RPL0_0"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_1", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_1], NULL,
-        "RPL0_1"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_2", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_2], NULL,
-        "RPL0_2"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_3", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_3], NULL,
-        "RPL0_3"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_4", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_4], NULL,
-        "RPL0_4"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_5", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_5], NULL,
-        "RPL0_5"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_6", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_6], NULL,
-        "RPL0_6"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_7", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_7], NULL,
-        "RPL0_7"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_8", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_8], NULL,
-        "RPL0_8"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_9", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_9], NULL,
-        "RPL0_9"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_10", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_10], NULL,
-        "RPL0_10"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_11", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_11], NULL,
-        "RPL0_11"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_12", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_12], NULL,
-        "RPL0_12"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_13", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_13], NULL,
-        "RPL0_13"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_14", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_14], NULL,
-        "RPL0_14"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_15", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_15], NULL,
-        "RPL0_15"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_16", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_16], NULL,
-        "RPL0_16"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_17", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_17], NULL,
-        "RPL0_17"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_18", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_18], NULL,
-        "RPL0_18"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_19", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_19], NULL,
-        "RPL0_19"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_20", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_20], NULL,
-        "RPL0_20"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_21", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_21], NULL,
-        "RPL0_21"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_22", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_22], NULL,
-        "RPL0_22"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_23", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_23], NULL,
-        "RPL0_23"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_24", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_24], NULL,
-        "RPL0_24"
-    },
-    {
-        ARGS_NO_KEY,  "RPL0_25", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL0_25], NULL,
-        "RPL0_25"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_0", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_0], NULL,
-        "RPL1_0"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_1", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_1], NULL,
-        "RPL1_1"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_2", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_2], NULL,
-        "RPL1_2"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_3", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_3], NULL,
-        "RPL1_3"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_4", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_4], NULL,
-        "RPL1_4"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_5", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_5], NULL,
-        "RPL1_5"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_6", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_6], NULL,
-        "RPL1_6"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_7", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_7], NULL,
-        "RPL1_7"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_8", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_8], NULL,
-        "RPL1_8"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_9", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_9], NULL,
-        "RPL1_9"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_10", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_10], NULL,
-        "RPL1_10"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_11", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_11], NULL,
-        "RPL1_11"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_12", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_12], NULL,
-        "RPL1_12"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_13", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_13], NULL,
-        "RPL1_13"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_14", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_14], NULL,
-        "RPL1_14"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_15", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_15], NULL,
-        "RPL1_15"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_16", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_16], NULL,
-        "RPL1_16"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_17", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_17], NULL,
-        "RPL1_17"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_18", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_18], NULL,
-        "RPL1_18"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_19", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_19], NULL,
-        "RPL1_19"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_20", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_20], NULL,
-        "RPL1_20"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_21", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_21], NULL,
-        "RPL1_21"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_22", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_22], NULL,
-        "RPL1_22"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_23", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_23], NULL,
-        "RPL1_23"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_24", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_24], NULL,
-        "RPL1_24"
-    },
-    {
-        ARGS_NO_KEY,  "RPL1_25", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_FLAG_RPL1_25], NULL,
-        "RPL1_25"
-    },
-    {
-        ARGS_NO_KEY,  "inter_slice_type", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_INTER_SLICE_TYPE], NULL,
-        "INTER_SLICE_TYPE"
-    },
-    {
-        ARGS_NO_KEY,  "picture_cropping_flag", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_PIC_CROP_FLAG], NULL,
-        "picture crop flag"
-    },
-    {
-        ARGS_NO_KEY,  "picture_crop_left", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_PIC_CROP_LEFT], NULL,
-        "left offset of picture crop"
-    },
-    {
-        ARGS_NO_KEY,  "picture_crop_right", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_PIC_CROP_RIGHT], NULL,
-        "right offset of picture crop"
-    },
-    {
-        ARGS_NO_KEY,  "picture_crop_top", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_PIC_CROP_TOP], NULL,
-        "top offset of picture crop"
-    },
-    {
-        ARGS_NO_KEY,  "picture_crop_bottom", ARGS_VAL_TYPE_INTEGER,
-        &op_flag[OP_PIC_CROP_BOTTOM], NULL,
-        "bottom offset of picture crop"
-    },
-    {
-        ARGS_NO_KEY,  "preset", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_PRESET], NULL,
-        "Encoder PRESET"
-        "\t [fast, medium, slow, placebo]"
-    },
-    {
-        ARGS_NO_KEY,  "tune", ARGS_VAL_TYPE_STRING,
-        &op_flag[OP_TUNE], NULL,
-        "Encoder TUNE"
-        "\t [psnr, zerolatency]"
-    },
-    {0, "", ARGS_VAL_TYPE_NONE, NULL, NULL, ""} /* termination */
-};
-
-#define ARGS_SET_VARIABLE(opt, opt_idx, var) (opt)[opt_idx].val = (var)
-#define ARGS_SET_FLAG(opt, opt_idx, b) (*((opt)[opt_idx].flag)) = (b)
-#define ARGS_SET_VAL_INT(opt, opt_idx, v) {(*((opt)[opt_idx].v)) = (v); ARGS_SET_FLAG(opt, opt_idx, 1);}
-#define ARGS_GET_VAL_INT(opt, opt_idx, v) (*((opt)[opt_idx].v))
-
-static int set_variables_to_parse_val(XEVE_PARAM* param)
-{
-    ARGS_SET_VARIABLE(options, OP_FLAG_FNAME_CFG, op_fname_cfg);
-    ARGS_SET_VARIABLE(options, OP_FLAG_FNAME_INP, op_fname_inp);
-    ARGS_SET_VARIABLE(options, OP_FLAG_FNAME_OUT, op_fname_out);
-    ARGS_SET_VARIABLE(options, OP_FLAG_FNAME_REC, op_fname_rec);
-    ARGS_SET_VARIABLE(options, OP_FLAG_WIDTH_INP, &param->w);
-    ARGS_SET_VARIABLE(options, OP_FLAG_HEIGHT_INP, &param->h);
-    ARGS_SET_VARIABLE(options, OP_FLAG_QP, &param->qp);
-    ARGS_SET_VARIABLE(options, OP_FLAG_AQMODE, &param->aq_mode);
-    ARGS_SET_VARIABLE(options, OP_FLAG_CUTREE, &param->cutree);
-    ARGS_SET_VARIABLE(options, OP_FLAG_CU_QP_DELTA_AREA, &param->cu_qp_delta_area);
-    ARGS_SET_VARIABLE(options, OP_FLAG_FPS, &param->fps);
-    ARGS_SET_VARIABLE(options, OP_FLAG_IPERIOD, &param->iperiod);
-    ARGS_SET_VARIABLE(options, OP_FLAG_MAX_B_FRAMES, &param->max_b_frames);
-    ARGS_SET_VARIABLE(options, OP_THREADS, &param->threads);
-    ARGS_SET_VARIABLE(options, OP_FLAG_MAX_FRM_NUM, &op_max_frm_num);
-    ARGS_SET_VARIABLE(options, OP_FLAG_USE_PIC_SIGN, &op_use_pic_signature);
-    ARGS_SET_VARIABLE(options, OP_FLAG_VERBOSE, &op_verbose);
-    ARGS_SET_VARIABLE(options, OP_FLAG_IN_BIT_DEPTH, &op_inp_bit_depth);
-    ARGS_SET_VARIABLE(options, OP_FLAG_CODEC_BIT_DEPTH, &param->codec_bit_depth);
-    ARGS_SET_VARIABLE(options, OP_FLAG_CHROMA_FORMAT_IDC, &op_chroma_format_idc);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RDO_DBK_SWITCH, &param->rdo_dbk_switch);
-    ARGS_SET_VARIABLE(options, OP_FLAG_OUT_BIT_DEPTH, &op_out_bit_depth);
-    ARGS_SET_VARIABLE(options, OP_REF_PIC_GAP, &param->ref_pic_gap_length);
-    ARGS_SET_VARIABLE(options, OP_FLAG_CLOSED_GOP, &param->closed_gop);
-    ARGS_SET_VARIABLE(options, OP_FLAG_IBC, &param->ibc_flag);
-    ARGS_SET_VARIABLE(options, OP_IBC_SEARCH_RNG_X, &param->ibc_search_range_x);
-    ARGS_SET_VARIABLE(options, OP_IBC_SEARCH_RND_Y, &param->ibc_search_range_y);
-    ARGS_SET_VARIABLE(options, OP_IBC_HASH_FLAG, &param->ibc_hash_search_flag);
-    ARGS_SET_VARIABLE(options, OP_IBC_HASH_SEARCH_MAX_CAND, &param->ibc_hash_search_max_cand);
-    ARGS_SET_VARIABLE(options, OP_IBC_HASH_SEARCH_RANGE_4SMALLBLK, &param->ibc_hash_search_range_4smallblk);
-    ARGS_SET_VARIABLE(options, OP_IBC_FAST_METHOD, &param->ibc_fast_method);
-    ARGS_SET_VARIABLE(options, OP_FLAG_DISABLE_HGOP, &param->disable_hgop);
-    ARGS_SET_VARIABLE(options, OP_FLAG_SKIP_FRAMES, &op_skip_frames);
-    ARGS_SET_VARIABLE(options, OP_PROFILE, op_profile);
-    ARGS_SET_VARIABLE(options, OP_LEVEL, &param->level);
-    ARGS_SET_VARIABLE(options, OP_BTT, &param->btt);
-    ARGS_SET_VARIABLE(options, OP_SUCO, &param->suco);
-    ARGS_SET_VARIABLE(options, OP_FLAG_ADD_QP_FRAME, &param->qp_incread_frame);
-    ARGS_SET_VARIABLE(options, OP_FRAMEWORK_CB_MAX, &param->framework_cb_max);
-    ARGS_SET_VARIABLE(options, OP_FRAMEWORK_CB_MIN, &param->framework_cb_min);
-    ARGS_SET_VARIABLE(options, OP_FRAMEWORK_CU14_MAX, &param->framework_cu14_max);
-    ARGS_SET_VARIABLE(options, OP_FRAMEWORK_TRIS_MAX, &param->framework_tris_max);
-    ARGS_SET_VARIABLE(options, OP_FRAMEWORK_TRIS_MIN, &param->framework_tris_min);
-    ARGS_SET_VARIABLE(options, OP_FRAMEWORK_SUCO_MAX, &param->framework_suco_max);
-    ARGS_SET_VARIABLE(options, OP_FRAMEWORK_SUCO_MIN, &param->framework_suco_min);
-    ARGS_SET_VARIABLE(options, OP_TOOL_AMVR, &param->tool_amvr);
-    ARGS_SET_VARIABLE(options, OP_TOOL_MMVD, &param->tool_mmvd);
-    ARGS_SET_VARIABLE(options, OP_TOOL_AFFINE, &param->tool_affine);
-    ARGS_SET_VARIABLE(options, OP_TOOL_DMVR, &param->tool_dmvr);
-    ARGS_SET_VARIABLE(options, OP_TOOL_ADDB, &param->tool_addb);
-    ARGS_SET_VARIABLE(options, OP_TOOL_ALF, &param->tool_alf);
-    ARGS_SET_VARIABLE(options, OP_TOOL_HTDF, &param->tool_htdf);
-    ARGS_SET_VARIABLE(options, OP_TOOL_ADMVP, &param->tool_admvp);
-    ARGS_SET_VARIABLE(options, OP_TOOL_HMVP, &param->tool_hmvp);
-    ARGS_SET_VARIABLE(options, OP_TOOL_EIPD, &param->tool_eipd);
-    ARGS_SET_VARIABLE(options, OP_TOOL_IQT, &param->tool_iqt);
-    ARGS_SET_VARIABLE(options, OP_TOOL_CM_INIT, &param->tool_cm_init);
-    ARGS_SET_VARIABLE(options, OP_TOOL_ADCC, &param->tool_adcc);
-    ARGS_SET_VARIABLE(options, OP_TOOL_RPL, &param->tool_rpl);
-    ARGS_SET_VARIABLE(options, OP_TOOL_POCS, &param->tool_pocs);
-    ARGS_SET_VARIABLE(options, OP_QP_CB_OFFSET, &param->qp_cb_offset);
-    ARGS_SET_VARIABLE(options, OP_QP_CR_OFFSET, &param->qp_cr_offset);
-    ARGS_SET_VARIABLE(options, OP_TOOL_ATS, &param->tool_ats);
-    ARGS_SET_VARIABLE(options, OP_CONSTRAINED_INTRA_PRED, &param->constrained_intra_pred);
-    ARGS_SET_VARIABLE(options, OP_TOOL_DBF, &param->tool_addb);
-    ARGS_SET_VARIABLE(options, OP_TOOL_DBFOFFSET_A, &param->deblock_alpha_offset);
-    ARGS_SET_VARIABLE(options, OP_TOOL_DBFOFFSET_B, &param->deblock_beta_offset);
-    ARGS_SET_VARIABLE(options, OP_TILE_UNIFORM_SPACING, &param->tile_uniform_spacing_flag);
-    ARGS_SET_VARIABLE(options, OP_NUM_TILE_COLUMNS, &param->tile_columns);
-    ARGS_SET_VARIABLE(options, OP_NUM_TILE_ROWS, &param->tile_rows);
-    ARGS_SET_VARIABLE(options, OP_TILE_COLUMN_WIDTH_ARRAY, &param->tile_column_width_array);
-    ARGS_SET_VARIABLE(options, OP_TILE_ROW_HEIGHT_ARRAY, &param->tile_row_height_array);
-    ARGS_SET_VARIABLE(options, OP_NUM_SLICE_IN_PIC, &param->num_slice_in_pic);
-    ARGS_SET_VARIABLE(options, OP_SLICE_BOUNDARY_ARRAY, &param->tile_array_in_slice);
-    ARGS_SET_VARIABLE(options, OP_ARBITRAY_SLICE_FLAG, &param->arbitrary_slice_flag);
-    ARGS_SET_VARIABLE(options, OP_NUM_REMAINING_TILES_IN_SLICE, &param->num_remaining_tiles_in_slice_minus1);
-    ARGS_SET_VARIABLE(options, OP_LOOP_FILTER_ACROSS_TILES_ENABLED_FLAG, &param->loop_filter_across_tiles_enabled_flag);
-    ARGS_SET_VARIABLE(options, OP_RC_TYPE, &param->rc_type);
-    ARGS_SET_VARIABLE(options, OP_BPS, &param->bps);
-    ARGS_SET_VARIABLE(options, OP_VBV_MSEC, &param->vbv_buf_msec);
-    ARGS_SET_VARIABLE(options, OP_VBV_BUF_SIZE, &param->vbv_buf_size);
-    ARGS_SET_VARIABLE(options, OP_USE_FILLER_FLAG, &param->use_filler_flag);
-    ARGS_SET_VARIABLE(options, OP_NUM_PRE_ANALYSIS_FRAMES, &param->lookahead);
-    ARGS_SET_VARIABLE(options, OP_CHROMA_QP_TABLE_PRESENT_FLAG, &param->chroma_qp_table_present_flag);
-    ARGS_SET_VARIABLE(options, OP_CHROMA_QP_NUM_POINTS_IN_TABLE, param->chroma_qp_num_points_in_table);
-    ARGS_SET_VARIABLE(options, OP_CHROMA_QP_DELTA_IN_VAL_CB, param->chroma_qp_delta_in_val_cb);
-    ARGS_SET_VARIABLE(options, OP_CHROMA_QP_DELTA_OUT_VAL_CB, param->chroma_qp_delta_out_val_cb);
-    ARGS_SET_VARIABLE(options, OP_CHROMA_QP_DELTA_IN_VAL_CR, param->chroma_qp_delta_in_val_cr);
-    ARGS_SET_VARIABLE(options, OP_CHROMA_QP_DELTA_OUT_VAL_CR, param->chroma_qp_delta_out_val_cr);
-    ARGS_SET_VARIABLE(options, OP_DRA_ENABLE_FLAG, &param->tool_dra);
-    ARGS_SET_VARIABLE(options, OP_DRA_NUMBER_RANGES, &param->dra_number_ranges);
-    ARGS_SET_VARIABLE(options, OP_DRA_RANGE, param->dra_range);
-    ARGS_SET_VARIABLE(options, OP_DRA_SCALE, param->dra_scale);
-    ARGS_SET_VARIABLE(options, OP_DRA_CHROMA_QP_SCALE, param->dra_chroma_qp_scale);
-    ARGS_SET_VARIABLE(options, OP_DRA_CHROMA_QP_OFFSET, param->dra_chroma_qp_offset);
-    ARGS_SET_VARIABLE(options, OP_DRA_CHROMA_CB_SCALE, param->dra_chroma_cb_scale);
-    ARGS_SET_VARIABLE(options, OP_DRA_CHROMA_CR_SCALE, param->dra_chroma_cr_scale);
-    ARGS_SET_VARIABLE(options, OP_DRA_HIST_NORM, param->dra_hist_norm);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL_EXTERN, &param->rpl_extern);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_0, param->rpl0[0]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_1, param->rpl0[1]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_2, param->rpl0[2]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_3, param->rpl0[3]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_4, param->rpl0[4]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_5, param->rpl0[5]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_6, param->rpl0[6]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_7, param->rpl0[7]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_8, param->rpl0[8]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_9, param->rpl0[9]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_10, param->rpl0[10]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_11, param->rpl0[11]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_12, param->rpl0[12]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_13, param->rpl0[13]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_14, param->rpl0[14]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_15, param->rpl0[15]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_16, param->rpl0[16]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_17, param->rpl0[17]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_18, param->rpl0[18]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_19, param->rpl0[19]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_20, param->rpl0[20]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_21, param->rpl0[21]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_22, param->rpl0[22]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_23, param->rpl0[23]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_24, param->rpl0[24]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL0_25, param->rpl0[25]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_0, param->rpl1[0]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_1, param->rpl1[1]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_2, param->rpl1[2]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_3, param->rpl1[3]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_4, param->rpl1[4]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_5, param->rpl1[5]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_6, param->rpl1[6]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_7, param->rpl1[7]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_8, param->rpl1[8]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_9, param->rpl1[9]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_10, param->rpl1[10]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_11, param->rpl1[11]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_12, param->rpl1[12]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_13, param->rpl1[13]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_14, param->rpl1[14]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_15, param->rpl1[15]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_16, param->rpl1[16]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_17, param->rpl1[17]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_18, param->rpl1[18]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_19, param->rpl1[19]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_20, param->rpl1[20]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_21, param->rpl1[21]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_22, param->rpl1[22]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_23, param->rpl1[23]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_24, param->rpl1[24]);
-    ARGS_SET_VARIABLE(options, OP_FLAG_RPL1_25, param->rpl1[25]);
-    ARGS_SET_VARIABLE(options, OP_INTER_SLICE_TYPE, &param->inter_slice_type);
-    ARGS_SET_VARIABLE(options, OP_PIC_CROP_FLAG, &param->picture_cropping_flag);
-    ARGS_SET_VARIABLE(options, OP_PIC_CROP_LEFT, &param->picture_crop_left_offset);
-    ARGS_SET_VARIABLE(options, OP_PIC_CROP_RIGHT, &param->picture_crop_right_offset);
-    ARGS_SET_VARIABLE(options, OP_PIC_CROP_TOP, &param->picture_crop_top_offset);
-    ARGS_SET_VARIABLE(options, OP_PIC_CROP_BOTTOM, &param->picture_crop_bottom_offset);
-    ARGS_SET_VARIABLE(options, OP_PRESET, op_preset);
-    ARGS_SET_VARIABLE(options, OP_TUNE, op_tune);
-
-    return 0;
-}
-
-static int args_parse_cfg(FILE* fp, ARGS_OPTION* ops, int is_type_ppt)
+static int args_parse_cfg(FILE* fp, ARGS_OPT* ops, int is_type_ppt)
 {
     char* parser;
     char line[256] = "", tag[50] = "", val[256] = "";
@@ -1435,7 +714,7 @@ static int args_parse_cfg(FILE* fp, ARGS_OPTION* ops, int is_type_ppt)
         if (parser == NULL) continue;
         strcpy(val, parser);
 
-        oidx = args_search_long_arg(ops, tag);
+        oidx = args_search_long_key(ops, tag);
         if (oidx < 0) continue;
 
         if (ops[oidx].val == NULL)
@@ -1453,14 +732,14 @@ static int args_parse_cfg(FILE* fp, ARGS_OPTION* ops, int is_type_ppt)
             {
                 *((int*)ops[oidx].val) = 1;
             }
-            *ops[oidx].flag = 1;
+            ops[oidx].flag = 1;
         }
     }
     return 0;
 }
 
-static int args_parse_cmd(int argc, const char * argv[], ARGS_OPTION * ops,
-                          int * idx)
+static int args_parse_cmd(int argc, const char * argv[], ARGS_OPT * ops,
+                          int * idx, char ** errstr)
 {
     int    aidx; /* arg index */
     int    oidx; /* option index */
@@ -1473,14 +752,22 @@ static int args_parse_cmd(int argc, const char * argv[], ARGS_OPTION * ops,
     if(argv[aidx][1] == '-')
     {
         /* long option */
-        oidx = args_search_long_arg(ops, argv[aidx] + 2);
-        if(oidx < 0) goto ERR;
+        oidx = args_search_long_key(ops, argv[aidx] + 2);
+        if(oidx < 0)
+        {
+            *errstr = (char*)argv[aidx];
+            goto ERR;
+        }
     }
     else if(strlen(argv[aidx]) == 2)
     {
         /* short option */
         oidx = args_search_short_arg(ops, argv[aidx][1]);
-        if(oidx < 0) goto ERR;
+        if(oidx < 0)
+        {
+            *errstr = (char*)argv[aidx];
+            goto ERR;
+        }
     }
     else
     {
@@ -1498,7 +785,7 @@ static int args_parse_cmd(int argc, const char * argv[], ARGS_OPTION * ops,
     {
         *((int*)ops[oidx].val) = 1;
     }
-    *ops[oidx].flag = 1;
+    ops[oidx].flag = 1;
     *idx = *idx + 1;
 
     return ops[oidx].key;
@@ -1511,90 +798,286 @@ ERR:
     return -1;
 }
 
-static int args_parse_cmd2(int argc, const char* argv[], ARGS_OPTION* ops, int* idx, int is_type_ppt)
+static int args_set_variable_by_key_long(ARGS_OPT * opts, char * key_long, void * var)
 {
-    int    aidx; /* arg index */
-    int    oidx; /* option index */
+    int idx;
+    char buf[ARGS_MAX_KEY_LONG];
+    char * ko = key_long;
+    char * kt = buf;
 
-    aidx = *idx + 1;
+    /* if long key has "_", convert to "-". */
+    while(*ko != '\0')
+    {
+        if(*ko == '_') *kt = '-';
+        else *kt = *ko;
 
-    if (aidx >= argc || argv[aidx] == NULL) goto NO_MORE;
-    if (argv[aidx][0] != '-') goto ERR;
+        ko++;
+        kt++;
+    }
+    *kt = '\0';
 
-    if (argv[aidx][1] == '-')
-    {
-        /* long option */
-        oidx = args_search_long_arg(ops, argv[aidx] + 2);
-        if (oidx < 0) goto ERR;
-    }
-    else if (strlen(argv[aidx]) == 2)
-    {
-        /* short option */
-        oidx = args_search_short_arg(ops, argv[aidx][1]);
-        if (oidx < 0) goto ERR;
-    }
-    else
-    {
-        goto ERR;
-    }
-
-    if (ops[oidx].val == NULL)
-    {
-        goto ERR;
-    }
-
-    if (ARGS_GET_IS_OPT_TYPE_PPT(ops[oidx].val_type) != is_type_ppt)
-    {
-        if (ARGS_GET_CMD_OPT_VAL_TYPE(ops[oidx].val_type) != ARGS_VAL_TYPE_NONE)
-        {
-            *idx = *idx + 1;
-        }
-        goto END;
-    }
-
-    if (ARGS_GET_CMD_OPT_VAL_TYPE(ops[oidx].val_type) != ARGS_VAL_TYPE_NONE)
-    {
-        if (aidx + 1 >= argc) goto ERR;
-        if (args_read_value(ops + oidx, argv[aidx + 1])) goto ERR;
-        *idx = *idx + 1;
-    }
-    else
-    {
-        *((int*)ops[oidx].val) = 1;
-    }
-    *ops[oidx].flag = 1;
-END:
-    *idx = *idx + 1;
-    return ops[oidx].key;
-
-NO_MORE:
+    idx = args_search_long_key(opts, buf);
+    if (idx < 0) return -1;
+    opts[idx].val = var;
     return 0;
+}
 
-ERR:
+static int args_set_variable_by_key(ARGS_OPT * opts, char * key, void * var)
+{
+    int idx;
+    idx = args_search_short_arg(opts, key[0]);
+    if (idx < 0) return -1;
+    opts[idx].val = var;
+    return 0;
+}
+
+#define ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, key_long) \
+    args_set_variable_by_key_long(opts, #key_long, (void*)&((param)->key_long))
+
+#define ARGS_SET_PARAM_VAR_KEY(opts, param, key) \
+    args_set_variable_by_key(opts, #key, (void*)&((param)->key))
+
+
+static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
+{
+    ARGS_OPT * opts;
+    opts = args->opts;
+
+    /*args_set_variable_by_key_long(opts, "config", args->fname_cfg);*/
+    args_set_variable_by_key_long(opts, "input", args->fname_inp);
+    args_set_variable_by_key_long(opts, "output", args->fname_out);
+    args_set_variable_by_key_long(opts, "recon", args->fname_rec);
+    args_set_variable_by_key_long(opts, "frames", &args->frames);
+    args_set_variable_by_key_long(opts, "hash", &args->hash);
+    args_set_variable_by_key_long(opts, "verbose", &op_verbose);
+    op_verbose = VERBOSE_SIMPLE; /* default */
+    args_set_variable_by_key_long(opts, "input-depth", &args->input_depth);
+    args->input_depth = 8; /* default */
+    args_set_variable_by_key_long(opts, "input-csp", &args->input_csp);
+    args->input_csp = 1; /* default */
+    args_set_variable_by_key_long(opts, "seek", &args->seek);
+    args_set_variable_by_key_long(opts, "profile", args->profile);
+    strcpy(args->profile, "baseline"); /* default */
+    args_set_variable_by_key_long(opts, "preset", args->preset);
+    strcpy(args->preset, "medium"); /* default */
+    args_set_variable_by_key_long(opts, "tune", args->tune);
+
+    ARGS_SET_PARAM_VAR_KEY(opts, param, w);
+    ARGS_SET_PARAM_VAR_KEY(opts, param, h);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, qp);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, crf);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, aq_mode);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, fps);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, keyint);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, bframes);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, threads);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, codec_bit_depth);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, closed_gop);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, disable_hgop);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, level_idc);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, rc_type);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, bitrate);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, vbv_msec);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, vbv_bufsize);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, use_filler);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, lookahead);
+
+
+#if 0
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_BTT, &param->btt);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_SUCO, &param->suco);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_ADD_QP_FRAME, &param->qp_incread_frame);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_FRAMEWORK_CB_MAX, &param->framework_cb_max);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_FRAMEWORK_CB_MIN, &param->framework_cb_min);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_FRAMEWORK_CU14_MAX, &param->framework_cu14_max);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_FRAMEWORK_TRIS_MAX, &param->framework_tris_max);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_FRAMEWORK_TRIS_MIN, &param->framework_tris_min);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_FRAMEWORK_SUCO_MAX, &param->framework_suco_max);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_FRAMEWORK_SUCO_MIN, &param->framework_suco_min);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_AMVR, &param->tool_amvr);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_MMVD, &param->tool_mmvd);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_AFFINE, &param->tool_affine);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_DMVR, &param->tool_dmvr);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_ADDB, &param->tool_addb);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_ALF, &param->tool_alf);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_HTDF, &param->tool_htdf);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_ADMVP, &param->tool_admvp);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_HMVP, &param->tool_hmvp);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_EIPD, &param->tool_eipd);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_IQT, &param->tool_iqt);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_CM_INIT, &param->tool_cm_init);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_ADCC, &param->tool_adcc);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_RPL, &param->tool_rpl);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_POCS, &param->tool_pocs);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_QP_CB_OFFSET, &param->qp_cb_offset);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_QP_CR_OFFSET, &param->qp_cr_offset);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_ATS, &param->tool_ats);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_CONSTRAINED_INTRA_PRED, &param->constrained_intra_pred);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_DBF, &param->tool_addb);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_DBFOFFSET_A, &param->deblock_alpha_offset);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TOOL_DBFOFFSET_B, &param->deblock_beta_offset);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TILE_UNIFORM_SPACING, &param->tile_uniform_spacing_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_NUM_TILE_COLUMNS, &param->tile_columns);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_NUM_TILE_ROWS, &param->tile_rows);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TILE_COLUMN_WIDTH_ARRAY, &param->tile_column_width_array);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_TILE_ROW_HEIGHT_ARRAY, &param->tile_row_height_array);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_NUM_SLICE_IN_PIC, &param->num_slice_in_pic);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_SLICE_BOUNDARY_ARRAY, &param->tile_array_in_slice);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_ARBITRAY_SLICE_FLAG, &param->arbitrary_slice_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_NUM_REMAINING_TILES_IN_SLICE, &param->num_remaining_tiles_in_slice_minus1);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_LOARG_FILTER_ACROSS_TILES_ENABLED_FLAG, &param->loop_filter_across_tiles_enabled_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_CHROMA_QP_TABLE_PRESENT_FLAG, &param->chroma_qp_table_present_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_CHROMA_QP_NUM_POINTS_IN_TABLE, param->chroma_qp_num_points_in_table);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_CHROMA_QP_DELTA_IN_VAL_CB, param->chroma_qp_delta_in_val_cb);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_CHROMA_QP_DELTA_OUT_VAL_CB, param->chroma_qp_delta_out_val_cb);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_CHROMA_QP_DELTA_IN_VAL_CR, param->chroma_qp_delta_in_val_cr);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_CHROMA_QP_DELTA_OUT_VAL_CR, param->chroma_qp_delta_out_val_cr);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_DRA_ENABLE_FLAG, &param->tool_dra);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_DRA_NUMBER_RANGES, &param->dra_number_ranges);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_DRA_RANGE, param->dra_range);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_DRA_SCALE, param->dra_scale);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_DRA_CHROMA_QP_SCALE, param->dra_chroma_qp_scale);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_DRA_CHROMA_QP_OFFSET, param->dra_chroma_qp_offset);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_DRA_CHROMA_CB_SCALE, param->dra_chroma_cb_scale);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_DRA_CHROMA_CR_SCALE, param->dra_chroma_cr_scale);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_DRA_HIST_NORM, param->dra_hist_norm);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL_EXTERN, &param->rpl_extern);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_0, param->rpl0[0]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_1, param->rpl0[1]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_2, param->rpl0[2]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_3, param->rpl0[3]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_4, param->rpl0[4]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_5, param->rpl0[5]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_6, param->rpl0[6]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_7, param->rpl0[7]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_8, param->rpl0[8]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_9, param->rpl0[9]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_10, param->rpl0[10]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_11, param->rpl0[11]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_12, param->rpl0[12]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_13, param->rpl0[13]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_14, param->rpl0[14]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_15, param->rpl0[15]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_16, param->rpl0[16]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_17, param->rpl0[17]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_18, param->rpl0[18]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_19, param->rpl0[19]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_20, param->rpl0[20]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_21, param->rpl0[21]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_22, param->rpl0[22]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_23, param->rpl0[23]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_24, param->rpl0[24]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL0_25, param->rpl0[25]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_0, param->rpl1[0]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_1, param->rpl1[1]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_2, param->rpl1[2]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_3, param->rpl1[3]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_4, param->rpl1[4]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_5, param->rpl1[5]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_6, param->rpl1[6]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_7, param->rpl1[7]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_8, param->rpl1[8]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_9, param->rpl1[9]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_10, param->rpl1[10]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_11, param->rpl1[11]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_12, param->rpl1[12]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_13, param->rpl1[13]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_14, param->rpl1[14]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_15, param->rpl1[15]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_16, param->rpl1[16]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_17, param->rpl1[17]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_18, param->rpl1[18]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_19, param->rpl1[19]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_20, param->rpl1[20]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_21, param->rpl1[21]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_22, param->rpl1[22]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_23, param->rpl1[23]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_24, param->rpl1[24]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_RPL1_25, param->rpl1[25]);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_INTER_SLICE_TYPE, &param->inter_slice_type);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_PIC_CRARG_FLAG, &param->picture_cropping_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_PIC_CRARG_LEFT, &param->picture_crop_left_offset);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_PIC_CRARG_RIGHT, &param->picture_crop_right_offset);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_PIC_CRARG_TOP, &param->picture_crop_top_offset);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_PIC_CRARG_BOTTOM, &param->picture_crop_bottom_offset);
+#endif
+    return 0;
+}
+
+static int args_get(ARGS_PARSER * args, char * keyl, void ** val, int * flag)
+{
+    int idx;
+
+    idx = args_search_long_key(args->opts, keyl);
+    if(idx >= 0)
+    {
+        if(val) *val = args->opts[idx].val;
+        if(flag) *flag = args->opts[idx].flag;
+        return 0;
+    }
+    else
+    {
+        if(val) *val = NULL; /* no value */
+        if(flag) *flag = 0; /* no set */
+        return -1;
+    }
+}
+
+static int args_set_int(ARGS_PARSER * args, char * keyl, int val)
+{
+    int idx;
+
+    idx = args_search_long_key(args->opts, keyl);
+    if(idx >= 0)
+    {
+        *((int*)(args->opts[idx].val)) = val;
+        args->opts[idx].flag = 1;
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+static int args_set_flag(ARGS_PARSER * args, char * keyl, int flag)
+{
+    int idx;
+
+    idx = args_search_long_key(args->opts, keyl);
+    if(idx >= 0)
+    {
+        args->opts[idx].flag = flag;
+        return 0;
+    }
     return -1;
 }
 
-static int args_check_mandatory_param(ARGS_OPTION* ops, char ** err_arg)
+static int args_get_str(ARGS_PARSER * args, char * keyl, char * str, int * flag)
 {
-    ARGS_OPTION * o = ops;
-
-    while (o->key != 0)
+    char * p = NULL;
+    int ret;
+    if(args_get(args, keyl, (void **)&p, flag)) return -1;
+    if(p)
     {
-        if (o->val_type & ARGS_VAL_TYPE_MANDATORY)
-        {
-            if (*o->flag == 0)
-            {
-                /* not filled all mandatory argument */
-                *err_arg = o->key_long;
-                return -1;
-            }
-        }
-        o++;
+        if(str) strcpy(str, p);
     }
     return 0;
 }
 
-static int args_parse_all(int argc, const char* argv[], ARGS_OPTION* ops, XEVE_PARAM* param)
+static int args_get_int(ARGS_PARSER * args, char * keyl, int * val, int * flag)
+{
+    int * p = NULL;
+    if (args_get(args, keyl, (void **)&p, flag)) return -1;
+    if(p)
+    {
+        *val = *p;
+    }
+    return 0;
+}
+
+static int args_parse(ARGS_PARSER * args, int argc, const char* argv[],
+    char ** errstr)
 {
     int i, ret = 0, idx = 0;
     const char* fname_cfg = NULL;
@@ -1603,8 +1086,6 @@ static int args_parse_all(int argc, const char* argv[], ARGS_OPTION* ops, XEVE_P
     int num_configs = 0;
     int pos_conf_files[ARGS_MAX_NUM_CONF_FILES];
     memset(&pos_conf_files, -1, sizeof(int) * ARGS_MAX_NUM_CONF_FILES);
-
-    set_variables_to_parse_val(param);
 
     /* config file parsing */
     for (i = 1; i < argc; i++)
@@ -1626,7 +1107,7 @@ static int args_parse_all(int argc, const char* argv[], ARGS_OPTION* ops, XEVE_P
             fp = fopen(fname_cfg, "r");
             if (fp == NULL) return -1; /* config file error */
 
-            if (args_parse_cfg(fp, ops, 1))
+            if (args_parse_cfg(fp, args->opts, 1))
             {
                 fclose(fp);
                 return -1; /* config file error */
@@ -1637,41 +1118,114 @@ static int args_parse_all(int argc, const char* argv[], ARGS_OPTION* ops, XEVE_P
     /* command line parsing */
     while (1)
     {
-        ret = args_parse_cmd(argc, argv, ops, &idx);
+        ret = args_parse_cmd(argc, argv, args->opts, &idx, errstr);
         if (ret <= 0) break;
     }
     return ret;
 }
 
-int args_get_profile_preset_tune(int * profile, int * preset, int *tune)
+static int args_get_help(ARGS_PARSER * args, int idx, char * help)
 {
-    int tprofile, tpreset, ttune;
+    int optional = 0;
+    char vtype[32];
+    ARGS_OPT * o = args->opts + idx;
+    char default_value[256] = { 0 };
 
-    if (!strcmp(op_profile, "baseline")) tprofile = XEVE_PROFILE_BASELINE;
-    else if (!strcmp(op_profile, "main")) tprofile = XEVE_PROFILE_MAIN;
-    else return -1;
-
-    if (!strcmp(op_preset, "fast")) tpreset = XEVE_PRESET_FAST;
-    else if (!strcmp(op_preset, "medium")) tpreset = XEVE_PRESET_MEDIUM;
-    else if (!strcmp(op_preset, "slow")) tpreset = XEVE_PRESET_SLOW;
-    else if (!strcmp(op_preset, "placebo")) tpreset = XEVE_PRESET_PLACEBO;
-    else return -1;
-
-    if (op_flag[OP_TUNE]) {
-        if (!strcmp(op_tune, "zerolatency")) ttune = XEVE_TUNE_ZEROLATENCY;
-        else if (!strcmp(op_tune, "psnr")) ttune = XEVE_TUNE_PSNR;
-        else return -1;
+    switch(ARGS_GET_CMD_OPT_VAL_TYPE(o->val_type))
+    {
+        case ARGS_VAL_TYPE_INTEGER:
+            strcpy(vtype, "INTEGER");
+            if(o->val != NULL) sprintf(default_value, " [%d]", *(int*)(o->val));
+            break;
+        case ARGS_VAL_TYPE_STRING:
+            strcpy(vtype, "STRING");
+            if(o->val != NULL) sprintf(default_value, " [%s]", strlen((char*)(o->val)) == 0 ? "None" : (char*)(o->val));
+            break;
+        case ARGS_VAL_TYPE_NONE:
+        default:
+            strcpy(vtype, "FLAG");
+            if(o->val != NULL) sprintf(default_value, " [%s]", *(int*)(o->val) ? "On" : "Off");
+            break;
     }
-    else ttune = XEVE_TUNE_NONE;
+    optional = !(o->val_type & ARGS_VAL_TYPE_MANDATORY);
 
-    *profile = tprofile;
-    *preset = tpreset;
-    *tune = ttune;
+    if(o->key != ARGS_NO_KEY)
+    {
+        sprintf(help, "  -%c, --%s [%s]%s%s\n    : %s", o->key, o->key_long,
+                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", o->desc);
+    }
+    else
+    {
+        sprintf(help, "  --%s [%s]%s%s\n    : %s", o->key_long,
+                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", o->desc);
+    }
 
     return 0;
 }
 
-#define NUM_ARG_OPTION   ((int)(sizeof(options)/sizeof(options[0]))-1)
+static int args_check_mandatory(ARGS_PARSER * args, char ** err_arg)
+{
+    ARGS_OPT * o = args->opts;
+
+    while (o->key != 0)
+    {
+        if (o->val_type & ARGS_VAL_TYPE_MANDATORY)
+        {
+            if (o->flag == 0)
+            {
+                /* not filled all mandatory argument */
+                *err_arg = o->key_long;
+                return -1;
+            }
+        }
+        o++;
+    }
+    return 0;
+}
+
+static void args_release(ARGS_PARSER * args)
+{
+    if (args != NULL)
+    {
+        if(args->opts != NULL) free(args->opts);
+        free(args);
+    }
+}
+
+static ARGS_PARSER * args_create(void)
+{
+    ARGS_PARSER * args = NULL;
+    ARGS_OPT * opts = NULL;
+
+    args = malloc(sizeof(ARGS_PARSER));
+    if(args == NULL) goto ERR;
+    memset(args, 0, sizeof(ARGS_PARSER));
+
+    opts = malloc(sizeof(args_opt_table));
+    if (opts == NULL) goto ERR;
+    memcpy(opts, args_opt_table, sizeof(args_opt_table));
+    args->opts = opts;
+
+    args->init = args_init;
+    args->release = args_release;
+    args->parse = args_parse;
+    args->get_help = args_get_help;
+    args->get_str = args_get_str;
+    args->get_int = args_get_int;
+    args->set_int = args_set_int;
+    args->set_flag = args_set_flag;
+    args->check_mandatory = args_check_mandatory;
+
+    args->num_option = ((int)(sizeof(args_opt_table)/sizeof(args_opt_table[0]))-1);
+
+    return args;
+
+ERR:
+    if(opts) free(opts);
+    if(args) free(args);
+    return NULL;
+}
+
 
 #endif /*_XEVE_APP_ARGS_H_ */
 

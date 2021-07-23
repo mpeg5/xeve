@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -139,7 +139,7 @@ s32 xeve_fcst_get_scene_type(XEVE_CTX * ctx, XEVE_PICO * pico)
     else /* SLICE_P */
     {
         fc_inter = pico->sinfo.uni_est_cost[INTER_UNI0];
-        dist_to_p = ctx->param.max_b_frames + 1;
+        dist_to_p = ctx->param.bframes + 1;
 
         if (dist_to_p > 1)
         {
@@ -177,9 +177,9 @@ s32 xeve_fcst_get_scene_type(XEVE_CTX * ctx, XEVE_PICO * pico)
     }
 
     /* if there is any scene_change in a gop, P frame is handled as scene_change */
-    if (dist_to_p == ctx->param.max_b_frames + 1)
+    if (dist_to_p == ctx->param.bframes + 1)
     {
-        for (i = 1; i < ctx->param.max_b_frames + 1; i++)
+        for (i = 1; i < ctx->param.bframes + 1; i++)
         {
             ridx = XEVE_MOD_IDX(pico->pic_icnt - i, ctx->pico_max_cnt);
 
@@ -226,7 +226,7 @@ static u32 get_aq_blk_sum(void * pic_t, int width, int height,
         int stride)
 {
     int      i, j;
-    u16 * pic; 
+    u16 * pic;
     u32   sum = 0;
 
     pic = (u16 *)pic_t;
@@ -246,7 +246,7 @@ static u32 get_aq_blk_ssum(void * pic_t, int width, int height,
         int stride)
 {
     int      i, j;
-    u16 * pic; 
+    u16 * pic;
     u32   ssum = 0;
 
     pic = (u16 *)pic_t;
@@ -523,7 +523,7 @@ static s32 blk_tree_transfer(XEVE_CTX * ctx, XEVE_PICO * pico_l0,
         if(map_pdir[blk_num] != INTRA)
         {
             /* Find transfer_cost */
-            transfer_cost = get_transfer_cost(pico_cur, blk_num); 
+            transfer_cost = get_transfer_cost(pico_cur, blk_num);
 
             if(transfer_cost > 0)
             {
@@ -682,7 +682,7 @@ static void blk_tree_fixed_gop(XEVE_CTX * ctx)
 
     bframes       = 0;
     pic_icnt_last = ctx->pico->pic_icnt;
-    gop_size = ctx->param.max_b_frames + 1;
+    gop_size = ctx->param.bframes + 1;
 
     max_depth = 0;
     int offset = pic_icnt_last == gop_size ? 1 : 0;
@@ -704,8 +704,8 @@ static void blk_tree_fixed_gop(XEVE_CTX * ctx)
             pico = ctx->pico_buf[pic_idx];
             if (pico->sinfo.slice_depth != depth) continue;
 
-            pico_l0 = ctx->pico_buf[XEVE_MOD_IDX(pic_idx - pico->sinfo.ref_pic[REFP_0], ctx->pico_max_cnt)]; 
-            pico_l1 = ctx->pico_buf[XEVE_MOD_IDX(pic_idx - pico->sinfo.ref_pic[REFP_1], ctx->pico_max_cnt)]; 
+            pico_l0 = ctx->pico_buf[XEVE_MOD_IDX(pic_idx - pico->sinfo.ref_pic[REFP_0], ctx->pico_max_cnt)];
+            pico_l1 = ctx->pico_buf[XEVE_MOD_IDX(pic_idx - pico->sinfo.ref_pic[REFP_1], ctx->pico_max_cnt)];
 
             blk_tree_transfer(ctx, pico_l0, pico_l1, pico);
         }
@@ -745,7 +745,7 @@ static void blk_tree_fixed_gop(XEVE_CTX * ctx)
 
 /********************* get inter and intra score*****************************/
 void xeve_mc_fcst(u16 * ref_t, s32 gmv_x, s32 gmv_y, s32 s_ref, s32 s_pred
-              , u16 * pred, s32 w, s32 h, s32 bi, u8 bit_depth, s32 * buf)
+              , u16 * pred, s32 w, s32 h, s32 bi, u8 bit_depth, s32 * buf, s16* min_mv, s16* max_mv)
 {
     u16 * p8u;
     u16 * p16;
@@ -754,7 +754,9 @@ void xeve_mc_fcst(u16 * ref_t, s32 gmv_x, s32 gmv_y, s32 s_ref, s32 s_pred
 
     ref = (u16 *)ref_t;
     gmv_x >>= 2;
+    gmv_x = XEVE_CLIP3(min_mv[MV_X], max_mv[MV_X], gmv_x);
     gmv_y >>= 2;
+    gmv_y = XEVE_CLIP3(min_mv[MV_Y], max_mv[MV_Y], gmv_y);
 
     ref += gmv_y * s_ref + gmv_x;
 
@@ -1047,7 +1049,7 @@ static void get_mvc_median(s16 * mvc, s16(*map_mv)[REFP_NUM][MV_D], s32 position
         mvc[MV_X] = 0;
         mvc[MV_Y] = 0;
     }
-    else 
+    else
     {
         if (pos_x == 0)
         {
@@ -1121,7 +1123,7 @@ static s32 fcst_me_ipel(XEVE_PIC * org_pic, XEVE_PIC * ref_pic, s16 * min_mv, s1
     {
         center_x = mv[MV_X];
         center_y = mv[MV_Y];
-        
+
         for(int i = 0 ; i < total_points ; i++)
         {
             cmv[MV_X] = center_x + tbl_small_dia_search[pos_idx][MV_X];
@@ -1180,7 +1182,7 @@ static s32 est_inter_cost(XEVE_CTX * ctx, s32 x, s32 y, XEVE_PICO * pico_cur
     sub_h  = pico_cur->spic->h_l;
     mvp_num = 1;
 
-    log2_cuwh = ctx->fcst.log2_fcst_blk_spic + 1; 
+    log2_cuwh = ctx->fcst.log2_fcst_blk_spic + 1;
     cuwh      = 1 << log2_cuwh;
     pos       = (x >> log2_cuwh) + (y >> log2_cuwh) * ctx->w_lcu;
     map_mv    = uni_inter_mode > 1 ? pico_cur->sinfo.map_mv_pga : pico_cur->sinfo.map_mv;
@@ -1301,7 +1303,7 @@ void uni_direction_cost_estimation(XEVE_CTX * ctx, XEVE_PICO * pico_cur, XEVE_PI
 }
 
 static s32 fcst_me_ipel_b(XEVE_PIC * org_pic, XEVE_PIC * ref_pic_0, XEVE_PIC * ref_pic_1, s32 x, s32 y, s32 log2_cuwh, u16 lambda
-                        , s16 mv_l0[MV_D], s16 mvd_L0[MV_D], s16 mv_L1[MV_D], s16 mvd_L1[MV_D], u8 bit_depth)
+                        , s16 mv_l0[MV_D], s16 mvd_L0[MV_D], s16 mv_L1[MV_D], s16 mvd_L1[MV_D], u8 bit_depth, s16* min_mv_l0, s16* max_mv_l0, s16* min_mv_l1, s16* max_mv_l1)
 {
     s32        cost;
     u16        wh, mv_bits;
@@ -1315,8 +1317,8 @@ static s32 fcst_me_ipel_b(XEVE_PIC * org_pic, XEVE_PIC * ref_pic_0, XEVE_PIC * r
 
     /* Motion compensation for bi prediction */
     /* Obtain two prediction using L0 mv and L1 mv */
-    xeve_mc_fcst(ref_pic_0->y, mv_l0[MV_X], mv_l0[MV_Y], ref_pic_0->s_l, wh, pred[REFP_0], wh, wh, 0, bit_depth, NULL);
-    xeve_mc_fcst(ref_pic_1->y, mv_L1[MV_X], mv_L1[MV_Y], ref_pic_1->s_l, wh, pred[REFP_1], wh, wh, 0, bit_depth, NULL);
+    xeve_mc_fcst(ref_pic_0->y, mv_l0[MV_X], mv_l0[MV_Y], ref_pic_0->s_l, wh, pred[REFP_0], wh, wh, 0, bit_depth, NULL, min_mv_l0, max_mv_l0);
+    xeve_mc_fcst(ref_pic_1->y, mv_L1[MV_X], mv_L1[MV_Y], ref_pic_1->s_l, wh, pred[REFP_1], wh, wh, 0, bit_depth, NULL, min_mv_l1, max_mv_l1);
 
     /* Make bi-prediction using averaging */
     fcst_mc_bi_avg_l(pred, wh, wh, wh, bi_pred, wh, bit_depth);
@@ -1332,7 +1334,8 @@ static s32 get_bi_lcost(XEVE_CTX * ctx, int x, int y, XEVE_PICO * pico_1,
                 XEVE_PICO * pico_0, XEVE_PICO * pico_2, u8 * map_bdir)
 {
     int      pos, sub_w, sub_h, cuwh, log2_cuwh;
-    s16    min[MV_D], max[MV_D], mvp_l1[MV_D], mv_l1[MV_D], mvp_l0[MV_D];
+    s16    min_l0[MV_D], max_l0[MV_D], mvp_l1[MV_D], mv_l1[MV_D], mvp_l0[MV_D];
+    s16    min_l1[MV_D], max_l1[MV_D];
     s16    mvc_l0[MV_D], mvc_l1[MV_D], mvd_l0[MV_D], mvd_l1[MV_D], mv_l0[MV_D];
     s16 (* map_mv)[REFP_NUM][MV_D];
     s32    cost_l1,cost_l0, cost, best_cost;
@@ -1354,14 +1357,14 @@ static s32 get_bi_lcost(XEVE_CTX * ctx, int x, int y, XEVE_PICO * pico_1,
 
         /* set maximum/minimum value of search range */
         get_mvc_median(mvc_l0, &map_mv[pos], pos, REFP_0, ctx->fcst.w_blk);
-        set_mv_bound(x + (mvc_l0[MV_X] >> 2), y + (mvc_l0[MV_Y] >> 2), sub_w, sub_h, min, max);
+        set_mv_bound(x + (mvc_l0[MV_X] >> 2), y + (mvc_l0[MV_Y] >> 2), sub_w, sub_h, min_l0, max_l0);
 
         /* Find mvc at pos in fcst_ref */
         mv_l0[MV_X] = mvp_l0[MV_X] = (x << 2) + mvc_l0[MV_X];
         mv_l0[MV_Y] = mvp_l0[MV_Y] = (y << 2) + mvc_l0[MV_Y];
 
         /* L0-direction motion vector difference */
-        cost_l0 = fcst_me_ipel(pico_1->spic, pico_0->spic, min, max, x, y,
+        cost_l0 = fcst_me_ipel(pico_1->spic, pico_0->spic, min_l0, max_l0, x, y,
             log2_cuwh, mvp_l0, lambda_b, mv_l0, 10);
 
         mvd_l0[MV_X] = mv_l0[MV_X] - mvp_l0[MV_X];
@@ -1376,14 +1379,14 @@ static s32 get_bi_lcost(XEVE_CTX * ctx, int x, int y, XEVE_PICO * pico_1,
 
         /* set maximum/minimum value of search range */
         get_mvc_median(mvc_l1, &map_mv[pos], pos, PRED_L1, ctx->w_lcu);
-        set_mv_bound(x + (mvc_l1[MV_X] >> 2), y + (mvc_l1[MV_Y] >> 2),  sub_w, sub_h, min, max);
+        set_mv_bound(x + (mvc_l1[MV_X] >> 2), y + (mvc_l1[MV_Y] >> 2),  sub_w, sub_h, min_l1, max_l1);
 
         /* Find mvc at pos in fcst_ref */
         mv_l1[MV_X] = mvp_l1[MV_X] = (x << 2) + mvc_l1[MV_X];
         mv_l1[MV_Y] = mvp_l1[MV_Y] = (y << 2) + mvc_l1[MV_Y];
 
 
-        cost_l1 = fcst_me_ipel(pico_1->spic, pico_2->spic, min, max, x, y,
+        cost_l1 = fcst_me_ipel(pico_1->spic, pico_2->spic, min_l1, max_l1, x, y,
             log2_cuwh, mvp_l1, lambda_b, mv_l1, 10);
 
         mvd_l1[MV_X] = mv_l1[MV_X] - mvp_l1[MV_X];
@@ -1398,7 +1401,7 @@ static s32 get_bi_lcost(XEVE_CTX * ctx, int x, int y, XEVE_PICO * pico_1,
 
         cost = fcst_me_ipel_b(pico_1->spic, pico_0->spic,
             pico_2->spic, x, y, log2_cuwh, lambda_b, mv_l0, mvd_l0, mv_l1,
-            mvd_l1, 10);
+            mvd_l1, 10, min_l0, max_l0, min_l1, max_l1);
 
         if (cost< best_cost)
         {
@@ -1429,7 +1432,7 @@ static s32 get_bi_lcost(XEVE_CTX * ctx, int x, int y, XEVE_PICO * pico_1,
 
 void bi_direction_cost_estimation(XEVE_CTX * ctx, XEVE_PICO * pico_cur, XEVE_PICO * pico_l0, XEVE_PICO * pico_l1)
 {
-    s32      lcu_num = 0, x_lcu = 0, y_lcu = 0, log2_cuwh;
+    s32      lcu_num = 0, x_lcu = 0, y_lcu = 0, log2_cuwh, intra_blk_cnt = 0;
     s32(*uni_lcost)[4], uni_min_cost;
     s32      * bi_lcost;
 
@@ -1454,14 +1457,14 @@ void bi_direction_cost_estimation(XEVE_CTX * ctx, XEVE_PICO * pico_cur, XEVE_PIC
             bi_lcost[lcu_num] += ctx->rc->param->sub_pic_penalty;
         }
 
-        if (uni_lcost[lcu_num][INTRA] < bi_lcost[lcu_num])
+        uni_min_cost = XEVE_MIN(uni_lcost[lcu_num][INTRA], XEVE_MIN(uni_lcost[lcu_num][INTER_UNI0], bi_lcost[lcu_num]));
+        if (uni_lcost[lcu_num][INTRA] == uni_min_cost)
         {
             map_pdir[lcu_num] = INTRA;
+            intra_blk_cnt++;
         }
-
-        uni_min_cost = XEVE_MIN(uni_lcost[lcu_num][INTRA], XEVE_MIN(uni_lcost[lcu_num][INTER_UNI0], bi_lcost[lcu_num]));
         pico_cur->sinfo.bi_fcost += uni_min_cost;
-        
+
         lcu_num++;
         if (lcu_num == ctx->fcst.f_blk) break;
 
@@ -1472,14 +1475,14 @@ void bi_direction_cost_estimation(XEVE_CTX * ctx, XEVE_PICO * pico_cur, XEVE_PIC
             y_lcu++;
         }
     }
-
+    pico_cur->sinfo.icnt[0] = intra_blk_cnt;
     pico_cur->sinfo.bi_fcost = (pico_cur->sinfo.bi_fcost * 10) / 12; /* weighting bi-cost */
 }
 
 void set_subpic(XEVE_CTX * ctx, XEVE_PICO* pico, int is_intra_pic)
 {
     int gop_idx, gop_pos, pic_icnt = pico->pic_icnt;
-    int gop_size = ctx->param.max_b_frames + 1;
+    int gop_size = ctx->param.bframes + 1;
     pico->sinfo.scene_type = xeve_fcst_get_scene_type(ctx, pico);
 
     if (is_intra_pic)
@@ -1491,7 +1494,7 @@ void set_subpic(XEVE_CTX * ctx, XEVE_PICO* pico, int is_intra_pic)
     }
     /* for GOP size 16, 8, 4, 2 */
     else if (gop_size == 2 || gop_size == 4 || gop_size == 8 || gop_size ==16)
-    { 
+    {
         gop_idx = 4 - XEVE_LOG2(gop_size);
         gop_pos = (pic_icnt-1) % gop_size;
         gop_pos = gop_pos < 0 ? 0 : gop_pos;
@@ -1527,9 +1530,9 @@ void get_fcost_fixed_gop(XEVE_CTX * ctx, int is_intra_pic)
     int        i, pic_icnt_last, depth, refp_l0, refp_l1, gop_size;
 
     pic_icnt_last = ctx->pico->pic_icnt;
-    gop_size = ctx->param.max_b_frames + 1;
+    gop_size = ctx->param.bframes + 1;
 
-    if (ctx->param.gop_size == 1 && ctx->param.iperiod != 1) //LD case
+    if (ctx->param.gop_size == 1 && ctx->param.keyint != 1) //LD case
     {
          pic_icnt = XEVE_MOD_IDX(ctx->pico->pic_icnt, ctx->pico_max_cnt);
          pico = ctx->pico_buf[pic_icnt];
@@ -1589,8 +1592,8 @@ int xeve_forecast_fixed_gop(XEVE_CTX* ctx)
 
     pico      = ctx->pico;
     pic_icnt  = ctx->pico->pic_icnt;
-    i_period  = ctx->param.iperiod;
-    int gop_size = ctx->param.max_b_frames + 1;
+    i_period  = ctx->param.keyint;
+    int gop_size = ctx->param.bframes + 1;
 
     if ((i_period == 0 && pic_icnt == 0) || (i_period > 0 && pic_icnt % i_period == 0))
     {

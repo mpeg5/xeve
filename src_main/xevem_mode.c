@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -299,7 +299,7 @@ void xeve_rdo_bit_cnt_cu_inter_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
             xevem_eco_mvr_idx(&core->bs_temp, mvr_idx);
         }
 
-        
+
         int dir_flag = (pidx == PRED_DIR);
         dir_flag |= (pidx == PRED_DIR_MMVD);
         dir_flag |= (pidx == AFF_DIR);
@@ -342,7 +342,7 @@ void xeve_rdo_bit_cnt_cu_inter_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
         {
             xevem_eco_merge_idx(&core->bs_temp, mvp_idx[0]);
         }
-        
+
 
         if((((pidx % ORG_PRED_NUM) != PRED_DIR) && ((pidx % ORG_PRED_NUM) != PRED_DIR_MMVD)) || ((pidx >= AFF_L0) && (pidx <= AFF_6_BI) && (pidx != AFF_DIR)) )
         {
@@ -773,7 +773,7 @@ void xeve_set_affine_mv(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi)
                         mv_scale_tmp_hor >>= 2;
                         mv_scale_tmp_ver >>= 2;
                     }
-                    
+
                     // save MV for each 4x4 block
                     for ( int y = h; y < h + sub_h_in_scu; y++ )
                     {
@@ -889,7 +889,7 @@ void copy_to_cu_data_main(XEVE_CTX *ctx, XEVE_CORE *core, XEVE_MODE *mi, s16 coe
         {
             xeve_set_affine_mv(ctx, core, mi);
         }
-    } 
+    }
 }
 
 
@@ -1058,7 +1058,7 @@ static double mode_check_ibc(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int l
 
             if (cost < cost_best)
             {
-                cost_best = cost; 
+                cost_best = cost;
                 core->cu_mode = MODE_IBC;
                 mcore->ibc_flag = 1;
 
@@ -1100,7 +1100,7 @@ static double mode_coding_unit_main(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y
     double  cost_best;
     xeve_assert(abs(log2_cuw - log2_cuh) <= 2);
     mode_cu_init_main(ctx, core, x, y, log2_cuw, log2_cuh, cud);
-    
+
     if (ctx->sps.sps_btt_flag && log2_cuw == 2 && log2_cuh == 2 && ctx->sps.tool_admvp)
     {
         // Check only in main profile
@@ -1476,7 +1476,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
 
     // stroe the previous stored history MV list to m_pSplitTempMotLUTs, backup
     XEVE_HISTORY_BUFFER org_mot_lut, temp_sub_mot_lut;
-    
+
     if (ctx->sps.tool_hmvp)
     {
         copy_history_buffer(&org_mot_lut, &mcore->tmp_mot_lut[log2_cuw - 2][log2_cuh - 2]);
@@ -1720,8 +1720,8 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                 double cost_suco[2] = {MAX_COST, MAX_COST};
                 int prev_suco_num = is_mode_TT ? 1 : (is_mode_BT ? 0 : 2);
                 int prev_suco = mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[prev_suco_num];
-                
-                if(lossy_es[split_mode] && 
+
+                if(lossy_es[split_mode] &&
                    lossy_es[split_mode](&(core->cu_data_best[log2_cuw - 2][log2_cuh - 2]), eval_parent_node_first, cost_best, log2_cuw, log2_cuh, cuw, cuh, cud, nev_max_depth))
                 {
                     split_allow[split_mode] = 0;
@@ -1762,7 +1762,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                     if ( ctx->sps.tool_admvp && ctx->sps.sps_btt_flag )
                     {
                         split_struct.tree_cons.changed = tree_cons.mode_cons == eAll && ctx->sps.chroma_format_idc != 0 && !xeve_is_chroma_split_allowed( cuw, cuh, split_mode );
-                        mode_cons_changed = xeve_signal_mode_cons( &core->tree_cons, &split_struct.tree_cons ); 
+                        mode_cons_changed = xeve_signal_mode_cons( &core->tree_cons, &split_struct.tree_cons );
                         mode_cons_signal = mode_cons_changed && ( ctx->sh->slice_type != SLICE_I ) && ( xeve_get_mode_cons_by_split( split_mode, cuw, cuh ) == eAll ) && (ctx->sps.chroma_format_idc == 1);
                     }
 
@@ -2030,7 +2030,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                     mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_cost[split_mode] = cost_temp;
                     mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split &= ~(1 << split_mode);
                 }
-                
+
                 if(num_suco == 2 && mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[prev_suco_num] == 0 && allow_suco)
                 {
                     mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].suco[prev_suco_num] = cost_suco[0] < cost_suco[1] ? 1 : 2;
@@ -2087,7 +2087,7 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
 
     SBAC_LOAD(core->s_next_best[log2_cuw - 2][log2_cuh - 2], s_temp_depth);
     DQP_LOAD(core->dqp_next_best[log2_cuw - 2][log2_cuh - 2], dqp_temp_depth);
-    
+
     if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit != 1)
     {
         mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].remaining_split = remaining_split;
@@ -2206,7 +2206,7 @@ static int mode_init_lcu_main(XEVE_CTX *ctx, XEVE_CORE *core)
             mcore->mmvd_opt.poc_to_idx[i] = -1;
         }
         mcore->mmvd_opt.enabled = 1;
-        if (ctx->param.iperiod <= 0 || ctx->param.iperiod >= PRED_MAX_REF_FRAMES)
+        if (ctx->param.keyint <= 0 || ctx->param.keyint >= PRED_MAX_REF_FRAMES)
         {
             mcore->mmvd_opt.enabled = 0;
         }
