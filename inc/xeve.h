@@ -321,6 +321,10 @@ typedef struct _XEVE_BITB
  *****************************************************************************/
 typedef struct _XEVE_PARAM
 {
+    /* profile : baseline or main */
+    int            profile;
+    /* number of thread for parallel proessing */
+    int            threads;
     /* width of input frame */
     int            w;
     /* height of input frame */
@@ -332,48 +336,51 @@ typedef struct _XEVE_PARAM
     - 1: every frame is coded in I-frame
     */
     int            keyint;
+    /* color space of input image */
+    int            cs;
+    /* Rate control type */
+    int            rc_type;
     /* quantization parameter */
     int            qp;
-    /* CRF Value */
-    int            crf;
     /* quantization parameter offset for CB */
     int            qp_cb_offset;
     /* quantization parameter offset for CR */
     int            qp_cr_offset;
-    /* Rate control type */
-    int            rc_type;
-    /* bitrate */
-    char           bitrate[256];
-    /* VBV buffer size for rate control*/
-    char           vbv_bufsize[256];
-    int            vbv_msec;
+    /* bitrate (unit: kbps) */
+    int            bitrate;
+    /* VBV buffer size for rate control (unit: kbits) */
+    int            vbv_bufsize;
+    /* CRF Value */
+    int            crf;
+    /* number of b-frame */
+    int            bframes;
+    /* adaptive quantizaiton mode */
+    int            aq_mode;
+    /* number of look-ahead frame buffer */
+    int            lookahead;
+    /* use closed GOP sturcture
+       - 0 : use open GOP (default)
+       - 1 : use closed GOP */
+    int            closed_gop;
+    /* use filler data for tight constant bitrate */
     int            use_filler;
-    //XEVE_CHROMA_TABLE chroma_qp_table_struct;
+    /* XEVE_CHROMA_TABLE chroma_qp_table_struct */
     int            chroma_qp_table_present_flag;
     char           chroma_qp_num_points_in_table[256];
     char           chroma_qp_delta_in_val_cb[256];
     char           chroma_qp_delta_out_val_cb[256];
     char           chroma_qp_delta_in_val_cr[256];
     char           chroma_qp_delta_out_val_cr[256];
-    /* color space of input image */
-    int            cs;
-    int            bframes;
     int            disable_hgop;
     /* distance between ref pics in addition to closest ref ref pic in LD*/
     int            ref_pic_gap_length;
-    /* use closed GOP sturcture
-       - 0 : use open GOP (default)
-       - 1 : use closed GOP */
-    int            closed_gop;
+    /* internal codec bit-depth: EVC uses 10bit */
     int            codec_bit_depth;
-    int            profile;
+    /* level indicator */
     int            level_idc;
-    int            aq_mode;
-    int            lookahead;
     int            cutree;
     int            constrained_intra_pred;
     int            use_deblock;
-    int            threads;
     int            inter_slice_type;
     int            picture_cropping_flag;
     int            picture_crop_left_offset;
@@ -389,7 +396,6 @@ typedef struct _XEVE_PARAM
     int            gop_size;
     int            force_output;
     int            use_fcst;
-    int            vbv_enabled;
     int            chroma_format_idc;
     int            cs_w_shift;
     int            cs_h_shift;

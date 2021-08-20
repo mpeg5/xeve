@@ -138,7 +138,7 @@
     } \
 }
 
-const INV_TRANS xeve_itrans_map_tbl_sse[16][5] =
+const XEVE_INV_TRANS xeve_itrans_map_tbl_sse[16][5] =
 {
     { NULL, xeve_itrans_ats_intra_DCT8_B4, xeve_itrans_ats_intra_DCT8_B8_sse, xeve_itrans_ats_intra_DCT8_B16_sse, xeve_itrans_ats_intra_DCT8_B32_sse },
     { NULL, xeve_itrans_ats_intra_DST7_B4, xeve_itrans_ats_intra_DST7_B8_sse, xeve_itrans_ats_intra_DST7_B16_sse, xeve_itrans_ats_intra_DST7_B32_sse },

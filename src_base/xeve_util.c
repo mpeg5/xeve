@@ -2295,27 +2295,6 @@ static int parse_tile_slice_param(XEVE_CTX* ctx)
     return XEVE_OK;
 }
 
-int xeve_parse_param_bit(char * input_param)
-{
-    int bps = 0;
-    if (strchr(input_param, 'K') || strchr(input_param, 'k'))
-    {
-        char* tmp = strtok(input_param, "Kk ");
-        bps = (int)(atof(tmp) * 1000);
-    }
-    else if (strchr(input_param, 'M') || strchr(input_param, 'm'))
-    {
-        char* tmp = strtok(input_param, "Mm ");
-        bps = (int)(atof(tmp) * 1000000);
-    }
-    else
-    {
-        bps = atoi(input_param) * 1000;
-    }
-
-    return bps;
-}
-
 int xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
 {
     /* check input parameters */
@@ -3546,12 +3525,6 @@ int xeve_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core)
     return ret;
 }
 
-void xeve_run_itdq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM])
-{
-    xeve_sub_block_itdq(coef, core->log2_cuw, core->log2_cuh, core->qp_y, core->qp_u, core->qp_v, core->nnz, nnz_sub
-                      , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.chroma_format_idc);
-}
-
 void xeve_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth)
 {
     xeve_recon_blk(coef, pred, is_coef, cuw, cuh, s_rec, rec, bit_depth);
@@ -3660,7 +3633,7 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
 }
 
 
-void xeve_platform_init_func()
+void xeve_platform_init_func(XEVE_CTX * ctx)
 {
 #if X86_SSE
     int check_cpu, support_sse, support_avx, support_avx2;
@@ -3679,6 +3652,7 @@ void xeve_platform_init_func()
         xeve_func_mc_l              = xeve_tbl_mc_l_avx;
         xeve_func_mc_c              = xeve_tbl_mc_c_avx;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip_sse;
+        ctx->fn_itxb                = &xeve_tbl_itxb_avx;
     }
     else if (support_sse)
     {
@@ -3689,6 +3663,7 @@ void xeve_platform_init_func()
         xeve_func_mc_l              = xeve_tbl_mc_l_sse;
         xeve_func_mc_c              = xeve_tbl_mc_c_sse;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip_sse;
+        ctx->fn_itxb                = &xeve_tbl_itxb_sse;
     }
     else
 #endif
@@ -3700,6 +3675,7 @@ void xeve_platform_init_func()
         xeve_func_mc_l              = xeve_tbl_mc_l;
         xeve_func_mc_c              = xeve_tbl_mc_c;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip;
+        ctx->fn_itxb                = &xeve_tbl_itxb;
     }
 }
 
@@ -3743,7 +3719,7 @@ int xeve_platform_init(XEVE_CTX * ctx)
     ctx->fn_eco_pic_signature = xeve_eco_pic_signature;
     ctx->fn_tq                = xeve_sub_block_tq;
     ctx->fn_rdoq_set_ctx_cc   = xeve_rdoq_set_ctx_cc;
-    ctx->fn_itdp              = xeve_run_itdq;
+    ctx->fn_itdp              = xeve_itdq;
     ctx->fn_recon             = xeve_recon;
     ctx->fn_deblock_tree      = xeve_deblock_tree;
     ctx->fn_deblock_unit      = xeve_deblock_unit;
@@ -3755,7 +3731,7 @@ int xeve_platform_init(XEVE_CTX * ctx)
     ctx->fn_pic_flt           = NULL;
     ctx->pf                   = NULL;
 
-    xeve_platform_init_func();
+    xeve_platform_init_func(ctx);
 
     return XEVE_OK;
 }
@@ -4222,8 +4198,6 @@ int xeve_param_init(XEVE_PARAM* param)
     param->tile_rows                  = 1;
     param->tile_columns               = 1;
     param->num_slice_in_pic           = 1;
-    param->vbv_enabled                = 1;
-    param->vbv_msec                   = 2000;
 
     return XEVE_OK;
 }

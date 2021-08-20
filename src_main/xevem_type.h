@@ -39,6 +39,11 @@
 #include "xeve_type.h"
 #include "xevem_dra.h"
 
+/*****************************************************************************
+ * pre-defined function structure
+ *****************************************************************************/
+typedef void (*XEVE_INV_TRANS)(s16*, s16*, int, int, int, int);
+
 typedef struct _XEVE_BEF_DATA
 {
     int                visit;

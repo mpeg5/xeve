@@ -398,16 +398,12 @@ static const ARGS_OPT args_opt_table[] = \
     },
     {
         ARGS_NO_KEY,  "bitrate", ARGS_VAL_TYPE_STRING, 0, NULL,
-        "Bitrate in terms of Bits per second: Kbps(none,K,k), Mbps(M,m)\n"
-        "      ex) 100 / 100K / 0.1M"
+        "Bitrate in terms of kilo-bits per second: Kbps(none,K,k), Mbps(M,m)\n"
+        "      ex) 100 = 100K = 0.1M"
     },
     {
         ARGS_NO_KEY,  "crf", ARGS_VAL_TYPE_INTEGER, 0, NULL,
         "Constant Rate Factor CRF-value [10-49]"
-    },
-    {
-        ARGS_NO_KEY,  "vbv-msec", ARGS_VAL_TYPE_INTEGER, 0, NULL,
-        "VBV buffer size in msec"
     },
     {
         ARGS_NO_KEY,  "vbv-bufsize", ARGS_VAL_TYPE_STRING, 0, NULL,
@@ -546,6 +542,8 @@ struct _ARGS_PARSER
     char profile[32];
     char preset[32];
     char tune[32];
+    char bitrate[64];
+    char vbv_bufsize[64];
 };
 
 static int args_search_long_key(ARGS_OPT * opts, const char * key)
@@ -861,6 +859,10 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "preset", args->preset);
     strcpy(args->preset, "medium"); /* default */
     args_set_variable_by_key_long(opts, "tune", args->tune);
+    strcpy(args->bitrate, ""); /* default */
+    args_set_variable_by_key_long(opts, "bitrate", args->bitrate);
+    strcpy(args->vbv_bufsize, ""); /* default */
+    args_set_variable_by_key_long(opts, "vbv-bufsize", args->vbv_bufsize);
 
     ARGS_SET_PARAM_VAR_KEY(opts, param, w);
     ARGS_SET_PARAM_VAR_KEY(opts, param, h);
@@ -876,9 +878,6 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, disable_hgop);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, level_idc);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, rc_type);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, bitrate);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, vbv_msec);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, vbv_bufsize);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, use_filler);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, lookahead);
 
