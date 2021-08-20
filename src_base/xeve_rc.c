@@ -33,13 +33,15 @@
 #include "xeve_fcst.h"
 #include <math.h>
 
-const XEVE_RC_PARAM tbl_rc_param =
+#define XEVE_VBV_MSEC_DEFAULT 2000 /* msec */
+
+const static XEVE_RC_PARAM tbl_rc_param =
 {
     32, 0, 1, 28, 1.3F, 1.13F, 0.4F, 1.4983F, 0.95F, 0.5F, 0.4F, 0.4F, 0.6F, 0.1F,
     0.15F, 0.3F, 1.85F, 26, 14, 38, 0.04F, 0.5F, 4, 1.0397F, 4, 1.5F, 1.5F
 };
 
-const s32 tbl_ref_gop[4][32][2] =
+const static s32 tbl_ref_gop[4][32][2] =
 {
     {
         { 0, 17 },{ 0, 17 },{ 0,  1 },{ 0,  2 },
@@ -261,7 +263,7 @@ void xeve_init_rc(XEVE_CTX * ctx)
         rc->rc_model[i].cpx_cnt = 0;
         rc->rc_model[i].cpx_sum = 0;
         rc->rc_model[i].bpf_decayed = 1.0;
-        if (rc->vbv_enabled)
+        if (rc->vbv_buf_size)
         {
             rc->rc_model[i].bpf_decayed = 1.0 - rc->bpf / rc->vbv_buf_size;
         }
@@ -295,7 +297,7 @@ int xeve_rc_set(XEVE_CTX * ctx)
     /* set default value */
     rc->param        = &tbl_rc_param;
     rc->fps          = ctx->param.fps;
-    rc->bitrate      = (double)xeve_parse_param_bit(ctx->param.bitrate);
+    rc->bitrate      = (double)(ctx->param.bitrate * 1000);
     rc->fps_idx      = (((int)rc->fps + (ctx->param.gop_size >> 1)) / ctx->param.gop_size) - 1;
     rc->prev_bpf     = 0;
     rc->frame_bits   = 0;
@@ -338,22 +340,17 @@ int xeve_rc_set(XEVE_CTX * ctx)
     max1 = XEVE_MAX((ctx->f << 1), rc->bitrate);
     max2 = XEVE_MAX(rc->bitrate * rc->param->max_frm_bits_per_br, rc->bpf * 5);
     rc->max_frm_bits = XEVE_MIN(max1, max2);
+    rc->vbv_enabled = 1;
 
-    rc->vbv_enabled = ctx->param.vbv_enabled;
-
-    if (rc->vbv_enabled)
+    if (ctx->param.vbv_bufsize > 0)
     {
-        rc->vbv_buf_size = (double)xeve_parse_param_bit(ctx->param.vbv_bufsize);
-        if (rc->vbv_buf_size == 0)
-        {
-            rc->vbv_buf_size = ((rc->bitrate) * (ctx->param.vbv_msec / 1000.0));
-        }
-        rc->vbv_buf_fullness = 0;
+        rc->vbv_buf_size = (double)(ctx->param.vbv_bufsize * 1000);
     }
     else
     {
-        rc->vbv_buf_size = 0;
+        rc->vbv_buf_size = ((rc->bitrate) * (XEVE_VBV_MSEC_DEFAULT/1000.0));
     }
+    rc->vbv_buf_fullness = 0;
 
     rc->lambda[0] = 0.57 * pow(2.0, (rc->param->init_qp - 12.0) / 3.0);
     rc->lambda[1] = sqrt(rc->lambda[0]);

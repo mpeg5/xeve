@@ -38,12 +38,10 @@
 
 #include "xevem_type.h"
 
-void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, u8 qp_y, u8 qp_u, u8 qp_v, int flag[N_C], int nnz_sub[N_C][MAX_SUB_TB_NUM], int iqt_flag
-                            , u8 ats_intra_cu, u8 ats_mode, u8 ats_inter_info, int bit_depth, int chroma_format_idc);
+extern const XEVE_INV_TRANS (*xeve_func_itrans)[5];
+extern const XEVE_INV_TRANS xeve_itrans_map_tbl[16][5];
 
-extern const INV_TRANS (*xeve_func_itrans)[5];
-extern const INV_TRANS xeve_itrans_map_tbl[16][5];
-
+void xevem_itdq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM]);
 void xeve_itrans_ats_intra(s16 *coef, int log2_cuw, int log2_cuh, u8 ats_mode, int skip_w, int skip_h, int bit_depth);
 void xeve_it_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, const int max_log2_tr_dynamic_range, u8 ats_intra_tridx, int skip_w, int skip_h);
 void xeve_itrans_ats_intra_DST7_B4(s16 *coeff, s16 *block, int shift, int line, int skip_line, int skip_line_2);

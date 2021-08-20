@@ -31,7 +31,7 @@
 #include <math.h>
 #include "xeve_type.h"
 
-static void itx_pb2b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb2b(void *src, void *dst, int shift, int line, int step)
 {
     int j;
     s64 E, O;
@@ -64,7 +64,7 @@ static void itx_pb2b(void *src, void *dst, int shift, int line, int step)
     }
 }
 
-static void itx_pb4b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb4b(void *src, void *dst, int shift, int line, int step)
 {
     int j;
     s64 E[2], O[2];
@@ -106,7 +106,7 @@ static void itx_pb4b(void *src, void *dst, int shift, int line, int step)
     }
 }
 
-static void itx_pb8b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb8b(void *src, void *dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[4], O[4];
@@ -161,7 +161,7 @@ static void itx_pb8b(void *src, void *dst, int shift, int line, int step)
     }
 }
 
-static void itx_pb16b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb16b(void *src, void *dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[8], O[8];
@@ -230,7 +230,7 @@ static void itx_pb16b(void *src, void *dst, int shift, int line, int step)
     }
 }
 
-static void itx_pb32b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb32b(void *src, void *dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[16], O[16];
@@ -328,7 +328,7 @@ static void itx_pb32b(void *src, void *dst, int shift, int line, int step)
     }
 }
 
-static void itx_pb64b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb64b(void *src, void *dst, int shift, int line, int step)
 {
     const int tx_size = 64;
     const s8 *tm = xeve_tbl_tm64[0];
@@ -442,22 +442,21 @@ static void itx_pb64b(void *src, void *dst, int shift, int line, int step)
     }    
 }
 
-typedef void(*XEVE_ITXB)(void *coef, void *t, int shift, int line, int step);
-const XEVE_ITXB tbl_itxb[MAX_TR_LOG2] =
+const XEVE_ITXB xeve_tbl_itxb[MAX_TR_LOG2] =
 {
-    itx_pb2b,
-    itx_pb4b,
-    itx_pb8b,
-    itx_pb16b,
-    itx_pb32b,
-    itx_pb64b
+    xeve_itx_pb2b,
+    xeve_itx_pb4b,
+    xeve_itx_pb8b,
+    xeve_itx_pb16b,
+    xeve_itx_pb32b,
+    xeve_itx_pb64b
 };
 
-static void xeve_itrans(s16 *coef, int log2_cuw, int log2_cuh, int bit_depth)
+static void xeve_itrans(XEVE_CTX * ctx, s16 *coef, int log2_cuw, int log2_cuh, int bit_depth)
 {
     s32 tb[MAX_TR_DIM]; /* temp buffer */
-    tbl_itxb[log2_cuh - 1](coef, tb, 0, 1 << log2_cuw, 0);
-    tbl_itxb[log2_cuw - 1](tb, coef, (ITX_SHIFT1 + ITX_SHIFT2(bit_depth)), 1 << log2_cuh, 1);
+    (*ctx->fn_itxb)[log2_cuh - 1](coef, tb, 0, 1 << log2_cuw, 0);
+    (*ctx->fn_itxb)[log2_cuw - 1](tb, coef, (ITX_SHIFT1 + ITX_SHIFT2(bit_depth)), 1 << log2_cuh, 1);
 }
 
 static void xeve_dquant(s16 *coef, int log2_w, int log2_h, int scale, s32 offset, u8 shift)
@@ -473,7 +472,7 @@ static void xeve_dquant(s16 *coef, int log2_w, int log2_h, int scale, s32 offset
     }
 }
 
-static void xeve_itdq(s16 *coef, int log2_w, int log2_h, int scale, int bit_depth)
+static void itdq_cu(XEVE_CTX * ctx, s16 *coef, int log2_w, int log2_h, int scale)
 {
     s32 offset;
     u8 shift;
@@ -489,6 +488,7 @@ static void xeve_itdq(s16 *coef, int log2_w, int log2_h, int scale, int bit_dept
     int i, j;
     int cuw = 1 << log2_w;
     int cuh = 1 << log2_h;
+    int bit_depth = ctx->sps.bit_depth_luma_minus8 + 8;
 
     tr_shift = MAX_TX_DYNAMIC_RANGE - bit_depth - log2_size;
     shift = QUANT_IQUANT_SHIFT - QUANT_SHIFT - tr_shift;
@@ -519,24 +519,24 @@ static void xeve_itdq(s16 *coef, int log2_w, int log2_h, int scale, int bit_dept
     skip_w = cuw - 1 - max_x;
     skip_h = cuh - 1 - max_y;
     
-    xeve_itrans(coef, log2_w, log2_h, bit_depth);
+    xeve_itrans(ctx, coef, log2_w, log2_h, bit_depth);
 }
 
-void xeve_sub_block_itdq(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, u8 qp_y, u8 qp_u, u8 qp_v, int flag[N_C], int nnz_sub[N_C][MAX_SUB_TB_NUM], int bit_depth, int chroma_format_idc)
+void xeve_itdq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM])
 {
     s16 *coef_temp[N_C];
     s16 coef_temp_buf[N_C][MAX_TR_DIM];
     int i, j, c;
-    int log2_w_sub = (log2_cuw > MAX_TR_LOG2) ? MAX_TR_LOG2 : log2_cuw;
-    int log2_h_sub = (log2_cuh > MAX_TR_LOG2) ? MAX_TR_LOG2 : log2_cuh;
-    int loop_w = (log2_cuw > MAX_TR_LOG2) ? (1 << (log2_cuw - MAX_TR_LOG2)) : 1;
-    int loop_h = (log2_cuh > MAX_TR_LOG2) ? (1 << (log2_cuh - MAX_TR_LOG2)) : 1;
-    int stride = (1 << log2_cuw);
+    int log2_w_sub = (core->log2_cuw > MAX_TR_LOG2) ? MAX_TR_LOG2 : core->log2_cuw;
+    int log2_h_sub = (core->log2_cuh > MAX_TR_LOG2) ? MAX_TR_LOG2 : core->log2_cuh;
+    int loop_w = (core->log2_cuw > MAX_TR_LOG2) ? (1 << (core->log2_cuw - MAX_TR_LOG2)) : 1;
+    int loop_h = (core->log2_cuh > MAX_TR_LOG2) ? (1 << (core->log2_cuh - MAX_TR_LOG2)) : 1;
+    int stride = (1 << core->log2_cuw);
     int sub_stride = (1 << log2_w_sub);
-    u8  qp[N_C] = { qp_y, qp_u, qp_v };
+    u8  qp[N_C] = { core->qp_y, core->qp_u, core->qp_v };
     int scale = 0;
-    int w_shift = (XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc));
-    int h_shift = (XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc));
+    int w_shift = (XEVE_GET_CHROMA_W_SHIFT(ctx->sps.chroma_format_idc));
+    int h_shift = (XEVE_GET_CHROMA_H_SHIFT(ctx->sps.chroma_format_idc));
 
     for(j = 0; j < loop_h; j++)
     {
@@ -544,7 +544,7 @@ void xeve_sub_block_itdq(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, 
         {
             for(c = 0; c < N_C; c++)
             {
-                if((c != 0) && !chroma_format_idc)
+                if((c != 0) && !ctx->sps.chroma_format_idc)
                 {
                     continue;
                 }
@@ -574,11 +574,11 @@ void xeve_sub_block_itdq(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, 
 
                     if(c == 0)
                     {
-                        xeve_itdq(coef_temp[c], log2_w_sub, log2_h_sub, scale, bit_depth);
+                        itdq_cu(ctx, coef_temp[c], log2_w_sub, log2_h_sub, scale);
                     }
                     else
                     {
-                        xeve_itdq(coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale, bit_depth);
+                        itdq_cu(ctx, coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale);
                     }
 
                     if(loop_h + loop_w > 2)

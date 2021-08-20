@@ -265,9 +265,9 @@ static void print_config(ARGS_PARSER * args, XEVE_PARAM * param)
     logv2("\tGOP type                 = %s\n", param->closed_gop? "closed": "open");
     logv2("\thierarchical GOP         = %s\n", param->disable_hgop? "disabled": "enabled");
     logv2("\trate-control type        = %s\n", (param->rc_type == XEVE_RC_ABR)? "ABR": (param->rc_type == XEVE_RC_CRF) ? "CRF" : "CQP");
-    if (param->rc_type == XEVE_RC_ABR) /* CBR */
+    if (param->rc_type == XEVE_RC_ABR || param->rc_type == XEVE_RC_CRF)
     {
-        logv2("\tBit_Rate                 = %s\n", param->bitrate);
+        logv2("\tBit_Rate                 = %dkbps\n", param->bitrate);
     }
     if (args->input_depth == 8 && param->codec_bit_depth > 8)
     {
@@ -554,6 +554,39 @@ static void y4m_update_param(ARGS_PARSER * args, Y4M_INFO * y4m, XEVE_PARAM * pa
     args->set_int(args, "input-depth", y4m->bit_depth);
 }
 
+static int kbps_str_to_int(char * str)
+{
+    int kbps = 0;
+    if (strchr(str, 'K') || strchr(str, 'k'))
+    {
+        char* tmp = strtok(str, "Kk ");
+        kbps = (int)(atof(tmp));
+    }
+    else if (strchr(str, 'M') || strchr(str, 'm'))
+    {
+        char* tmp = strtok(str, "Mm ");
+        kbps = (int)(atof(tmp) * 1000);
+    }
+    else
+    {
+        kbps = atoi(str);
+    }
+    return kbps;
+}
+
+static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
+{
+    if (strlen(args->bitrate) > 0)
+    {
+        param->bitrate = kbps_str_to_int(args->bitrate);
+    }
+    if (strlen(args->vbv_bufsize) > 0)
+    {
+        param->vbv_bufsize = kbps_str_to_int(args->vbv_bufsize);
+    }
+    return 0;
+}
+
 int main(int argc, const char **argv)
 {
     STATES             state = STATE_ENCODING;
@@ -671,8 +704,15 @@ int main(int argc, const char **argv)
     /* coding color space should follow codec internal bit depth */
     param->cs = XEVE_CS_SET(color_format, param->codec_bit_depth, 0);
 
+    /* update rate controller parameters */
+    if (update_rc_param(args, param))
+    {
+        logerr("parameters for rate control is not proper\n");
+        ret = -1; goto ERR;
+    }
     /* check mandatory parameters */
-    if (args->check_mandatory(args, &err_arg)) {
+    if (args->check_mandatory(args, &err_arg))
+    {
         logerr("[%s] argument should be set\n", err_arg);
         ret = -1; goto ERR;
     }

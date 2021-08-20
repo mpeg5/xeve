@@ -148,6 +148,11 @@ typedef struct _XEVE_RC_PARAM XEVE_RC_PARAM;
 typedef struct _XEVE_RCORE XEVE_RCORE;
 typedef struct _XEVE_RC XEVE_RC;
 
+/*****************************************************************************
+ * pre-defined function structure
+ *****************************************************************************/
+typedef void (*XEVE_ITXB)(void* coef, void* t, int shift, int line, int step);
+
 /* forecast information */
 typedef struct _XEVE_FCST
 {
@@ -946,7 +951,7 @@ struct _XEVE_CTX
     int   (*fn_set_tile_info)(XEVE_CTX * ctx);
     void  (*fn_deblock_tree)(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int cud, int cup, int is_hor_edge, TREE_CONS tree_cons, XEVE_CORE * core, int boundary_filtering);
     void  (*fn_pic_flt)(XEVE_CTX * ctx, XEVE_IMGB * img);
-
+    const XEVE_ITXB(*fn_itxb)[MAX_TR_LOG2];
     /* platform specific data, if needed */
     void             * pf;
 
@@ -981,5 +986,8 @@ typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 #include "xeve_df.h"
 #include "xeve_util.h"
 #include "xeve_tbl.h"
+#include "xeve_itdq.h"
+#include "xeve_itdq_sse.h"
+#include "xeve_itdq_avx.h"
 
 #endif /* _XEVE_TYPE_H_ */

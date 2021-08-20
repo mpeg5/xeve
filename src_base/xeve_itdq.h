@@ -30,6 +30,7 @@
 
 #ifndef _XEVE_ITDQ_H_
 #define _XEVE_ITDQ_H_
+
 #include "xeve_def.h"
 
 #define ITX_SHIFT1                            (7)                     /* shift after 1st IT stage */
@@ -44,13 +45,14 @@
 #define ITX_CLIP_32(x) \
     (s32)(((x)<=MIN_TX_VAL_32)? MIN_TX_VAL_32: (((x)>=MAX_TX_VAL_32)? MAX_TX_VAL_32: (x)))
 
-void xeve_sub_block_itdq(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, u8 qp_y, u8 qp_u, u8 qp_v, int flag[N_C], int nnz_sub[N_C][MAX_SUB_TB_NUM], int bit_depth, int chroma_format_idc);
+void xeve_itdq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM]);
+void xeve_itx_pb2b (void * src, void * dst, int shift, int line, int step);
+void xeve_itx_pb4b (void * src, void * dst, int shift, int line, int step);
+void xeve_itx_pb8b (void * src, void * dst, int shift, int line, int step);
+void xeve_itx_pb16b(void * src, void * dst, int shift, int line, int step);
+void xeve_itx_pb32b(void * src, void * dst, int shift, int line, int step);
+void xeve_itx_pb64b(void * src, void * dst, int shift, int line, int step);
 
-typedef void (*INV_TRANS)(s16 *, s16 *, int, int, int, int);
-
-typedef void(*XEVE_ITXB)(void *coef, void *t, int shift, int line, int step);
-extern const XEVE_ITXB tbl_itxb[MAX_TR_LOG2];
-
-
+extern const XEVE_ITXB xeve_tbl_itxb[MAX_TR_LOG2];
 
 #endif /* _XEVE_ITDQ_H_ */

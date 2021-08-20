@@ -186,8 +186,6 @@ struct _XEVE_RC
     const XEVE_RC_PARAM * param;
 };
 
-extern const XEVE_RC_PARAM tbl_rc_param;
-
 enum ACCESS_TYPE 
 {
     XEVE_RA,

@@ -119,7 +119,6 @@ int  xevem_header(XEVE_CTX * ctx);
 int  xevem_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  xevem_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int thread_cnt);
 int  xevem_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core);
-void xevem_itdq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM]);
 void xevem_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
 void xevem_pic_filt(XEVE_CTX * ctx, XEVE_IMGB * img);
 void xevem_platform_init_func();

@@ -230,9 +230,8 @@ int  xeve_mt_get_next_ctu_num(XEVE_CTX * ctx, XEVE_CORE * core, int skip_ctb_lin
 int  xeve_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int thread_cnt);
 int  xeve_deblock_mt(void * arg);
 int  xeve_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core);
-void xeve_run_itdq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM]);
 void xeve_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
-void xeve_platform_init_func();
+void xeve_platform_init_func(XEVE_CTX * ctx);
 int  xeve_platform_init(XEVE_CTX * ctx);
 int  xeve_create_bs_buf(XEVE_CTX  * ctx, int max_bs_buf_size);
 int  xeve_delete_bs_buf(XEVE_CTX  * ctx);

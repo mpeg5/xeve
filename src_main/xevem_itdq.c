@@ -36,13 +36,13 @@
 #include <math.h>
 #include "xevem_itdq.h"
 
-const INV_TRANS xeve_itrans_map_tbl[16][5] =
+const XEVE_INV_TRANS xeve_itrans_map_tbl[16][5] =
 {
     { NULL, xeve_itrans_ats_intra_DCT8_B4, xeve_itrans_ats_intra_DCT8_B8, xeve_itrans_ats_intra_DCT8_B16, xeve_itrans_ats_intra_DCT8_B32 },
     { NULL, xeve_itrans_ats_intra_DST7_B4, xeve_itrans_ats_intra_DST7_B8, xeve_itrans_ats_intra_DST7_B16, xeve_itrans_ats_intra_DST7_B32 },
 };
 
-const INV_TRANS (*xeve_func_itrans)[5];
+const XEVE_INV_TRANS (*xeve_func_itrans)[5];
 
 void xeve_itrans_ats_intra(s16 *coef, int log2_cuw, int log2_cuh, u8 ats_mode, int skip_w, int skip_h, int bit_depth);
 void xeve_it_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, const int max_log2_tr_dynamic_range, u8 ats_intra_tridx, int skip_w, int skip_h);
@@ -594,9 +594,9 @@ static XEVE_ITX tbl_itx[MAX_TR_LOG2] =
     itx_pb64
 };
 
-void xeve_itrans(s16 *coef, int log2_cuw, int log2_cuh, int iqt_flag, int bit_depth)
+static void xeve_itrans(XEVE_CTX * ctx, s16 *coef, int log2_cuw, int log2_cuh, int bit_depth)
 {
-    if(iqt_flag)
+    if(ctx->sps.tool_iqt)
     {
         s16 t[MAX_TR_DIM]; /* temp buffer */
         tbl_itx[log2_cuh - 1](coef, t, ITX_SHIFT1, 1 << log2_cuw);
@@ -605,8 +605,8 @@ void xeve_itrans(s16 *coef, int log2_cuw, int log2_cuh, int iqt_flag, int bit_de
     else
     {
         s32 tb[MAX_TR_DIM]; /* temp buffer */
-        tbl_itxb[log2_cuh - 1](coef, tb, 0, 1 << log2_cuw, 0);
-        tbl_itxb[log2_cuw - 1](tb, coef, (ITX_SHIFT1 + ITX_SHIFT2(bit_depth)), 1 << log2_cuh, 1);
+        (*ctx->fn_itxb)[log2_cuh - 1](coef, tb, 0, 1 << log2_cuw, 0);
+        (*ctx->fn_itxb)[log2_cuw - 1](tb, coef, (ITX_SHIFT1 + ITX_SHIFT2(bit_depth)), 1 << log2_cuh, 1);
     }
 }
 
@@ -629,14 +629,13 @@ static void xeve_dquant(s16 *coef, int log2_w, int log2_h, int scale, s32 offset
     }
 }
 
-static void xeve_itdq(s16 *coef, int log2_w, int log2_h, int scale, int iqt_flag, u8 ats_intra_cu, u8 ats_mode, int bit_depth)
+static void itdq_cu(XEVE_CTX * ctx, s16 *coef, int log2_w, int log2_h, int scale, u8 ats_intra_cu, u8 ats_mode)
 {
     s32 offset;
     u8 shift;
     s8 tr_shift;
     int log2_size = (log2_w + log2_h) >> 1;
     const int ns_shift = ((log2_w + log2_h) & 1) ? 8 : 0;
-
     int skip_w = 1 << log2_w;
     int skip_h = 1 << log2_h;
     int max_x = 0;
@@ -645,6 +644,7 @@ static void xeve_itdq(s16 *coef, int log2_w, int log2_h, int scale, int iqt_flag
     int i, j;
     int cuw = 1 << log2_w;
     int cuh = 1 << log2_h;
+    int bit_depth = ctx->sps.bit_depth_luma_minus8 + 8;
 
     tr_shift = MAX_TX_DYNAMIC_RANGE - bit_depth - log2_size;
     shift = QUANT_IQUANT_SHIFT - QUANT_SHIFT - tr_shift;
@@ -681,33 +681,32 @@ static void xeve_itdq(s16 *coef, int log2_w, int log2_h, int scale, int iqt_flag
     }
     else
     {
-        xeve_itrans(coef, log2_w, log2_h, iqt_flag, bit_depth);
+        xeve_itrans(ctx, coef, log2_w, log2_h, bit_depth);
     }
 }
 
-
-void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, u8 qp_y, u8 qp_u, u8 qp_v, int flag[N_C], int nnz_sub[N_C][MAX_SUB_TB_NUM], int iqt_flag
-                            , u8 ats_intra_cu, u8 ats_mode, u8 ats_inter_info, int bit_depth, int chroma_format_idc)
+void xevem_itdq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM])
 {
-    s16 *coef_temp[N_C];
-    s16 coef_temp_buf[N_C][MAX_TR_DIM];
-    int i, j, c;
-    int log2_w_sub = (log2_cuw > MAX_TR_LOG2) ? MAX_TR_LOG2 : log2_cuw;
-    int log2_h_sub = (log2_cuh > MAX_TR_LOG2) ? MAX_TR_LOG2 : log2_cuh;
-    int loop_w = (log2_cuw > MAX_TR_LOG2) ? (1 << (log2_cuw - MAX_TR_LOG2)) : 1;
-    int loop_h = (log2_cuh > MAX_TR_LOG2) ? (1 << (log2_cuh - MAX_TR_LOG2)) : 1;
-    int stride = (1 << log2_cuw);
-    int sub_stride = (1 << log2_w_sub);
-    int w_shift = (XEVE_GET_CHROMA_W_SHIFT(chroma_format_idc));
-    int h_shift = (XEVE_GET_CHROMA_H_SHIFT(chroma_format_idc));
-    u8 qp[N_C] = { qp_y, qp_u, qp_v };
-    int scale = 0;
-    u8 ats_intra_cu_on = 0;
-    u8 ats_mode_idx = 0;
+    XEVEM_CORE * mcore = (XEVEM_CORE*)core;
+    s16 * coef_temp[N_C];
+    s16   coef_temp_buf[N_C][MAX_TR_DIM];
+    int   i, j, c;
+    int   log2_w_sub = (core->log2_cuw > MAX_TR_LOG2) ? MAX_TR_LOG2 : core->log2_cuw;
+    int   log2_h_sub = (core->log2_cuh > MAX_TR_LOG2) ? MAX_TR_LOG2 : core->log2_cuh;
+    int   loop_w = (core->log2_cuw > MAX_TR_LOG2) ? (1 << (core->log2_cuw - MAX_TR_LOG2)) : 1;
+    int   loop_h = (core->log2_cuh > MAX_TR_LOG2) ? (1 << (core->log2_cuh - MAX_TR_LOG2)) : 1;
+    int   stride = (1 << core->log2_cuw);
+    int   sub_stride = (1 << log2_w_sub);
+    int   w_shift = (XEVE_GET_CHROMA_W_SHIFT(ctx->sps.chroma_format_idc));
+    int   h_shift = (XEVE_GET_CHROMA_H_SHIFT(ctx->sps.chroma_format_idc));
+    u8    qp[N_C] = { core->qp_y, core->qp_u, core->qp_v };
+    int   scale = 0;
+    u8    ats_intra_cu_on = 0;
+    u8    ats_mode_idx = 0;
 
-    if (ats_inter_info)
+    if (mcore->ats_inter_info)
     {
-        get_tu_size(ats_inter_info, log2_cuw, log2_cuh, &log2_w_sub, &log2_h_sub);
+        get_tu_size(mcore->ats_inter_info, core->log2_cuw, core->log2_cuh, &log2_w_sub, &log2_h_sub);
         sub_stride = (1 << log2_w_sub);
     }
 
@@ -717,14 +716,14 @@ void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_
         {
             for(c = 0; c < N_C; c++)
             {
-                if((c != 0) && !chroma_format_idc)
+                if((c != 0) && !ctx->sps.chroma_format_idc)
                     continue;
-                ats_intra_cu_on = (c == 0)? ats_intra_cu : 0;
-                ats_mode_idx = (c == 0) ? ats_mode : 0;
+                ats_intra_cu_on = (c == 0)? mcore->ats_intra_cu : 0;
+                ats_mode_idx = (c == 0) ? mcore->ats_mode : 0;
 
                 if (c == 0)
                 {
-                    get_ats_inter_trs(ats_inter_info, log2_cuw, log2_cuh, &ats_intra_cu_on, &ats_mode_idx);
+                    get_ats_inter_trs(mcore->ats_inter_info, core->log2_cuw, core->log2_cuh, &ats_intra_cu_on, &ats_mode_idx);
                 }
 
                 if(nnz_sub[c][(j << 1) | i])
@@ -745,7 +744,7 @@ void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_
                         coef_temp[c] = coef[c];
                     }
 
-                    if(iqt_flag)
+                    if(ctx->sps.tool_iqt)
                     {
                         scale = xevem_tbl_dq_scale[qp[c] % 6] << (qp[c] / 6);
                     }
@@ -754,9 +753,9 @@ void xeve_sub_block_itdq_main(s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_
                         scale = xeve_tbl_dq_scale_b[qp[c] % 6] << (qp[c] / 6);
                     }
                     if(c == 0)
-                        xeve_itdq(coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, iqt_flag, ats_intra_cu_on, ats_mode_idx, bit_depth);
+                        itdq_cu(ctx, coef_temp[c], log2_w_sub - !!c, log2_h_sub - !!c, scale, ats_intra_cu_on, ats_mode_idx);
                     else
-                        xeve_itdq(coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale, iqt_flag, ats_intra_cu_on, ats_mode_idx, bit_depth);
+                        itdq_cu(ctx, coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale, ats_intra_cu_on, ats_mode_idx);
 
                     if(loop_h + loop_w > 2)
                     {

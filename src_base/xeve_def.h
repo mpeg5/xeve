@@ -1438,7 +1438,6 @@ enum TQC_RUN {
 #include "xeve_thread_pool.h"
 #include "xeve_recon.h"
 #include "xeve_ipred.h"
-#include "xeve_itdq.h"
 #include "xeve_picman.h"
 #include "xeve_mc.h"
 #include "xeve_mc_sse.h"

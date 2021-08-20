@@ -3894,14 +3894,6 @@ int xevem_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core)
     return ret;
 }
 
-void xevem_itdq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM])
-{
-    XEVEM_CORE *mcore = (XEVEM_CORE*)core;
-    xeve_sub_block_itdq_main(coef, core->log2_cuw, core->log2_cuh, core->qp_y, core->qp_u, core->qp_v, core->nnz, nnz_sub, ctx->sps.tool_iqt
-                           , mcore->ats_intra_cu, mcore->ats_mode, mcore->ats_inter_info
-                           , ctx->sps.bit_depth_luma_minus8 + 8, ctx->sps.chroma_format_idc);
-}
-
 void xevem_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth)
 {
     XEVEM_CORE *mcore = (XEVEM_CORE*)core;
