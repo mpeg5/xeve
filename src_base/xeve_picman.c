@@ -243,7 +243,7 @@ void xeve_copy_refp(XEVE_REFP * refp_dst, XEVE_REFP * refp_src)
     refp_dst->list_poc = refp_src->list_poc;
 }
 
-int check_copy_refp(XEVE_REFP(*refp)[REFP_NUM], int cnt, int lidx, XEVE_REFP  * refp_src)
+int xeve_check_copy_refp(XEVE_REFP(*refp)[REFP_NUM], int cnt, int lidx, XEVE_REFP  * refp_src)
 {
     int i;
 
