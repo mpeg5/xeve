@@ -423,7 +423,7 @@ static double get_vbv_qfactor_fcst(XEVE_CTX *ctx, XEVE_RCORE * rcore, s32 slice_
                 q_temp /= ((1.0 - rc->param->intra_rate_ratio) * (bfrm_num + 1) + 1.0);
                 bfrm_num = 0;
             }
-            else if (stype == SLICE_P)
+            else if (stype == SLICE_P || sdepth == 0)
             {
                 bit_estimator = &rc->bit_estimator[SLICE_P];
                 if (ctx->param.bframes > 0)
@@ -836,7 +836,7 @@ static double get_qf(XEVE_CTX *ctx, XEVE_RCORE *rcore)
 
     if (ctx->param.rc_type == RC_CRF)
     {
-        double rf_constant = ctx->param.crf + (rc->scene_cut ? 0 : 2 * (ctx->slice_depth + 1.0));
+        double rf_constant = (ctx->param.crf) + ((rc->scene_cut || ctx->slice_depth == 1) ? 1 : 1.1 * (ctx->slice_depth + 2.0));
         if (rc->encoding_mode == XEVE_LD)
             rf_constant = ctx->param.crf + (rc->scene_cut ? 0 : 3.0);
         double ratefactor = pow(rc->basecplx, 0.4) / qp_to_qf(rf_constant - 3.0);
