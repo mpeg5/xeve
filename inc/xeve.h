@@ -410,6 +410,7 @@ typedef struct _XEVE_PARAM
     int            min_cu_intra;
     int            max_cu_inter;
     int            min_cu_inter;
+    int            ref;
     int            me_ref_num;
     int            me_algo;
     int            me_range;

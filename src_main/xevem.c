@@ -1217,7 +1217,7 @@ int xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune)
             param->lookahead = 0;
             param->cutree = 0;
             param->bframes = 0;
-            param->ref_pic_gap_length = 4;
+            param->ref_pic_gap_length = 1;
             param->use_fcst = 1;
         }
         else if (tune == XEVE_TUNE_PSNR)

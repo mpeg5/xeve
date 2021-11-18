@@ -2321,8 +2321,22 @@ int xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
         }
     }
 
+    if (param->ref != 0)
+    {
+        if (param->bframes == 0)
+        {
+            param->ref_pic_gap_length = (param->ref == 0) ? 0 : 1 << XEVE_LOG2(param->ref);
+            param->me_ref_num = param->ref_pic_gap_length;
+        }
+        else
+        {
+            param->me_ref_num = (param->ref > param->bframes) ? param->bframes : param->ref;
+        }
+    }
+
     if (param->ref_pic_gap_length != 0)
     {
+        param->me_ref_num = param->ref_pic_gap_length;
         xeve_assert_rv(param->bframes == 0, XEVE_ERR_INVALID_ARGUMENT);
     }
 
@@ -2788,7 +2802,7 @@ void xeve_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
     }
     else
     {
-        sps->max_num_ref_pics = MAX_NUM_ACTIVE_REF_FRAME_LDB;
+        sps->max_num_ref_pics = ctx->param.ref_pic_gap_length;;
     }
 
     sps->log2_sub_gop_length = (int)(log2(ctx->param.gop_size) + .5);
@@ -4296,7 +4310,7 @@ int xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, in
             param->lookahead = 0;
             param->cutree = 0;
             param->bframes = 0;
-            param->ref_pic_gap_length = 4;
+            param->ref_pic_gap_length = 1;
             param->use_fcst = 1;
         }
         else if (tune == XEVE_TUNE_PSNR)

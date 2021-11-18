@@ -508,6 +508,10 @@ static const ARGS_OPT args_opt_table[] = \
         ARGS_NO_KEY,  "picture-crop-bottom", ARGS_VAL_TYPE_INTEGER, 0, NULL,
         "bottom offset of picture crop"
     },
+    {
+        ARGS_NO_KEY,  "ref", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Number of reference pictures"
+    },
     {ARGS_END_KEY, "", ARGS_VAL_TYPE_NONE, 0, NULL, ""} /* termination */
 };
 
@@ -880,6 +884,7 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, rc_type);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, use_filler);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, lookahead);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ref);
 
 
 #if 0
