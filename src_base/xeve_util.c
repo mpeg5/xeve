@@ -4312,6 +4312,7 @@ int xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, in
             param->bframes = 0;
             param->ref_pic_gap_length = 1;
             param->use_fcst = 1;
+            param->inter_slice_type = 1;
         }
         else if (tune == XEVE_TUNE_PSNR)
         {
