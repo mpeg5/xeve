@@ -3086,14 +3086,7 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
         sps->toolset_idc_h = 0x1FFFFF;
     }
 
-    if(ctx->param.bframes > 0)
-    {
-        sps->max_num_ref_pics = ctx->param.me_ref_num;
-    }
-    else
-    {
-        sps->max_num_ref_pics = MAX_NUM_ACTIVE_REF_FRAME_LDB;
-    }
+    sps->max_num_ref_pics = ctx->param.me_ref_num;
 
     if(sps->profile_idc == PROFILE_IDC_MAIN)
     {
@@ -3157,7 +3150,7 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
         if(!ctx->param.rpl_extern)
         {
             int is_enable_reorder = ctx->param.bframes > 1 ? 1 : 0;
-            int gop_idx = is_enable_reorder ? XEVE_LOG2(ctx->param.gop_size) - 2 : XEVE_LOG2(ctx->param.ref_pic_gap_length) - 2;
+            int gop_idx = is_enable_reorder ? XEVE_LOG2(ctx->param.gop_size) - 2 : XEVE_LOG2(ctx->param.ref_pic_gap_length);
             gop_idx = XEVE_MAX(gop_idx, 0);
             ctx->param.rpls_l0_cfg_num = 0;
             for (int i = 0; i < XEVE_MAX_NUM_RPLS; i++)
@@ -3175,6 +3168,26 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
 
             xeve_mcpy(sps->rpls_l0, pre_define_rpls[is_enable_reorder][gop_idx][0], ctx->param.rpls_l0_cfg_num * sizeof(sps->rpls_l0[0]));
             xeve_mcpy(sps->rpls_l1, pre_define_rpls[is_enable_reorder][gop_idx][1], ctx->param.rpls_l1_cfg_num * sizeof(sps->rpls_l1[0]));
+
+            for (int i = 0; i < XEVE_MAX_NUM_RPLS; i++)
+            {
+                if (sps->rpls_l0[i].poc != 0)
+                {
+                    sps->rpls_l0[i].ref_pic_active_num = XEVE_MIN(ctx->param.me_ref_num, sps->rpls_l0[i].ref_pic_active_num);
+                    if (ctx->param.bframes == 0)
+                    {
+                        sps->rpls_l0[i].ref_pic_num = XEVE_MIN(ctx->param.me_ref_num, sps->rpls_l0[i].ref_pic_num);
+                    }
+                }
+                if (sps->rpls_l1[i].poc != 0)
+                {
+                    sps->rpls_l1[i].ref_pic_active_num = XEVE_MIN(ctx->param.me_ref_num, sps->rpls_l1[i].ref_pic_active_num);
+                    if (ctx->param.bframes == 0)
+                    {
+                        sps->rpls_l1[i].ref_pic_num = XEVE_MIN(ctx->param.me_ref_num, sps->rpls_l1[i].ref_pic_num);
+                    }
+                }
+            }
 
             sps->num_ref_pic_lists_in_sps0 = ctx->param.rpls_l0_cfg_num;
             sps->num_ref_pic_lists_in_sps1 = ctx->param.rpls_l1_cfg_num;
