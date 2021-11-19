@@ -2325,8 +2325,7 @@ int xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
     {
         if (param->bframes == 0)
         {
-            param->ref_pic_gap_length = (param->ref == 0) ? 0 : 1 << XEVE_LOG2(param->ref);
-            param->me_ref_num = param->ref_pic_gap_length;
+            param->me_ref_num = XEVE_MIN(5, param->ref);
         }
         else
         {
@@ -2336,7 +2335,6 @@ int xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
 
     if (param->ref_pic_gap_length != 0)
     {
-        param->me_ref_num = param->ref_pic_gap_length;
         xeve_assert_rv(param->bframes == 0, XEVE_ERR_INVALID_ARGUMENT);
     }
 
@@ -4310,6 +4308,7 @@ int xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, in
             param->lookahead = 0;
             param->cutree = 0;
             param->bframes = 0;
+            param->me_ref_num = 1;
             param->ref_pic_gap_length = 1;
             param->use_fcst = 1;
             param->inter_slice_type = 1;

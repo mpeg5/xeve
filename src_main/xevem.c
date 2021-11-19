@@ -1218,6 +1218,7 @@ int xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune)
             param->cutree = 0;
             param->bframes = 0;
             param->ref_pic_gap_length = 1;
+            param->me_ref_num = 1;
             param->use_fcst = 1;
             param->inter_slice_type = 1;
         }

@@ -3086,14 +3086,7 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
         sps->toolset_idc_h = 0x1FFFFF;
     }
 
-    if(ctx->param.bframes > 0)
-    {
-        sps->max_num_ref_pics = ctx->param.me_ref_num;
-    }
-    else
-    {
-        sps->max_num_ref_pics = ctx->param.ref_pic_gap_length;
-    }
+    sps->max_num_ref_pics = ctx->param.me_ref_num;
 
     if(sps->profile_idc == PROFILE_IDC_MAIN)
     {
@@ -3157,7 +3150,7 @@ void xevem_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
         if(!ctx->param.rpl_extern)
         {
             int is_enable_reorder = ctx->param.bframes > 1 ? 1 : 0;
-            int gop_idx = is_enable_reorder ? XEVE_LOG2(ctx->param.gop_size) - 2 : XEVE_LOG2(ctx->param.ref_pic_gap_length) - 1;
+            int gop_idx = is_enable_reorder ? XEVE_LOG2(ctx->param.gop_size) - 2 : XEVE_LOG2(ctx->param.ref_pic_gap_length);
             gop_idx = XEVE_MAX(gop_idx, 0);
             ctx->param.rpls_l0_cfg_num = 0;
             for (int i = 0; i < XEVE_MAX_NUM_RPLS; i++)

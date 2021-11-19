@@ -321,18 +321,22 @@ void print_psnr(XEVE_STAT * stat, double * psnr, int bitrate, XEVE_CLK clk_end)
 {
     char  stype;
     int i, j;
+    int num_list = 0;
     switch(stat->stype)
     {
     case XEVE_ST_I :
         stype = 'I';
+        num_list = 0;
         break;
 
     case XEVE_ST_P :
         stype = 'P';
+        num_list = 1;
         break;
 
     case XEVE_ST_B :
         stype = 'B';
+        num_list = 2;
         break;
 
     case XEVE_ST_UNKNOWN :
@@ -345,7 +349,7 @@ void print_psnr(XEVE_STAT * stat, double * psnr, int bitrate, XEVE_CLK clk_end)
         stat->poc, stat->tid, stype, stat->qp, psnr[0], psnr[1], psnr[2], \
         bitrate, xeve_clk_msec(clk_end));
 
-    for(i=0; i < 2; i++)
+    for(i=0; i < num_list; i++)
     {
         logv2("[L%d ", i);
         for(j=0; j < stat->refpic_num[i]; j++) logv2("%d ",stat->refpic[i][j]);
