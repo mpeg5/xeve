@@ -684,6 +684,12 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             xeve_assert_rv(t0 > 0, XEVE_ERR_INVALID_ARGUMENT);
             ctx->param.fps = t0;
             break;
+        case XEVE_CFG_SET_BPS:
+            xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
+            t0 = *((int *)buf);
+            xeve_assert_rv(t0 > 0, XEVE_ERR_INVALID_ARGUMENT);
+            ctx->param.bitrate = t0;
+            break;
         case XEVE_CFG_SET_KEYINT:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
             t0 = *((int *)buf);
@@ -737,6 +743,10 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
         case XEVE_CFG_GET_FPS:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
             *((int *)buf) = ctx->param.fps;
+            break;
+        case XEVE_CFG_GET_BPS:
+            xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
+            *((int *)buf) = ctx->param.bitrate;
             break;
         case XEVE_CFG_GET_KEYINT:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
