@@ -154,9 +154,12 @@ int check_conf(XEVE_CDSC* cdsc)
         if (param->framework_suco_min > param->framework_suco_max) { logerr("Minimum SUCO size cannot be greater than Maximum SUCO size\n"); ret = -1; }
     }
 
-    int pic_m = (8 > min_block_size) ? min_block_size : 8;
-    if ((param->w & (pic_m - 1)) != 0) { logerr("Current encoder does not support picture width, not multiple of max(8, minimum CU size)\n"); ret = -1; }
-    if ((param->h & (pic_m - 1)) != 0) { logerr("Current encoder does not support picture height, not multiple of max(8, minimum CU size)\n"); ret = -1; }
+    if (param->cs&0xff != XEVE_CF_YCBCR400)
+    {
+        int pic_m = 2;
+        if ((param->w & (pic_m - 1)) != 0) { logerr("Current encoder does not support odd picture width\n"); ret = -1; }
+        if ((param->h & (pic_m - 1)) != 0) { logerr("Current encoder does not support odd picture height\n"); ret = -1; }
+    }
 
     return ret;
 }
@@ -625,7 +628,7 @@ int main(int argc, const char **argv)
     int                is_max_frames = 0, is_skip_frames = 0;
     char             * errstr = NULL;
     int                color_format;
-
+    int                width, height;
     logv2("XEVE: eXtra-fast Essential Video Encoder\n");
 
     /* help message */
@@ -792,13 +795,15 @@ int main(int argc, const char **argv)
         ret = -1; goto ERR;
     }
 
+    width = (param->w + 7) & 0xFFF8;
+    height = (param->h + 7) & 0xFFF8;
     /* create image lists */
-    if(imgb_list_alloc(ilist_org, param->w, param->h, args->input_depth, color_format))
+    if(imgb_list_alloc(ilist_org, width, height, args->input_depth, color_format))
     {
         logerr("cannot allocate image list for input pictures\n");
         ret = -1; goto ERR;
     }
-    if(imgb_list_alloc(ilist_rec, param->w, param->h, param->codec_bit_depth, color_format))
+    if(imgb_list_alloc(ilist_rec, width, height, param->codec_bit_depth, color_format))
     {
         logerr("cannot allocate image list for reconstructed pictures\n");
         ret = -1; goto ERR;
@@ -834,7 +839,7 @@ int main(int argc, const char **argv)
                     logerr("cannot get empty orignal buffer\n");
                     ret = -1; goto ERR;
                 }
-                if(imgb_read(fp_inp, ilist_t->imgb, is_y4m))
+                if(imgb_read(fp_inp, ilist_t->imgb, param->w, param->h, is_y4m))
                 {
                     logv3("reached end of original file (or reading error)\n");
                     ret = -1; goto ERR;
@@ -858,7 +863,7 @@ int main(int argc, const char **argv)
                 ret = -1; goto ERR;
             }
             /* read original image */
-            ret = imgb_read(fp_inp, ilist_t->imgb, is_y4m);
+            ret = imgb_read(fp_inp, ilist_t->imgb, param->w, param->h, is_y4m);
             if ((ret < 0))
             {
                 logv3("reached out the end of input file\n");
@@ -953,7 +958,7 @@ int main(int argc, const char **argv)
             {
                 if(is_rec)
                 {
-                    if(imgb_write(args->fname_rec, ilist_t->imgb))
+                    if(imgb_write(args->fname_rec, ilist_t->imgb, param->w, param->h))
                     {
                         logerr("cannot write reconstruction image\n");
                         ret = -1; goto ERR;
@@ -1017,7 +1022,7 @@ int main(int argc, const char **argv)
         {
             if(is_rec)
             {
-                if(imgb_write(args->fname_rec, ilist_t->imgb))
+                if(imgb_write(args->fname_rec, ilist_t->imgb, param->w, param->h))
                 {
                     logerr("cannot write reconstruction image\n");
                     ret = -1; goto ERR;

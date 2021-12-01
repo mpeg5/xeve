@@ -2298,10 +2298,7 @@ static int parse_tile_slice_param(XEVE_CTX* ctx)
 int xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
 {
     /* check input parameters */
-    int pic_m = 8;
     xeve_assert_rv(param->w > 0 && param->h > 0, XEVE_ERR_INVALID_ARGUMENT);
-    xeve_assert_rv((param->w & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
-    xeve_assert_rv((param->h & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
     xeve_assert_rv(param->qp >= MIN_QUANT && param->qp <= MAX_QUANT, XEVE_ERR_INVALID_ARGUMENT);
     xeve_assert_rv(param->keyint >= 0 ,XEVE_ERR_INVALID_ARGUMENT);
     xeve_assert_rv(param->threads <= XEVE_MAX_THREADS ,XEVE_ERR_INVALID_ARGUMENT);
@@ -2783,8 +2780,8 @@ void xeve_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
 
     sps->profile_idc = ctx->param.profile;
     sps->level_idc = ctx->param.level_idc * 3;
-    sps->pic_width_in_luma_samples = ctx->param.w;
-    sps->pic_height_in_luma_samples = ctx->param.h;
+    sps->pic_width_in_luma_samples = XEVE_ALIGN_VAL(ctx->param.w, 8); 
+    sps->pic_height_in_luma_samples = XEVE_ALIGN_VAL(ctx->param.h, 8);
     sps->toolset_idc_h = 0;
     sps->toolset_idc_l = 0;
     sps->bit_depth_luma_minus8 = ctx->param.codec_bit_depth - 8;
@@ -2951,9 +2948,17 @@ int xeve_ready(XEVE_CTX* ctx)
 
     if (ctx->w == 0)
     {
-        w = ctx->w = ctx->param.w;
-        h = ctx->h = ctx->param.h;
+        w = ctx->w = XEVE_ALIGN_VAL(ctx->param.w, 8); 
+        h = ctx->h = XEVE_ALIGN_VAL(ctx->param.h, 8);
         ctx->f = w * h;
+        if ((ctx->w != ctx->param.w) || (ctx->h != ctx->param.h))
+        {
+            ctx->param.picture_cropping_flag = 1;
+            ctx->param.picture_crop_left_offset = 0;
+            ctx->param.picture_crop_right_offset = (ctx->w - ctx->param.w + 1) >> 1;
+            ctx->param.picture_crop_top_offset = 0;
+            ctx->param.picture_crop_bottom_offset = (ctx->h - ctx->param.h + 1) >> 1;
+        }
 
         ctx->max_cuwh = 64;
         ctx->min_cuwh = 1 << 2;
@@ -3359,7 +3364,7 @@ int xeve_picbuf_get_inbuf(XEVE_CTX * ctx, XEVE_IMGB ** imgb)
 
             int cs = ctx->param.chroma_format_idc == 0 ? XEVE_CS_YCBCR400_10LE : (ctx->param.chroma_format_idc == 1 ? XEVE_CS_YCBCR420_10LE :
                 (ctx->param.chroma_format_idc == 2 ? XEVE_CS_YCBCR422_10LE : XEVE_CS_YCBCR444_10LE));
-            *imgb = xeve_imgb_create(ctx->param.w, ctx->param.h, cs, opt, pad, align);
+            *imgb = xeve_imgb_create(ctx->w, ctx->h, cs, opt, pad, align);
             xeve_assert_rv(*imgb != NULL, XEVE_ERR_OUT_OF_MEMORY);
 
             ctx->inbuf[i] = *imgb;
