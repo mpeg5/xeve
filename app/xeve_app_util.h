@@ -151,10 +151,11 @@ static XEVE_CLK xeve_clk_from(XEVE_CLK from) \
 
 #define XEVEA_CLIP(n,min,max) (((n)>(max))? (max) : (((n)<(min))? (min) : (n)))
 
-static int imgb_read(FILE * fp, XEVE_IMGB * img, int is_y4m)
+static int imgb_read(FILE * fp, XEVE_IMGB * img, int width, int height, int is_y4m)
 {
     int f_w, f_h;
     int y_size, u_size, v_size;
+    unsigned char * p8;
 
     /* handling Y4M frame header */
     char t_buf[10];
@@ -179,60 +180,65 @@ static int imgb_read(FILE * fp, XEVE_IMGB * img, int is_y4m)
     int w_shift = (chroma_format == XEVE_CF_YCBCR420) || (chroma_format == XEVE_CF_YCBCR422) ? 1 : 0;
     int h_shift = chroma_format == XEVE_CF_YCBCR420 ? 1 : 0;
 
-    f_w = img->w[0];
-    f_h = img->h[0];
-
     if (bit_depth == 8)
     {
-        y_size = f_w * f_h;
-
-        if (fread(img->a[0], 1, y_size, fp) != (unsigned)y_size)
-        {
-            return -1;
-        }
-        if (chroma_format != XEVE_CF_YCBCR400)
-        {
-            u_size = v_size = (f_w >> w_shift) * (f_h >> h_shift);
-            if (fread(img->a[1], 1, u_size, fp) != (unsigned)u_size)
-            {
-                return -1;
-            }
-            if (fread(img->a[2], 1, v_size, fp) != (unsigned)v_size)
-            {
-                return -1;
-            }
-        }
+        f_w = width;
+        f_h = height;
     }
     else if (bit_depth >= 10 && bit_depth <= 14)
     {
-        y_size = f_w * f_h * sizeof(short);
-        if (fread(img->a[0], 1, y_size, fp) != (unsigned)y_size)
-        {
-            return -1;
-        }
-        if (chroma_format != XEVE_CF_YCBCR400)
-        {
-            u_size = v_size = (f_w >> w_shift) * (f_h >> h_shift) * sizeof(short);
-            if (fread(img->a[1], 1, u_size, fp) != (unsigned)u_size)
-            {
-                return -1;
-            }
-            if (fread(img->a[2], 1, v_size, fp) != (unsigned)v_size)
-            {
-                return -1;
-            }
-        }
+        f_w = width * sizeof(short);
+        f_h = height;
     }
     else
     {
         logerr("not supported color space\n");
         return -1;
     }
+               
+    p8 = (unsigned char*)img->a[0];
+    for (int j = 0; j < f_h; j++)
+    {
+        if (fread(p8, 1, f_w, fp) != (unsigned)f_w)
+        {
+            return -1;
+        }
+        p8 += img->s[0];
+    }
+
+
+    if (chroma_format != XEVE_CF_YCBCR400)
+    {
+        f_w = f_w >> w_shift;
+        f_h = f_h >> h_shift;
+
+        p8 = (unsigned char*)img->a[1];
+        for (int j = 0; j < f_h; j++)
+        {
+            if (fread(p8, 1, f_w, fp) != (unsigned)f_w)
+            {
+                return -1;
+            }
+            p8 += img->s[1];
+        }
+
+        p8 = (unsigned char*)img->a[2];
+        for (int j = 0; j < f_h; j++)
+        {
+            if (fread(p8, 1, f_w, fp) != (unsigned)f_w)
+            {
+                return -1;
+            }
+            p8 += img->s[2];
+        }
+
+    }
+   
 
     return 0;
 }
 
-static int imgb_write(char * fname, XEVE_IMGB * imgb)
+static int imgb_write(char * fname, XEVE_IMGB * imgb, int width, int height)
 {
     unsigned char * p8;
     int             i, j, bd;
@@ -241,6 +247,8 @@ static int imgb_write(char * fname, XEVE_IMGB * imgb)
 
     int chroma_format = XEVE_CS_GET_FORMAT(imgb->cs);
     int bit_depth = XEVE_CS_GET_BIT_DEPTH(imgb->cs);
+    int w_shift = (chroma_format == XEVE_CF_YCBCR420) || (chroma_format == XEVE_CF_YCBCR422) ? 1 : 0;
+    int h_shift = chroma_format == XEVE_CF_YCBCR420 ? 1 : 0;
     fp = fopen(fname, "ab");
     if(fp == NULL)
     {
@@ -269,9 +277,14 @@ static int imgb_write(char * fname, XEVE_IMGB * imgb)
     for (i = 0; i < imgb->np; i++)
     {
         p8 = (unsigned char *)imgb->a[i] + (imgb->s[i] * imgb->y[i]) + (imgb->x[i] * bd);
-        for (j = 0; j < imgb->h[i]; j++)
+        if (i == 1)
         {
-            fwrite(p8, imgb->w[i] * bd, 1, fp);
+            width = width >> w_shift;
+            height = height >> h_shift;
+        }
+        for (j = 0; j < height; j++)
+        {
+            fwrite(p8, width * bd, 1, fp);
             p8 += imgb->s[i];
         }
     }
@@ -514,6 +527,7 @@ XEVE_IMGB * imgb_alloc(int w, int h, int cs)
         imgb->bsize[i] = imgb->s[i] * imgb->e[i];
         imgb->a[i] = imgb->baddr[i] = malloc(imgb->bsize[i]); /* CHECK */
         if(imgb->a[i] == NULL) goto ERR;
+        memset(imgb->a[i], 0, imgb->bsize[i]);
     }
     imgb->cs = cs;
     return imgb;

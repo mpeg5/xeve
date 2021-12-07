@@ -765,7 +765,7 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
                     imgb->x[i] = ctx->sps.picture_crop_left_offset * cs_offset;
                     imgb->y[i] = ctx->sps.picture_crop_top_offset * cs_offset;
                     imgb->h[i] = imgb->ah[i] - (ctx->sps.picture_crop_top_offset + ctx->sps.picture_crop_bottom_offset) * cs_offset;
-                    imgb->w[i] = imgb->aw[i] - (ctx->sps.picture_crop_left_offset + ctx->sps.picture_crop_left_offset) * cs_offset;
+                    imgb->w[i] = imgb->aw[i] - (ctx->sps.picture_crop_left_offset + ctx->sps.picture_crop_right_offset) * cs_offset;
                 }
             }
 

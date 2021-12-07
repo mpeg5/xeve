@@ -351,8 +351,8 @@ static double pintra_analyze_cu(XEVE_CTX* ctx, XEVE_CORE* core, int x, int y, in
     cuh = 1 << log2_cuh;
 
     /* Y */
-    xeve_assert(x + cuw <= pi->pic_o->w_l);
-    xeve_assert(y + cuh <= pi->pic_o->h_l);
+    xeve_assert(x + cuw <= ctx->w);
+    xeve_assert(y + cuh <= ctx->h);
 
     /* prediction */
     s_mod = pi->s_m[Y_C];

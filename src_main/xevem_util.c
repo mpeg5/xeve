@@ -3041,10 +3041,8 @@ int xevem_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
     xeve_assert_rv(ret == XEVE_OK, ret);
 
     /* check input parameters */
-    int pic_m = XEVE_MAX(1 << param->framework_cb_min, 8);
+
     xeve_assert_rv(param->w > 0 && param->h > 0, XEVE_ERR_INVALID_ARGUMENT);
-    xeve_assert_rv((param->w & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
-    xeve_assert_rv((param->h & (pic_m -1)) == 0,XEVE_ERR_INVALID_ARGUMENT);
 
     if (!ctx->chroma_qp_table_struct.chroma_qp_table_present_flag)
     {
@@ -3544,9 +3542,21 @@ int xevem_ready(XEVE_CTX * ctx)
         }
     }
 
-    ctx->w = ctx->param.w;
-    ctx->h = ctx->param.h;
-    ctx->f = ctx->w * ctx->h;
+    if (ctx->w == 0)
+    {
+        ctx->w = XEVE_ALIGN_VAL(ctx->param.w, 8); //(ctx->param.w + 7) & 0xFFF8;
+        ctx->h = XEVE_ALIGN_VAL(ctx->param.h, 8); // (ctx->param.h + 7) & 0xFFF8;
+        ctx->f = ctx->w * ctx->h;
+
+        if ((ctx->w != ctx->param.w) || (ctx->h != ctx->param.h))
+        {
+            ctx->param.picture_cropping_flag = 1;
+            ctx->param.picture_crop_left_offset = 0;
+            ctx->param.picture_crop_right_offset = (ctx->w - ctx->param.w + 1) >> 1;
+            ctx->param.picture_crop_top_offset = 0;
+            ctx->param.picture_crop_bottom_offset = (ctx->h - ctx->param.h + 1) >> 1;
+        }
+    }
 
     if (ctx->param.btt)
     {
