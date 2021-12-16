@@ -72,7 +72,7 @@ endif()
 # Install rules
 #
 # Set DCMAKE_INSTALL_PREFIX to change default install prefix
-# e.g cmake .. -DSET_PROF=BASE -DCMAKE_INSTALL_PREFIX='C:\Users\Samsung\git\xeve_internal\build-windows\install'
+# e.g cmake .. -DSET_PROF=BASE -DCMAKE_INSTALL_PREFIX='C:\Users\name\git\xeve_internal\build-windows\install'
 
 # List the headers we want to declare as public for installation.
 set(XEVE_PUBLIC_HEADERS "${ETM_INC}")
