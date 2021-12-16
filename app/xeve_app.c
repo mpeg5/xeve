@@ -154,7 +154,7 @@ int check_conf(XEVE_CDSC* cdsc)
         if (param->framework_suco_min > param->framework_suco_max) { logerr("Minimum SUCO size cannot be greater than Maximum SUCO size\n"); ret = -1; }
     }
 
-    if (param->cs&0xff != XEVE_CF_YCBCR400)
+    if (XEVE_CS_GET_FORMAT(param->cs) != XEVE_CF_YCBCR400)
     {
         int pic_m = 2;
         if ((param->w & (pic_m - 1)) != 0) { logerr("Current encoder does not support odd picture width\n"); ret = -1; }
