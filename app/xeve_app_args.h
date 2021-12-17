@@ -779,8 +779,14 @@ static int args_parse_cmd(int argc, const char * argv[], ARGS_OPT * ops,
     if(ARGS_GET_CMD_OPT_VAL_TYPE(ops[oidx].val_type) !=
        ARGS_VAL_TYPE_NONE)
     {
-        if(aidx + 1 >= argc) goto ERR;
-        if(args_read_value(ops + oidx, argv[aidx + 1])) goto ERR;
+		if(aidx + 1 >= argc) {
+            *errstr = (char*)argv[aidx];
+            goto ERR;
+        }
+        if(args_read_value(ops + oidx, argv[aidx + 1])) {
+            *errstr = (char*)argv[aidx];
+            goto ERR;
+        }
         *idx = *idx + 1;
     }
     else
