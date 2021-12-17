@@ -220,7 +220,7 @@ int xevem_eco_aps_gen(XEVE_BSW * bs, XEVE_APS_GEN * aps, int bit_depth)
     }
     else
     {
-        xeve_trace("This version of ETM doesnot support this APS type: %d\n", aps->aps_type_id);
+        xeve_trace("This version of XEVE doesnot support this APS type: %d\n", aps->aps_type_id);
     }
 
     u8 aps_extension_flag = 0;
