@@ -36,6 +36,7 @@
 #include <math.h>
 #include "xevem_itdq.h"
 
+const XEVE_ITX(*xeve_func_itx)[MAX_TR_LOG2];
 const XEVE_INV_TRANS xeve_itrans_map_tbl[16][5] =
 {
     { NULL, xeve_itrans_ats_intra_DCT8_B4, xeve_itrans_ats_intra_DCT8_B8, xeve_itrans_ats_intra_DCT8_B16, xeve_itrans_ats_intra_DCT8_B32 },
@@ -583,8 +584,7 @@ static void itx_pb64(s16 *src, s16 *dst, int shift, int line)
 }
 
 
-typedef void(*XEVE_ITX)(s16 *coef, s16 *t, int shift, int line);
-static XEVE_ITX tbl_itx[MAX_TR_LOG2] =
+const XEVE_ITX tbl_itx[MAX_TR_LOG2] =
 {
     itx_pb2,
     itx_pb4,
@@ -598,9 +598,9 @@ static void xeve_itrans(XEVE_CTX * ctx, s16 *coef, int log2_cuw, int log2_cuh, i
 {
     if(ctx->sps.tool_iqt)
     {
-        s16 t[MAX_TR_DIM]; /* temp buffer */
-        tbl_itx[log2_cuh - 1](coef, t, ITX_SHIFT1, 1 << log2_cuw);
-        tbl_itx[log2_cuw - 1](t, coef, ITX_SHIFT2(bit_depth), 1 << log2_cuh);
+        ALIGNED_128(s16 t[MAX_TR_DIM]); /* temp buffer */
+        (*xeve_func_itx)[log2_cuh - 1](coef, t, ITX_SHIFT1, 1 << log2_cuw);
+        (*xeve_func_itx)[log2_cuw - 1](t, coef, ITX_SHIFT2(bit_depth), 1 << log2_cuh);
     }
     else
     {

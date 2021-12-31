@@ -1105,28 +1105,39 @@ int xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune)
     param->tool_pocs = 1;
     param->cu_qp_delta_area = 10;
     param->tool_ats = 1;
+    param->partition_fast = 0;
 
     if (preset == XEVE_PRESET_FAST)
     {
-        param->max_cu_intra      = 64;
-        param->min_cu_intra      = 4;
-        param->max_cu_inter      = 64;
-        param->min_cu_inter      = 4;
-        param->me_ref_num        = 2;
-        param->me_algo           = 2;
-        param->me_range          = 256;
-        param->me_sub            = 3;
-        param->me_sub_pos        = 4;
-        param->me_sub_range      = 3;
-        param->skip_th           = 0;
-        param->merge_num         = 4;
-        param->rdoq              = 1;
-        param->cabac_refine      = 1;
-        param->rdo_dbk_switch    = 1;
+        param->max_cu_intra = 128;
+        param->min_cu_intra = 4;
+        param->max_cu_inter = 128;
+        param->min_cu_inter = 4;
+        param->me_ref_num = 2;
+        param->me_algo = 2;
+        param->me_range = 256;
+        param->me_sub = 3;
+        param->me_sub_pos = 4;
+        param->me_sub_range = 3;
+        param->skip_th = 0;
+        param->merge_num = 4;
+        param->rdoq = 1;
+        param->cabac_refine = 1;
 
-        param->btt                = 0;
-        param->ats_intra_fast     = 1;
-        param->me_fast            = 1;
+        param->btt = 1;
+        param->framework_cb_max = 7;
+        param->framework_cb_min = 2;
+        param->framework_cu14_max = 0;
+        param->framework_tris_max = 4;
+        param->framework_tris_min = 5;
+        param->ats_intra_fast = 1;
+        param->me_fast = 0;
+
+        param->partition_fast = 1;
+        param->suco = 0;
+        param->tool_amvr = 0;
+        param->rdo_dbk_switch = 0;
+
 
     }
     else if (preset == XEVE_PRESET_MEDIUM)

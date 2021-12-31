@@ -35,8 +35,8 @@
 
 #include "xevem_type.h"
 #include <math.h>
-
 #define QUANT(c, scale, offset, shift) ((s16)((((c)*(scale)) + (offset)) >> (shift)))
+const XEVE_TX(*xeve_func_tx)[MAX_TR_LOG2];
 
 void xeve_trans_DST7_B4(s16* block, s16* coeff, s32 shift, s32 line, int skip_line, int skip_line_2);
 void xeve_trans_DST7_B8(s16* block, s16* coeff, s32 shift, s32 line, int skip_line, int skip_line_2);
@@ -54,7 +54,7 @@ Trans* xeve_trans_map_tbl[16][5] =
     { NULL, xeve_trans_DST7_B4, xeve_trans_DST7_B8, xeve_trans_DST7_B16, xeve_trans_DST7_B32 },
 };
 
-static void tx_pb2(s16 * src, s16 * dst, int shift, int line)
+void tx_pb2(s16 * src, s16 * dst, int shift, int line)
 {
     int j;
     int E, O;
@@ -71,7 +71,7 @@ static void tx_pb2(s16 * src, s16 * dst, int shift, int line)
     }
 }
 
-static void tx_pb4(s16 * src, s16 * dst, int shift, int line)
+void tx_pb4(s16 * src, s16 * dst, int shift, int line)
 {
     int j;
     int E[2], O[2];
@@ -91,7 +91,7 @@ static void tx_pb4(s16 * src, s16 * dst, int shift, int line)
     }
 }
 
-static void tx_pb8(s16 * src, s16 * dst, int shift, int line)
+void tx_pb8(s16 * src, s16 * dst, int shift, int line)
 {
     int j, k;
     int E[4], O[4];
@@ -123,7 +123,7 @@ static void tx_pb8(s16 * src, s16 * dst, int shift, int line)
     }
 }
 
-static void tx_pb16(s16 * src, s16 * dst, int shift, int line)
+void tx_pb16(s16 * src, s16 * dst, int shift, int line)
 {
     int j, k;
     int E[8], O[8];
@@ -169,7 +169,7 @@ static void tx_pb16(s16 * src, s16 * dst, int shift, int line)
     }
 }
 
-static void tx_pb32(s16 * src, s16 * dst, int shift, int line)
+void tx_pb32(s16 * src, s16 * dst, int shift, int line)
 {
     int j, k;
     int E[16], O[16];
@@ -226,7 +226,7 @@ static void tx_pb32(s16 * src, s16 * dst, int shift, int line)
     }
 }
 
-static void tx_pb64(s16 *src, s16 *dst, int shift, int line)
+void tx_pb64(s16 *src, s16 *dst, int shift, int line)
 {
     const int tx_size = 64;
     const s8 * tm = xeve_tbl_tm64[0];
@@ -702,8 +702,7 @@ void xeve_t_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, u8 ats_int
 }
 
 
-typedef void(*XEVE_TX)(s16 * coef, s16 * t, int shift, int line);
-static XEVE_TX xeve_tbl_tx[MAX_TR_LOG2] =
+const XEVE_TX xeve_tbl_tx[MAX_TR_LOG2] =
 {
     tx_pb2,
     tx_pb4,
@@ -725,15 +724,15 @@ static void xeve_trans(s16 * coef, int log2_cuw, int log2_cuh, int iqt_flag, int
 
     if(iqt_flag == 1)
     {
-        s16 t[MAX_TR_DIM]; /* temp buffer */
-        xeve_tbl_tx[log2_cuw - 1](coef, t, shift1, 1 << log2_cuh);
-        xeve_tbl_tx[log2_cuh - 1](t, coef, shift2, 1 << log2_cuw);
+        ALIGNED_128(s16 t[MAX_TR_DIM]); /* temp buffer */
+        (*xeve_func_tx)[log2_cuw - 1](coef, t, shift1, 1 << log2_cuh);
+        (*xeve_func_tx)[log2_cuh - 1](t, coef, shift2, 1 << log2_cuw);
     }
     else
     {
         s32 tb[MAX_TR_DIM]; /* temp buffer */
-        xeve_tbl_txb[log2_cuw - 1](coef, tb, 0, 1 << log2_cuh, 0);
-        xeve_tbl_txb[log2_cuh - 1](tb, coef, (shift1 + shift2), 1 << log2_cuw, 1);
+        (*xeve_func_txb)[log2_cuw - 1](coef, tb, 0, 1 << log2_cuh, 0);
+        (*xeve_func_txb)[log2_cuh - 1](tb, coef, (shift1 + shift2), 1 << log2_cuw, 1);
     }
 }
 
@@ -1315,8 +1314,8 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
 #define FAST_RDOQ_INTER_RND_OFST  153 //85
         offset = (s64)((slice_type == SLICE_I) ? FAST_RDOQ_INTRA_RND_OFST : FAST_RDOQ_INTER_RND_OFST) << (s64)(shift - 9);
         zero_coeff_threshold = ((s64)1 << (s64)shift) - offset;
-
-        for(i = 0; i < (1 << (log2_cuw + log2_cuh)); i++)
+        int loop_end = (1 << (log2_cuw + log2_cuh));
+        for (i = 0; i < loop_end; i++)
         {
             lev = (s64)XEVE_ABS(coef[i]) * (s64)scale * ns_scale;
             if(lev >= zero_coeff_threshold)

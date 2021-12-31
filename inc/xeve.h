@@ -492,6 +492,7 @@ typedef struct _XEVE_PARAM
     /* preset parameter */
     int            ats_intra_fast;
     int            me_fast;
+    int            partition_fast;
 } XEVE_PARAM;
 
 /*****************************************************************************

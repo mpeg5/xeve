@@ -4608,16 +4608,19 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
     if(ctx->sps.tool_mmvd && ((pi->slice_type == SLICE_B) || (pi->slice_type == SLICE_P)))
     {
         /* MMVD mode for merge */
-        cost = cost_inter[PRED_DIR_MMVD] = analyze_merge_mmvd(ctx, core, x, y, log2_cuw, log2_cuh, real_mv);
-        if(cost < cost_best)
+        if ((ctx->param.partition_fast && log2_cuw != 7 && log2_cuh != 7) || !ctx->param.partition_fast)
         {
-            core->cu_mode = MODE_DIR_MMVD;
-            best_idx = PRED_DIR_MMVD;
-            cost_inter[best_idx] = cost_best = cost;
-            best_dmvr = 0;
-            cost_best = cost;
-            SBAC_STORE(core->s_next_best[log2_cuw - 2][log2_cuh - 2], core->s_temp_best);
-            DQP_STORE(core->dqp_next_best[log2_cuw - 2][log2_cuh - 2], core->dqp_temp_best);
+            cost = cost_inter[PRED_DIR_MMVD] = analyze_merge_mmvd(ctx, core, x, y, log2_cuw, log2_cuh, real_mv);
+            if (cost < cost_best)
+            {
+                core->cu_mode = MODE_DIR_MMVD;
+                best_idx = PRED_DIR_MMVD;
+                cost_inter[best_idx] = cost_best = cost;
+                best_dmvr = 0;
+                cost_best = cost;
+                SBAC_STORE(core->s_next_best[log2_cuw - 2][log2_cuh - 2], core->s_temp_best);
+                DQP_STORE(core->dqp_next_best[log2_cuw - 2][log2_cuh - 2], core->dqp_temp_best);
+            }
         }
 
         /* MMVD mode for skip */

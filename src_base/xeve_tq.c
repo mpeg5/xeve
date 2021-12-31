@@ -32,10 +32,13 @@
 #include <math.h>
 
 #define QUANT(c, scale, offset, shift) ((s16)((((c)*(scale)) + (offset)) >> (shift)))
+
+const XEVE_TXB(*xeve_func_txb)[MAX_TR_LOG2];
+
 const int xeve_quant_scale[2][6] = { {26214, 23302, 20560, 18396, 16384, 14764},
                                      {26214, 23302, 20560, 18396, 16384, 14564} };
 
-static void tx_pb2b(void * src, void * dst, int shift, int line, int step)
+void tx_pb2b(void * src, void * dst, int shift, int line, int step)
 {
     int j;
     s64 E, O;
@@ -62,7 +65,7 @@ static void tx_pb2b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb4b(void * src, void * dst, int shift, int line, int step)
+void tx_pb4b(void * src, void * dst, int shift, int line, int step)
 {
     int j;
     s64 E[2], O[2];
@@ -93,7 +96,7 @@ static void tx_pb4b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb8b(void * src, void * dst, int shift, int line, int step)
+void tx_pb8b(void * src, void * dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[4], O[4];
@@ -136,7 +139,7 @@ static void tx_pb8b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb16b(void * src, void * dst, int shift, int line, int step)
+void tx_pb16b(void * src, void * dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[8], O[8];
@@ -192,7 +195,7 @@ static void tx_pb16b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb32b(void * src, void * dst, int shift, int line, int step)
+void tx_pb32b(void * src, void * dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[16], O[16];
@@ -260,7 +263,7 @@ static void tx_pb32b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb64b(void *src, void *dst, int shift, int line, int step)
+void tx_pb64b(void *src, void *dst, int shift, int line, int step)
 {
     const int tx_size = 64;
     const s8 * tm = xeve_tbl_tm64[0];

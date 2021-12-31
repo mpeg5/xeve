@@ -81,6 +81,18 @@
 /* maximum cost value */
 #define MAX_COST                (1.7e+308)
 
+/* Buffer Alignement */
+#if defined(_WIN32) && !defined(__GNUC__)
+#define DECLARE_ALIGNED(var, n) __declspec(align(n)) var
+#else
+#define DECLARE_ALIGNED(var, n) var __attribute__((aligned (n)))
+#endif
+#define ALIGNED_32(var)    DECLARE_ALIGNED(var, 32)
+#define ALIGNED_128(var)    DECLARE_ALIGNED(var, 128)
+#define ALIGNED_16(var)    DECLARE_ALIGNED(var, 16)
+
+
+
 /*****************************************************************************
  * mode decision structure
  *****************************************************************************/
@@ -152,6 +164,7 @@ typedef struct _XEVE_RC XEVE_RC;
  * pre-defined function structure
  *****************************************************************************/
 typedef void (*XEVE_ITXB)(void* coef, void* t, int shift, int line, int step);
+typedef void(*XEVE_TXB)(void* coef, void* t, int shift, int line, int step);
 
 /* forecast information */
 typedef struct _XEVE_FCST
@@ -259,7 +272,7 @@ typedef struct _XEVE_PINTRA
     /* reconstruction buffer */
     pel                 rec[N_C][MAX_CU_DIM];
 
-    s16                 coef_tmp[N_C][MAX_CU_DIM];
+    ALIGNED_32(s16                 coef_tmp[N_C][MAX_CU_DIM]);
     s16                 coef_best[N_C][MAX_CU_DIM];
     int                 nnz_best[N_C];
     int                 nnz_sub_best[N_C][MAX_SUB_TB_NUM];
@@ -366,7 +379,7 @@ struct _XEVE_PINTER
     /* reconstruction buffer */
     pel                 rec[PRED_NUM][N_C][MAX_CU_DIM];
     /* last one buffer used for RDO */
-    s16                 coef[PRED_NUM+1][N_C][MAX_CU_DIM];
+    ALIGNED_32(s16                 coef[PRED_NUM+1][N_C][MAX_CU_DIM]);
     s16                 residue[N_C][MAX_CU_DIM];
     int                 nnz_best[PRED_NUM][N_C];
     int                 nnz_sub_best[PRED_NUM][N_C][MAX_SUB_TB_NUM];
@@ -989,5 +1002,6 @@ typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 #include "xeve_itdq.h"
 #include "xeve_itdq_sse.h"
 #include "xeve_itdq_avx.h"
+#include "xeve_tq_avx.h"
 
 #endif /* _XEVE_TYPE_H_ */

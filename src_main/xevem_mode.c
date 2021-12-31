@@ -1463,6 +1463,11 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
     {
         check_max_cu = ctx->param.max_cu_inter;
         check_min_cu = ctx->param.min_cu_inter;
+        if (ctx->slice_depth == 5 && ctx->param.partition_fast)
+        {
+            check_max_cu = 64;
+            check_min_cu = 8;
+        }
     }
 
     set_lambda(ctx, core, ctx->sh, ctx->tile[core->tile_idx].qp);
@@ -1517,6 +1522,18 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
         }
 
         check_run_split(core, log2_cuw, log2_cuh, cup, next_split, do_curr, do_split, bef_data_idx, split_allow, boundary, tree_cons);
+        if (ctx->param.partition_fast)
+        {
+            if (cuw != cuh && cuw >= 16 && cuh >= 16)
+            {
+                split_allow[NO_SPLIT] = 0;
+            }
+            if (split_allow[SPLIT_BI_HOR] && split_allow[SPLIT_BI_VER])
+            {
+                split_allow[SPLIT_BI_VER] = 0;
+            }
+        }
+
     }
     else
     {
@@ -1894,6 +1911,12 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                                         }
                                         cost_temp_dqp += mode_coding_tree_main(ctx, core, x_pos, y_pos, split_struct.cup[cur_part_num], log2_sub_cuw, log2_sub_cuh, split_struct.cud[cur_part_num], mi, 1
                                                                              , (num_suco == 2) ? suco_flag : parent_suco, core->qp, split_struct.tree_cons);
+
+                                        if (ctx->param.partition_fast && cost_temp_dqp > best_curr_cost)
+                                        {
+                                            // Skipping coding computations for rest of the cu partitions if partition cost exceeds no split cost 
+                                            break;
+                                        }
 
                                         core->qp = GET_QP((s8)qp, dqp - (s8)qp);
 
