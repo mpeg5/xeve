@@ -493,6 +493,8 @@ typedef struct _XEVE_PARAM
     int            ats_intra_fast;
     int            me_fast;
     int            partition_fast;
+    int            partition_fast_max_cu;
+    int            partition_fast_min_cu;
 } XEVE_PARAM;
 
 /*****************************************************************************

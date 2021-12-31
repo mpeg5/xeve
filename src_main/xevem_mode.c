@@ -1465,8 +1465,8 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
         check_min_cu = ctx->param.min_cu_inter;
         if (ctx->slice_depth == 5 && ctx->param.partition_fast)
         {
-            check_max_cu = 64;
-            check_min_cu = 8;
+            check_max_cu = ctx->param.partition_fast_max_cu; // 64
+            check_min_cu = ctx->param.partition_fast_min_cu; // 8
         }
     }
 
@@ -1881,7 +1881,6 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                                 static int counter_in[MAX_CU_LOG2 - MIN_CU_LOG2][MAX_CU_LOG2 - MIN_CU_LOG2] = { 0, };
                                 counter_in[log2_cuw - MIN_CU_LOG2][log2_cuh - MIN_CU_LOG2]++;
 #endif
-
                                 for (part_num = 0; part_num < split_struct.part_count; ++part_num)
                                 {
                                     int cur_part_num = suco_order[part_num];
@@ -1909,15 +1908,12 @@ static double mode_coding_tree_main(XEVE_CTX *ctx, XEVE_CORE *core, int x0, int 
                                             SBAC_LOAD(core->s_curr_best[log2_sub_cuw - 2][log2_sub_cuh - 2], core->s_next_best[prev_log2_sub_cuw - 2][prev_log2_sub_cuh - 2]);
                                             DQP_STORE(core->dqp_curr_best[log2_sub_cuw - 2][log2_sub_cuh - 2], core->dqp_next_best[prev_log2_sub_cuw - 2][prev_log2_sub_cuh - 2]);
                                         }
-                                        cost_temp_dqp += mode_coding_tree_main(ctx, core, x_pos, y_pos, split_struct.cup[cur_part_num], log2_sub_cuw, log2_sub_cuh, split_struct.cud[cur_part_num], mi, 1
-                                                                             , (num_suco == 2) ? suco_flag : parent_suco, core->qp, split_struct.tree_cons);
-
-                                        if (ctx->param.partition_fast && cost_temp_dqp > best_curr_cost)
+                                        if (!ctx->param.partition_fast || (ctx->param.partition_fast && cost_temp_dqp <= best_curr_cost))
                                         {
-                                            // Skipping coding computations for rest of the cu partitions if partition cost exceeds no split cost 
-                                            break;
+                                            cost_temp_dqp += mode_coding_tree_main(ctx, core, x_pos, y_pos, split_struct.cup[cur_part_num], log2_sub_cuw, log2_sub_cuh, split_struct.cud[cur_part_num], mi, 1
+                                                , (num_suco == 2) ? suco_flag : parent_suco, core->qp, split_struct.tree_cons);
                                         }
-
+                                        
                                         core->qp = GET_QP((s8)qp, dqp - (s8)qp);
 
                                         copy_cu_data(&core->cu_data_temp[log2_cuw - 2][log2_cuh - 2], &core->cu_data_best[log2_sub_cuw - 2][log2_sub_cuh - 2], x_pos - split_struct.x_pos[0]

@@ -32,9 +32,17 @@
 #include "xevem_tq_avx.h"
 #include "xevem_tq.h"
 
+#ifndef _mm256_set_m128i
+#define _mm256_set_m128i(/* __m128i */ hi, /* __m128i */ lo) \
+    _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
+#endif // !_mm256_set_m128i
+
+
+#ifndef _mm256_loadu2_m128i
 #define _mm256_loadu2_m128i(/* __m128i const* */ hiaddr, \
                             /* __m128i const* */ loaddr) \
     _mm256_set_m128i(_mm_loadu_si128(hiaddr), _mm_loadu_si128(loaddr))
+#endif // !_mm256_loadu2_m128i
 
 ALIGNED_32(static const s16 tab_dct2_2nd_shuffle_256i[][16]) = {
     // 16bit: 0-7, 3-0 7-4
@@ -213,8 +221,8 @@ static void tx_pb16_avx(s16* src, s16* dst, int shift, int line)
     {
         int i, j;
         __m256i s00, s01, s02, s03, s04, s05, s06, s07;
-        __m256i v0, v1, v2, v3, v4, v5, v6, v7;
-        __m256i d0, d1, d2, d3, d4, d5, d6, d7;
+        __m256i v0, v1, v2, v4, v6;
+        __m256i d0, d1, d2, d3;
         __m256i dst_reg[8];
         __m256i add = _mm256_set1_epi32(1 << (shift - 1));
         __m256i coeffs[8];
@@ -451,17 +459,15 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         __m256i eee[4], eeo[4];
         __m256i eeee[2], eeeo[2];
         __m256i v[18];
-        __m256i d0, d1, d2, d3, d4, d5, d6, d7;
+        __m256i d0, d1, d2, d3;
         __m256i dst_reg[8];
         __m256i add = _mm256_set1_epi32(1 << (shift - 1));
         __m256i coeffs[52];
 
-
-
-        const __m256i coeff_p32_p32 = _mm256_set_epi32(64, 64, 64, 64, 64, 64, 64, 64);
-        const __m256i coeff_p32_n32 = _mm256_set_epi32(-64, 64, -64, 64, -64, 64, -64, 64);
-        const __m256i coeff_p42_p17 = _mm256_set_epi32(35, 84, 35, 84, 35, 84, 35, 84);
-        const __m256i coeff_p17_n42 = _mm256_set_epi32(-84, 35, -84, 35, -84, 35, -84, 35);
+        const __m256i coeff_p64_p64 = _mm256_set_epi32(64, 64, 64, 64, 64, 64, 64, 64);
+        const __m256i coeff_p64_n64 = _mm256_set_epi32(-64, 64, -64, 64, -64, 64, -64, 64);
+        const __m256i coeff_p84_p35 = _mm256_set_epi32(35, 84, 35, 84, 35, 84, 35, 84);
+        const __m256i coeff_p35_n84 = _mm256_set_epi32(-84, 35, -84, 35, -84, 35, -84, 35);
 
         tab0 = _mm256_loadu_si256((__m256i*)tab_dct2_2nd_shuffle_256i[3]);
         tab1 = _mm256_loadu_si256((__m256i*)tab_dct2_2nd_shuffle_256i[1]);
@@ -638,14 +644,14 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             }
 
 
-            v[0] = _mm256_mullo_epi32(eeee[0], coeff_p32_p32);
-            v[1] = _mm256_mullo_epi32(eeee[1], coeff_p32_p32);
-            v[2] = _mm256_mullo_epi32(eeee[0], coeff_p32_n32);
-            v[3] = _mm256_mullo_epi32(eeee[1], coeff_p32_n32);
-            v[4] = _mm256_mullo_epi32(eeeo[0], coeff_p42_p17);
-            v[5] = _mm256_mullo_epi32(eeeo[1], coeff_p42_p17);
-            v[6] = _mm256_mullo_epi32(eeeo[0], coeff_p17_n42);
-            v[7] = _mm256_mullo_epi32(eeeo[1], coeff_p17_n42);
+            v[0] = _mm256_mullo_epi32(eeee[0], coeff_p64_p64);
+            v[1] = _mm256_mullo_epi32(eeee[1], coeff_p64_p64);
+            v[2] = _mm256_mullo_epi32(eeee[0], coeff_p64_n64);
+            v[3] = _mm256_mullo_epi32(eeee[1], coeff_p64_n64);
+            v[4] = _mm256_mullo_epi32(eeeo[0], coeff_p84_p35);
+            v[5] = _mm256_mullo_epi32(eeeo[1], coeff_p84_p35);
+            v[6] = _mm256_mullo_epi32(eeeo[0], coeff_p35_n84);
+            v[7] = _mm256_mullo_epi32(eeeo[1], coeff_p35_n84);
 
             v[0] = _mm256_hadd_epi32(v[0], v[1]);
             v[2] = _mm256_hadd_epi32(v[2], v[3]);
@@ -726,32 +732,26 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             _mm_store_si128((__m128i*)(dst + 20 * line), _mm256_castsi256_si128(d1));
             _mm_store_si128((__m128i*)(dst + 28 * line), _mm256_extracti128_si256(d1, 1));
 
-#define _mm256_madd_epi32(a, b, c, d) \
-        _mm256_hadd_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d)); \
-
-#define CALCU_EO(coeff0, coeff1, dst) \
-            v[0] = _mm256_madd_epi32(eo[0], coeff0, eo[1], coeff1); \
-            v[2] = _mm256_madd_epi32(eo[2], coeff0, eo[3], coeff1); \
-            v[4] = _mm256_madd_epi32(eo[4], coeff0, eo[5], coeff1); \
-            v[6] = _mm256_madd_epi32(eo[6], coeff0, eo[7], coeff1); \
-            v[0] = _mm256_hadd_epi32(v[0], v[2]); \
-            v[4] = _mm256_hadd_epi32(v[4], v[6]); \
-            dst = _mm256_hadd_epi32(v[0], v[4])
+#define _mm256_madd_epi32_xeve(a, b, c, d) \
+        _mm256_hadd_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d))
 
             for (i = 0; i < 8; i++)
             {
                 idx = 2 * i + 1;
                 __m256i tm_0 = _mm256_setr_epi32(xeve_tbl_tm16[idx][0], xeve_tbl_tm16[idx][1], xeve_tbl_tm16[idx][2], xeve_tbl_tm16[idx][3], xeve_tbl_tm16[idx][0], xeve_tbl_tm16[idx][1], xeve_tbl_tm16[idx][2], xeve_tbl_tm16[idx][3]);
                 __m256i tm_1 = _mm256_setr_epi32(xeve_tbl_tm16[idx][4], xeve_tbl_tm16[idx][5], xeve_tbl_tm16[idx][6], xeve_tbl_tm16[idx][7], xeve_tbl_tm16[idx][4], xeve_tbl_tm16[idx][5], xeve_tbl_tm16[idx][6], xeve_tbl_tm16[idx][7]);
-                CALCU_EO(tm_0, tm_1, dst_reg[i]);
+                v[0] = _mm256_madd_epi32_xeve(eo[0], tm_0, eo[1], tm_1);
+                v[2] = _mm256_madd_epi32_xeve(eo[2], tm_0, eo[3], tm_1);
+                v[4] = _mm256_madd_epi32_xeve(eo[4], tm_0, eo[5], tm_1);
+                v[6] = _mm256_madd_epi32_xeve(eo[6], tm_0, eo[7], tm_1);
+                v[0] = _mm256_hadd_epi32(v[0], v[2]);
+                v[4] = _mm256_hadd_epi32(v[4], v[6]);
+                dst_reg[i] = _mm256_hadd_epi32(v[0], v[4]);
                 dst_reg[i] = _mm256_add_epi32(dst_reg[i], add);
                 dst_reg[i] = _mm256_srai_epi32(dst_reg[i], shift);
-
             }
 
-
-#undef CALCU_EO
-#undef _mm256_madd_epi32
+#undef _mm256_madd_epi32_xeve
 
             d0 = _mm256_packs_epi32(dst_reg[0], dst_reg[1]);
             d1 = _mm256_packs_epi32(dst_reg[2], dst_reg[3]);
@@ -772,34 +772,32 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             _mm_store_si128((__m128i*)(dst + 30 * line), _mm256_extracti128_si256(d3, 1));
 
 
-#define _mm256_madd1_epi32(a, b, c, d) \
-        _mm256_add_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d)); \
+#define _mm256_madd1_epi32_xeve(a, b, c, d) \
+        _mm256_add_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d))
 
-#define CALCU_O(coeff0, coeff1, dst) \
-            v[0 ] = _mm256_madd1_epi32(o[0], coeff0, o[1], coeff1); \
-            v[2 ] = _mm256_madd1_epi32(o[2], coeff0, o[3], coeff1); \
-            v[4 ] = _mm256_madd1_epi32(o[4], coeff0, o[5], coeff1); \
-            v[6 ] = _mm256_madd1_epi32(o[6], coeff0, o[7], coeff1); \
-            v[8 ] = _mm256_madd1_epi32(o[8], coeff0, o[9], coeff1); \
-            v[10] = _mm256_madd1_epi32(o[10], coeff0, o[11], coeff1); \
-            v[12] = _mm256_madd1_epi32(o[12], coeff0, o[13], coeff1); \
-            v[14] = _mm256_madd1_epi32(o[14], coeff0, o[15], coeff1); \
-            v[0 ] = _mm256_hadd_epi32(v[0], v[2]); \
-            v[4 ] = _mm256_hadd_epi32(v[4], v[6]); \
-            v[8 ] = _mm256_hadd_epi32(v[8], v[10]); \
-            v[12] = _mm256_hadd_epi32(v[12], v[14]); \
-            v[0 ] = _mm256_hadd_epi32(v[0], v[4]); \
-            v[8 ] = _mm256_hadd_epi32(v[8], v[12]); \
-            v[2 ] = _mm256_permute2x128_si256(v[0], v[8], 0x20); \
-            v[3 ] = _mm256_permute2x128_si256(v[0], v[8], 0x31); \
-            dst = _mm256_add_epi32(v[2], v[3])
-
+            // O
             for (i = 0; i < 8; ++i)
             {
                 idx = 2 * i + 1;
                 __m256i tm_0 = _mm256_setr_epi32(xeve_tbl_tm32[idx][0], xeve_tbl_tm32[idx][1], xeve_tbl_tm32[idx][2], xeve_tbl_tm32[idx][3], xeve_tbl_tm32[idx][4], xeve_tbl_tm32[idx][5], xeve_tbl_tm32[idx][6], xeve_tbl_tm32[idx][7]);
                 __m256i tm_1 = _mm256_setr_epi32(xeve_tbl_tm32[idx][8], xeve_tbl_tm32[idx][9], xeve_tbl_tm32[idx][10], xeve_tbl_tm32[idx][11], xeve_tbl_tm32[idx][12], xeve_tbl_tm32[idx][13], xeve_tbl_tm32[idx][14], xeve_tbl_tm32[idx][15]);
-                CALCU_O(tm_0, tm_1, dst_reg[i]);
+                v[0] = _mm256_madd1_epi32_xeve(o[0], tm_0, o[1], tm_1);
+                v[2] = _mm256_madd1_epi32_xeve(o[2], tm_0, o[3], tm_1);
+                v[4] = _mm256_madd1_epi32_xeve(o[4], tm_0, o[5], tm_1);
+                v[6] = _mm256_madd1_epi32_xeve(o[6], tm_0, o[7], tm_1);
+                v[8] = _mm256_madd1_epi32_xeve(o[8], tm_0, o[9], tm_1);
+                v[10] = _mm256_madd1_epi32_xeve(o[10], tm_0, o[11], tm_1);
+                v[12] = _mm256_madd1_epi32_xeve(o[12], tm_0, o[13], tm_1);
+                v[14] = _mm256_madd1_epi32_xeve(o[14], tm_0, o[15], tm_1);
+                v[0] = _mm256_hadd_epi32(v[0], v[2]);
+                v[4] = _mm256_hadd_epi32(v[4], v[6]);
+                v[8] = _mm256_hadd_epi32(v[8], v[10]);
+                v[12] = _mm256_hadd_epi32(v[12], v[14]);
+                v[0] = _mm256_hadd_epi32(v[0], v[4]);
+                v[8] = _mm256_hadd_epi32(v[8], v[12]);
+                v[2] = _mm256_permute2x128_si256(v[0], v[8], 0x20);
+                v[3] = _mm256_permute2x128_si256(v[0], v[8], 0x31);
+                dst_reg[i] = _mm256_add_epi32(v[2], v[3]);
                 dst_reg[i] = _mm256_add_epi32(dst_reg[i], add);
                 dst_reg[i] = _mm256_srai_epi32(dst_reg[i], shift);
             }
@@ -827,14 +825,28 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
                 idx = 2 * i + 1;
                 __m256i tm_0 = _mm256_setr_epi32(xeve_tbl_tm32[idx][0], xeve_tbl_tm32[idx][1], xeve_tbl_tm32[idx][2], xeve_tbl_tm32[idx][3], xeve_tbl_tm32[idx][4], xeve_tbl_tm32[idx][5], xeve_tbl_tm32[idx][6], xeve_tbl_tm32[idx][7]);
                 __m256i tm_1 = _mm256_setr_epi32(xeve_tbl_tm32[idx][8], xeve_tbl_tm32[idx][9], xeve_tbl_tm32[idx][10], xeve_tbl_tm32[idx][11], xeve_tbl_tm32[idx][12], xeve_tbl_tm32[idx][13], xeve_tbl_tm32[idx][14], xeve_tbl_tm32[idx][15]);
-                CALCU_O(tm_0, tm_1, dst_reg[i - 8]);
+                v[0] = _mm256_madd1_epi32_xeve(o[0], tm_0, o[1], tm_1);
+                v[2] = _mm256_madd1_epi32_xeve(o[2], tm_0, o[3], tm_1);
+                v[4] = _mm256_madd1_epi32_xeve(o[4], tm_0, o[5], tm_1);
+                v[6] = _mm256_madd1_epi32_xeve(o[6], tm_0, o[7], tm_1);
+                v[8] = _mm256_madd1_epi32_xeve(o[8], tm_0, o[9], tm_1);
+                v[10] = _mm256_madd1_epi32_xeve(o[10], tm_0, o[11], tm_1);
+                v[12] = _mm256_madd1_epi32_xeve(o[12], tm_0, o[13], tm_1);
+                v[14] = _mm256_madd1_epi32_xeve(o[14], tm_0, o[15], tm_1);
+                v[0] = _mm256_hadd_epi32(v[0], v[2]);
+                v[4] = _mm256_hadd_epi32(v[4], v[6]);
+                v[8] = _mm256_hadd_epi32(v[8], v[10]);
+                v[12] = _mm256_hadd_epi32(v[12], v[14]);
+                v[0] = _mm256_hadd_epi32(v[0], v[4]);
+                v[8] = _mm256_hadd_epi32(v[8], v[12]);
+                v[2] = _mm256_permute2x128_si256(v[0], v[8], 0x20);
+                v[3] = _mm256_permute2x128_si256(v[0], v[8], 0x31);
+                dst_reg[i - 8] = _mm256_add_epi32(v[2], v[3]);
                 dst_reg[i - 8] = _mm256_add_epi32(dst_reg[i - 8], add);
                 dst_reg[i - 8] = _mm256_srai_epi32(dst_reg[i - 8], shift);
             }
 
-
-#undef CALCU_O
-#undef _mm256_madd1_epi32
+#undef _mm256_madd1_epi32_xeve
 
             d0 = _mm256_packs_epi32(dst_reg[0], dst_reg[1]);
             d1 = _mm256_packs_epi32(dst_reg[2], dst_reg[3]);
@@ -867,15 +879,15 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         __m256i eee[2], eeo[2];
         __m256i eeee, eeeo;
         __m256i v[8];
-        __m256i d0, d1, d2, d3, d4, d5, d6, d7;
+        __m256i d0, d1, d2, d3, d4, d6;
         __m256i dst_reg[8];
         __m256i add = _mm256_set1_epi32(1 << (shift - 1));
         __m256i coeffs[52];
         __m128i m0, m1, m2, m3, m4, m5, m6, m7;
-        const __m256i coeff_p32_p32 = _mm256_set_epi32(64, 64, 64, 64, 64, 64, 64, 64);
-        const __m256i coeff_p32_n32 = _mm256_set_epi32(-64, 64, -64, 64, -64, 64, -64, 64);
-        const __m256i coeff_p42_p17 = _mm256_set_epi32(35, 84, 35, 84, 35, 84, 35, 84);
-        const __m256i coeff_p17_n42 = _mm256_set_epi32(-84, 35, -84, 35, -84, 35, -84, 35);
+        const __m256i coeff_p64_p64 = _mm256_set_epi32(64, 64, 64, 64, 64, 64, 64, 64);
+        const __m256i coeff_p64_n64 = _mm256_set_epi32(-64, 64, -64, 64, -64, 64, -64, 64);
+        const __m256i coeff_p84_p35 = _mm256_set_epi32(35, 84, 35, 84, 35, 84, 35, 84);
+        const __m256i coeff_p35_n84 = _mm256_set_epi32(-84, 35, -84, 35, -84, 35, -84, 35);
 
         tab0 = _mm256_loadu_si256((__m256i*)tab_dct2_2nd_shuffle_256i[3]);
         tab1 = _mm256_loadu_si256((__m256i*)tab_dct2_2nd_shuffle_256i[1]);
@@ -967,10 +979,10 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         eeee = _mm256_hadd_epi32(eee[0], eee[1]);
         eeeo = _mm256_hsub_epi32(eee[0], eee[1]);
 
-        v[0] = _mm256_mullo_epi32(eeee, coeff_p32_p32);
-        v[1] = _mm256_mullo_epi32(eeee, coeff_p32_n32);
-        v[2] = _mm256_mullo_epi32(eeeo, coeff_p42_p17);
-        v[3] = _mm256_mullo_epi32(eeeo, coeff_p17_n42);
+        v[0] = _mm256_mullo_epi32(eeee, coeff_p64_p64);
+        v[1] = _mm256_mullo_epi32(eeee, coeff_p64_n64);
+        v[2] = _mm256_mullo_epi32(eeeo, coeff_p84_p35);
+        v[3] = _mm256_mullo_epi32(eeeo, coeff_p35_n84);
 
         v[0] = _mm256_hadd_epi32(v[0], v[1]);
         v[2] = _mm256_hadd_epi32(v[2], v[3]);
@@ -1040,21 +1052,17 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         _mm_storel_epi64((__m128i*)(dst + 20 * line), m2);
         _mm_storel_epi64((__m128i*)(dst + 28 * line), m3);
 
-#define _mm256_madd_epi32(a, b, c, d) \
+#define _mm256_madd_epi32_xeve(a, b, c, d) \
         _mm256_hadd_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d)); \
-
-#define CALCU_EO(coeff0, coeff1, dst) \
-        v[0] = _mm256_madd_epi32(eo[0], coeff0, eo[1], coeff1); \
-        v[2] = _mm256_madd_epi32(eo[2], coeff0, eo[3], coeff1); \
-        dst = _mm256_hadd_epi32(v[0], v[2])
 
         for (i = 0; i < 8; i++)
         {
             idx = 2 * i + 1;
             __m256i tm_0 = _mm256_setr_epi32(xeve_tbl_tm16[idx][0], xeve_tbl_tm16[idx][1], xeve_tbl_tm16[idx][2], xeve_tbl_tm16[idx][3], xeve_tbl_tm16[idx][0], xeve_tbl_tm16[idx][1], xeve_tbl_tm16[idx][2], xeve_tbl_tm16[idx][3]);
             __m256i tm_1 = _mm256_setr_epi32(xeve_tbl_tm16[idx][4], xeve_tbl_tm16[idx][5], xeve_tbl_tm16[idx][6], xeve_tbl_tm16[idx][7], xeve_tbl_tm16[idx][4], xeve_tbl_tm16[idx][5], xeve_tbl_tm16[idx][6], xeve_tbl_tm16[idx][7]);
-            CALCU_EO(tm_0, tm_1, dst_reg[i]);
-
+            v[0] = _mm256_madd_epi32_xeve(eo[0], tm_0, eo[1], tm_1);
+            v[2] = _mm256_madd_epi32_xeve(eo[2], tm_0, eo[3], tm_1);
+            dst_reg[i] = _mm256_hadd_epi32(v[0], v[2]);
         }
 
         d0 = _mm256_hadd_epi32(dst_reg[0], dst_reg[1]);
@@ -1067,8 +1075,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         d2 = _mm256_permute4x64_epi64(d4, 0xd8);
         d3 = _mm256_permute4x64_epi64(d6, 0xd8);
 
-#undef CALCU_EO
-#undef _mm256_madd_epi32
+#undef _mm256_madd_epi32_xeve
 
         d0 = _mm256_add_epi32(d0, add);
         d1 = _mm256_add_epi32(d1, add);
@@ -1101,24 +1108,21 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         _mm_storel_epi64((__m128i*)(dst + 26 * line), m6);
         _mm_storel_epi64((__m128i*)(dst + 30 * line), m7);
 
-#define _mm256_madd1_epi32(a, b, c, d) \
-        _mm256_add_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d)); \
-
-#define CALCU_O(coeff0, coeff1, dst) \
-        v[0] = _mm256_madd1_epi32(o[0], coeff0, o[1], coeff1); \
-        v[2] = _mm256_madd1_epi32(o[2], coeff0, o[3], coeff1); \
-        v[4] = _mm256_madd1_epi32(o[4], coeff0, o[5], coeff1); \
-        v[6] = _mm256_madd1_epi32(o[6], coeff0, o[7], coeff1); \
-        v[0] = _mm256_hadd_epi32(v[0], v[2]); \
-        v[4] = _mm256_hadd_epi32(v[4], v[6]); \
-        dst = _mm256_hadd_epi32(v[0], v[4]);                        
+#define _mm256_madd1_epi32_xeve(a, b, c, d) \
+        _mm256_add_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d))                    
 
         for (i = 0; i < 8; ++i)
         {
             idx = 2 * i + 1;
             __m256i tm_0 = _mm256_setr_epi32(xeve_tbl_tm32[idx][0], xeve_tbl_tm32[idx][1], xeve_tbl_tm32[idx][2], xeve_tbl_tm32[idx][3], xeve_tbl_tm32[idx][4], xeve_tbl_tm32[idx][5], xeve_tbl_tm32[idx][6], xeve_tbl_tm32[idx][7]);
             __m256i tm_1 = _mm256_setr_epi32(xeve_tbl_tm32[idx][8], xeve_tbl_tm32[idx][9], xeve_tbl_tm32[idx][10], xeve_tbl_tm32[idx][11], xeve_tbl_tm32[idx][12], xeve_tbl_tm32[idx][13], xeve_tbl_tm32[idx][14], xeve_tbl_tm32[idx][15]);
-            CALCU_O(tm_0, tm_1, dst_reg[i]);
+            v[0] = _mm256_madd1_epi32_xeve(o[0], tm_0, o[1], tm_1);
+            v[2] = _mm256_madd1_epi32_xeve(o[2], tm_0, o[3], tm_1);
+            v[4] = _mm256_madd1_epi32_xeve(o[4], tm_0, o[5], tm_1);
+            v[6] = _mm256_madd1_epi32_xeve(o[6], tm_0, o[7], tm_1);
+            v[0] = _mm256_hadd_epi32(v[0], v[2]);
+            v[4] = _mm256_hadd_epi32(v[4], v[6]);
+            dst_reg[i] = _mm256_hadd_epi32(v[0], v[4]);
         }
 
         t[0] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x20);
@@ -1171,11 +1175,16 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             idx = 2 * i + 1;
             __m256i tm_0 = _mm256_setr_epi32(xeve_tbl_tm32[idx][0], xeve_tbl_tm32[idx][1], xeve_tbl_tm32[idx][2], xeve_tbl_tm32[idx][3], xeve_tbl_tm32[idx][4], xeve_tbl_tm32[idx][5], xeve_tbl_tm32[idx][6], xeve_tbl_tm32[idx][7]);
             __m256i tm_1 = _mm256_setr_epi32(xeve_tbl_tm32[idx][8], xeve_tbl_tm32[idx][9], xeve_tbl_tm32[idx][10], xeve_tbl_tm32[idx][11], xeve_tbl_tm32[idx][12], xeve_tbl_tm32[idx][13], xeve_tbl_tm32[idx][14], xeve_tbl_tm32[idx][15]);
-            CALCU_O(tm_0, tm_1, dst_reg[i - 8]);
+            v[0] = _mm256_madd1_epi32_xeve(o[0], tm_0, o[1], tm_1);
+            v[2] = _mm256_madd1_epi32_xeve(o[2], tm_0, o[3], tm_1);
+            v[4] = _mm256_madd1_epi32_xeve(o[4], tm_0, o[5], tm_1);
+            v[6] = _mm256_madd1_epi32_xeve(o[6], tm_0, o[7], tm_1);
+            v[0] = _mm256_hadd_epi32(v[0], v[2]);
+            v[4] = _mm256_hadd_epi32(v[4], v[6]);
+            dst_reg[i - 8] = _mm256_hadd_epi32(v[0], v[4]);
         }
 
-#undef CALCU_O
-#undef _mm256_madd1_epi32
+#undef _mm256_madd1_epi32_xeve
 
         t[0] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x20);
         t[1] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x31);
@@ -1241,18 +1250,19 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
         __m256i eee[4], eeo[4];
         __m256i eeee[2], eeeo[2], eeeee, eeeeo;
         __m256i v[16];
-        __m256i d0, d1, d2, d3, d4, d5, d6, d7;
+        __m256i d0, d1, d2, d3;
         __m256i add = _mm256_set1_epi32(1 << (shift - 1));
         __m256i coeffs[106];
         __m128i m0, m1, m2, m3, m4, m5, m6, m7;
         __m256i dst_reg[8];
 
-        const __m256i coeff_p32_p32 = _mm256_set_epi32(64, 64, 64, 64, 64, 64, 64, 64);
-        const __m256i coeff_p42_p17 = _mm256_set_epi32(35, 84, 35, 84, 35, 84, 35, 84);
+        const __m256i coeff_p64_p64 = _mm256_set_epi32(64, 64, 64, 64, 64, 64, 64, 64);
+        const __m256i coeff_p84_p35 = _mm256_set_epi32(35, 84, 35, 84, 35, 84, 35, 84);
 
         tab0 = _mm256_loadu_si256((__m256i*)tab_dct2_2nd_shuffle_256i[3]);
         tab1 = _mm256_loadu_si256((__m256i*)tab_dct2_2nd_shuffle_256i[1]);
         tab2 = _mm256_loadu_si256((__m256i*)tab_dct2_2nd_shuffle_256i[2]);
+        
         coeffs[0] = _mm256_setr_epi32(xeve_tbl_tm8[1][0], xeve_tbl_tm8[1][1], xeve_tbl_tm8[1][2], xeve_tbl_tm8[1][3], xeve_tbl_tm8[1][0], xeve_tbl_tm8[1][1], xeve_tbl_tm8[1][2], xeve_tbl_tm8[1][3]);
         coeffs[1] = _mm256_setr_epi32(xeve_tbl_tm8[3][0], xeve_tbl_tm8[3][1], xeve_tbl_tm8[3][2], xeve_tbl_tm8[3][3], xeve_tbl_tm8[3][0], xeve_tbl_tm8[3][1], xeve_tbl_tm8[3][2], xeve_tbl_tm8[3][3]);
         coeffs[2] = _mm256_setr_epi32(xeve_tbl_tm16[1][0], xeve_tbl_tm16[1][1], xeve_tbl_tm16[1][2], xeve_tbl_tm16[1][3], xeve_tbl_tm16[1][0], xeve_tbl_tm16[1][1], xeve_tbl_tm16[1][2], xeve_tbl_tm16[1][3]);
@@ -1263,6 +1273,7 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
         coeffs[7] = _mm256_setr_epi32(xeve_tbl_tm16[5][4], xeve_tbl_tm16[5][5], xeve_tbl_tm16[5][6], xeve_tbl_tm16[5][7], xeve_tbl_tm16[5][4], xeve_tbl_tm16[5][5], xeve_tbl_tm16[5][6], xeve_tbl_tm16[5][7]);
         coeffs[8] = _mm256_setr_epi32(xeve_tbl_tm16[7][0], xeve_tbl_tm16[7][1], xeve_tbl_tm16[7][2], xeve_tbl_tm16[7][3], xeve_tbl_tm16[7][0], xeve_tbl_tm16[7][1], xeve_tbl_tm16[7][2], xeve_tbl_tm16[7][3]);
         coeffs[9] = _mm256_setr_epi32(xeve_tbl_tm16[7][4], xeve_tbl_tm16[7][5], xeve_tbl_tm16[7][6], xeve_tbl_tm16[7][7], xeve_tbl_tm16[7][4], xeve_tbl_tm16[7][5], xeve_tbl_tm16[7][6], xeve_tbl_tm16[7][7]);
+        
         for (j = 0; j < line; j += 4) {
             for (i = 0; i < 16; ++i)
             {
@@ -1372,8 +1383,8 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
             eeeee = _mm256_hadd_epi32(eeee[0], eeee[1]);
             eeeeo = _mm256_hsub_epi32(eeee[0], eeee[1]);
 
-            v[0] = _mm256_mullo_epi32(eeeee, coeff_p32_p32);
-            v[1] = _mm256_mullo_epi32(eeeeo, coeff_p42_p17);
+            v[0] = _mm256_mullo_epi32(eeeee, coeff_p64_p64);
+            v[1] = _mm256_mullo_epi32(eeeeo, coeff_p84_p35);
 
             v[4] = _mm256_hadd_epi32(v[0], v[1]);
 
@@ -1405,13 +1416,13 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
             _mm_storel_epi64((__m128i*)(dst + 16 * line), m1);
             _mm_storel_epi64((__m128i*)(dst + 24 * line), m3);
 
-#define _mm256_madd_epi32(a, b, c, d) \
+#define _mm256_madd_epi32_xeve(a, b, c, d) \
         _mm256_hadd_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d)); \
 
 
 #define CALCU_EEO(coeff0, coeff1, dst) \
-        v[0] = _mm256_madd_epi32(eeo[0], coeff0, eeo[1], coeff1); \
-        v[2] = _mm256_madd_epi32(eeo[2], coeff0, eeo[3], coeff1); \
+        v[0] = _mm256_madd_epi32_xeve(eeo[0], coeff0, eeo[1], coeff1); \
+        v[2] = _mm256_madd_epi32_xeve(eeo[2], coeff0, eeo[3], coeff1); \
         dst = _mm256_hadd_epi32(v[0], v[2])
 
             CALCU_EEO(coeffs[2], coeffs[3], d0);
@@ -1426,7 +1437,7 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
             d1 = _mm256_permute4x64_epi64(d2, 0xd8);
 
 #undef CALCU_EEO
-#undef _mm256_madd_epi32
+#undef _mm256_madd_epi32_xeve
 
             d0 = _mm256_add_epi32(d0, add);
             d1 = _mm256_add_epi32(d1, add);
@@ -1446,28 +1457,25 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
             _mm_storel_epi64((__m128i*)(dst + 20 * line), m2);
             _mm_storel_epi64((__m128i*)(dst + 28 * line), m3);
 
-#define _mm256_madd1_epi32(a, b, c, d) \
-        _mm256_add_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d)); \
+#define _mm256_madd1_epi32_xeve(a, b, c, d) \
+        _mm256_add_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d))
 
-#define CALCU_EO(coeff0, coeff1, coeff2, coeff3, dst) \
-        v[0] = _mm256_madd1_epi32(eo[0], coeff0, eo[1], coeff1); \
-        v[2] = _mm256_madd1_epi32(eo[2], coeff2, eo[3], coeff3); \
-        v[4] = _mm256_madd1_epi32(eo[4], coeff0, eo[5], coeff1); \
-        v[6] = _mm256_madd1_epi32(eo[6], coeff2, eo[7], coeff3); \
-        v[0] = _mm256_add_epi32(v[0], v[2]); \
-        v[4] = _mm256_add_epi32(v[4], v[6]); \
-        dst = _mm256_hadd_epi32(v[0], v[4]);
-
+            // EO
             for (i = 0; i < 8; ++i)
             {
                 __m256i tm_0 = _mm256_setr_epi32(xeve_tbl_tm32[i * 2 + 1][0], xeve_tbl_tm32[i * 2 + 1][1], xeve_tbl_tm32[i * 2 + 1][2], xeve_tbl_tm32[i * 2 + 1][3], xeve_tbl_tm32[i * 2 + 1][0], xeve_tbl_tm32[i * 2 + 1][1], xeve_tbl_tm32[i * 2 + 1][2], xeve_tbl_tm32[i * 2 + 1][3]);
                 __m256i tm_1 = _mm256_setr_epi32(xeve_tbl_tm32[i * 2 + 1][4], xeve_tbl_tm32[i * 2 + 1][5], xeve_tbl_tm32[i * 2 + 1][6], xeve_tbl_tm32[i * 2 + 1][7], xeve_tbl_tm32[i * 2 + 1][4], xeve_tbl_tm32[i * 2 + 1][5], xeve_tbl_tm32[i * 2 + 1][6], xeve_tbl_tm32[i * 2 + 1][7]);
                 __m256i tm_2 = _mm256_setr_epi32(xeve_tbl_tm32[i * 2 + 1][8], xeve_tbl_tm32[i * 2 + 1][9], xeve_tbl_tm32[i * 2 + 1][10], xeve_tbl_tm32[i * 2 + 1][11], xeve_tbl_tm32[i * 2 + 1][8], xeve_tbl_tm32[i * 2 + 1][9], xeve_tbl_tm32[i * 2 + 1][10], xeve_tbl_tm32[i * 2 + 1][11]);
                 __m256i tm_3 = _mm256_setr_epi32(xeve_tbl_tm32[i * 2 + 1][12], xeve_tbl_tm32[i * 2 + 1][13], xeve_tbl_tm32[i * 2 + 1][14], xeve_tbl_tm32[i * 2 + 1][15], xeve_tbl_tm32[i * 2 + 1][12], xeve_tbl_tm32[i * 2 + 1][13], xeve_tbl_tm32[i * 2 + 1][14], xeve_tbl_tm32[i * 2 + 1][15]);
-                CALCU_EO(tm_0, tm_1, tm_2, tm_3, dst_reg[i]);
+                v[0] = _mm256_madd1_epi32_xeve(eo[0], tm_0, eo[1], tm_1);
+                v[2] = _mm256_madd1_epi32_xeve(eo[2], tm_2, eo[3], tm_3);
+                v[4] = _mm256_madd1_epi32_xeve(eo[4], tm_0, eo[5], tm_1);
+                v[6] = _mm256_madd1_epi32_xeve(eo[6], tm_2, eo[7], tm_3);
+                v[0] = _mm256_add_epi32(v[0], v[2]);
+                v[4] = _mm256_add_epi32(v[4], v[6]);
+                dst_reg[i] = _mm256_hadd_epi32(v[0], v[4]);
             }
 
-#undef CALCU_EO
             d0 = _mm256_hadd_epi32(dst_reg[0], dst_reg[1]);
             d1 = _mm256_hadd_epi32(dst_reg[2], dst_reg[3]);
             d2 = _mm256_hadd_epi32(dst_reg[4], dst_reg[5]);
@@ -1508,32 +1516,30 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
             _mm_storel_epi64((__m128i*)(dst + 22 * line), m5);
             _mm_storel_epi64((__m128i*)(dst + 26 * line), m6);
             _mm_storel_epi64((__m128i*)(dst + 30 * line), m7);
+                  
 
-#define CALCU_O(coeff0, coeff1, coeff2, coeff3, d) \
-        v[0 ] = _mm256_madd1_epi32(o[0], coeff0, o[1], coeff1);      \
-        v[2 ] = _mm256_madd1_epi32(o[2], coeff2, o[3], coeff3);      \
-        v[4 ] = _mm256_madd1_epi32(o[4], coeff0, o[5], coeff1);      \
-        v[6 ] = _mm256_madd1_epi32(o[6], coeff2, o[7], coeff3);      \
-        v[8 ] = _mm256_madd1_epi32(o[8], coeff0, o[9], coeff1);     \
-        v[10] = _mm256_madd1_epi32(o[10], coeff2, o[11], coeff3);    \
-        v[12] = _mm256_madd1_epi32(o[12], coeff0, o[13], coeff1);    \
-        v[14] = _mm256_madd1_epi32(o[14], coeff2, o[15], coeff3);    \
-        v[0 ] = _mm256_add_epi32(v[0], v[2]);      \
-        v[1 ] = _mm256_add_epi32(v[4], v[6]);      \
-        v[2 ] = _mm256_add_epi32(v[8], v[10]);     \
-        v[3 ] = _mm256_add_epi32(v[12], v[14]);    \
-        v[0 ] = _mm256_hadd_epi32(v[0], v[1]);     \
-        v[2 ] = _mm256_hadd_epi32(v[2], v[3]);     \
-        d = _mm256_hadd_epi32(v[0], v[2]);                        
-
-
+            // O
             for (i = 0; i < 8; ++i)
             {
                 __m256i tm_0 = _mm256_setr_epi32(xeve_tbl_tm64[i * 2 + 1][0], xeve_tbl_tm64[i * 2 + 1][1], xeve_tbl_tm64[i * 2 + 1][2], xeve_tbl_tm64[i * 2 + 1][3], xeve_tbl_tm64[i * 2 + 1][4], xeve_tbl_tm64[i * 2 + 1][5], xeve_tbl_tm64[i * 2 + 1][6], xeve_tbl_tm64[i * 2 + 1][7]);
                 __m256i tm_1 = _mm256_setr_epi32(xeve_tbl_tm64[i * 2 + 1][8], xeve_tbl_tm64[i * 2 + 1][9], xeve_tbl_tm64[i * 2 + 1][10], xeve_tbl_tm64[i * 2 + 1][11], xeve_tbl_tm64[i * 2 + 1][12], xeve_tbl_tm64[i * 2 + 1][13], xeve_tbl_tm64[i * 2 + 1][14], xeve_tbl_tm64[i * 2 + 1][15]);
                 __m256i tm_2 = _mm256_setr_epi32(xeve_tbl_tm64[i * 2 + 1][16], xeve_tbl_tm64[i * 2 + 1][17], xeve_tbl_tm64[i * 2 + 1][18], xeve_tbl_tm64[i * 2 + 1][19], xeve_tbl_tm64[i * 2 + 1][20], xeve_tbl_tm64[i * 2 + 1][21], xeve_tbl_tm64[i * 2 + 1][22], xeve_tbl_tm64[i * 2 + 1][23]);
                 __m256i tm_3 = _mm256_setr_epi32(xeve_tbl_tm64[i * 2 + 1][24], xeve_tbl_tm64[i * 2 + 1][25], xeve_tbl_tm64[i * 2 + 1][26], xeve_tbl_tm64[i * 2 + 1][27], xeve_tbl_tm64[i * 2 + 1][28], xeve_tbl_tm64[i * 2 + 1][29], xeve_tbl_tm64[i * 2 + 1][30], xeve_tbl_tm64[i * 2 + 1][31]);
-                CALCU_O(tm_0, tm_1, tm_2, tm_3, dst_reg[i]);
+                v[0] = _mm256_madd1_epi32_xeve(o[0], tm_0, o[1], tm_1);   
+                v[2] = _mm256_madd1_epi32_xeve(o[2], tm_2, o[3], tm_3);   
+                v[4] = _mm256_madd1_epi32_xeve(o[4], tm_0, o[5], tm_1);   
+                v[6] = _mm256_madd1_epi32_xeve(o[6], tm_2, o[7], tm_3);   
+                v[8] = _mm256_madd1_epi32_xeve(o[8], tm_0, o[9], tm_1);  
+                v[10] = _mm256_madd1_epi32_xeve(o[10], tm_2, o[11], tm_3); 
+                v[12] = _mm256_madd1_epi32_xeve(o[12], tm_0, o[13], tm_1); 
+                v[14] = _mm256_madd1_epi32_xeve(o[14], tm_2, o[15], tm_3); 
+                v[0] = _mm256_add_epi32(v[0], v[2]);   
+                v[1] = _mm256_add_epi32(v[4], v[6]);   
+                v[2] = _mm256_add_epi32(v[8], v[10]);  
+                v[3] = _mm256_add_epi32(v[12], v[14]); 
+                v[0] = _mm256_hadd_epi32(v[0], v[1]);  
+                v[2] = _mm256_hadd_epi32(v[2], v[3]);  
+                dst_reg[i] = _mm256_hadd_epi32(v[0], v[2]);
             }
 
             t[0] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x20);
@@ -1581,16 +1587,31 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
             _mm_storel_epi64((__m128i*)(dst + 13 * line), m6);
             _mm_storel_epi64((__m128i*)(dst + 15 * line), m7);
 
+            // O
             for (i = 8; i < 16; ++i)
             {
                 __m256i tm_0 = _mm256_setr_epi32(xeve_tbl_tm64[i * 2 + 1][0], xeve_tbl_tm64[i * 2 + 1][1], xeve_tbl_tm64[i * 2 + 1][2], xeve_tbl_tm64[i * 2 + 1][3], xeve_tbl_tm64[i * 2 + 1][4], xeve_tbl_tm64[i * 2 + 1][5], xeve_tbl_tm64[i * 2 + 1][6], xeve_tbl_tm64[i * 2 + 1][7]);
                 __m256i tm_1 = _mm256_setr_epi32(xeve_tbl_tm64[i * 2 + 1][8], xeve_tbl_tm64[i * 2 + 1][9], xeve_tbl_tm64[i * 2 + 1][10], xeve_tbl_tm64[i * 2 + 1][11], xeve_tbl_tm64[i * 2 + 1][12], xeve_tbl_tm64[i * 2 + 1][13], xeve_tbl_tm64[i * 2 + 1][14], xeve_tbl_tm64[i * 2 + 1][15]);
                 __m256i tm_2 = _mm256_setr_epi32(xeve_tbl_tm64[i * 2 + 1][16], xeve_tbl_tm64[i * 2 + 1][17], xeve_tbl_tm64[i * 2 + 1][18], xeve_tbl_tm64[i * 2 + 1][19], xeve_tbl_tm64[i * 2 + 1][20], xeve_tbl_tm64[i * 2 + 1][21], xeve_tbl_tm64[i * 2 + 1][22], xeve_tbl_tm64[i * 2 + 1][23]);
                 __m256i tm_3 = _mm256_setr_epi32(xeve_tbl_tm64[i * 2 + 1][24], xeve_tbl_tm64[i * 2 + 1][25], xeve_tbl_tm64[i * 2 + 1][26], xeve_tbl_tm64[i * 2 + 1][27], xeve_tbl_tm64[i * 2 + 1][28], xeve_tbl_tm64[i * 2 + 1][29], xeve_tbl_tm64[i * 2 + 1][30], xeve_tbl_tm64[i * 2 + 1][31]);
-                CALCU_O(tm_0, tm_1, tm_2, tm_3, dst_reg[i - 8]);
+                v[0] = _mm256_madd1_epi32_xeve(o[0], tm_0, o[1], tm_1);
+                v[2] = _mm256_madd1_epi32_xeve(o[2], tm_2, o[3], tm_3);
+                v[4] = _mm256_madd1_epi32_xeve(o[4], tm_0, o[5], tm_1);
+                v[6] = _mm256_madd1_epi32_xeve(o[6], tm_2, o[7], tm_3);
+                v[8] = _mm256_madd1_epi32_xeve(o[8], tm_0, o[9], tm_1);
+                v[10] = _mm256_madd1_epi32_xeve(o[10], tm_2, o[11], tm_3);
+                v[12] = _mm256_madd1_epi32_xeve(o[12], tm_0, o[13], tm_1);
+                v[14] = _mm256_madd1_epi32_xeve(o[14], tm_2, o[15], tm_3);
+                v[0] = _mm256_add_epi32(v[0], v[2]);
+                v[1] = _mm256_add_epi32(v[4], v[6]);
+                v[2] = _mm256_add_epi32(v[8], v[10]);
+                v[3] = _mm256_add_epi32(v[12], v[14]);
+                v[0] = _mm256_hadd_epi32(v[0], v[1]);
+                v[2] = _mm256_hadd_epi32(v[2], v[3]);
+                dst_reg[i - 8] = _mm256_hadd_epi32(v[0], v[2]);
             }
 
-#undef CALCU_O
+#undef _mm256_madd1_epi32_xeve
 
             t[0] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x20);
             t[1] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x31);

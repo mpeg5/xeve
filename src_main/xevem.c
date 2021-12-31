@@ -1106,6 +1106,8 @@ int xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune)
     param->cu_qp_delta_area = 10;
     param->tool_ats = 1;
     param->partition_fast = 0;
+    param->partition_fast_max_cu = 128;
+    param->partition_fast_min_cu = 4;
 
     if (preset == XEVE_PRESET_FAST)
     {
@@ -1113,6 +1115,8 @@ int xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune)
         param->min_cu_intra = 4;
         param->max_cu_inter = 128;
         param->min_cu_inter = 4;
+        param->partition_fast_max_cu = 64; // to be used for tid-4
+        param->partition_fast_min_cu = 8;
         param->me_ref_num = 2;
         param->me_algo = 2;
         param->me_range = 256;

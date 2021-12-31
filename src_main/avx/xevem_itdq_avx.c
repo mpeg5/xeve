@@ -33,6 +33,11 @@
 #include "xevem_itdq.h"
 #include "xevem_tq_avx.h"
 
+#ifndef _mm256_set_m128i
+#define _mm256_set_m128i(/* __m128i */ hi, /* __m128i */ lo) \
+    _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
+#endif // !_mm256_set_m128i
+
 #define TRANSPOSE_8x4_16BIT(I0, I1, I2, I3, I4, I5, I6, I7, O0, O1, O2, O3) \
     tr0_0 = _mm_unpacklo_epi16(I0, I1); \
     tr0_1 = _mm_unpacklo_epi16(I2, I3); \
