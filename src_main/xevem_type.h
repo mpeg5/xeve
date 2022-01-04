@@ -43,6 +43,8 @@
  * pre-defined function structure
  *****************************************************************************/
 typedef void (*XEVE_INV_TRANS)(s16*, s16*, int, int, int, int);
+typedef void(*XEVE_TX)(s16* coef, s16* t, int shift, int line);
+typedef void(*XEVE_ITX)(s16* coef, s16* t, int shift, int line);
 
 typedef struct _XEVE_BEF_DATA
 {
@@ -166,6 +168,8 @@ typedef struct _XEVEM_CTX
 #include "xevem_tbl.h"
 #include "xevem_tq.h"
 #include "xevem_util.h"
+#include "xevem_tq_avx.h"
+#include "xevem_itdq_avx.h"
 
 #if GRAB_STAT
 #include "xevem_stat.h"

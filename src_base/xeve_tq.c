@@ -32,10 +32,12 @@
 #include <math.h>
 
 #define QUANT(c, scale, offset, shift) ((s16)((((c)*(scale)) + (offset)) >> (shift)))
+
+const XEVE_TXB(*xeve_func_txb)[MAX_TR_LOG2];
 const int xeve_quant_scale[2][6] = { {26214, 23302, 20560, 18396, 16384, 14764},
                                      {26214, 23302, 20560, 18396, 16384, 14564} };
 
-static void tx_pb2b(void * src, void * dst, int shift, int line, int step)
+void tx_pb2b(void * src, void * dst, int shift, int line, int step)
 {
     int j;
     s64 E, O;
@@ -62,7 +64,7 @@ static void tx_pb2b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb4b(void * src, void * dst, int shift, int line, int step)
+void tx_pb4b(void * src, void * dst, int shift, int line, int step)
 {
     int j;
     s64 E[2], O[2];
@@ -93,7 +95,7 @@ static void tx_pb4b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb8b(void * src, void * dst, int shift, int line, int step)
+void tx_pb8b(void * src, void * dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[4], O[4];
@@ -136,7 +138,7 @@ static void tx_pb8b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb16b(void * src, void * dst, int shift, int line, int step)
+void tx_pb16b(void * src, void * dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[8], O[8];
@@ -192,7 +194,7 @@ static void tx_pb16b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb32b(void * src, void * dst, int shift, int line, int step)
+void tx_pb32b(void * src, void * dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[16], O[16];
@@ -260,7 +262,7 @@ static void tx_pb32b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-static void tx_pb64b(void *src, void *dst, int shift, int line, int step)
+void tx_pb64b(void *src, void *dst, int shift, int line, int step)
 {
     const int tx_size = 64;
     const s8 * tm = xeve_tbl_tm64[0];
@@ -390,8 +392,8 @@ static void xeve_trans(s16 * coef, int log2_cuw, int log2_cuh, int bit_depth)
     int shift2 = xeve_get_transform_shift(log2_cuh, 1, bit_depth);
 
     s32 tb[MAX_TR_DIM]; /* temp buffer */
-    xeve_tbl_txb[log2_cuw - 1](coef, tb, 0, 1 << log2_cuh, 0);
-    xeve_tbl_txb[log2_cuh - 1](tb, coef, (shift1 + shift2), 1 << log2_cuw, 1);
+    (*xeve_func_txb)[log2_cuw - 1](coef, tb, 0, 1 << log2_cuh, 0);
+    (*xeve_func_txb)[log2_cuh - 1](tb, coef, (shift1 + shift2), 1 << log2_cuw, 1);
 }
 
 void xeve_init_err_scale(XEVE_CTX * ctx)
