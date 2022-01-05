@@ -512,6 +512,44 @@ static const ARGS_OPT args_opt_table[] = \
         ARGS_NO_KEY,  "ref", ARGS_VAL_TYPE_INTEGER, 0, NULL,
         "Number of reference pictures"
     },
+    {
+        ARGS_NO_KEY,  "sar", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "sar <width:height|int> possible values 1 to 16 and 255"
+    },
+    {
+        ARGS_NO_KEY,  "sar-width", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "sar <width:height|int>"
+    },
+    {
+        ARGS_NO_KEY,  "sar-height", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "sar <width:height|int>"
+    },
+    {
+        ARGS_NO_KEY,  "videoformat", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        " 0-component, 1-pal, 2-ntsc, 3-secam, 4-mac. 5-unspecified default 5"
+    },
+    {
+        ARGS_NO_KEY,  "range", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "black level and range of luma and chroma signals as 1- full or 0- limited Default 0-limited"
+    },
+    {
+        ARGS_NO_KEY,  "colorprim", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "1- bt709, 2-unspecified, 3- reserved, 4- bt470m, 5- bt470bg, 6- smpte170m,\
+                                 7- smpte240m, 8- Generic film, 9- bt2020, 10-smpte428, 11-smpte431, 12-smpte432, 22-EBU Tech. 3213 Default 2-unspecified"
+    },
+    {
+        ARGS_NO_KEY,  "transfer", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "1- transfer characteristics from bt709, 2-unspecified, 3-reserved, 4-bt470m, 5-bt470bg, 6-smpte170m,\
+                                 7-smpte240m, 8-linear, 9-log100, 10-log316, 11-iec61966-2-4, 12-bt1361e, 13-iec61966-2-1,\
+                                 14-bt2020-10, 15-bt2020-12, 16-smpte2084, 17-smpte428, 198-arib-std-b67. Default 2-unspecified"
+    },
+    {
+        ARGS_NO_KEY,  "master-display", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "SMPTE ST 2086 master display color volume info SEI (HDR)\
+          format: G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)"
+    },
+
+
     {ARGS_END_KEY, "", ARGS_VAL_TYPE_NONE, 0, NULL, ""} /* termination */
 };
 
@@ -548,6 +586,15 @@ struct _ARGS_PARSER
     char tune[32];
     char bitrate[64];
     char vbv_bufsize[64];
+
+    /* VUI options*/
+    int  sar;
+    int  sar_width, sar_height;
+    int  videoformat;
+    int  range;
+    int  colorprim;
+    int  transfer;
+    int  master_display;
 };
 
 static int args_search_long_key(ARGS_OPT * opts, const char * key)
@@ -873,6 +920,24 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "bitrate", args->bitrate);
     strcpy(args->vbv_bufsize, ""); /* default */
     args_set_variable_by_key_long(opts, "vbv-bufsize", args->vbv_bufsize);
+    args->sar = 0;
+    args_set_variable_by_key_long(opts, "sar", &args->sar);
+    args->sar_width = 0;
+    args_set_variable_by_key_long(opts, "sar-width", &args->sar_width);
+    args->sar_height = 0;
+    args_set_variable_by_key_long(opts, "sar-height", &args->sar_height);
+    args->videoformat = 2; /* default */
+    args_set_variable_by_key_long(opts, "videoformat", args->videoformat);
+    args->range = 0; /* default */
+    args_set_variable_by_key_long(opts, "range", args->range);
+    args->colorprim = 2; /* default */
+    args_set_variable_by_key_long(opts, "colorprim", args->colorprim);
+    args->transfer = 2; /* default */
+    args_set_variable_by_key_long(opts, "transfer", args->transfer);
+    args->master_display = 2; /* default */
+    args_set_variable_by_key_long(opts, "master-display", args->master_display);
+    
+
 
     ARGS_SET_PARAM_VAR_KEY(opts, param, w);
     ARGS_SET_PARAM_VAR_KEY(opts, param, h);
@@ -891,6 +956,14 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, use_filler);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, lookahead);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ref);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, sar);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, sar_width);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, sar_height);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, videoformat);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, range);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, colorprim);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, transfer);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, master_display);
 
 
 #if 0

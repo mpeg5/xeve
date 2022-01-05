@@ -492,6 +492,16 @@ typedef struct _XEVE_PARAM
     /* preset parameter */
     int            ats_intra_fast;
     int            me_fast;
+
+    /* VUI options*/
+    int sar;
+    int sar_width, sar_height;
+    int videoformat;
+    int range;
+    int colorprim;
+    int transfer;
+    int master_display;
+
 } XEVE_PARAM;
 
 /*****************************************************************************
