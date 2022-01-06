@@ -3670,6 +3670,7 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         xeve_func_mc_c              = xeve_tbl_mc_c_avx;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip_sse;
         ctx->fn_itxb                = &xeve_tbl_itxb_avx;
+        xeve_func_txb               = &xeve_tbl_txb_avx;
     }
     else if (support_sse)
     {
@@ -3681,6 +3682,7 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         xeve_func_mc_c              = xeve_tbl_mc_c_sse;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip_sse;
         ctx->fn_itxb                = &xeve_tbl_itxb_sse;
+        xeve_func_txb               = &xeve_tbl_txb; /*to be updated*/
     }
     else
 #endif
@@ -3693,6 +3695,7 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         xeve_func_mc_c              = xeve_tbl_mc_c;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip;
         ctx->fn_itxb                = &xeve_tbl_itxb;
+        xeve_func_txb               = &xeve_tbl_txb;
     }
 }
 
