@@ -584,8 +584,7 @@ static void itx_pb64(s16 *src, s16 *dst, int shift, int line)
     }
 }
 
-
-const XEVE_ITX tbl_itx[MAX_TR_LOG2] =
+const XEVE_ITX xeve_tbl_itx[MAX_TR_LOG2] =
 {
     itx_pb2,
     itx_pb4,
