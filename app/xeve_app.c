@@ -39,6 +39,7 @@
 #endif
 
 #include <sys/stat.h>
+#include <fcntl.h>
 
 #ifdef _WIN32
 #define y4m_struct_stat struct _stati64
@@ -405,7 +406,12 @@ static int y4m_test(FILE * fp)
 
     /*Peek to check if y4m header is present*/
     if (!fread(buffer, 1, 8, fp)) return -1;
-    fseek( fp, 0, SEEK_SET );
+
+    int b_regular = y4m_is_regular_file(fp);
+    if(b_regular) {
+        fseek( fp, 0, SEEK_SET );
+    }
+    
     buffer[8] = '\0';
     if (memcmp(buffer, "YUV4MPEG", 8))
     {
@@ -707,6 +713,15 @@ int main(int argc, const char **argv)
 
     if( !strcmp( fname_inp, "stdin" ) ) {
         fp_inp = stdin;
+
+#if defined(WIN64) || defined(WIN32)
+        // Set "stdin" to have binary mode
+        int result = _setmode( _fileno( fp_inp ), _O_BINARY );
+        if( result == -1 ) {
+            logerr( "Cannot set binary mode for 'stdin'\n" );
+            ret = -1; goto ERR;
+        }
+#endif
     }
     else {
         fp_inp = fopen(fname_inp, "rb");
