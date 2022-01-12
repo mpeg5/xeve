@@ -594,6 +594,90 @@ static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
     return 0;
 }
 
+static int vui_param_check(XEVE_PARAM * param)
+{
+    int ret = 0;
+    if (param->sar < 0 || (param->sar > 16 && param->sar != 255))
+    {
+        ret = 1;
+        logerr("SAR value is out of range\n");
+        
+    }
+    else if (param->sar == 0)
+    {
+        param->aspect_ratio_info_present_flag = 0;
+    }
+    else
+    {
+        param->aspect_ratio_info_present_flag = 1;
+    }
+    if (param->sar == 255)
+    {
+        if (param->sar_height == 0 && param->sar_width == 0)
+        {
+            ret = 1;
+            logerr("SAR width/height must be set with SAR value 255\n");
+            
+        }
+    }
+    if (param->videoformat < 0 || param->videoformat > 5)
+    {
+          ret = 1;
+          logerr("Video-format value is out of range \n");
+          
+    }
+    else if (param->videoformat == 5)
+    {
+        param->video_signal_type_present_flag = 0;
+    }
+    else
+    {
+        param->video_signal_type_present_flag = 1;
+    }
+    if (param->range < 0 || param->range >1)
+    {
+          ret = 1;
+          logerr("Black level value is out of range\n");
+          
+    }
+    else if (param->range == 0)
+    {
+        param->video_signal_type_present_flag  = param->video_signal_type_present_flag || 0;
+    }
+    else
+    {
+        param->video_signal_type_present_flag = 1;
+    }
+    if(param->colorprim <0 || (param->colorprim >12 && param->colorprim!=22))
+    {
+          ret = 1;
+          logerr("Colorprimaries value is out of range\n");
+    }
+    else if (param->colorprim == 2)
+    {
+        param->colour_description_present_flag = 0;
+    }
+    else
+    {
+        param->colour_description_present_flag = 1;
+    }
+    if (param->transfer < 0 || param->transfer > 13)
+    {
+        ret = 1;
+        logerr("Transfer Characteristics value is out of range\n");
+    }
+    else if (param->transfer == 2)
+    {
+        param->colour_description_present_flag = param->colour_description_present_flag || 0;
+    }
+    else
+    {
+        param->colour_description_present_flag = 1;
+    }
+    
+    return ret;
+}
+
 int main(int argc, const char **argv)
 {
     STATES             state = STATE_ENCODING;
@@ -678,6 +762,14 @@ int main(int argc, const char **argv)
         ret = -1; goto ERR;
     }
 
+    /* VUI parameter Range Checking*/
+
+    if (vui_param_check(param))
+    {
+        logerr("VUI Parameter out of range\n");
+        ret = -1; goto ERR;
+    }
+
     /* y4m header parsing  */
     is_y4m = y4m_test(fp_inp);
     if (is_y4m)
@@ -704,7 +796,7 @@ int main(int argc, const char **argv)
             (csp == 3 ? XEVE_CF_YCBCR444 : XEVE_CF_UNKNOWN))));
         if (color_format == XEVE_CF_UNKNOWN)
         {
-            logerr("Unknow color format\n");
+            logerr("Unknown color format\n");
             ret = -1; goto ERR;
         }
     }

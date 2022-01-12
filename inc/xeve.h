@@ -502,6 +502,10 @@ typedef struct _XEVE_PARAM
     int transfer;
     int master_display;
 
+    int aspect_ratio_info_present_flag;
+    int video_signal_type_present_flag;
+    int colour_description_present_flag;
+
 } XEVE_PARAM;
 
 /*****************************************************************************
