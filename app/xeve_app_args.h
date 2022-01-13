@@ -79,7 +79,7 @@ static const ARGS_OPT args_opt_table[] = \
     */
     {
         'i', "input", ARGS_VAL_TYPE_STRING | ARGS_VAL_TYPE_MANDATORY, 0, NULL,
-        "file name of input video"
+        "file name of input video (raw YUV or Y4M), `stdin` for standard input instead of regular file "
     },
     {
         'o', "output", ARGS_VAL_TYPE_STRING, 0, NULL,
