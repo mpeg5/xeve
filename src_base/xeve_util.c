@@ -2728,18 +2728,23 @@ void xeve_set_nalu(XEVE_NALU * nalu, int nalu_type, int nuh_temporal_id)
 
 void xeve_set_vui(XEVE_CTX * ctx, XEVE_VUI * vui)
 {
-    vui->aspect_ratio_info_present_flag = 1;
-    vui->aspect_ratio_idc = 1;
-    vui->sar_width = 1;
-    vui->sar_height = 1;
+    vui->aspect_ratio_info_present_flag = ctx->param.aspect_ratio_info_present_flag;
+    vui->aspect_ratio_idc = ctx->param.sar;
+    
+    if (vui->aspect_ratio_idc == EXTENDED_SAR)
+    {
+        vui->sar_width = ctx->param.sar_width;
+        vui->sar_height = ctx->param.sar_height;
+    }
+
     vui->overscan_info_present_flag = 1;
     vui->overscan_appropriate_flag = 1;
-    vui->video_signal_type_present_flag = 1;
-    vui->video_format = 1;
-    vui->video_full_range_flag = 1;
-    vui->colour_description_present_flag = 1;
-    vui->colour_primaries = 1;
-    vui->transfer_characteristics = 1;
+    vui->video_signal_type_present_flag = ctx->param.video_signal_type_present_flag;
+    vui->video_format =  ctx->param.videoformat;
+    vui->video_full_range_flag = ctx->param.range;
+    vui->colour_description_present_flag = ctx->param.colour_description_present_flag;
+    vui->colour_primaries = ctx->param.colorprim;
+    vui->transfer_characteristics = ctx->param.transfer;       
     vui->matrix_coefficients = 1;
     vui->chroma_loc_info_present_flag = 1;
     vui->chroma_sample_loc_type_top_field = 1;
@@ -2803,7 +2808,8 @@ void xeve_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
     sps->log2_sub_gop_length = (int)(log2(ctx->param.gop_size) + .5);
     sps->log2_ref_pic_gap_length = (int)(log2(ctx->param.ref_pic_gap_length) + .5);
     sps->long_term_ref_pics_flag = 0;
-    sps->vui_parameters_present_flag = 0;
+    sps->vui_parameters_present_flag = ctx->param.aspect_ratio_info_present_flag || ctx->param.video_signal_type_present_flag || \
+        ctx->param.colour_description_present_flag;
     xeve_set_vui(ctx, &(sps->vui_parameters));
 
     if (ctx->chroma_qp_table_struct.chroma_qp_table_present_flag)
