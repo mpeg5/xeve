@@ -927,15 +927,15 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args->sar_height = 0;
     args_set_variable_by_key_long(opts, "sar-height", &args->sar_height);
     args->videoformat = 2; /* default */
-    args_set_variable_by_key_long(opts, "videoformat", args->videoformat);
+    args_set_variable_by_key_long(opts, "videoformat", &args->videoformat);
     args->range = 0; /* default */
-    args_set_variable_by_key_long(opts, "range", args->range);
+    args_set_variable_by_key_long(opts, "range", &args->range);
     args->colorprim = 2; /* default */
-    args_set_variable_by_key_long(opts, "colorprim", args->colorprim);
+    args_set_variable_by_key_long(opts, "colorprim", &args->colorprim);
     args->transfer = 2; /* default */
-    args_set_variable_by_key_long(opts, "transfer", args->transfer);
+    args_set_variable_by_key_long(opts, "transfer", &args->transfer);
     args->master_display = 2; /* default */
-    args_set_variable_by_key_long(opts, "master-display", args->master_display);
+    args_set_variable_by_key_long(opts, "master-display", &args->master_display);
     
 
 
