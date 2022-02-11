@@ -48,7 +48,7 @@
 #define ARGS_KEY_LONG_CONFIG          "config"
 #define ARGS_MAX_NUM_CONF_FILES       (16)
 
-#define ARGS_MAX_KEY_LONG             (32)
+#define ARGS_MAX_KEY_LONG             (64)
 
 typedef struct _ARGS_OPT
 {
@@ -513,7 +513,7 @@ static const ARGS_OPT args_opt_table[] = \
         "Number of reference pictures"
     },
     {
-        ARGS_NO_KEY,  "sar", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        ARGS_NO_KEY, "sar", ARGS_VAL_TYPE_INTEGER, 0, NULL,
         "sar <width:height|int> possible values 1 to 16 and 255"
     },
     {
@@ -525,28 +525,95 @@ static const ARGS_OPT args_opt_table[] = \
         "sar <width:height|int>"
     },
     {
-        ARGS_NO_KEY,  "videoformat", ARGS_VAL_TYPE_INTEGER, 0, NULL,
-        " 0-component, 1-pal, 2-ntsc, 3-secam, 4-mac. 5-unspecified default 5"
+        ARGS_NO_KEY,  "videoformat", ARGS_VAL_TYPE_INTEGER, 5, NULL,
+        " 0-component, 1-pal, 2-ntsc, 3-secam, 4-mac. 5-unspecified"
     },
     {
         ARGS_NO_KEY,  "range", ARGS_VAL_TYPE_INTEGER, 0, NULL,
-        "black level and range of luma and chroma signals as 1- full or 0- limited Default 0-limited"
+        "black level and range of luma and chroma signals as 1- full or 0- limited"
     },
     {
-        ARGS_NO_KEY,  "colorprim", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        ARGS_NO_KEY,  "colorprim", ARGS_VAL_TYPE_INTEGER, 2, NULL,
         "1- bt709, 2-unspecified, 3- reserved, 4- bt470m, 5- bt470bg, 6- smpte170m,\
-                                 7- smpte240m, 8- Generic film, 9- bt2020, 10-smpte428, 11-smpte431, 12-smpte432, 22-EBU Tech. 3213 Default 2-unspecified"
+         7- smpte240m, 8- Generic film, 9- bt2020, 10-smpte428, 11-smpte431, 12-smpte432, \
+         22-EBU Tech. 3213 Default 2-unspecified"
     },
     {
-        ARGS_NO_KEY,  "transfer", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        ARGS_NO_KEY,  "transfer", ARGS_VAL_TYPE_INTEGER, 2, NULL,
         "1- transfer characteristics from bt709, 2-unspecified, 3-reserved, 4-bt470m, 5-bt470bg, 6-smpte170m,\
-                                 7-smpte240m, 8-linear, 9-log100, 10-log316, 11-iec61966-2-4, 12-bt1361e, 13-iec61966-2-1,\
-                                 14-bt2020-10, 15-bt2020-12, 16-smpte2084, 17-smpte428, 198-arib-std-b67. Default 2-unspecified"
+         7-smpte240m, 8-linear, 9-log100, 10-log316, 11-iec61966-2-4, 12-bt1361e, 13-iec61966-2-1,\
+         14-bt2020-10, 15-bt2020-12, 16-smpte2084, 17-smpte428, 198-arib-std-b67. Default 2-unspecified"
+    },
+    {
+        ARGS_NO_KEY,  "matrix-coefficients", ARGS_VAL_TYPE_INTEGER, 2, NULL,
+        "valid range 0 to 14, 15 to 255 are reserved as per table E.5 in EVC spec"
     },
     {
         ARGS_NO_KEY,  "master-display", ARGS_VAL_TYPE_INTEGER, 0, NULL,
         "SMPTE ST 2086 master display color volume info SEI (HDR)\
           format: G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)"
+    },
+    {
+        ARGS_NO_KEY,  "chromaloc-tf", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Chroma location for Top field - Range from 0 to 5"
+    },
+    {
+        ARGS_NO_KEY,  "chromaloc-bf", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Chroma location for Bottom field - Range from 0 to 5"
+    },
+    {
+        ARGS_NO_KEY,  "neutral-chroma-flag", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Value can be 0 or 1"
+    },
+    {
+        ARGS_NO_KEY,  "frame-field-flag", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "1 indicates fields and 0 indicates frames"
+    },
+    {
+        ARGS_NO_KEY,  "units-in-tick", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Number of units in tick, value should be > 0"
+    },
+    {
+        ARGS_NO_KEY,  "time-scale", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Time Scale, value should be > 0"
+    },
+    {
+        ARGS_NO_KEY,  "fixed-pic-rate-flag", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Fixed picture rate flag, default 0"
+    },
+    {
+        ARGS_NO_KEY,  "pic-struct", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "Fixed picture rate flag, default 0"
+    },
+    {
+        ARGS_NO_KEY,  "mv-over-pic-boundaries", ARGS_VAL_TYPE_INTEGER, 1, NULL,
+        "mvs over picture boundaries flag"
+    },
+    {
+        ARGS_NO_KEY,  "max-bytes-per-pic-denom", ARGS_VAL_TYPE_INTEGER, 2, NULL,
+        "max bytes per picture denom, valid range 0 to 16"
+    },
+    {
+        ARGS_NO_KEY,  "max-bits-per-cu-denom", ARGS_VAL_TYPE_INTEGER, 1, NULL,
+        "max bits per cu denom, valid range 0 to 16"
+    },
+    {
+        ARGS_NO_KEY,  "log2-max-mv-len-hor", ARGS_VAL_TYPE_INTEGER, 16, NULL,
+        "max mv length horizontal log2, valid range 0 to 16"
+    },
+    {
+        ARGS_NO_KEY,  "log2-max-mv-len-ver", ARGS_VAL_TYPE_INTEGER, 16, NULL,
+        "max mv length vertical log2, valid range o to 16"
+    },
+    {
+        ARGS_NO_KEY,  "num-reorder-pics", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "# of reorder pics, valid range 0 to max_dec_pic_buffering \
+         default = max_dec_pic_buffering"
+    },
+    {
+        ARGS_NO_KEY,  "max-dec-pic-buffering", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        "max picture buffering in decoder, valid range 0 to num-reorder-pic \
+         default num-reorder-pic"
     },
 
 
@@ -588,13 +655,38 @@ struct _ARGS_PARSER
     char vbv_bufsize[64];
 
     /* VUI options*/
+
     int  sar;
     int  sar_width, sar_height;
     int  videoformat;
     int  range;
     int  colorprim;
     int  transfer;
+    int  matrix_coefficients;
     int  master_display;
+    int  overscan_info_present_flag;
+    int  overscan_appropriate_flag;
+    int  chroma_loc_info_present_flag;
+    int  chroma_sample_loc_type_top_field;
+    int  chroma_sample_loc_type_bottom_field;
+    int  neutral_chroma_indication_flag;
+    int  field_seq_flag;
+    int  timing_info_present_flag;
+    int  num_units_in_tick;
+    int  time_scale;
+    int  fixed_pic_rate_flag;
+    int  nal_hrd_parameters_present_flag;
+    int  vcl_hrd_parameters_present_flag;
+    int  low_delay_hrd_flag;
+    int  pic_struct_present_flag;
+    int  bitstream_restriction_flag;
+    int  motion_vectors_over_pic_boundaries_flag;
+    int  max_bytes_per_pic_denom;
+    int  max_bits_per_mb_denom;
+    int  log2_max_mv_length_horizontal;
+    int  log2_max_mv_length_vertical;
+    int  num_reorder_pics;
+    int  max_dec_pic_buffering;
 };
 
 static int args_search_long_key(ARGS_OPT * opts, const char * key)
@@ -920,6 +1012,7 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "bitrate", args->bitrate);
     strcpy(args->vbv_bufsize, ""); /* default */
     args_set_variable_by_key_long(opts, "vbv-bufsize", args->vbv_bufsize);
+    /* VUI parameters */
     args->sar = 0;
     args_set_variable_by_key_long(opts, "sar", &args->sar);
     args->sar_width = 0;
@@ -936,6 +1029,38 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "transfer", &args->transfer);
     args->master_display = 2; /* default */
     args_set_variable_by_key_long(opts, "master-display", &args->master_display);
+    args->matrix_coefficients = 2; /* default */
+    args_set_variable_by_key_long(opts, "matrix-coefficients", &args->matrix_coefficients);
+    args->chroma_sample_loc_type_top_field = 0; /* default */
+    args_set_variable_by_key_long(opts, "chromaloc-tf", &args->chroma_sample_loc_type_top_field);
+    args->chroma_sample_loc_type_bottom_field = 0; /* default */
+    args_set_variable_by_key_long(opts, "chromaloc-bf", &args->chroma_sample_loc_type_bottom_field);
+    args->neutral_chroma_indication_flag = 0; /* default */
+    args_set_variable_by_key_long(opts, "neutral-chroma-flag", &args->neutral_chroma_indication_flag);
+    args->field_seq_flag = 0; /* default */
+    args_set_variable_by_key_long(opts, "frame-field-flag", &args->field_seq_flag);
+    args->num_units_in_tick = 0; /* default */
+    args_set_variable_by_key_long(opts, "units-in-tick", &args->num_units_in_tick);
+    args->time_scale = 0; /* default */
+    args_set_variable_by_key_long(opts, "time-scale", &args->time_scale);
+    args->fixed_pic_rate_flag= 0; /* default */
+    args_set_variable_by_key_long(opts, "fixed-pic-rate-flag", &args->fixed_pic_rate_flag);
+    args->pic_struct_present_flag= 0; /* default */
+    args_set_variable_by_key_long(opts, "pic-struct", &args->pic_struct_present_flag);
+    args->motion_vectors_over_pic_boundaries_flag= 1; /* default */
+    args_set_variable_by_key_long(opts, "mv-over-pic-boundaries", &args->motion_vectors_over_pic_boundaries_flag);
+    args->max_bytes_per_pic_denom= 2; /* default */
+    args_set_variable_by_key_long(opts, "max-bytes-per-pic-denom", &args->max_bytes_per_pic_denom);
+    args->max_bits_per_mb_denom= 1; /* default */
+    args_set_variable_by_key_long(opts, "max-bits-per-cu-denom", &args->max_bits_per_mb_denom);
+    args->log2_max_mv_length_horizontal= 16; /* default */
+    args_set_variable_by_key_long(opts, "log2-max-mv-len-hor", &args->log2_max_mv_length_horizontal);
+    args->log2_max_mv_length_vertical= 16; /* default */
+    args_set_variable_by_key_long(opts, "log2-max-mv-len-ver", &args->log2_max_mv_length_vertical);
+    args->max_dec_pic_buffering= 21; /* default  XEVE_MAX_NUM_REF_PICS   21 */
+    args_set_variable_by_key_long(opts, "max-dec-pic-buffering", &args->max_dec_pic_buffering);
+    args->num_reorder_pics= args->max_dec_pic_buffering; /* default */
+    args_set_variable_by_key_long(opts, "num-reorder-pics", &args->num_reorder_pics);
     
 
 
@@ -963,8 +1088,23 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, range);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, colorprim);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, transfer);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, matrix_coefficients);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, master_display);
-
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, chroma_sample_loc_type_top_field);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, chroma_sample_loc_type_bottom_field);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, neutral_chroma_indication_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, field_seq_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, num_units_in_tick);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, time_scale);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, fixed_pic_rate_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, pic_struct_present_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, motion_vectors_over_pic_boundaries_flag);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, max_bytes_per_pic_denom);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, max_bits_per_mb_denom);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, log2_max_mv_length_horizontal);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, log2_max_mv_length_vertical);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, num_reorder_pics);
+    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, max_dec_pic_buffering);
 
 #if 0
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_BTT, &param->btt);

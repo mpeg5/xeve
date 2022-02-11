@@ -611,6 +611,8 @@ static int vui_param_check(XEVE_PARAM * param)
     {
         param->aspect_ratio_info_present_flag = 1;
     }
+
+
     if (param->sar == 255)
     {
         if (param->sar_height == 0 && param->sar_width == 0)
@@ -620,6 +622,8 @@ static int vui_param_check(XEVE_PARAM * param)
             
         }
     }
+
+
     if (param->videoformat < 0 || param->videoformat > 5)
     {
           ret = 1;
@@ -634,6 +638,7 @@ static int vui_param_check(XEVE_PARAM * param)
     {
         param->video_signal_type_present_flag = 1;
     }
+
     if (param->range < 0 || param->range >1)
     {
           ret = 1;
@@ -648,6 +653,8 @@ static int vui_param_check(XEVE_PARAM * param)
     {
         param->video_signal_type_present_flag = 1;
     }
+
+   
     if(param->colorprim <0 || (param->colorprim >12 && param->colorprim!=22))
     {
           ret = 1;
@@ -661,6 +668,8 @@ static int vui_param_check(XEVE_PARAM * param)
     {
         param->colour_description_present_flag = 1;
     }
+
+
     if (param->transfer < 0 || param->transfer > 13)
     {
         ret = 1;
@@ -674,6 +683,167 @@ static int vui_param_check(XEVE_PARAM * param)
     {
         param->colour_description_present_flag = 1;
     }
+
+    
+    if (param->matrix_coefficients < 0 || param->matrix_coefficients > 14)
+    {
+         ret = 1;
+         logerr("Matrix coefficients is out of range\n");
+    }
+    else if (param->matrix_coefficients == 2)
+    {
+         param->colour_description_present_flag = param->colour_description_present_flag || 0;
+    }
+    else
+    {
+        param->colour_description_present_flag = 1;
+    }
+
+
+    if (param->chroma_sample_loc_type_top_field < 0 || param->chroma_sample_loc_type_top_field >5)
+    {
+         ret = 1;
+         logerr("Chroma sample location top filed is out of range");
+    }
+    else if (param->chroma_sample_loc_type_top_field == 0)
+    {
+         param->chroma_loc_info_present_flag = param->chroma_loc_info_present_flag || 0;
+    }
+    else
+    {
+        param->chroma_loc_info_present_flag = 1;
+    }
+
+    if (param->chroma_sample_loc_type_bottom_field < 0 || param->chroma_sample_loc_type_bottom_field >5)
+    {
+         ret = 1;
+         logerr("Chroma sample location bottom filed is out of range");
+    }
+    else if (param->chroma_sample_loc_type_bottom_field == 0)
+    {
+         param->chroma_loc_info_present_flag = param->chroma_loc_info_present_flag || 0;
+    }
+    else
+    {
+        param->chroma_loc_info_present_flag = 1;
+    }
+
+
+    if (param->num_units_in_tick < 1)
+    {
+         ret = 1;
+         logerr("Num units in tick is out of range");
+    }
+    else if (param->num_units_in_tick == 0)
+    {
+         param->timing_info_present_flag = param->timing_info_present_flag || 0;
+    }
+    else
+    {
+        param->timing_info_present_flag = 1;
+    }
+
+    if (param->time_scale < 1)
+    {
+         ret = 1;
+         logerr("Time Scale is out of range");
+    }
+    else if (param->time_scale == 0)
+    {
+         param->timing_info_present_flag = param->timing_info_present_flag || 0;
+    }
+    else
+    {
+        param->timing_info_present_flag = 1;
+    }
+
+
+    if (param->max_bytes_per_pic_denom < 0 || param->max_bytes_per_pic_denom > 16)
+    {
+         ret = 1;
+         logerr("max_bytes_per_pic_denom is out of range");
+    }
+    else if (param->max_bytes_per_pic_denom == 2)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    if (param->max_bits_per_mb_denom < 0 || param->max_bits_per_mb_denom > 16)
+    {
+         ret = 1;
+         logerr("max_bits_per_mb_denom is out of range");
+    }
+    else if (param->max_bits_per_mb_denom == 1)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    if (param->log2_max_mv_length_horizontal < 0 || param->log2_max_mv_length_horizontal > 16)
+    {
+         ret = 1;
+         logerr("log2_max_mv_length_horizontal is out of range");
+    }
+    else if (param->log2_max_mv_length_horizontal == 16)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    if (param->log2_max_mv_length_vertical < 0 || param->log2_max_mv_length_vertical > 16)
+    {
+         ret = 1;
+         logerr("log2_max_mv_length_vertical is out of range");
+    }
+    else if (param->log2_max_mv_length_vertical == 16)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    if (param->max_dec_pic_buffering > 21 )  /* max  XEVE_MAX_NUM_REF_PICS   21 */
+    {
+         ret = 1;
+         logerr("max_dec_pic_buffering is out of range");
+    }
+    else if (param->max_dec_pic_buffering == 21)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    
+    if (param->num_reorder_pics > param->max_dec_pic_buffering )  
+    {
+         ret = 1;
+         logerr("num_reorder_pics is out of range");
+    }
+    else if (param->num_reorder_pics == param->max_dec_pic_buffering )
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+
     
     return ret;
 }

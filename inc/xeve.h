@@ -494,14 +494,38 @@ typedef struct _XEVE_PARAM
     int            me_fast;
 
     /* VUI options*/
-    int sar;
-    int sar_width, sar_height;
-    int videoformat;
-    int range;
-    int colorprim;
-    int transfer;
-    int master_display;
 
+    int  sar;
+    int  sar_width, sar_height;
+    int  videoformat;
+    int  range;
+    int  colorprim;
+    int  transfer;
+    int  matrix_coefficients;
+    int  master_display;
+    int  overscan_info_present_flag;
+    int  overscan_appropriate_flag;
+    int  chroma_loc_info_present_flag;
+    int  chroma_sample_loc_type_top_field;
+    int  chroma_sample_loc_type_bottom_field;
+    int  neutral_chroma_indication_flag;
+    int  field_seq_flag;
+    int  timing_info_present_flag;
+    int  num_units_in_tick;
+    int  time_scale;
+    int  fixed_pic_rate_flag;
+    int  nal_hrd_parameters_present_flag;
+    int  vcl_hrd_parameters_present_flag;
+    int  low_delay_hrd_flag;
+    int  pic_struct_present_flag;
+    int  bitstream_restriction_flag;
+    int  motion_vectors_over_pic_boundaries_flag;
+    int  max_bytes_per_pic_denom;
+    int  max_bits_per_mb_denom;
+    int  log2_max_mv_length_horizontal;
+    int  log2_max_mv_length_vertical;
+    int  num_reorder_pics;
+    int  max_dec_pic_buffering;
     int aspect_ratio_info_present_flag;
     int video_signal_type_present_flag;
     int colour_description_present_flag;
