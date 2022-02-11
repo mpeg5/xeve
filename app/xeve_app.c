@@ -38,6 +38,17 @@
 #include <unistd.h>
 #endif
 
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#ifdef _WIN32
+#define y4m_struct_stat struct _stati64
+#define y4m_fstat _fstati64
+#else 
+#define y4m_struct_stat struct stat
+#define y4m_fstat fstat
+#endif
+
 #define MAX_BS_BUF                 (16*1024*1024)
 
 typedef enum _STATES {
@@ -55,6 +66,14 @@ typedef struct _Y4M_PARAMS
     int color_format;
     int bit_depth;
 }Y4M_INFO;
+
+static inline int y4m_is_regular_file( FILE *filehandle )
+{
+    y4m_struct_stat file_stat;
+    if( y4m_fstat( fileno( filehandle ), &file_stat ) )
+        return 1;
+    return S_ISREG( file_stat.st_mode );
+}
 
 static void print_usage(const char **argv)
 {
@@ -387,7 +406,12 @@ static int y4m_test(FILE * fp)
 
     /*Peek to check if y4m header is present*/
     if (!fread(buffer, 1, 8, fp)) return -1;
-    fseek( fp, 0, SEEK_SET );
+
+    int b_regular = y4m_is_regular_file(fp);
+    if(b_regular) {
+        fseek( fp, 0, SEEK_SET );
+    }
+    
     buffer[8] = '\0';
     if (memcmp(buffer, "YUV4MPEG", 8))
     {
@@ -534,20 +558,35 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_INFO * y4m)
         return -1;
     }
     buffer[i] = '\0';
-    if (memcmp(buffer, "YUV4MPEG", 8))
-    {
-        logerr("Incomplete magic for YUV4MPEG file.\n");
-        return -1;
-    }
-    if (buffer[8] != '2')
-    {
-        logerr("Incorrect YUV input file version; YUV4MPEG2 required.\n");
-    }
-    ret = y4m_parse_tags(y4m, buffer + 5);
-    if (ret < 0)
-    {
-        logerr("Error parsing YUV4MPEG2 header.\n");
-        return ret;
+
+    int b_regular = y4m_is_regular_file(ip_y4m);
+    if(b_regular) {
+        if (memcmp(buffer, "YUV4MPEG", 8))
+        {
+            logerr("Incomplete magic for YUV4MPEG file. (%s)\n", buffer);
+            return -1;
+        }
+        if (buffer[8] != '2')
+        {
+            logerr("Incorrect YUV input file version; YUV4MPEG2 required.\n");
+        }
+        ret = y4m_parse_tags(y4m, buffer + 5);
+        if (ret < 0)
+        {
+            logerr("Error parsing YUV4MPEG2 header.\n");
+            return ret;
+        }
+    } else {
+        if (buffer[0] != '2')
+        {
+            logerr("Incorrect YUV input file version; YUV4MPEG2 required.\n");
+        }
+        ret = y4m_parse_tags(y4m, buffer + 1);
+        if (ret < 0)
+        {
+            logerr("Error parsing YUV4MPEG2 header.\n");
+            return ret;
+        }
     }
 
     return 0;
@@ -593,6 +632,7 @@ static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
     }
     return 0;
 }
+
 
 static int vui_param_check(XEVE_PARAM * param)
 {
@@ -925,18 +965,26 @@ int main(int argc, const char **argv)
         logerr("input file should be set\n");
         ret = -1; goto ERR;
     }
-    fp_inp = fopen(fname_inp, "rb");
+
+    if( !strcmp( fname_inp, "stdin" ) ) {
+        fp_inp = stdin;
+
+#if defined(WIN64) || defined(WIN32)
+        // Set "stdin" to have binary mode
+        int result = _setmode( _fileno( fp_inp ), _O_BINARY );
+        if( result == -1 ) {
+            logerr( "Cannot set binary mode for 'stdin'\n" );
+            ret = -1; goto ERR;
+        }
+#endif
+    }
+    else {
+        fp_inp = fopen(fname_inp, "rb");
+    }
+
     if(fp_inp == NULL)
     {
         logerr("cannot open input file (%s)\n", fname_inp);
-        ret = -1; goto ERR;
-    }
-
-    /* VUI parameter Range Checking*/
-
-    if (vui_param_check(param))
-    {
-        logerr("VUI Parameter out of range\n");
         ret = -1; goto ERR;
     }
 
@@ -966,7 +1014,7 @@ int main(int argc, const char **argv)
             (csp == 3 ? XEVE_CF_YCBCR444 : XEVE_CF_UNKNOWN))));
         if (color_format == XEVE_CF_UNKNOWN)
         {
-            logerr("Unknown color format\n");
+            logerr("Unknow color format\n");
             ret = -1; goto ERR;
         }
     }

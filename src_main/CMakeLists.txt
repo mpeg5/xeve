@@ -5,7 +5,7 @@
 #
 set( LIB_SOVERSION 1)
 
-file (GLOB XEVE_INC "../inc/*.h")
+file (GLOB ETM_INC "../inc/*.h")
 file (GLOB LIB_BASE_SRC "../src_base/xeve_*.c")
 file (GLOB LIB_BASE_INC "../src_base/xeve_*.h" )
 file (GLOB LIB_SSE_SRC "../src_base/sse/xeve_*.c")
@@ -17,14 +17,16 @@ file (GLOB LIB_MAIN_SRC "./xevem_*.c")
 file (GLOB LIB_MAIN_INC "./xevem_*.h" )
 file (GLOB LIB_MAIN_SSE_SRC "./sse/xevem_*.c")
 file (GLOB LIB_MAIN_SSE_INC "./sse/xevem_*.h" )
+file (GLOB LIB_MAIN_AVX_SRC "./avx/xevem_*.c")
+file (GLOB LIB_MAIN_AVX_INC "./avx/xevem_*.h" )
 
 include(GenerateExportHeader)
 include_directories("${CMAKE_BINARY_DIR}")
 
-add_library( ${LIB_NAME} STATIC ${LIB_API_MAIN_SRC} ${XEVE_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC} 
-                                ${LIB_SSE_SRC} ${LIB_SSE_INC} ${LIB_MAIN_SSE_SRC} ${LIB_MAIN_SSE_INC} ${LIB_AVX_SRC} ${LIB_AVX_INC} )
-add_library( ${LIB_NAME}_dynamic SHARED ${LIB_API_MAIN_SRC} ${XEVE_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC} 
-                                        ${LIB_SSE_SRC} ${LIB_SSE_INC} ${LIB_MAIN_SSE_SRC} ${LIB_MAIN_SSE_INC} ${LIB_AVX_SRC} ${LIB_AVX_INC} )
+add_library( ${LIB_NAME} STATIC ${LIB_API_MAIN_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC} 
+                                ${LIB_SSE_SRC} ${LIB_SSE_INC} ${LIB_MAIN_SSE_SRC} ${LIB_MAIN_SSE_INC} ${LIB_AVX_SRC} ${LIB_AVX_INC} ${LIB_MAIN_AVX_SRC} ${LIB_MAIN_AVX_INC} )
+add_library( ${LIB_NAME}_dynamic SHARED ${LIB_API_MAIN_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC} 
+                                        ${LIB_SSE_SRC} ${LIB_SSE_INC} ${LIB_MAIN_SSE_SRC} ${LIB_MAIN_SSE_INC} ${LIB_AVX_SRC} ${LIB_AVX_SRC} ${LIB_AVX_INC} ${LIB_MAIN_AVX_SRC} ${LIB_MAIN_AVX_INC})
 
 set_target_properties(${LIB_NAME}_dynamic PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR} SOVERSION ${LIB_SOVERSION})
 
@@ -47,7 +49,7 @@ generate_export_header(${LIB_NAME}_dynamic
 # This will cause the export macros to expand to nothing when building the static library.
 set_target_properties(${LIB_NAME} PROPERTIES  COMPILE_FLAGS -DLIBSHARED_AND_STATIC_STATIC_DEFINE)
 
-source_group("base\\header" FILES ${LIB_BASE_INC} ${XEVE_INC})
+source_group("base\\header" FILES ${LIB_BASE_INC} ${ETM_INC})
 source_group("base\\source" FILES ${LIB_BASE_SRC} ${LIB_API_SRC})
 source_group("base\\sse\\header" FILES ${LIB_SSE_INC})
 source_group("base\\sse\\source" FILES ${LIB_SSE_SRC})
@@ -57,8 +59,10 @@ source_group("main\\header" FILES ${LIB_MAIN_INC})
 source_group("main\\source" FILES ${LIB_MAIN_SRC} ${LIB_API_MAIN_SRC})
 source_group("main\\sse\\header" FILES ${LIB_MAIN_SSE_INC})
 source_group("main\\sse\\source" FILES ${LIB_MAIN_SSE_SRC})
+source_group("main\\avx\\header" FILES ${LIB_MAIN_AVX_INC})
+source_group("main\\avx\\source" FILES ${LIB_MAIN_AVX_SRC})
 
-include_directories( ${LIB_NAME} PUBLIC . .. ../inc ./sse ../src_base ../src_base/sse ../src_base/avx)
+include_directories( ${LIB_NAME} PUBLIC . .. ../inc ./sse ./avx ../src_base ../src_base/sse ../src_base/avx)
 
 set_target_properties(${LIB_NAME} PROPERTIES FOLDER lib
                                                ARCHIVE_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/lib)
@@ -67,7 +71,7 @@ set_target_properties(${LIB_NAME} PROPERTIES FOLDER lib
                                                ARCHIVE_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/lib)
                                                
 set( SSE ${BASE_INC_FILES} ${LIB_SSE_SRC} ${LIB_MAIN_SSE_SRC})
-set( AVX ${LIB_AVX_SRC} )
+set( AVX ${LIB_AVX_SRC} ${LIB_MAIN_AVX_SRC})
 set_target_properties(${LIB_NAME}_dynamic PROPERTIES OUTPUT_NAME ${LIB_NAME})
 
 if( MSVC )                      
@@ -87,10 +91,10 @@ endif()
 # Install rules
 #
 # Set DCMAKE_INSTALL_PREFIX to change default install prefix
-# e.g cmake .. -DCMAKE_INSTALL_PREFIX='C:\Users\name\git\xeve_internal\build-windows\install'
+# e.g cmake .. -DCMAKE_INSTALL_PREFIX='C:\Users\Samsung\git\xeve_internal\build-windows\install'
 
 # List the headers we want to declare as public for installation.
-set(XEVE_PUBLIC_HEADERS "${XEVE_INC}")
+set(XEVE_PUBLIC_HEADERS "${ETM_INC}")
 set_target_properties(${LIB_NAME} PROPERTIES PUBLIC_HEADER "${XEVE_PUBLIC_HEADERS}")
 
 set(XEVE_PRIVATE_HEADERS "${LIB_BASE_INC}" "${LIB_SSE_INC}" "${LIB_AVX_INC}")

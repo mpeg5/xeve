@@ -2728,15 +2728,10 @@ void xeve_set_nalu(XEVE_NALU * nalu, int nalu_type, int nuh_temporal_id)
 
 void xeve_set_vui(XEVE_CTX * ctx, XEVE_VUI * vui)
 {
-    vui->aspect_ratio_info_present_flag = ctx->param.aspect_ratio_info_present_flag;
-    vui->aspect_ratio_idc = ctx->param.sar;
-    
-    if (vui->aspect_ratio_idc == EXTENDED_SAR)
-    {
-        vui->sar_width = ctx->param.sar_width;
-        vui->sar_height = ctx->param.sar_height;
-    }
-
+    vui->aspect_ratio_info_present_flag = 1;
+    vui->aspect_ratio_idc = 1;
+    vui->sar_width = 1;
+    vui->sar_height = 1;
     vui->overscan_info_present_flag = 1;
     vui->overscan_appropriate_flag = 1;
     vui->chroma_loc_info_present_flag = 1;
@@ -2745,7 +2740,6 @@ void xeve_set_vui(XEVE_CTX * ctx, XEVE_VUI * vui)
     vui->nal_hrd_parameters_present_flag = 1;
     vui->vcl_hrd_parameters_present_flag = 1;
     vui->low_delay_hrd_flag = 1;
-
     vui->video_signal_type_present_flag = ctx->param.video_signal_type_present_flag;
     vui->video_format =  ctx->param.videoformat;
     vui->video_full_range_flag = ctx->param.range;
@@ -2768,7 +2762,6 @@ void xeve_set_vui(XEVE_CTX * ctx, XEVE_VUI * vui)
     vui->log2_max_mv_length_vertical = ctx->param.log2_max_mv_length_vertical;
     vui->num_reorder_pics = ctx->param.num_reorder_pics;
     vui->max_dec_pic_buffering = ctx->param.max_dec_pic_buffering;
-
     vui->hrd_parameters.cpb_cnt_minus1 = 1;
     vui->hrd_parameters.bit_rate_scale = 1;
     vui->hrd_parameters.cpb_size_scale = 1;
@@ -2810,8 +2803,7 @@ void xeve_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
     sps->log2_sub_gop_length = (int)(log2(ctx->param.gop_size) + .5);
     sps->log2_ref_pic_gap_length = (int)(log2(ctx->param.ref_pic_gap_length) + .5);
     sps->long_term_ref_pics_flag = 0;
-    sps->vui_parameters_present_flag = ctx->param.aspect_ratio_info_present_flag || ctx->param.video_signal_type_present_flag || \
-        ctx->param.colour_description_present_flag;
+    sps->vui_parameters_present_flag = 0;
     xeve_set_vui(ctx, &(sps->vui_parameters));
 
     if (ctx->chroma_qp_table_struct.chroma_qp_table_present_flag)
@@ -3678,6 +3670,7 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         xeve_func_mc_c              = xeve_tbl_mc_c_avx;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip_sse;
         ctx->fn_itxb                = &xeve_tbl_itxb_avx;
+        xeve_func_txb               = &xeve_tbl_txb_avx;
     }
     else if (support_sse)
     {
@@ -3689,6 +3682,7 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         xeve_func_mc_c              = xeve_tbl_mc_c_sse;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip_sse;
         ctx->fn_itxb                = &xeve_tbl_itxb_sse;
+        xeve_func_txb               = &xeve_tbl_txb; /*to be updated*/
     }
     else
 #endif
@@ -3701,6 +3695,7 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         xeve_func_mc_c              = xeve_tbl_mc_c;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip;
         ctx->fn_itxb                = &xeve_tbl_itxb;
+        xeve_func_txb               = &xeve_tbl_txb;
     }
 }
 

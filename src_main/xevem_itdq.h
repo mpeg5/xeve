@@ -52,5 +52,6 @@ void xeve_itrans_ats_intra_DCT8_B4(s16 *coeff, s16 *block, int shift, int line, 
 void xeve_itrans_ats_intra_DCT8_B8(s16 *coeff, s16 *block, int shift, int line, int skip_line, int skip_line_2);
 void xeve_itrans_ats_intra_DCT8_B16(s16 *coeff, s16 *block, int shift, int line, int skip_line, int skip_line_2);
 void xeve_itrans_ats_intra_DCT8_B32(s16 *coeff, s16 *block, int shift, int line, int skip_line, int skip_line_2);
-
+extern const XEVE_ITX(*xeve_func_itx)[MAX_TR_LOG2];
+extern const XEVE_ITX xeve_tbl_itx[MAX_TR_LOG2];
 #endif /* _XEVEM_ITDQ_H_ */

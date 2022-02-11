@@ -3952,6 +3952,8 @@ void xevem_platform_init_func()
         xevem_func_aff_v_sobel_flt = &xevem_scaled_vertical_sobel_filter_sse;
         xevem_func_aff_eq_coef_comp = &xevem_equal_coeff_computer_sse;
         xeve_func_intra_pred_ang = xeve_tbl_intra_pred_ang; /* to be updated */
+        xeve_func_tx = &xeve_tbl_tx_avx;
+        xeve_func_itx = &xeve_tbl_itx_avx;
     }
     else if (support_sse)
     {
@@ -3963,6 +3965,8 @@ void xevem_platform_init_func()
         xevem_func_aff_v_sobel_flt = &xevem_scaled_vertical_sobel_filter_sse;
         xevem_func_aff_eq_coef_comp = &xevem_equal_coeff_computer_sse;
         xeve_func_intra_pred_ang = xeve_tbl_intra_pred_ang; /* to be updated */
+        xeve_func_tx = &xeve_tbl_tx; /* to be updated */
+        xeve_func_itx = &xeve_tbl_itx; /* to be updated */
     }
     else
 #endif
@@ -3975,6 +3979,8 @@ void xevem_platform_init_func()
         xevem_func_aff_v_sobel_flt = &xevem_scaled_vertical_sobel_filter;
         xevem_func_aff_eq_coef_comp = &xevem_equal_coeff_computer;
         xeve_func_intra_pred_ang = xeve_tbl_intra_pred_ang;
+        xeve_func_tx = &xeve_tbl_tx;
+        xeve_func_itx = &xeve_tbl_itx;
     }
 }
 

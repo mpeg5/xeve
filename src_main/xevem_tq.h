@@ -40,5 +40,12 @@
 
 int xevem_rdoq_set_ctx_cc(XEVE_CORE * core, int ch_type, int prev_level);
 int xevem_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, int slice_type, int nnz[N_C], int is_intra, int run_stats);
-
+extern const XEVE_TX(*xeve_func_tx)[MAX_TR_LOG2];
+extern const XEVE_TX xeve_tbl_tx[MAX_TR_LOG2];
+void tx_pb2(s16* src, s16* dst, int shift, int line);
+void tx_pb4(s16* src, s16* dst, int shift, int line);
+void tx_pb8(s16* src, s16* dst, int shift, int line);
+void tx_pb16(s16* src, s16* dst, int shift, int line);
+void tx_pb32(s16* src, s16* dst, int shift, int line);
+void tx_pb64(s16* src, s16* dst, int shift, int line);
 #endif /* _XEVE_TQ_H_ */

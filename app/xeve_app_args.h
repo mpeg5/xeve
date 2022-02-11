@@ -79,7 +79,7 @@ static const ARGS_OPT args_opt_table[] = \
     */
     {
         'i', "input", ARGS_VAL_TYPE_STRING | ARGS_VAL_TYPE_MANDATORY, 0, NULL,
-        "file name of input video"
+        "file name of input video (raw YUV or Y4M), `stdin` for standard input instead of regular file "
     },
     {
         'o', "output", ARGS_VAL_TYPE_STRING, 0, NULL,
@@ -616,7 +616,6 @@ static const ARGS_OPT args_opt_table[] = \
          default num-reorder-pic"
     },
 
-
     {ARGS_END_KEY, "", ARGS_VAL_TYPE_NONE, 0, NULL, ""} /* termination */
 };
 
@@ -687,6 +686,7 @@ struct _ARGS_PARSER
     int  log2_max_mv_length_vertical;
     int  num_reorder_pics;
     int  max_dec_pic_buffering;
+
 };
 
 static int args_search_long_key(ARGS_OPT * opts, const char * key)
@@ -1012,6 +1012,7 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "bitrate", args->bitrate);
     strcpy(args->vbv_bufsize, ""); /* default */
     args_set_variable_by_key_long(opts, "vbv-bufsize", args->vbv_bufsize);
+
     /* VUI parameters */
     args->sar = 0;
     args_set_variable_by_key_long(opts, "sar", &args->sar);
@@ -1105,6 +1106,7 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, log2_max_mv_length_vertical);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, num_reorder_pics);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, max_dec_pic_buffering);
+
 
 #if 0
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ARG_BTT, &param->btt);

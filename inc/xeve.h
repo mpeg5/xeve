@@ -494,7 +494,6 @@ typedef struct _XEVE_PARAM
     int            me_fast;
 
     /* VUI options*/
-
     int  sar;
     int  sar_width, sar_height;
     int  videoformat;
