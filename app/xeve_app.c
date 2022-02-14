@@ -769,7 +769,7 @@ static int vui_param_check(XEVE_PARAM * param)
     }
 
 
-    if (param->num_units_in_tick < 1)
+    if (param->num_units_in_tick < 0)
     {
          ret = 1;
          logerr("Num units in tick is out of range");
@@ -783,7 +783,7 @@ static int vui_param_check(XEVE_PARAM * param)
         param->timing_info_present_flag = 1;
     }
 
-    if (param->time_scale < 1)
+    if (param->time_scale < 0)
     {
          ret = 1;
          logerr("Time Scale is out of range");
@@ -987,6 +987,14 @@ int main(int argc, const char **argv)
         logerr("cannot open input file (%s)\n", fname_inp);
         ret = -1; goto ERR;
     }
+
+    /* VUI parameter Range Checking*/
+
+    if (vui_param_check(param))
+    {
+          logerr("VUI Parameter out of range\n");
+          ret = -1; goto ERR;
+     }
 
     /* y4m header parsing  */
     is_y4m = y4m_test(fp_inp);
