@@ -154,7 +154,6 @@ static XEVE_CLK xeve_clk_from(XEVE_CLK from) \
 static int imgb_read(FILE * fp, XEVE_IMGB * img, int width, int height, int is_y4m)
 {
     int f_w, f_h;
-    int y_size, u_size, v_size;
     unsigned char * p8;
 
     /* handling Y4M frame header */
