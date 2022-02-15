@@ -75,7 +75,7 @@ typedef struct _Y4M_PARAMS
 static inline int y4m_is_regular_file( FILE *filehandle )
 {
     y4m_struct_stat file_stat;
-    if( y4m_fstat( _fileno( filehandle ), &file_stat ) )
+    if( y4m_fstat( fileno( filehandle ), &file_stat ) )
         return 1;
     return S_ISREG( file_stat.st_mode );
 }
