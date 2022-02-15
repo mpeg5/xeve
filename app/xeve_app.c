@@ -41,7 +41,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef _WIN32
+#if defined(WIN64) || defined(WIN32)
+#include <io.h>
 #define y4m_struct_stat struct _stati64
 #define y4m_fstat _fstati64
 #else 
@@ -67,10 +68,14 @@ typedef struct _Y4M_PARAMS
     int bit_depth;
 }Y4M_INFO;
 
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+
 static inline int y4m_is_regular_file( FILE *filehandle )
 {
     y4m_struct_stat file_stat;
-    if( y4m_fstat( fileno( filehandle ), &file_stat ) )
+    if( y4m_fstat( _fileno( filehandle ), &file_stat ) )
         return 1;
     return S_ISREG( file_stat.st_mode );
 }
@@ -205,7 +210,7 @@ static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
 static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
     int * preset, int *tune)
 {
-    int tprofile, tpreset, ttune, flag;
+    int tprofile, tpreset, ttune;
 
     if (strlen(args->profile) == 0) tprofile = XEVE_PROFILE_BASELINE; /* default */
     else if (!strcmp(args->profile, "baseline")) tprofile = XEVE_PROFILE_BASELINE;
@@ -245,8 +250,6 @@ static void print_stat_init(ARGS_PARSER * args)
 
 static void print_config(ARGS_PARSER * args, XEVE_PARAM * param)
 {
-    int s, v, flag;
-
     if(op_verbose < VERBOSE_FRAME) return;
 
     logv3_line("Configurations");

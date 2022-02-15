@@ -1281,13 +1281,13 @@ static int args_set_flag(ARGS_PARSER * args, char * keyl, int flag)
 static int args_get_str(ARGS_PARSER * args, char * keyl, char * str, int * flag)
 {
     char * p = NULL;
-    int ret;
+    int ret = XEVE_OK;
     if(args_get(args, keyl, (void **)&p, flag)) return -1;
     if(p)
     {
         if(str) strcpy(str, p);
     }
-    return 0;
+    return ret;
 }
 
 static int args_get_int(ARGS_PARSER * args, char * keyl, int * val, int * flag)
