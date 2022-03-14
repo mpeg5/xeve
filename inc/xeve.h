@@ -239,7 +239,8 @@ struct _XEVE_IMGB
     /* address of each plane */
     void              * a[XEVE_IMGB_MAX_PLANE];
 
-    /* time-stamps */
+    /* time-stamps 
+       ts[0] -PTS (Presentation Time Stamp). */
     XEVE_MTIME          ts[4];
 
     int                 ndata[4]; /* arbitrary data, if needs */
@@ -290,7 +291,9 @@ typedef struct _XEVE_BITB
     int                 ndata[4];
     /* arbitrary address, if needs */
     void              * pdata[4];
-    /* time-stamps */
+    /* time-stamps 
+        ts[0] -PTS (Presentation Time Stamp) 
+        ts[1] -DTS (Decoding Time Stamp) */
     XEVE_MTIME          ts[4];
 
 } XEVE_BITB;
