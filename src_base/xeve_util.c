@@ -2698,8 +2698,8 @@ int xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat)
     ctx->param.f_ifrm = 0; /* clear force-IDR flag */
     ctx->pico->is_used = 0;
 
-    imgb_c->ts[0] = bitb->ts[0] = imgb_o->ts[0];
-    imgb_c->ts[1] = bitb->ts[1] = imgb_o->ts[1];
+    imgb_c->ts[0] = bitb->ts[0] = imgb_o->ts[0]; // PTS
+    imgb_c->ts[1] = bitb->ts[1] = stat->fnum - ctx->param.bframes; // DTS (Substaction has been added to meet DTS<=PTS condition)
     imgb_c->ts[2] = bitb->ts[2] = imgb_o->ts[2];
     imgb_c->ts[3] = bitb->ts[3] = imgb_o->ts[3];
 
