@@ -31,6 +31,12 @@
 #include "xeve_type.h"
 #include <math.h>
 
+#if (defined(_WIN64) || defined(_WIN32)) && !defined(__GNUC__)
+#include <winsock.h>
+#else
+#include <arpa/inet.h>
+#endif
+
 #define TX_SHIFT1(log2_size, bd)   ((log2_size) - 1 + bd - 8)
 #define TX_SHIFT2(log2_size)   ((log2_size) + 6)
 
@@ -2657,7 +2663,7 @@ int xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat)
 
         xeve_bsw_deinit(bs);
         stat->sei_size = (int)(bs->cur - cur_tmp);
-        *size_field = stat->sei_size - 4;
+        *size_field = htonl(stat->sei_size - 4);
     }
 
     /* expand current encoding picture, if needs */
@@ -3824,7 +3830,7 @@ int xeve_encode_sps(XEVE_CTX * ctx)
     xeve_bsw_deinit(bs);
 
     /* write the bitstream size */
-    *size_field = (int)(bs->cur - cur_tmp) - 4;
+    *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }
@@ -3850,7 +3856,7 @@ int xeve_encode_pps(XEVE_CTX * ctx)
     xeve_bsw_deinit(bs);
 
     /* write the bitstream size */
-    *size_field = (int)(bs->cur - cur_tmp) - 4;
+    *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }

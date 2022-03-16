@@ -35,6 +35,12 @@
 
 #include "xevem_util.h"
 
+#if (defined(_WIN64) || defined(_WIN32)) && !defined(__GNUC__)
+#include <winsock.h>
+#else
+#include <arpa/inet.h>
+#endif
+
 #if GRAB_STAT
 #include "xevem_stat.h"
 #endif
@@ -4068,7 +4074,7 @@ int xevem_encode_sps(XEVE_CTX * ctx)
     xeve_bsw_deinit(bs);
 
     /* write the bitstream size */
-    *size_field = (int)(bs->cur - cur_tmp) - 4;
+    *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }
@@ -4088,7 +4094,7 @@ int xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps)
     xeve_assert_rv(xevem_eco_aps_gen(bs, aps, ctx->sps.bit_depth_luma_minus8 + 8) == XEVE_OK, XEVE_ERR_INVALID_ARGUMENT);
 
     xeve_bsw_deinit(bs);
-    *size_field = (int)(bs->cur - cur_tmp) - 4;
+    *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }
@@ -4113,7 +4119,7 @@ int xevem_encode_pps(XEVE_CTX * ctx)
     xeve_bsw_deinit(bs);
 
     /* write the bitstream size */
-    *size_field = (int)(bs->cur - cur_tmp) - 4;
+    *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }
