@@ -4073,6 +4073,7 @@ int xevem_encode_sps(XEVE_CTX * ctx)
     /* de-init BSW */
     xeve_bsw_deinit(bs);
 
+    /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
     /* write the bitstream size */
     *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 
@@ -4094,6 +4095,9 @@ int xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps)
     xeve_assert_rv(xevem_eco_aps_gen(bs, aps, ctx->sps.bit_depth_luma_minus8 + 8) == XEVE_OK, XEVE_ERR_INVALID_ARGUMENT);
 
     xeve_bsw_deinit(bs);
+
+    /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
+    /* write the bitstream size */
     *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
@@ -4118,6 +4122,7 @@ int xevem_encode_pps(XEVE_CTX * ctx)
     /* de-init BSW */
     xeve_bsw_deinit(bs);
 
+    /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
     /* write the bitstream size */
     *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 

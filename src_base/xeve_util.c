@@ -2662,8 +2662,10 @@ int xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat)
         xeve_assert_rv(ret == XEVE_OK, ret);
 
         xeve_bsw_deinit(bs);
-        stat->sei_size = (int)(bs->cur - cur_tmp);
-        *size_field = htonl(stat->sei_size - 4);
+
+        /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
+        /* write the bitstream size */
+        *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
     }
 
     /* expand current encoding picture, if needs */
@@ -3829,6 +3831,7 @@ int xeve_encode_sps(XEVE_CTX * ctx)
     /* de-init BSW */
     xeve_bsw_deinit(bs);
 
+    /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
     /* write the bitstream size */
     *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 
@@ -3855,6 +3858,7 @@ int xeve_encode_pps(XEVE_CTX * ctx)
     /* de-init BSW */
     xeve_bsw_deinit(bs);
 
+    /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
     /* write the bitstream size */
     *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
 

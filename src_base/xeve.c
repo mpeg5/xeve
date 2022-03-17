@@ -31,6 +31,12 @@
 #include <math.h>
 #include "xeve_type.h"
 
+#if (defined(_WIN64) || defined(_WIN32)) && !defined(__GNUC__)
+#include <winsock.h>
+#else
+#include <arpa/inet.h>
+#endif
+
 static int xeve_eco_tree(XEVE_CTX * ctx, XEVE_CORE * core, int x0, int y0, int cup, int cuw, int cuh, int cud
                        , int cu_qp_delta_code, TREE_CONS tree_cons, XEVE_BSW * bs)
 {
@@ -507,7 +513,11 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         }
 
         xeve_bsw_deinit(bs);
-        *size_field = (int)(bs->cur - cur_tmp) - 4;
+
+        /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
+        /* write the bitstream size */
+        *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
+        
         curr_temp = bs->cur;
 
         /* slice header re-writing */
