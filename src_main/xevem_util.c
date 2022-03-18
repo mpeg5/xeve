@@ -35,12 +35,6 @@
 
 #include "xevem_util.h"
 
-#if (defined(_WIN64) || defined(_WIN32)) && !defined(__GNUC__)
-#include <winsock.h>
-#else
-#include <arpa/inet.h>
-#endif
-
 #if GRAB_STAT
 #include "xevem_stat.h"
 #endif
@@ -4075,7 +4069,7 @@ int xevem_encode_sps(XEVE_CTX * ctx)
 
     /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
     /* write the bitstream size */
-    *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
+    *size_field = XEVE_BIG_ENDIAN_LONG((int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }
@@ -4098,7 +4092,7 @@ int xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps)
 
     /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
     /* write the bitstream size */
-    *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
+    *size_field = XEVE_BIG_ENDIAN_LONG((int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }
@@ -4124,7 +4118,7 @@ int xevem_encode_pps(XEVE_CTX * ctx)
 
     /* reorder the bytes of a 32-bit bitstream size value from processor order to network order */
     /* write the bitstream size */
-    *size_field = htonl((int)(bs->cur - cur_tmp) - 4);
+    *size_field = XEVE_BIG_ENDIAN_LONG((int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }

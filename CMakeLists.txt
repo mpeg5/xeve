@@ -25,6 +25,15 @@ project (XEVE VERSION 1.0.0)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Set compiler flags and options. 
+
+message("Processor byte order: ${CMAKE_C_BYTE_ORDER}")
+
+if( ${CMAKE_C_BYTE_ORDER} STREQUAL "LITTLE_ENDIAN")
+  set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -DLITTLE_ENDIAN_BYTE_ORDER)
+else()
+  set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -DBIG_ENDIAN_BYTE_ORDER)
+endif()
+
 if( MSVC )
 elseif( UNIX OR MINGW )
     if(NOT CMAKE_BUILD_TYPE)
@@ -46,8 +55,8 @@ elseif( UNIX OR MINGW )
 endif()
 
 # Command to output information to the console
-message ("c Flags: " ${CMAKE_C_FLAGS})
-message ("linker Flags: " ${CMAKE_EXE_LINKER_FLAGS})
+message ("C Flags: " ${CMAKE_C_FLAGS})
+message ("Linker Flags: " ${CMAKE_EXE_LINKER_FLAGS})
 
 # Sub-directories where more CMakeLists.txt exist
 if(("${SET_PROF}" STREQUAL "BASE"))
