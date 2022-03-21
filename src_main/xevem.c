@@ -554,7 +554,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             aps_dra->signal_flag = 0;
         }
 
-        int* size_field = (int*)(*(&bs->cur));
+        u8* size_field = bs->cur;
         u8* cur_tmp = bs->cur;
 
         /* Encode nalu header */
@@ -708,7 +708,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         }
 
         xeve_bsw_deinit(bs);
-        *size_field = (int)(bs->cur - cur_tmp) - 4;
+        xeve_eco_nalu_len_update(size_field, (int)(bs->cur - cur_tmp) - 4);
         curr_temp = bs->cur;
 
         /* slice header re-writing */
