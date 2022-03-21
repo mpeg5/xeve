@@ -166,7 +166,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
     u8            * tiles_in_slice;
     u16             total_tiles_in_slice;
     int             tile_cnt = 0;
-    u8            * curr_temp = ctx->bs[0].cur;;
+    u8            * curr_temp = ctx->bs[0].cur;
     int             last_intra_poc = INT_MAX;
 
     for (ctx->slice_num = 0; ctx->slice_num < num_slice_in_pic; ctx->slice_num++)
@@ -380,7 +380,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 
         /* Send available APSs */
         int aps_nalu_size = 0;
-        int* size_field = (int*)(*(&bs->cur));
+        u8 * nalu_len_buf = bs->cur;
         u8* cur_tmp = bs->cur;
 
         /* Encode nalu header */
@@ -507,7 +507,8 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         }
 
         xeve_bsw_deinit(bs);
-        *size_field = (int)(bs->cur - cur_tmp) - 4;
+        xeve_eco_nalu_len_update(nalu_len_buf, (int)(bs->cur - cur_tmp) - 4);
+
         curr_temp = bs->cur;
 
         /* slice header re-writing */

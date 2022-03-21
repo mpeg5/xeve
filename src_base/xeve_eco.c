@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -33,6 +33,16 @@
 #include <math.h>
 
 #pragma warning(disable:4018)
+
+int xeve_eco_nalu_len_update(void * buf, int size)
+{
+    int i;
+    u8 * p = buf;
+    for(i=0; i<4; i++) {
+        p[i] = (size >> (24 - (i*8))) & 0xFF;
+    }
+    return 0;
+}
 
 int xeve_eco_nalu(XEVE_BSW * bs, XEVE_NALU * nalu)
 {
@@ -223,12 +233,12 @@ int xeve_eco_pps(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps)
     xeve_bsw_write_ue(bs, pps->num_ref_idx_default_active_minus1[1]);
     xeve_bsw_write_ue(bs, pps->additional_lt_poc_lsb_len);
     xeve_bsw_write1(bs, pps->rpl1_idx_present_flag);
-    xeve_bsw_write1(bs, pps->single_tile_in_pic_flag);       
+    xeve_bsw_write1(bs, pps->single_tile_in_pic_flag);
     xeve_bsw_write_ue(bs, pps->tile_id_len_minus1);
     xeve_bsw_write1(bs, pps->explicit_tile_id_flag);
     xeve_bsw_write1(bs, pps->pic_dra_enabled_flag);
     xeve_bsw_write1(bs, pps->arbitrary_slice_present_flag);
-    xeve_bsw_write1(bs, pps->constrained_intra_pred_flag); 
+    xeve_bsw_write1(bs, pps->constrained_intra_pred_flag);
     xeve_bsw_write1(bs, pps->cu_qp_delta_enabled_flag);
     if (pps->cu_qp_delta_enabled_flag)
     {
@@ -239,7 +249,7 @@ int xeve_eco_pps(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps)
     {
         xeve_bsw_write1(bs, t0);
     }
-#if TRACE_HLS    
+#if TRACE_HLS
     XEVE_TRACE_STR("************ PPS End   ************\n");
     XEVE_TRACE_STR("***********************************\n");
 #endif
@@ -248,9 +258,9 @@ int xeve_eco_pps(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps)
 
 int xeve_eco_sh(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps, XEVE_SH * sh, int nut)
 {
-#if TRACE_HLS    
+#if TRACE_HLS
     XEVE_TRACE_STR("***********************************\n");
-    XEVE_TRACE_STR("************ SH  Start ************\n");    
+    XEVE_TRACE_STR("************ SH  Start ************\n");
 #endif
 
     xeve_bsw_write_ue(bs, sh->slice_pic_parameter_set_id);
@@ -288,7 +298,7 @@ int xeve_eco_sh(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps, XEVE_SH * sh, int
     {
         xeve_bsw_write1(bs, t0);
     }
-#if TRACE_HLS    
+#if TRACE_HLS
     XEVE_TRACE_STR("************ SH  End   ************\n");
     XEVE_TRACE_STR("***********************************\n");
 #endif
@@ -388,7 +398,7 @@ static void sbac_put_byte(u8 writing_byte, XEVE_SBAC *sbac, XEVE_BSW *bs)
 static void sbac_carry_propagate(XEVE_SBAC *sbac, XEVE_BSW *bs)
 {
     u32 out_bits = sbac->code >> 17;
-    
+
     sbac->code &= (1 << 17) - 1;
 
     if(out_bits < 0xFF)
@@ -496,7 +506,7 @@ void xeve_sbac_encode_bin(u32 bin, XEVE_SBAC *sbac, SBAC_CTX_MODEL *model, XEVE_
     mps = (*model) & 1;
 
     lps = (state * (sbac->range)) >> 9;
-    lps = lps < 437 ? 437 : lps;    
+    lps = lps < 437 ? 437 : lps;
 
     sbac->range -= lps;
 
@@ -522,7 +532,7 @@ void xeve_sbac_encode_bin(u32 bin, XEVE_SBAC *sbac, SBAC_CTX_MODEL *model, XEVE_
         state = state + ((512 - state + 16) >> 5);
         if(state > 256)
         {
-            mps = 1 - mps; 
+            mps = 1 - mps;
             state = 512 - state;
         }
         *model = (state << 1) + mps;
@@ -557,7 +567,7 @@ void xeve_sbac_encode_bin_trm(u32 bin, XEVE_SBAC *sbac, XEVE_BSW *bs)
         sbac->code += sbac->range;
         sbac->range = 1;
     }
-   
+
     while(sbac->range < 8192)
     {
         sbac->range <<= 1;
@@ -843,7 +853,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
         if (!cbf_all && sub_pos)
         {
             return 0;
-        }            
+        }
         if(b_no_cbf == 1)
         {
             xeve_assert(cbf_all != 0);
@@ -871,7 +881,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
                 XEVE_TRACE_STR("\n");
             }
         }
-       
+
         if (run[U_C] && chroma_format_idc)
         {
             xeve_sbac_encode_bin(cbf_u, sbac, sbac_ctx->cbf_cb, bs);
@@ -896,7 +906,7 @@ int xeve_eco_cbf(XEVE_BSW * bs, int cbf_y, int cbf_u, int cbf_v, u8 pred_mode, i
             XEVE_TRACE_STR("cbf Y ");
             XEVE_TRACE_INT(cbf_y);
             XEVE_TRACE_STR("\n");
-        }       
+        }
     }
     else
     {
@@ -1031,7 +1041,7 @@ static int xeve_eco_coefficient(XEVE_BSW * bs, s16 coef[N_C][MAX_CU_DIM], int lo
                     }
                 }
             }
-                       
+
             for (c = 0; c < N_C; c++)
             {
                 if (nnz_sub[c][(j << 1) | i] && run[c])
@@ -1079,7 +1089,7 @@ int xeve_eco_coef(XEVE_CTX * ctx, XEVE_CORE * core, XEVE_BSW * bs, s16 coef[N_C]
 int xeve_eco_pred_mode(XEVE_BSW * bs, u8 pred_mode, int ctx)
 {
     XEVE_SBAC * sbac = GET_SBAC_ENC(bs);
-       
+
     xeve_sbac_encode_bin(pred_mode == MODE_INTRA, sbac, sbac->ctx.pred_mode + ctx, bs);
     XEVE_TRACE_COUNTER;
     XEVE_TRACE_STR("pred mode ");
@@ -1117,7 +1127,7 @@ void xeve_eco_inter_pred_idc(XEVE_BSW *bs, s8 refi[REFP_NUM], int slice_type, in
     if(REFI_IS_VALID(refi[REFP_0]) && REFI_IS_VALID(refi[REFP_1])) /* PRED_BI */
     {
         assert(check_bi_applicability(slice_type, cuw, cuh, is_sps_admvp));
-        xeve_sbac_encode_bin(0, sbac, sbac->ctx.inter_dir, bs);       
+        xeve_sbac_encode_bin(0, sbac, sbac->ctx.inter_dir, bs);
     }
     else
     {
