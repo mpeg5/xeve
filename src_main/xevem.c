@@ -36,7 +36,7 @@
 #include <math.h>
 #include "xevem_type.h"
 
-static int xeve_eco_tree(XEVE_CTX * ctx, XEVE_CORE * core, int x0, int y0, int cup, int cuw, int cuh, int cud
+static int xevem_eco_tree(XEVE_CTX * ctx, XEVE_CORE * core, int x0, int y0, int cup, int cuw, int cuh, int cud
                        , int next_split, const int parent_split, int* same_layer_split, const int node_idx, const int* parent_split_allow
                        , int qt_depth, int btt_depth, int cu_qp_delta_code, TREE_CONS tree_cons, XEVE_BSW * bs)
 {
@@ -130,7 +130,7 @@ static int xeve_eco_tree(XEVE_CTX * ctx, XEVE_CORE * core, int x0, int y0, int c
 
             if(x_pos < ctx->w && y_pos < ctx->h)
             {
-                ret = xeve_eco_tree(ctx, core, x_pos, y_pos, split_struct.cup[cur_part_num], sub_cuw, sub_cuh, split_struct.cud[cur_part_num], 1, split_mode, split_mode_child
+                ret = xevem_eco_tree(ctx, core, x_pos, y_pos, split_struct.cup[cur_part_num], sub_cuw, sub_cuh, split_struct.cud[cur_part_num], 1, split_mode, split_mode_child
                                       , part_num, split_allow, INC_QT_DEPTH(qt_depth, split_mode), INC_BTT_DEPTH(btt_depth, split_mode, bound), cu_qp_delta_code, split_struct.tree_cons, bs);
                 xeve_assert_g(XEVE_SUCCEEDED(ret), ERR);
             }
@@ -164,7 +164,7 @@ ERR:
     return ret;
 }
 
-static int ctu_mt_core(void * arg)
+static int xevem_ctu_mt_core(void * arg)
 {
     assert(arg != NULL);
 
@@ -222,7 +222,7 @@ static int ctu_mt_core(void * arg)
             /* entropy coding ************************************************/
             int split_mode_child[4];
             int split_allow[6] = { 0, 0, 0, 0, 0, 1 };
-            ret = xeve_eco_tree(ctx, core, core->x_pel, core->y_pel, 0, ctx->max_cuwh, ctx->max_cuwh, 0, 1, NO_SPLIT
+            ret = xevem_eco_tree(ctx, core, core->x_pel, core->y_pel, 0, ctx->max_cuwh, ctx->max_cuwh, 0, 1, NO_SPLIT
                               , split_mode_child, 0, split_allow, 0, 0, 0, xeve_get_default_tree_cons(), bs);
             bef_cu_qp = ctx->tile[i].qp_prev_eco[core->thread_cnt];
         }
@@ -243,7 +243,7 @@ static int ctu_mt_core(void * arg)
 }
 
 
-static int tile_mt_core(void * arg)
+static int xevem_tile_mt_core(void * arg)
 {
     XEVE_CORE * core = (XEVE_CORE *)arg;
     XEVE_CTX  * ctx = core->ctx;
@@ -269,14 +269,14 @@ static int tile_mt_core(void * arg)
         xevem_init_core_mt(ctx, core->tile_idx, core, thread_cnt);
 
         ctx->core[thread_cnt]->thread_cnt = thread_cnt;
-        ctx->tc->run(ctx->thread_pool[thread_cnt], ctu_mt_core, (void*)ctx->core[thread_cnt]);
+        ctx->tc->run(ctx->thread_pool[thread_cnt], xevem_ctu_mt_core, (void*)ctx->core[thread_cnt]);
     }
 
     core->x_lcu = ((ctx->tile[core->tile_num].ctba_rs_first) % ctx->w_lcu);
     core->y_lcu = ((ctx->tile[core->tile_num].ctba_rs_first) / ctx->w_lcu);
     core->lcu_num = core->y_lcu * ctx->w_lcu + core->x_lcu;
 
-    ctu_mt_core(arg);
+    xevem_ctu_mt_core(arg);
 
     for (int thread_cnt1 = 1; thread_cnt1 < parallel_task; thread_cnt1++)
     {
@@ -292,7 +292,7 @@ static int tile_mt_core(void * arg)
     return XEVE_OK;
 }
 
-int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
+int xevem_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 {
     XEVE_CORE   * core;
     XEVE_BSW     * bs;
@@ -450,7 +450,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
                 ctx->core[thread_cnt]->tile_idx = i;
                 xevem_init_core_mt(ctx, i, core, thread_cnt);
                 ctx->core[thread_cnt]->thread_cnt = thread_cnt;
-                tc->run(ctx->thread_pool[thread_cnt], tile_mt_core, (void*)ctx->core[thread_cnt]);
+                tc->run(ctx->thread_pool[thread_cnt], xevem_tile_mt_core, (void*)ctx->core[thread_cnt]);
             }
 
             i = tiles_in_slice[thread_cnt + task_completed];
@@ -464,7 +464,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 
             xevem_init_core_mt(ctx, i, core, thread_cnt);
             ctx->core[thread_cnt]->thread_cnt = thread_cnt;
-            tile_mt_core((void*)ctx->core[thread_cnt]);
+            xevem_tile_mt_core((void*)ctx->core[thread_cnt]);
             for (thread_cnt1 = 0; thread_cnt1 < parallel_task - 1; thread_cnt1++)
             {
                 tc->join(ctx->thread_pool[thread_cnt1], &res);
@@ -650,7 +650,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
                     xeve_sbac_encode_bin((int)(*(alf_slice_param->alf_ctb_chroma2_flag + core->lcu_num)), sbac, sbac->ctx.alf_ctb_flag, bs);
                 }
 
-                ret = xeve_eco_tree(ctx, core, core->x_pel, core->y_pel, 0, ctx->max_cuwh, ctx->max_cuwh, 0, 1, NO_SPLIT
+                ret = xevem_eco_tree(ctx, core, core->x_pel, core->y_pel, 0, ctx->max_cuwh, ctx->max_cuwh, 0, 1, NO_SPLIT
                                       , split_mode_child, 0, split_allow, 0, 0, 0, xeve_get_default_tree_cons(), bs);
                 xeve_assert_rv(ret == XEVE_OK, ret);
                 /* prepare next step *********************************************/
@@ -708,7 +708,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         }
 
         xeve_bsw_deinit(bs);
-        xeve_eco_nalu_len_update(size_field, (int)(bs->cur - cur_tmp) - 4);
+        xeve_eco_nal_unit_len(size_field, (int)(bs->cur - cur_tmp) - 4);
         curr_temp = bs->cur;
 
         /* slice header re-writing */

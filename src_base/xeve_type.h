@@ -1001,5 +1001,6 @@ typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 #include "xeve_itdq_sse.h"
 #include "xeve_itdq_avx.h"
 #include "xeve_tq_avx.h"
+#include "xeve_enc.h"
 
 #endif /* _XEVE_TYPE_H_ */

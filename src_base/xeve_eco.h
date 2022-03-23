@@ -43,7 +43,7 @@ void xeve_sbac_reset(XEVE_SBAC * sbac, u8 slice_type, u8 slice_qp, int sps_cm_in
 void xeve_sbac_finish(XEVE_BSW *bs);
 void xeve_sbac_encode_bin(u32 bin, XEVE_SBAC *sbac, SBAC_CTX_MODEL *ctx_model, XEVE_BSW *bs);
 void xeve_sbac_encode_bin_trm(u32 bin, XEVE_SBAC *sbac, XEVE_BSW *bs);
-int xeve_eco_nalu_len_update(void * buf, int size);
+int xeve_eco_nal_unit_len(void * buf, int size);
 int  xeve_eco_nalu(XEVE_BSW * bs, XEVE_NALU * nalu);
 int  xeve_eco_sps(XEVE_BSW * bs, XEVE_SPS * sps);
 int  xeve_eco_pps(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps);

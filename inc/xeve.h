@@ -368,6 +368,8 @@ typedef struct _XEVE_PARAM
        - 0 : use open GOP (default)
        - 1 : use closed GOP */
     int            closed_gop;
+    /* use 'Annex-B (nal_unit_length)' format */
+    int            use_annexb;
     /* use filler data for tight constant bitrate */
     int            use_filler;
     /* XEVE_CHROMA_TABLE chroma_qp_table_struct */
