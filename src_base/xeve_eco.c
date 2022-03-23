@@ -34,7 +34,7 @@
 
 #pragma warning(disable:4018)
 
-int xeve_eco_nalu_len_update(void * buf, int size)
+int xeve_eco_nal_unit_len(void * buf, int size)
 {
     int i;
     u8 * p = buf;

@@ -213,16 +213,6 @@ void xeve_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps);
 int  xeve_set_active_pps_info(XEVE_CTX * ctx);
 void xeve_set_sh(XEVE_CTX *ctx, XEVE_SH *sh);
 int  xeve_set_tile_info(XEVE_CTX * ctx);
-int  xeve_platform_init(XEVE_CTX * ctx);
-void xeve_platform_deinit(XEVE_CTX * ctx);
-int  xeve_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_pic_finish(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_enc(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
-int  xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img);
-int  xeve_ready(XEVE_CTX * ctx);
-void xeve_flush(XEVE_CTX * ctx);
-int  xeve_picbuf_get_inbuf(XEVE_CTX * ctx, XEVE_IMGB ** img);
 int  xeve_header(XEVE_CTX * ctx);
 void xeve_update_core_loc_param(XEVE_CTX * ctx, XEVE_CORE * core);
 void xeve_update_core_loc_param_mt(XEVE_CTX * ctx, XEVE_CORE * core);
@@ -231,19 +221,9 @@ int  xeve_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int threa
 int  xeve_deblock_mt(void * arg);
 int  xeve_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core);
 void xeve_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
-void xeve_platform_init_func(XEVE_CTX * ctx);
-int  xeve_platform_init(XEVE_CTX * ctx);
-int  xeve_create_bs_buf(XEVE_CTX  * ctx, int max_bs_buf_size);
-int  xeve_delete_bs_buf(XEVE_CTX  * ctx);
-int  xeve_encode_sps(XEVE_CTX * ctx);
-int  xeve_encode_pps(XEVE_CTX * ctx);
-int  xeve_check_frame_delay(XEVE_CTX * ctx);
-int  xeve_check_more_frames(XEVE_CTX * ctx);
 int  xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int chroma_format_idc);
 int  xeve_delete_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh);
 void xeve_set_tile_in_slice(XEVE_CTX * ctx);
 void xeve_set_chroma_qp_tbl_loc(XEVE_CTX* ctx);
-int  xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, int tune);
-int  xeve_parse_param_bit(char* input_param);
-int  xeve_param_init(XEVE_PARAM* param);
+
 #endif /* __XEVE_UTIL_H__ */

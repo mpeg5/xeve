@@ -44,7 +44,7 @@
 #ifdef _WIN32
 #define y4m_struct_stat struct _stati64
 #define y4m_fstat _fstati64
-#else 
+#else
 #define y4m_struct_stat struct stat
 #define y4m_fstat fstat
 #endif
@@ -411,7 +411,7 @@ static int y4m_test(FILE * fp)
     if(b_regular) {
         fseek( fp, 0, SEEK_SET );
     }
-    
+
     buffer[8] = '\0';
     if (memcmp(buffer, "YUV4MPEG", 8))
     {
@@ -943,7 +943,7 @@ int main(int argc, const char **argv)
         ret = xeve_encode(id, &bitb, &stat);
         if(XEVE_FAILED(ret))
         {
-            logerr("xeve_encode() failed\n");
+            logerr("xeve_encode() failed. ret=%d\n", ret);
             ret = -1; goto ERR;
         }
 

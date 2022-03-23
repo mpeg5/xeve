@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -115,6 +115,7 @@ void xevem_pocs(XEVE_CTX * ctx, u32 pic_imcnt, int gop_size, int pos);
 int  xevem_set_tile_info(XEVE_CTX * ctx);
 int  xevem_ready(XEVE_CTX * ctx);
 void xevem_flush(XEVE_CTX * ctx);
+int xevem_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  xevem_header(XEVE_CTX * ctx);
 int  xevem_pic_prepare(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  xevem_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int thread_cnt);
