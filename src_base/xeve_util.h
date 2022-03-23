@@ -188,10 +188,6 @@ void xeve_copy_chroma_qp_mapping_params(XEVE_CHROMA_TABLE *dst, XEVE_CHROMA_TABL
 void xeve_update_core_loc_param(XEVE_CTX * ctx, XEVE_CORE * core);
 void xeve_update_core_loc_param_mt(XEVE_CTX * ctx, XEVE_CORE * core);
 int  xeve_mt_get_next_ctu_num(XEVE_CTX * ctx, XEVE_CORE * core, int skip_ctb_line_cnt);
-int  xeve_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int thread_cnt);
-int  xeve_deblock_mt(void * arg);
-int  xeve_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core);
-void xeve_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
 int  xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int chroma_format_idc);
 int  xeve_delete_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh);
 void xeve_set_tile_in_slice(XEVE_CTX * ctx);

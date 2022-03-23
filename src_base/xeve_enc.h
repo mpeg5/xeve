@@ -83,6 +83,11 @@ void xeve_set_sh(XEVE_CTX *ctx, XEVE_SH *sh);
 int  xeve_set_tile_info(XEVE_CTX * ctx);
 int  xeve_header(XEVE_CTX * ctx);
 
+int  xeve_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int thread_cnt);
+int  xeve_deblock_mt(void * arg);
+int  xeve_loop_filter(XEVE_CTX * ctx, XEVE_CORE * core);
+void xeve_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, int bit_depth);
+
 int  xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, int tune);
 int  xeve_param_init(XEVE_PARAM* param);
 
