@@ -69,6 +69,7 @@ int  xeve_create_bs_buf(XEVE_CTX  * ctx, int max_bs_buf_size);
 int  xeve_delete_bs_buf(XEVE_CTX  * ctx);
 int  xeve_encode_sps(XEVE_CTX * ctx);
 int  xeve_encode_pps(XEVE_CTX * ctx);
+int  xeve_encode_sei(XEVE_CTX * ctx);
 int  xeve_check_frame_delay(XEVE_CTX * ctx);
 int  xeve_check_more_frames(XEVE_CTX * ctx);
 
@@ -91,6 +92,6 @@ void xeve_recon(XEVE_CTX * ctx, XEVE_CORE * core, s16 *coef, pel *pred, int is_c
 int  xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, int tune);
 int  xeve_param_init(XEVE_PARAM* param);
 
-
+void xeve_param2string(XEVE_PARAM * param, char * sei_buf, int padx, int pady);
 #endif /* _XEVE_ENC_H_ */
 
