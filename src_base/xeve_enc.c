@@ -87,7 +87,7 @@ ERR:
     return ret;
 }
 
-static int ctu_mt_core(void * arg)
+static int xeve_ctu_mt_core(void * arg)
 {
     assert(arg != NULL);
 
@@ -334,7 +334,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
                 xeve_init_core_mt(ctx, i, core, thread_cnt);
 
                 ctx->core[thread_cnt]->thread_cnt = thread_cnt;
-                tc->run(ctx->thread_pool[thread_cnt], ctu_mt_core, (void*)ctx->core[thread_cnt]);
+                tc->run(ctx->thread_pool[thread_cnt], xeve_ctu_mt_core, (void*)ctx->core[thread_cnt]);
             }
 
             ctx->tile[i].qp = ctx->sh->qp;
@@ -345,7 +345,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             xeve_init_core_mt(ctx, i, core, 0);
 
             ctx->core[0]->thread_cnt = 0;
-            ctu_mt_core((void*)ctx->core[0]);
+            xeve_ctu_mt_core((void*)ctx->core[0]);
 
              for (thread_cnt1 = 1; thread_cnt1 < parallel_task; thread_cnt1++)
             {
