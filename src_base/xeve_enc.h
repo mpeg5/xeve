@@ -31,6 +31,11 @@
 #ifndef _XEVE_ENC_H_
 #define _XEVE_ENC_H_
 
+XEVE_CTX * xeve_ctx_alloc(void);
+void xeve_ctx_free(XEVE_CTX * ctx);
+XEVE_CORE * xeve_core_alloc(int chroma_format_idc);
+void xeve_core_free(XEVE_CORE * core);
+
 int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  xeve_platform_init(XEVE_CTX * ctx);
 void xeve_platform_deinit(XEVE_CTX * ctx);
@@ -52,6 +57,17 @@ int  xeve_encode_sps(XEVE_CTX * ctx);
 int  xeve_encode_pps(XEVE_CTX * ctx);
 int  xeve_check_frame_delay(XEVE_CTX * ctx);
 int  xeve_check_more_frames(XEVE_CTX * ctx);
+
+int  xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param);
+int  xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat);
+void xeve_set_nalu(XEVE_NALU * nalu, int nalu_type, int nuh_temporal_id);
+void xeve_set_vui(XEVE_CTX * ctx, XEVE_VUI * vui);
+void xeve_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps);
+void xeve_set_pps(XEVE_CTX * ctx, XEVE_PPS * pps);
+int  xeve_set_active_pps_info(XEVE_CTX * ctx);
+void xeve_set_sh(XEVE_CTX *ctx, XEVE_SH *sh);
+int  xeve_set_tile_info(XEVE_CTX * ctx);
+int  xeve_header(XEVE_CTX * ctx);
 
 int  xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, int tune);
 int  xeve_param_init(XEVE_PARAM* param);
