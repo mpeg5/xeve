@@ -72,7 +72,7 @@ static inline int y4m_is_regular_file( FILE *filehandle )
     y4m_struct_stat file_stat;
     if( y4m_fstat( fileno( filehandle ), &file_stat ) )
         return 1;
-    return 0;// S_ISREG(file_stat.st_mode);
+    return S_ISREG(file_stat.st_mode);
 }
 
 static void print_usage(const char **argv)
