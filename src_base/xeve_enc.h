@@ -31,6 +31,20 @@
 #ifndef _XEVE_ENC_H_
 #define _XEVE_ENC_H_
 
+/* Convert XEVE into XEVE_CTX */
+#define XEVE_ID_TO_CTX_R(id, ctx) \
+    xeve_assert_r((id)); \
+    (ctx) = (XEVE_CTX *)id; \
+    xeve_assert_r((ctx)->magic == XEVE_MAGIC_CODE);
+
+/* Convert XEVE into XEVE_CTX with return value if assert on */
+#define XEVE_ID_TO_CTX_RV(id, ctx, ret) \
+    xeve_assert_rv((id), (ret)); \
+    (ctx) = (XEVE_CTX *)id; \
+    xeve_assert_rv((ctx)->magic == XEVE_MAGIC_CODE, (ret));
+
+
+
 XEVE_CTX * xeve_ctx_alloc(void);
 void xeve_ctx_free(XEVE_CTX * ctx);
 XEVE_CORE * xeve_core_alloc(int chroma_format_idc);

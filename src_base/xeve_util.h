@@ -184,18 +184,6 @@ void xeve_imgb_garbage_free(XEVE_IMGB * imgb);
 
 int  xeve_check_cpu_info();
 
-/* Convert XEVE into XEVE_CTX */
-#define XEVE_ID_TO_CTX_R(id, ctx) \
-    xeve_assert_r((id)); \
-    (ctx) = (XEVE_CTX *)id; \
-    xeve_assert_r((ctx)->magic == XEVE_MAGIC_CODE);
-
-/* Convert XEVE into XEVE_CTX with return value if assert on */
-#define XEVE_ID_TO_CTX_RV(id, ctx, ret) \
-    xeve_assert_rv((id), (ret)); \
-    (ctx) = (XEVE_CTX *)id; \
-    xeve_assert_rv((ctx)->magic == XEVE_MAGIC_CODE, (ret));
-
 void xeve_copy_chroma_qp_mapping_params(XEVE_CHROMA_TABLE *dst, XEVE_CHROMA_TABLE *src);
 void xeve_update_core_loc_param(XEVE_CTX * ctx, XEVE_CORE * core);
 void xeve_update_core_loc_param_mt(XEVE_CTX * ctx, XEVE_CORE * core);
