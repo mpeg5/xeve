@@ -196,9 +196,6 @@ int  xeve_check_cpu_info();
     (ctx) = (XEVE_CTX *)id; \
     xeve_assert_rv((ctx)->magic == XEVE_MAGIC_CODE, (ret));
 
-int  xeve_encode_sps(XEVE_CTX * ctx);
-int  xeve_encode_pps(XEVE_CTX * ctx);
-
 XEVE_CTX * xeve_ctx_alloc(void);
 void xeve_ctx_free(XEVE_CTX * ctx);
 XEVE_CORE * xeve_core_alloc(int chroma_format_idc);
@@ -237,6 +234,7 @@ int  xeve_create_bs_buf(XEVE_CTX  * ctx, int max_bs_buf_size);
 int  xeve_delete_bs_buf(XEVE_CTX  * ctx);
 int  xeve_encode_sps(XEVE_CTX * ctx);
 int  xeve_encode_pps(XEVE_CTX * ctx);
+int  xeve_encode_sei(XEVE_CTX * ctx);
 int  xeve_check_frame_delay(XEVE_CTX * ctx);
 int  xeve_check_more_frames(XEVE_CTX * ctx);
 int  xeve_create_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh, int chroma_format_idc);
@@ -244,6 +242,7 @@ int  xeve_delete_cu_data(XEVE_CU_DATA *cu_data, int log2_cuw, int log2_cuh);
 void xeve_set_tile_in_slice(XEVE_CTX * ctx);
 void xeve_set_chroma_qp_tbl_loc(XEVE_CTX* ctx);
 int  xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, int tune);
+void xeve_param2string(XEVE_PARAM * param, char * sei_buf, int padx, int pady);
 int  xeve_parse_param_bit(char* input_param);
 int  xeve_param_init(XEVE_PARAM* param);
 #endif /* __XEVE_UTIL_H__ */

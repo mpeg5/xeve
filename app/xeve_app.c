@@ -192,6 +192,17 @@ static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
 {
     int  ret, size, value;
 
+    if (args->info)
+    {
+        value = 1;
+        size = 4;
+        ret = xeve_config(id, XEVE_CFG_SET_SEI_CMD, &value, &size);
+        if (XEVE_FAILED(ret))
+        {
+            logerr("failed to set config for sei command info messages\n");
+            return XEVE_ERR;
+        }
+    }
     if(args->hash)
     {
         value = 1;
@@ -217,7 +228,7 @@ static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
     else if (!strcmp(args->profile, "main")) tprofile = XEVE_PROFILE_MAIN;
     else return -1;
 
-    if (strlen(args->preset) == 0) tprofile = XEVE_PRESET_MEDIUM; /* default */
+    if (strlen(args->preset) == 0) tpreset = XEVE_PRESET_MEDIUM; /* default */
     else if (!strcmp(args->preset, "fast")) tpreset = XEVE_PRESET_FAST;
     else if (!strcmp(args->preset, "medium")) tpreset = XEVE_PRESET_MEDIUM;
     else if (!strcmp(args->preset, "slow")) tpreset = XEVE_PRESET_SLOW;
@@ -603,6 +614,13 @@ static void y4m_update_param(ARGS_PARSER * args, Y4M_INFO * y4m, XEVE_PARAM * pa
     args->set_int(args, "input-depth", y4m->bit_depth);
 }
 
+static int parse_str_to_int(const char* arg, const char* const* names)
+{
+    for (int i = 0; names[i]; i++)
+        if (!strcmp(arg, names[i]))
+            return i;
+    return XEVE_ERR;
+}
 static int kbps_str_to_int(char * str)
 {
     int kbps = 0;
@@ -633,9 +651,67 @@ static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
     {
         param->vbv_bufsize = kbps_str_to_int(args->vbv_bufsize);
     }
-    return 0;
+    return XEVE_OK;
 }
 
+static const char * const xeve_sar_names[] = { "unknown", "1:1", "12:11", "10:11", "16:11", "40:33", "24:11", "20:11",
+                                               "32:11", "80:33", "18:11", "15:11", "64:33", "160:99", "4:3", "3:2", "2:1", 0 };
+static const char * const xeve_video_format_names[] = { "component", "pal", "ntsc", "secam", "mac", "unknown", 0 };
+static const char * const xeve_fullrange_names[] = { "limited", "full", 0 };
+static const char * const xeve_colorprim_names[] = { "reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "film", "bt2020", "smpte428", "smpte431", "smpte432", 0 };
+static const char * const xeve_transfer_names[] = { "reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "linear", "log100",
+                                                    "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1", "bt2020-10", "bt2020-12",
+                                                    "smpte2084", "smpte428", "arib-std-b67", 0 };
+static const char * const xeve_colmatrix_names[] = { "gbr", "bt709", "unknown", "", "fcc", "bt470bg", "smpte170m", "smpte240m",
+                                                     "ycgco", "bt2020nc", "bt2020c", "smpte2085", "chroma-derived-nc", "chroma-derived-c", "ictcp", 0 };
+
+static int update_vui_param(ARGS_PARSER * args, XEVE_PARAM * param)
+{
+    if (strlen(args->sar) > 0)
+    {
+        param->sar = parse_str_to_int(args->sar, xeve_sar_names);
+        if (XEVE_ERR == param->sar) return param->sar;
+    }
+    if (strlen(args->videoformat) > 0)
+    {
+        param->videoformat = parse_str_to_int(args->videoformat, xeve_video_format_names);
+        if (XEVE_ERR == param->videoformat) return param->videoformat;
+    }
+    if (strlen(args->range) > 0)
+    {
+        param->range = parse_str_to_int(args->range, xeve_fullrange_names);
+        if (XEVE_ERR == param->range) return param->range;
+    }
+    if (strlen(args->colorprim) > 0)
+    {
+        param->colorprim = parse_str_to_int(args->colorprim, xeve_colorprim_names);
+        if (XEVE_ERR == param->colorprim) return param->colorprim;
+    }
+    if (strlen(args->transfer) > 0)
+    {
+        param->transfer = parse_str_to_int(args->transfer, xeve_transfer_names);
+        if (XEVE_ERR == param->transfer) return param->transfer;
+    }
+    if (strlen(args->matrix_coefficients) > 0)
+    {
+        param->matrix_coefficients = parse_str_to_int(args->matrix_coefficients, xeve_colmatrix_names);
+        if (XEVE_ERR == param->matrix_coefficients) return param->matrix_coefficients;
+    }
+    return XEVE_OK;
+}
+
+static int update_sei_param(ARGS_PARSER * args, XEVE_PARAM * param)
+{
+    if (strlen(args->master_display) > 0)
+    {
+        param->master_display = strdup(args->master_display);
+    }
+    if (strlen(args->max_cll) > 0)
+    {
+        sscanf(args->max_cll, "%hu,%hu", &param->max_cll, &param->max_fall);
+    }
+    return XEVE_OK;
+}
 
 static int vui_param_check(XEVE_PARAM * param)
 {
@@ -991,14 +1067,6 @@ int main(int argc, const char **argv)
         ret = -1; goto ERR;
     }
 
-    /* VUI parameter Range Checking*/
-
-    if (vui_param_check(param))
-    {
-          logerr("VUI Parameter out of range\n");
-          ret = -1; goto ERR;
-     }
-
     /* y4m header parsing  */
     is_y4m = y4m_test(fp_inp);
     if (is_y4m)
@@ -1036,8 +1104,28 @@ int main(int argc, const char **argv)
     if (update_rc_param(args, param))
     {
         logerr("parameters for rate control is not proper\n");
-        ret = -1; goto ERR;
+        ret = XEVE_ERR; goto ERR;
     }
+    /* update vui parameters */
+    if (update_vui_param(args, param))
+    {
+        logerr("vui parameters is not proper\n");
+        ret = XEVE_ERR; goto ERR;
+    }
+    /* update sei parameters */
+    if (update_sei_param(args, param))
+    {
+        logerr("sei parameters is not proper\n");
+        ret = XEVE_ERR; goto ERR;
+    }
+
+    /* VUI parameter Range Checking*/
+    if (vui_param_check(param))
+    {
+        logerr("VUI Parameter out of range\n");
+        ret = XEVE_ERR; goto ERR;
+    }
+
     /* check mandatory parameters */
     if (args->check_mandatory(args, &err_arg))
     {

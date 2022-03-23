@@ -130,6 +130,7 @@ extern "C"
 #define XEVE_CFG_SET_USE_DEBLOCK        (211)
 #define XEVE_CFG_SET_DEBLOCK_A_OFFSET   (212)
 #define XEVE_CFG_SET_DEBLOCK_B_OFFSET   (213)
+#define XEVE_CFG_SET_SEI_CMD            (300)
 #define XEVE_CFG_SET_USE_PIC_SIGNATURE  (301)
 #define XEVE_CFG_GET_COMPLEXITY         (500)
 #define XEVE_CFG_GET_SPEED              (501)
@@ -395,6 +396,7 @@ typedef struct _XEVE_PARAM
     int            picture_crop_bottom_offset;
     int            rdo_dbk_switch;
     int            qp_incread_frame;
+    int            sei_cmd_info;
     int            use_pic_sign;
     int            f_ifrm;
     int            qp_max;
@@ -501,7 +503,6 @@ typedef struct _XEVE_PARAM
     int  colorprim;
     int  transfer;
     int  matrix_coefficients;
-    int  master_display;
     int  overscan_info_present_flag;
     int  overscan_appropriate_flag;
     int  chroma_loc_info_present_flag;
@@ -529,6 +530,10 @@ typedef struct _XEVE_PARAM
     int video_signal_type_present_flag;
     int colour_description_present_flag;
 
+    /* SEI options*/
+    int  master_display;
+    int  max_cll;
+    int  max_fall;
 } XEVE_PARAM;
 
 /*****************************************************************************

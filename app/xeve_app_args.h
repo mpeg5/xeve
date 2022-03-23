@@ -164,6 +164,10 @@ static const ARGS_OPT args_opt_table[] = \
         "number of skipped frames before encoding"
     },
     {
+        ARGS_NO_KEY,  "info", ARGS_VAL_TYPE_NONE, 0, NULL,
+        "embed SEI messages identifying encoder parameters and command line arguments"
+    },
+    {
         ARGS_NO_KEY,  "hash", ARGS_VAL_TYPE_NONE, 0, NULL,
         "embed picture signature (HASH) for conformance checking in decoding"
     },
@@ -513,7 +517,7 @@ static const ARGS_OPT args_opt_table[] = \
         "Number of reference pictures"
     },
     {
-        ARGS_NO_KEY, "sar", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        ARGS_NO_KEY,  "sar", ARGS_VAL_TYPE_STRING, 0, NULL,
         "sar <width:height|int> possible values 1 to 16 and 255"
     },
     {
@@ -525,33 +529,38 @@ static const ARGS_OPT args_opt_table[] = \
         "sar <width:height|int>"
     },
     {
-        ARGS_NO_KEY,  "videoformat", ARGS_VAL_TYPE_INTEGER, 5, NULL,
+        ARGS_NO_KEY,  "videoformat", ARGS_VAL_TYPE_STRING, 0, NULL,
         " 0-component, 1-pal, 2-ntsc, 3-secam, 4-mac. 5-unspecified"
     },
     {
-        ARGS_NO_KEY,  "range", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        ARGS_NO_KEY,  "range", ARGS_VAL_TYPE_STRING, 0, NULL,
         "black level and range of luma and chroma signals as 1- full or 0- limited"
     },
     {
-        ARGS_NO_KEY,  "colorprim", ARGS_VAL_TYPE_INTEGER, 2, NULL,
+        ARGS_NO_KEY,  "colorprim", ARGS_VAL_TYPE_STRING, 0, NULL,
         "1- bt709, 2-unspecified, 3- reserved, 4- bt470m, 5- bt470bg, 6- smpte170m,\
          7- smpte240m, 8- Generic film, 9- bt2020, 10-smpte428, 11-smpte431, 12-smpte432, \
          22-EBU Tech. 3213 Default 2-unspecified"
     },
     {
-        ARGS_NO_KEY,  "transfer", ARGS_VAL_TYPE_INTEGER, 2, NULL,
+        ARGS_NO_KEY,  "transfer", ARGS_VAL_TYPE_STRING, 0, NULL,
         "1- transfer characteristics from bt709, 2-unspecified, 3-reserved, 4-bt470m, 5-bt470bg, 6-smpte170m,\
          7-smpte240m, 8-linear, 9-log100, 10-log316, 11-iec61966-2-4, 12-bt1361e, 13-iec61966-2-1,\
          14-bt2020-10, 15-bt2020-12, 16-smpte2084, 17-smpte428, 198-arib-std-b67. Default 2-unspecified"
     },
     {
-        ARGS_NO_KEY,  "matrix-coefficients", ARGS_VAL_TYPE_INTEGER, 2, NULL,
-        "valid range 0 to 14, 15 to 255 are reserved as per table E.5 in EVC spec"
+        ARGS_NO_KEY,  "matrix-coefficients", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "0-gbr, 1-bt709, 2-unspecified, 3-reserved, 4-fcc, 5-bt470bg, 6-smpte170m, 7-smpte240m, \
+          8-ycgco, 9-bt2020nc, 10-bt2020c, 11-smpte2085, 12-chroma-derived-nc, 13-chroma-derived-c, 14-ictcp, 15-255 reserved}; "
     },
     {
-        ARGS_NO_KEY,  "master-display", ARGS_VAL_TYPE_INTEGER, 0, NULL,
+        ARGS_NO_KEY,  "master-display", ARGS_VAL_TYPE_STRING, 0, NULL,
         "SMPTE ST 2086 master display color volume info SEI (HDR)\
           format: G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)"
+    },
+    {
+        ARGS_NO_KEY,  "max-cll", ARGS_VAL_TYPE_STRING, 0, NULL,
+        "Specify content light level info SEI as (cll,fall) (HDR)"
     },
     {
         ARGS_NO_KEY,  "chromaloc-tf", ARGS_VAL_TYPE_INTEGER, 0, NULL,
@@ -643,6 +652,7 @@ struct _ARGS_PARSER
     char fname_out[256];
     char fname_rec[256];
     int frames;
+    int info;
     int hash;
     int input_depth;
     int input_csp;
@@ -655,14 +665,15 @@ struct _ARGS_PARSER
 
     /* VUI options*/
 
-    int  sar;
+    char  sar[64];
     int  sar_width, sar_height;
-    int  videoformat;
-    int  range;
-    int  colorprim;
-    int  transfer;
-    int  matrix_coefficients;
-    int  master_display;
+    char  videoformat[64];
+    char  range[64];
+    char  colorprim[64];
+    char  transfer[64];
+    char  master_display[64];
+    char  max_cll[64];
+    char  matrix_coefficients[64];
     int  overscan_info_present_flag;
     int  overscan_appropriate_flag;
     int  chroma_loc_info_present_flag;
@@ -918,7 +929,7 @@ static int args_parse_cmd(int argc, const char * argv[], ARGS_OPT * ops,
     if(ARGS_GET_CMD_OPT_VAL_TYPE(ops[oidx].val_type) !=
        ARGS_VAL_TYPE_NONE)
     {
-		if(aidx + 1 >= argc) {
+        if(aidx + 1 >= argc) {
             *errstr = (char*)argv[aidx];
             goto ERR;
         }
@@ -995,6 +1006,7 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "output", args->fname_out);
     args_set_variable_by_key_long(opts, "recon", args->fname_rec);
     args_set_variable_by_key_long(opts, "frames", &args->frames);
+    args_set_variable_by_key_long(opts, "info", &args->info); 
     args_set_variable_by_key_long(opts, "hash", &args->hash);
     args_set_variable_by_key_long(opts, "verbose", &op_verbose);
     op_verbose = VERBOSE_SIMPLE; /* default */
@@ -1014,24 +1026,26 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "vbv-bufsize", args->vbv_bufsize);
 
     /* VUI parameters */
-    args->sar = 0;
-    args_set_variable_by_key_long(opts, "sar", &args->sar);
+    strcpy(args->sar, ""); /* default */
+    args_set_variable_by_key_long(opts, "sar", args->sar);
     args->sar_width = 0;
     args_set_variable_by_key_long(opts, "sar-width", &args->sar_width);
     args->sar_height = 0;
     args_set_variable_by_key_long(opts, "sar-height", &args->sar_height);
-    args->videoformat = 2; /* default */
-    args_set_variable_by_key_long(opts, "videoformat", &args->videoformat);
-    args->range = 0; /* default */
-    args_set_variable_by_key_long(opts, "range", &args->range);
-    args->colorprim = 2; /* default */
-    args_set_variable_by_key_long(opts, "colorprim", &args->colorprim);
-    args->transfer = 2; /* default */
-    args_set_variable_by_key_long(opts, "transfer", &args->transfer);
-    args->master_display = 2; /* default */
-    args_set_variable_by_key_long(opts, "master-display", &args->master_display);
-    args->matrix_coefficients = 2; /* default */
-    args_set_variable_by_key_long(opts, "matrix-coefficients", &args->matrix_coefficients);
+    strcpy(args->videoformat, ""); /* default */
+    args_set_variable_by_key_long(opts, "videoformat", args->videoformat);
+    strcpy(args->range, ""); /* default */
+    args_set_variable_by_key_long(opts, "range", args->range);
+    strcpy(args->colorprim, ""); /* default */
+    args_set_variable_by_key_long(opts, "colorprim", args->colorprim);
+    strcpy(args->transfer, ""); /* default */
+    args_set_variable_by_key_long(opts, "transfer", args->transfer);
+    strcpy(args->master_display, ""); /* default */
+    args_set_variable_by_key_long(opts, "master-display", args->master_display);
+    strcpy(args->max_cll, ""); /* default */
+    args_set_variable_by_key_long(opts, "max-content-light-level", args->max_cll);
+    strcpy(args->matrix_coefficients, ""); /* default */
+    args_set_variable_by_key_long(opts, "matrix-coefficients", args->matrix_coefficients);
     args->chroma_sample_loc_type_top_field = 0; /* default */
     args_set_variable_by_key_long(opts, "chromaloc-tf", &args->chroma_sample_loc_type_top_field);
     args->chroma_sample_loc_type_bottom_field = 0; /* default */
@@ -1082,15 +1096,8 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, use_filler);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, lookahead);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, ref);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, sar);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, sar_width);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, sar_height);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, videoformat);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, range);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, colorprim);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, transfer);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, matrix_coefficients);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, master_display);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, chroma_sample_loc_type_top_field);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, chroma_sample_loc_type_bottom_field);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, neutral_chroma_indication_flag);

@@ -330,11 +330,72 @@ int xeve_eco_signature(XEVE_CTX * ctx, XEVE_BSW * bs)
     return XEVE_OK;
 }
 
+void write_sei_userdata_unregistered(XEVE_SEI_PAYLOAD * sei_userdata, XEVE_BSW * bs)
+{
+    const u8 m_uuid_iso_iec_11578[ISO_IEC_11578_LEN] = {
+        0x2C, 0xA2, 0xDE, 0x09, 0xB5, 0x17, 0x47, 0xDB,
+        0xBB, 0x55, 0xA4, 0xFE, 0x7F, 0xC2, 0xFC, 0x4E
+    };
+
+    u32 payload_type = sei_userdata->payload_type;
+    for (; payload_type >= 0xff; payload_type -= 0xff)
+        xeve_bsw_write(bs, 0xff, 8);
+    xeve_bsw_write(bs, payload_type, 8);
+
+    u32 payload_size = (ISO_IEC_11578_LEN + sei_userdata->payload_size) << 3;
+    for (; payload_size >= 0xff; payload_size -= 0xff)
+        xeve_bsw_write(bs, 0xff, 8);
+    xeve_bsw_write(bs, payload_size, 8);
+
+    for (u32 i = 0; i < ISO_IEC_11578_LEN; i++)
+    {
+        xeve_bsw_write(bs, m_uuid_iso_iec_11578[i], 8);
+    }
+    for (u32 i = 0; i < sei_userdata->payload_size; i++)
+    {
+        xeve_bsw_write(bs, sei_userdata->payload[i], 8);
+    }
+}
+
+int xeve_eco_emitsei(XEVE_CTX * ctx, XEVE_BSW * bs)
+{
+    xeve_assert_rv(XEVE_BSW_IS_BYTE_ALIGN(bs), XEVE_ERR_UNKNOWN);
+
+    if (ctx->param.sei_cmd_info)
+    {
+        char sei_embed_msg[4000];
+        char *sei_msg_ptr = sei_embed_msg;
+
+        char *sei_xeve_msg = " xeve - MPEG-5 EVC codec - "
+            "ESSENTIAL VIDEO CODING https://github.com/mpeg5/xeve - options: ";
+
+        sei_msg_ptr += sprintf(sei_msg_ptr, sei_xeve_msg);
+
+        xeve_param2string(&ctx->param, sei_msg_ptr, ctx->sps.picture_crop_right_offset, ctx->sps.picture_crop_bottom_offset);
+
+        XEVE_SEI_PAYLOAD sei_userdata_unregistered;
+        sei_userdata_unregistered.payload_type = USER_DATA_UNREGISTERED;
+        sei_userdata_unregistered.payload_size = (u32)strlen(sei_embed_msg);
+        sei_userdata_unregistered.payload = (u8*)sei_embed_msg;
+        write_sei_userdata_unregistered(&sei_userdata_unregistered, bs);
+    }
+
+    while (!XEVE_BSW_IS_BYTE_ALIGN(bs))
+    {
+        xeve_bsw_write1(bs, 0);
+    }
+
+    return XEVE_OK;
+}
+
 int xeve_eco_sei(XEVE_CTX * ctx, XEVE_BSW * bs)
 {
     xeve_assert_rv(XEVE_BSW_IS_BYTE_ALIGN(bs), XEVE_ERR_UNKNOWN);
 
-    xeve_eco_signature(ctx, bs);
+    if (ctx->param.use_pic_sign)
+    {
+        xeve_eco_signature(ctx, bs);
+    }
 
     while (!XEVE_BSW_IS_BYTE_ALIGN(bs))
     {
