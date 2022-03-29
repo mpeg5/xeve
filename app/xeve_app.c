@@ -51,6 +51,18 @@
 
 #define MAX_BS_BUF                 (16*1024*1024)
 
+
+static const char * const xeve_sar_names[] = { "unknown", "1:1", "12:11", "10:11", "16:11", "40:33", "24:11", "20:11",
+                                               "32:11", "80:33", "18:11", "15:11", "64:33", "160:99", "4:3", "3:2", "2:1", 0 };
+static const char * const xeve_video_format_names[] = { "component", "pal", "ntsc", "secam", "mac", "unknown", 0 };
+static const char * const xeve_fullrange_names[] = { "limited", "full", 0 };
+static const char * const xeve_colorprim_names[] = { "reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "film", "bt2020", "smpte428", "smpte431", "smpte432", 0 };
+static const char * const xeve_transfer_names[] = { "reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "linear", "log100",
+                                                    "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1", "bt2020-10", "bt2020-12",
+                                                    "smpte2084", "smpte428", "arib-std-b67", 0 };
+static const char * const xeve_colmatrix_names[] = { "gbr", "bt709", "unknown", "", "fcc", "bt470bg", "smpte170m", "smpte240m",
+                                                     "ycgco", "bt2020nc", "bt2020c", "smpte2085", "chroma-derived-nc", "chroma-derived-c", "ictcp", 0 };
+
 typedef enum _STATES {
     STATE_ENCODING,
     STATE_BUMPING,
@@ -187,30 +199,26 @@ static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
 {
     int  ret, size, value;
 
-    if (args->info)
+    size = 4;
+    ret = xeve_config(id, XEVE_CFG_SET_SEI_CMD, &args->info, &size);
+    if (XEVE_FAILED(ret))
     {
-        value = 1;
-        size = 4;
-        ret = xeve_config(id, XEVE_CFG_SET_SEI_CMD, &value, &size);
-        if (XEVE_FAILED(ret))
-        {
-            logerr("failed to set config for sei command info messages\n");
-            return XEVE_ERR;
-        }
+        logerr("failed to set config for sei command info messages\n");
+        return XEVE_ERR;
     }
+
     if(args->hash)
     {
-        value = 1;
         size = 4;
-        ret = xeve_config(id, XEVE_CFG_SET_USE_PIC_SIGNATURE, &value, &size);
+        ret = xeve_config(id, XEVE_CFG_SET_USE_PIC_SIGNATURE, &args->hash, &size);
         if(XEVE_FAILED(ret))
         {
             logerr("failed to set config for picture signature\n");
-            return -1;
+            return XEVE_ERR;
         }
     }
 
-    return 0;
+    return XEVE_OK;
 }
 
 static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
@@ -651,17 +659,6 @@ static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
     return XEVE_OK;
 }
 
-static const char * const xeve_sar_names[] = { "unknown", "1:1", "12:11", "10:11", "16:11", "40:33", "24:11", "20:11",
-                                               "32:11", "80:33", "18:11", "15:11", "64:33", "160:99", "4:3", "3:2", "2:1", 0 };
-static const char * const xeve_video_format_names[] = { "component", "pal", "ntsc", "secam", "mac", "unknown", 0 };
-static const char * const xeve_fullrange_names[] = { "limited", "full", 0 };
-static const char * const xeve_colorprim_names[] = { "reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "film", "bt2020", "smpte428", "smpte431", "smpte432", 0 };
-static const char * const xeve_transfer_names[] = { "reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "linear", "log100",
-                                                    "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1", "bt2020-10", "bt2020-12",
-                                                    "smpte2084", "smpte428", "arib-std-b67", 0 };
-static const char * const xeve_colmatrix_names[] = { "gbr", "bt709", "unknown", "", "fcc", "bt470bg", "smpte170m", "smpte240m",
-                                                     "ycgco", "bt2020nc", "bt2020c", "smpte2085", "chroma-derived-nc", "chroma-derived-c", "ictcp", 0 };
-
 static int update_vui_param(ARGS_PARSER * args, XEVE_PARAM * param)
 {
     if (strlen(args->sar) > 0)
@@ -701,11 +698,11 @@ static int update_sei_param(ARGS_PARSER * args, XEVE_PARAM * param)
 {
     if (strlen(args->master_display) > 0)
     {
-        param->master_display = strdup(args->master_display);
+        param->master_display = (int)strdup(args->master_display);
     }
     if (strlen(args->max_cll) > 0)
     {
-        sscanf(args->max_cll, "%hu,%hu", &param->max_cll, &param->max_fall);
+        sscanf(args->max_cll, "%u,%u", &param->max_cll, &param->max_fall);
     }
     return XEVE_OK;
 }

@@ -2312,6 +2312,7 @@ int xeve_param_init(XEVE_PARAM* param)
     param->tile_columns               = 1;
     param->num_slice_in_pic           = 1;
     param->use_annexb                 = 1;
+    param->sei_cmd_info               = 1;
 
     param->sar                        = 0;
     param->videoformat                = 2;
@@ -2569,6 +2570,9 @@ void xeve_param2string(XEVE_PARAM * param, char * sei_buf, int padx, int pady)
         sei_buf += sprintf(sei_buf, " qp_cb_offset=%d", param->qp_cb_offset);
         sei_buf += sprintf(sei_buf, " qp_cr_offset=%d", param->qp_cr_offset);
     }
+
+    sei_buf += sprintf(sei_buf, " info=%d", param->sei_cmd_info);
+    sei_buf += sprintf(sei_buf, " hash=%d", param->use_pic_sign);
 
     sei_buf += sprintf(sei_buf, " bframes=%d", param->bframes);
     sei_buf += sprintf(sei_buf, " aq-mode=%d", param->aq_mode);

@@ -164,8 +164,10 @@ static const ARGS_OPT args_opt_table[] = \
         "number of skipped frames before encoding"
     },
     {
-        ARGS_NO_KEY,  "info", ARGS_VAL_TYPE_NONE, 0, NULL,
+        ARGS_NO_KEY,  "info", ARGS_VAL_TYPE_INTEGER, 0, NULL,
         "embed SEI messages identifying encoder parameters and command line arguments"
+        "      - 0: off\n"
+        "      - 1: emit sei info"
     },
     {
         ARGS_NO_KEY,  "hash", ARGS_VAL_TYPE_NONE, 0, NULL,
@@ -1003,6 +1005,7 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "output", args->fname_out);
     args_set_variable_by_key_long(opts, "recon", args->fname_rec);
     args_set_variable_by_key_long(opts, "frames", &args->frames);
+    args->info = 1;
     args_set_variable_by_key_long(opts, "info", &args->info); 
     args_set_variable_by_key_long(opts, "hash", &args->hash);
     args_set_variable_by_key_long(opts, "verbose", &op_verbose);

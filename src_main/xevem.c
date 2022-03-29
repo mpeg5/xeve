@@ -947,10 +947,14 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             ctx->param.deblock_beta_offset = t0;
             break;
         case XEVE_CFG_SET_SEI_CMD:
-            ctx->param.sei_cmd_info = (*((int *)buf)) ? 1 : 0;
+            xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
+            t0 = *((int *)buf);
+            ctx->param.sei_cmd_info = t0 ? 1 : 0;
             break;
         case XEVE_CFG_SET_USE_PIC_SIGNATURE:
-            ctx->param.use_pic_sign = (*((int *)buf)) ? 1 : 0;
+            xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
+            t0 = *((int *)buf);
+            ctx->param.use_pic_sign = t0? 1 : 0;
             break;
 
             /* get config *******************************************************/

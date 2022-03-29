@@ -340,7 +340,7 @@ int xeve_eco_signature(XEVE_CTX * ctx, XEVE_BSW * bs)
     return XEVE_OK;
 }
 
-void write_sei_userdata_unregistered(XEVE_SEI_PAYLOAD * sei_userdata, XEVE_BSW * bs)
+static void write_sei_userdata_unregistered(XEVE_SEI_PAYLOAD * sei_userdata, XEVE_BSW * bs)
 {
     const u8 m_uuid_iso_iec_11578[ISO_IEC_11578_LEN] = {
         0x2C, 0xA2, 0xDE, 0x09, 0xB5, 0x17, 0x47, 0xDB,
