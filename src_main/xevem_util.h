@@ -127,6 +127,7 @@ int  xevem_platform_init(XEVE_CTX * ctx);
 void xevem_platform_deinit(XEVE_CTX * ctx);
 int  xevem_encode_sps(XEVE_CTX * ctx);
 int  xevem_encode_pps(XEVE_CTX * ctx);
+int  xevem_encode_sei(XEVE_CTX * ctx);
 int  xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps);
 #if GRAB_STAT
 void enc_stat_header(int pic_w, int pic_h);

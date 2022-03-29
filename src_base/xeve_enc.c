@@ -769,6 +769,7 @@ int xeve_platform_init(XEVE_CTX * ctx)
     ctx->fn_loop_filter       = xeve_loop_filter;
     ctx->fn_encode_sps        = xeve_encode_sps;
     ctx->fn_encode_pps        = xeve_encode_pps;
+    ctx->fn_encode_sei        = xeve_encode_sei;
     ctx->fn_eco_sh            = xeve_eco_sh;
     ctx->fn_eco_split_mode    = xeve_eco_split_mode;
     ctx->fn_eco_sbac_reset    = xeve_sbac_reset;
@@ -890,6 +891,33 @@ int xeve_encode_pps(XEVE_CTX * ctx)
     xeve_eco_nal_unit_len(size_field, (int)(bs->cur - cur_tmp) - 4);
     return XEVE_OK;
 }
+
+int xeve_encode_sei(XEVE_CTX * ctx)
+{
+    XEVE_BSW * bs = &ctx->bs[0];
+    XEVE_NALU  sei_nalu;
+    int ret;
+
+    int* size_field = (int*)(*(&bs->cur));
+    u8* cur_tmp = bs->cur;
+
+    /* nalu header */
+    xeve_set_nalu(&sei_nalu, XEVE_SEI_NUT, ctx->nalu.nuh_temporal_id);
+    xeve_eco_nalu(bs, &sei_nalu);
+
+    /* sei parameter set*/
+    ret = xeve_eco_emitsei(ctx, bs);
+    xeve_assert_rv(ret == XEVE_OK, XEVE_ERR_INVALID_ARGUMENT);
+
+    /* de-init BSW */
+    xeve_bsw_deinit(bs);
+
+    /* write the bitstream size */
+    xeve_eco_nal_unit_len(size_field, (int)(bs->cur - cur_tmp) - 4);
+
+    return XEVE_OK;
+}
+
 
 int xeve_check_frame_delay(XEVE_CTX * ctx)
 {
@@ -1271,40 +1299,40 @@ void xeve_set_nalu(XEVE_NALU * nalu, int nalu_type, int nuh_temporal_id)
 
 void xeve_set_vui(XEVE_CTX * ctx, XEVE_VUI * vui)
 {
-    vui->aspect_ratio_info_present_flag = 1;
-    vui->aspect_ratio_idc = 1;
-    vui->sar_width = 1;
-    vui->sar_height = 1;
-    vui->overscan_info_present_flag = 1;
-    vui->overscan_appropriate_flag = 1;
-    vui->video_signal_type_present_flag = 1;
-    vui->video_format = 1;
-    vui->video_full_range_flag = 1;
-    vui->colour_description_present_flag = 1;
-    vui->colour_primaries = 1;
-    vui->transfer_characteristics = 1;
-    vui->matrix_coefficients = 1;
-    vui->chroma_loc_info_present_flag = 1;
-    vui->chroma_sample_loc_type_top_field = 1;
-    vui->chroma_sample_loc_type_bottom_field = 1;
-    vui->neutral_chroma_indication_flag = 1;
-    vui->field_seq_flag = 1;
-    vui->timing_info_present_flag = 1;
-    vui->num_units_in_tick = 1;
-    vui->time_scale = 1;
-    vui->fixed_pic_rate_flag = 1;
-    vui->nal_hrd_parameters_present_flag = 1;
-    vui->vcl_hrd_parameters_present_flag = 1;
-    vui->low_delay_hrd_flag = 1;
-    vui->pic_struct_present_flag = 1;
-    vui->bitstream_restriction_flag = 1;
-    vui->motion_vectors_over_pic_boundaries_flag = 1;
-    vui->max_bytes_per_pic_denom = 1;
-    vui->max_bits_per_mb_denom = 1;
-    vui->log2_max_mv_length_horizontal = 1;
-    vui->log2_max_mv_length_vertical = 1;
-    vui->num_reorder_pics = 1;
-    vui->max_dec_pic_buffering = 1;
+    vui->aspect_ratio_info_present_flag = ctx->param.aspect_ratio_info_present_flag;
+    vui->aspect_ratio_idc = ctx->param.sar;
+    vui->sar_width = ctx->param.sar_width;
+    vui->sar_height = ctx->param.sar_height;
+    vui->overscan_info_present_flag = ctx->param.overscan_info_present_flag;
+    vui->overscan_appropriate_flag = ctx->param.overscan_appropriate_flag;
+    vui->video_signal_type_present_flag = ctx->param.video_signal_type_present_flag;
+    vui->video_format = ctx->param.videoformat;
+    vui->video_full_range_flag = ctx->param.range;
+    vui->colour_description_present_flag = ctx->param.colour_description_present_flag;
+    vui->colour_primaries = ctx->param.colorprim;
+    vui->transfer_characteristics = ctx->param.transfer;
+    vui->matrix_coefficients = ctx->param.matrix_coefficients;
+    vui->chroma_loc_info_present_flag = ctx->param.chroma_loc_info_present_flag;
+    vui->chroma_sample_loc_type_top_field = ctx->param.chroma_sample_loc_type_top_field;
+    vui->chroma_sample_loc_type_bottom_field = ctx->param.chroma_sample_loc_type_bottom_field;
+    vui->neutral_chroma_indication_flag = ctx->param.neutral_chroma_indication_flag;
+    vui->field_seq_flag = ctx->param.field_seq_flag;
+    vui->timing_info_present_flag = ctx->param.sar_width;
+    vui->num_units_in_tick = ctx->param.num_units_in_tick;
+    vui->time_scale = ctx->param.time_scale;
+    vui->fixed_pic_rate_flag = ctx->param.fixed_pic_rate_flag;
+    vui->nal_hrd_parameters_present_flag = ctx->param.nal_hrd_parameters_present_flag;
+    vui->vcl_hrd_parameters_present_flag = ctx->param.vcl_hrd_parameters_present_flag;
+    vui->low_delay_hrd_flag = ctx->param.low_delay_hrd_flag;
+    vui->pic_struct_present_flag = ctx->param.pic_struct_present_flag;
+    vui->bitstream_restriction_flag = ctx->param.bitstream_restriction_flag;
+    vui->motion_vectors_over_pic_boundaries_flag = ctx->param.motion_vectors_over_pic_boundaries_flag;
+    vui->max_bytes_per_pic_denom = ctx->param.max_bytes_per_pic_denom;
+    vui->max_bits_per_mb_denom = ctx->param.max_bits_per_mb_denom;
+    vui->log2_max_mv_length_horizontal = ctx->param.log2_max_mv_length_horizontal;
+    vui->log2_max_mv_length_vertical = ctx->param.log2_max_mv_length_vertical;
+    vui->num_reorder_pics = ctx->param.num_reorder_pics;
+    vui->max_dec_pic_buffering = ctx->param.max_dec_pic_buffering;
     vui->hrd_parameters.cpb_cnt_minus1 = 1;
     vui->hrd_parameters.bit_rate_scale = 1;
     vui->hrd_parameters.cpb_size_scale = 1;
@@ -1939,6 +1967,13 @@ int xeve_header(XEVE_CTX * ctx)
 
         ret = ctx->fn_encode_pps(ctx);
         xeve_assert_rv(ret == XEVE_OK, ret);
+
+        // SEI Command info 
+        if (ctx->param.sei_cmd_info)
+        {
+            ret = ctx->fn_encode_sei(ctx);
+            xeve_assert_rv(ret == XEVE_OK, ret);
+        }
     }
 
     return ret;
@@ -2277,6 +2312,16 @@ int xeve_param_init(XEVE_PARAM* param)
     param->tile_columns               = 1;
     param->num_slice_in_pic           = 1;
     param->use_annexb                 = 1;
+    param->sei_cmd_info               = 1;
+
+    param->sar                        = 0;
+    param->videoformat                = 2;
+    param->range                      = 0;
+    param->colorprim                  = 2;
+    param->transfer                   = 2;
+    param->matrix_coefficients        = 2;
+    param->master_display             = 2;
+
 
     return XEVE_OK;
 }
@@ -2495,4 +2540,129 @@ int xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, in
     return XEVE_OK;
 }
 
+
+void xeve_param2string(XEVE_PARAM * param, char * sei_buf, int padx, int pady)
+{
+    sei_buf += sprintf(sei_buf, "profile=%d", param->profile);
+    sei_buf += sprintf(sei_buf, " threads=%d", param->threads);
+    sei_buf += sprintf(sei_buf, " input-res=%dx%d", param->w - padx, param->h - pady);
+    sei_buf += sprintf(sei_buf, " fps=%u", param->fps);
+    sei_buf += sprintf(sei_buf, " keyint=%d", param->keyint);
+    sei_buf += sprintf(sei_buf, " color-space=%d", param->cs);
+    sei_buf += sprintf(sei_buf, " rc-type=%s", (param->rc_type == XEVE_RC_ABR) ? "ABR" : (param->rc_type == XEVE_RC_CRF) ? "CRF" : "CQP");
+    
+    if (param->rc_type == XEVE_RC_ABR || param->rc_type == XEVE_RC_CRF)
+    {
+        if (param->rc_type == XEVE_RC_CRF)
+            sei_buf += sprintf(sei_buf, " crf=%df", param->crf);
+        else
+            sei_buf += sprintf(sei_buf, " bitrate=%d", param->bitrate);
+
+        if (param->vbv_bufsize)
+        {
+            sei_buf += sprintf(sei_buf, "vbv-bufsize=%d", param->vbv_bufsize);
+        }
+        sei_buf += sprintf(sei_buf, "use-filler=%d", param->use_filler);
+    }
+    else if (param->rc_type == XEVE_RC_CQP)
+    {
+        sei_buf += sprintf(sei_buf, " qp=%d", param->qp);
+        sei_buf += sprintf(sei_buf, " qp_cb_offset=%d", param->qp_cb_offset);
+        sei_buf += sprintf(sei_buf, " qp_cr_offset=%d", param->qp_cr_offset);
+    }
+
+    sei_buf += sprintf(sei_buf, " info=%d", param->sei_cmd_info);
+    sei_buf += sprintf(sei_buf, " hash=%d", param->use_pic_sign);
+
+    sei_buf += sprintf(sei_buf, " bframes=%d", param->bframes);
+    sei_buf += sprintf(sei_buf, " aq-mode=%d", param->aq_mode);
+    sei_buf += sprintf(sei_buf, " lookahead=%d", param->lookahead);
+    sei_buf += sprintf(sei_buf, " closed-gop=%d", param->closed_gop);
+
+    sei_buf += sprintf(sei_buf, " disable-hgop=%d", param->disable_hgop);
+    sei_buf += sprintf(sei_buf, " ref_pic_gap_length=%d", param->ref_pic_gap_length);
+    sei_buf += sprintf(sei_buf, " codec-bit-depth=%d", param->codec_bit_depth);
+    sei_buf += sprintf(sei_buf, " level-idc=%d", param->level_idc);
+    sei_buf += sprintf(sei_buf, " cu-tree=%d", param->cutree);
+    sei_buf += sprintf(sei_buf, " constrained-ip=%d", param->constrained_intra_pred);
+    sei_buf += sprintf(sei_buf, " use-deblock=%d", param->use_deblock);
+
+    sei_buf += sprintf(sei_buf, " inter-slice-type=%d", param->inter_slice_type);
+    sei_buf += sprintf(sei_buf, " rdo-deblk-switch=%d", param->rdo_dbk_switch);
+    sei_buf += sprintf(sei_buf, " qp-increased-frame=%d", param->qp_incread_frame);
+    sei_buf += sprintf(sei_buf, " forced-idr-frame-flag=%d", param->f_ifrm);
+    sei_buf += sprintf(sei_buf, " qp-increased-frame=%d", param->qp_incread_frame);
+
+    sei_buf += sprintf(sei_buf, " qp-max=%d qp-min=%d", param->qp_max, param->qp_min);
+    sei_buf += sprintf(sei_buf, " gop-size=%d", param->gop_size);
+    sei_buf += sprintf(sei_buf, " use-fcst=%d", param->use_fcst);
+    sei_buf += sprintf(sei_buf, " chroma-format-idc=%d", param->chroma_format_idc);
+    sei_buf += sprintf(sei_buf, " cs-w-shift=%d cs-h-shift=%d", param->cs_w_shift, param->cs_h_shift);
+
+
+    sei_buf += sprintf(sei_buf, " max-cu-intra=%d min-cu-intra=%d max-cu-inter=%d min-cu-inter=%d ", param->max_cu_intra
+        , param->min_cu_intra, param->max_cu_inter, param->min_cu_inter);
+    sei_buf += sprintf(sei_buf, " max-num-ref=%d", param->ref);
+
+    sei_buf += sprintf(sei_buf, " me-ref-num=%d me-algo=%d me-range=%d me-sub=%d me-sub-pos=%d me-sub-range=%d ", param->me_ref_num
+        , param->me_algo, param->me_range, param->me_sub, param->me_sub_pos, param->me_sub_range);
+
+    sei_buf += sprintf(sei_buf, " rdoq=%d", param->rdoq);
+    sei_buf += sprintf(sei_buf, " cabac-refine=%d", param->cabac_refine);
+    sei_buf += sprintf(sei_buf, " intra-block-copy=%d", param->ibc_flag);
+    sei_buf += sprintf(sei_buf, " btt=%d", param->btt);
+    sei_buf += sprintf(sei_buf, " suco=%d", param->suco);
+    sei_buf += sprintf(sei_buf, " amvr=%d", param->tool_amvr);
+    sei_buf += sprintf(sei_buf, " vd=%d", param->tool_mmvd);
+    sei_buf += sprintf(sei_buf, " affine=%d", param->tool_affine);
+    sei_buf += sprintf(sei_buf, " dmvr=%d", param->tool_dmvr);
+    sei_buf += sprintf(sei_buf, " addb=%d", param->tool_addb);
+    sei_buf += sprintf(sei_buf, " alf=%d", param->tool_alf);
+    sei_buf += sprintf(sei_buf, " htdf=%d", param->tool_htdf);
+    sei_buf += sprintf(sei_buf, " admvp=%d", param->tool_admvp);
+    sei_buf += sprintf(sei_buf, " hmvp=%d", param->tool_hmvp);
+    sei_buf += sprintf(sei_buf, " eipd=%d", param->tool_eipd);
+    sei_buf += sprintf(sei_buf, " iqt=%d", param->tool_iqt);
+    sei_buf += sprintf(sei_buf, " cm-init=%d", param->tool_cm_init);
+    sei_buf += sprintf(sei_buf, " adcc=%d", param->tool_adcc);
+    sei_buf += sprintf(sei_buf, " rpl=%d", param->tool_rpl);
+    sei_buf += sprintf(sei_buf, " pocs=%d", param->tool_pocs);
+    sei_buf += sprintf(sei_buf, " ats=%d", param->tool_ats);
+    sei_buf += sprintf(sei_buf, " pocs=%d", param->tool_pocs);
+    if (1 == param->use_deblock)
+        sei_buf += sprintf(sei_buf, " deblock-alpha-offset=%d deblock-beta-offset=%d", param->deblock_alpha_offset, param->deblock_beta_offset);
+    sei_buf += sprintf(sei_buf, " dra=%d", param->tool_dra);
+
+    sei_buf += sprintf(sei_buf, " aspect-ration-info-flag=%d", param->aspect_ratio_info_present_flag);
+    if (param->aspect_ratio_info_present_flag)
+    {
+        sei_buf += sprintf(sei_buf, " sar=%d", param->sar);
+        if (param->sar == EXTENDED_SAR)
+            sei_buf += sprintf(sei_buf, " sar-width : sar-height=%d:%d", param->sar_width, param->sar_height);
+    }
+    sei_buf += sprintf(sei_buf, " overscan=%d", param->overscan_info_present_flag);
+    if (param->overscan_info_present_flag)
+        sei_buf += sprintf(sei_buf, " overscan-crop=%d", param->overscan_appropriate_flag);
+    sei_buf += sprintf(sei_buf, " videoformat=%d", param->videoformat);
+    sei_buf += sprintf(sei_buf, " range=%d", param->range);
+    sei_buf += sprintf(sei_buf, " colorprim=%d", param->colorprim);
+    sei_buf += sprintf(sei_buf, " transfer=%d", param->transfer);
+    sei_buf += sprintf(sei_buf, " colormatrix=%d", param->matrix_coefficients);
+    if (param->master_display)
+        sei_buf += sprintf(sei_buf, " master-display=%d", param->master_display);
+    if (param->max_cll)
+        sei_buf += sprintf(sei_buf, " max-content-light-level=%d", param->max_cll);
+    sei_buf += sprintf(sei_buf, " chromaloc=%d", param->chroma_loc_info_present_flag);
+    if (param->chroma_loc_info_present_flag)
+        sei_buf += sprintf(sei_buf, " chromaloc-top=%d chromaloc-bottom=%d",
+            param->chroma_sample_loc_type_top_field, param->chroma_sample_loc_type_bottom_field);
+    sei_buf += sprintf(sei_buf, " field-seq-flag=%d", param->field_seq_flag);
+    sei_buf += sprintf(sei_buf, " vui-timing-info-flag=%d", param->timing_info_present_flag);
+    sei_buf += sprintf(sei_buf, " fixed-pic-rate-flag=%d", param->fixed_pic_rate_flag);
+    sei_buf += sprintf(sei_buf, " nal-hrd-params-present-flag=%d", param->nal_hrd_parameters_present_flag);
+    sei_buf += sprintf(sei_buf, " vcl-hrd-params-present-flag=%d", param->vcl_hrd_parameters_present_flag);
+    sei_buf += sprintf(sei_buf, " num-reorder-pics=%d", param->num_reorder_pics);
+
+    return;
+}
 
