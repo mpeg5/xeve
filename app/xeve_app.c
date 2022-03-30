@@ -44,6 +44,11 @@
 #ifdef _WIN32
 #define y4m_struct_stat struct _stati64
 #define y4m_fstat _fstati64
+
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+
 #else
 #define y4m_struct_stat struct stat
 #define y4m_fstat fstat

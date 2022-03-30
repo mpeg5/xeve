@@ -683,6 +683,21 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
         xeve_mset(pico->sinfo.transfer_cost, 0, sizeof(u16) * ctx->fcst.f_blk);
         xeve_picbuf_expand(spic, spic->pad_l, spic->pad_c, ctx->sps.chroma_format_idc);
     }
+
+    if (ctx->ts.frame_delay > 0)
+    {
+        if (ctx->pic_icnt == 0)
+        {
+            ctx->ts.frame_first_pts = pic->imgb->ts[0];
+        }
+        else if (ctx->pic_icnt == ctx->ts.frame_delay)
+        {
+            ctx->ts.frame_dealy_time = ctx->ts.frame_first_pts - pic->imgb->ts[0];
+        }
+    }
+
+    ctx->ts.frame_ts[ctx->pic_icnt % XEVE_MAX_INBUF_CNT] = pic->imgb->ts[0];
+
     return XEVE_OK;
 }
 
@@ -1265,14 +1280,28 @@ int xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat)
         }
     }
 
+    imgb_c->ts[0] = bitb->ts[0] = imgb_o->ts[0];
+    if (ctx->ts.frame_delay > 0)
+    {
+        if (ctx->pic_cnt < ctx->ts.frame_delay)
+        {
+            imgb_c->ts[1] = bitb->ts[1] = ctx->ts.frame_ts[ctx->pic_cnt % XEVE_MAX_INBUF_CNT] + ctx->ts.frame_dealy_time;
+        }
+        else
+        {
+            imgb_c->ts[1] = bitb->ts[1] = ctx->ts.frame_ts[(ctx->pic_cnt - ctx->ts.frame_delay) % XEVE_MAX_INBUF_CNT];
+        }
+    }
+    else
+    {
+        imgb_c->ts[1] = bitb->ts[1] = ctx->ts.frame_ts[ctx->pic_cnt % XEVE_MAX_INBUF_CNT];
+    }
+    imgb_c->ts[2] = bitb->ts[2] = imgb_o->ts[2];
+    imgb_c->ts[3] = bitb->ts[3] = imgb_o->ts[3];
+
     ctx->pic_cnt++; /* increase picture count */
     ctx->param.f_ifrm = 0; /* clear force-IDR flag */
     ctx->pico->is_used = 0;
-
-    imgb_c->ts[0] = bitb->ts[0] = imgb_o->ts[0];
-    imgb_c->ts[1] = bitb->ts[1] = imgb_o->ts[1];
-    imgb_c->ts[2] = bitb->ts[2] = imgb_o->ts[2];
-    imgb_c->ts[3] = bitb->ts[3] = imgb_o->ts[3];
 
     if (ctx->param.rc_type != 0)
     {
@@ -1756,6 +1785,8 @@ int xeve_ready(XEVE_CTX* ctx)
     xeve_assert_gv(ctx->sh_array, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     xeve_mset(ctx->sh_array, 0, sizeof(XEVE_SH) * ctx->ts_info.num_slice_in_pic);
     ctx->sh = &ctx->sh_array[0];
+
+    ctx->ts.frame_delay = ctx->param.bframes > 0 ? 8 : 0;
 
     return XEVE_OK;
 ERR:
