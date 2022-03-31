@@ -76,7 +76,7 @@ jobs:
           retention-days: 5
           
   build-baseline-windows:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
 
@@ -111,7 +111,7 @@ jobs:
 #           retention-days: 5
 
   build-main-windows:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
           
