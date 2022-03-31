@@ -1,0 +1,146 @@
+name: Build
+
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build-baseline-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get -y install \
+          build-essential \
+          cmake
+        
+      - name: Build xeve baseline
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DSET_PROF=BASE
+          make
+          
+      - name: 'Upload executable Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeveb_app-linux-artifact
+          path: build/bin/xeveb_app
+          retention-days: 5
+          
+      - name: 'Upload library Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: libxeveb-linux-artifact
+          path: build/lib/
+          retention-days: 5
+
+  build-main-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: install dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get -y install \
+          build-essential \
+          cmake
+          
+      - name: Build xeve main
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          make
+          
+      - name: 'Upload executable Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve_app-linux-artifact
+          path: build/bin/xeve_app
+          retention-days: 5
+          
+      - name: 'Upload library Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: libxeve-linux-artifact
+          path: build/lib/
+          retention-days: 5
+          
+  build-baseline-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+          
+      - name: Get CMake
+        uses: symbitic/install-cmake@master
+        
+      - name: Build xeve baseline
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "MinGW Makefiles" -DSET_PROF=BASE
+          make
+          
+# TODO: need to check build paths on Windows          
+#       - name: 'Upload executable Artifact'
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: xeveb_app-windows-artifact
+#           path: build/bin/xeveb_app
+#           retention-days: 5
+          
+#       - name: 'Upload library Artifact'
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: libxeveb-windows-artifact
+#           path: build/lib/
+#           retention-days: 5
+
+  build-main-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+          
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+          
+      - name: Get CMake
+        uses: symbitic/install-cmake@master
+      
+      - name: Build xeve main
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "MinGW Makefiles"
+          make
+          
+# TODO: need to check build paths on Windows          
+#       - name: 'Upload executable Artifact'
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: xeve_app-windows-artifact
+#           path: build/bin/xeve_app
+#           retention-days: 5
+          
+#       - name: 'Upload library Artifact'
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: libxeve-windows-artifact
+#           path: build/lib/
+#           retention-days: 5
