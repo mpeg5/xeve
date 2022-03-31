@@ -1995,6 +1995,7 @@ int xeve_check_cpu_info()
     return (support_sse << 1) | support_avx | (support_avx2 << 2);
 }
 #endif
+<<<<<<< HEAD
 #endif
 XEVE_CTX * xeve_ctx_alloc(void)
 {
@@ -3348,62 +3349,30 @@ void xeve_flush(XEVE_CTX * ctx)
 }
 
 int xeve_picbuf_get_inbuf(XEVE_CTX * ctx, XEVE_IMGB ** imgb)
+=======
+
+void xeve_copy_chroma_qp_mapping_params(XEVE_CHROMA_TABLE *dst, XEVE_CHROMA_TABLE *src)
+>>>>>>> abd8adf1e1ff162978d8aa5caf50a16b4ea1e89a
 {
-    int i, opt, align[XEVE_IMGB_MAX_PLANE], pad[XEVE_IMGB_MAX_PLANE];
-
-    for(i = 0; i < XEVE_MAX_INBUF_CNT; i++)
-    {
-        if(ctx->inbuf[i] == NULL)
-        {
-            opt = XEVE_IMGB_OPT_NONE;
-
-            /* set align value*/
-            align[0] = MIN_CU_SIZE;
-            align[1] = MIN_CU_SIZE;
-            align[2] = MIN_CU_SIZE;
-
-            /* no padding */
-            pad[0] = 0;
-            pad[1] = 0;
-            pad[2] = 0;
-
-            int cs = ctx->param.chroma_format_idc == 0 ? XEVE_CS_YCBCR400_10LE : (ctx->param.chroma_format_idc == 1 ? XEVE_CS_YCBCR420_10LE :
-                (ctx->param.chroma_format_idc == 2 ? XEVE_CS_YCBCR422_10LE : XEVE_CS_YCBCR444_10LE));
-            *imgb = xeve_imgb_create(ctx->w, ctx->h, cs, opt, pad, align);
-            xeve_assert_rv(*imgb != NULL, XEVE_ERR_OUT_OF_MEMORY);
-
-            ctx->inbuf[i] = *imgb;
-
-            (*imgb)->addref(*imgb);
-            return XEVE_OK;
-        }
-        else if(ctx->inbuf[i]->getref(ctx->inbuf[i]) == 1)
-        {
-            *imgb = ctx->inbuf[i];
-
-            (*imgb)->addref(*imgb);
-            return XEVE_OK;
-        }
-    }
-
-    return XEVE_ERR_UNEXPECTED;
+    dst->chroma_qp_table_present_flag = src->chroma_qp_table_present_flag;
+    dst->same_qp_table_for_chroma = src->same_qp_table_for_chroma;
+    dst->global_offset_flag = src->global_offset_flag;
+    dst->num_points_in_qp_table_minus1[0] = src->num_points_in_qp_table_minus1[0];
+    dst->num_points_in_qp_table_minus1[1] = src->num_points_in_qp_table_minus1[1];
+    xeve_mcpy(&(dst->delta_qp_in_val_minus1), &(src->delta_qp_in_val_minus1), sizeof(int) * 2 * XEVE_MAX_QP_TABLE_SIZE);
+    xeve_mcpy(&(dst->delta_qp_out_val), &(src->delta_qp_out_val), sizeof(int) * 2 * XEVE_MAX_QP_TABLE_SIZE);
 }
 
-int xeve_header(XEVE_CTX * ctx)
+// ChromaQP offset for U and V components
+void xeve_set_chroma_qp_tbl_loc(XEVE_CTX* ctx)
 {
-    int ret = XEVE_OK;
-
-    /* encode parameter sets */
-    if (ctx->pic_cnt == 0 || (ctx->slice_type == SLICE_I && ctx->param.closed_gop)) /* if nalu_type is IDR */
+    for (int i = 0; i < 6 * (ctx->param.codec_bit_depth - 8); i++)
     {
-        ret = ctx->fn_encode_sps(ctx);
-        xeve_assert_rv(ret == XEVE_OK, ret);
-
-        ret = ctx->fn_encode_pps(ctx);
-        xeve_assert_rv(ret == XEVE_OK, ret);
+        ctx->qp_chroma_dynamic_ext[0][i] = i - 6 * (ctx->param.codec_bit_depth - 8);
+        ctx->qp_chroma_dynamic_ext[1][i] = i - 6 * (ctx->param.codec_bit_depth - 8);
     }
-
-    return ret;
+    ctx->qp_chroma_dynamic[0] = &(ctx->qp_chroma_dynamic_ext[0][6 * (ctx->param.codec_bit_depth - 8)]);
+    ctx->qp_chroma_dynamic[1] = &(ctx->qp_chroma_dynamic_ext[1][6 * (ctx->param.codec_bit_depth - 8)]);
 }
 
 void xeve_update_core_loc_param(XEVE_CTX * ctx, XEVE_CORE * core)
@@ -3450,6 +3419,7 @@ int xeve_mt_get_next_ctu_num(XEVE_CTX * ctx, XEVE_CORE * core, int skip_ctb_line
     return core->lcu_num;
 }
 
+<<<<<<< HEAD
 int xeve_init_core_mt(XEVE_CTX * ctx, int tile_num, XEVE_CORE * core, int thread_cnt)
 {
     ctx->fn_mode_init_mt(ctx, thread_cnt);
@@ -3910,6 +3880,8 @@ int xeve_check_more_frames(XEVE_CTX * ctx)
     return XEVE_OK;
 }
 
+=======
+>>>>>>> abd8adf1e1ff162978d8aa5caf50a16b4ea1e89a
 int xeve_malloc_1d(void** dst, int size)
 {
     int ret;
@@ -4219,134 +4191,3 @@ void xeve_set_tile_in_slice(XEVE_CTX * ctx)
     }
 }
 
-int xeve_param_init(XEVE_PARAM* param)
-{
-    xeve_mset(param, 0, sizeof(XEVE_PARAM));
-
-    param->profile                    = XEVE_PROFILE_BASELINE;
-    param->qp                         = 32;
-    param->crf                        = 32;
-    param->bframes                    = 15;
-    param->codec_bit_depth            = 10;
-    param->lookahead                  = 17;
-    param->use_deblock                = 1;
-    param->threads                    = 1;
-    param->rdo_dbk_switch             = 1;
-    param->tile_rows                  = 1;
-    param->tile_columns               = 1;
-    param->num_slice_in_pic           = 1;
-
-    return XEVE_OK;
-}
-
-int xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, int tune)
-{
-    if (profile != XEVE_PROFILE_BASELINE)
-    {
-        return XEVE_ERR;
-    }
-
-    param->profile = XEVE_PROFILE_BASELINE;
-
-    if (preset == XEVE_PRESET_FAST)
-    {
-        param->max_cu_intra      = 32;
-        param->min_cu_intra      = 4;
-        param->max_cu_inter      = 64;
-        param->min_cu_inter      = 8;
-        param->me_ref_num        = 1;
-        param->me_algo           = 1;
-        param->me_range          = 32;
-        param->me_sub            = 2;
-        param->me_sub_pos        = 2;
-        param->me_sub_range      = 1;
-        param->skip_th           = 0;
-        param->merge_num         = 2;
-        param->rdoq              = 1;
-        param->cabac_refine      = 1;
-        param->rdo_dbk_switch    = 0;
-    }
-    else if (preset == XEVE_PRESET_MEDIUM)
-    {
-        param->max_cu_intra      = 32;
-        param->min_cu_intra      = 4;
-        param->max_cu_inter      = 64;
-        param->min_cu_inter      = 8;
-        param->me_ref_num        = 1;
-        param->me_algo           = 1;
-        param->me_range          = 64;
-        param->me_sub            = 2;
-        param->me_sub_pos        = 4;
-        param->me_sub_range      = 1;
-        param->skip_th           = 0;
-        param->merge_num         = 3;
-        param->rdoq              = 1;
-        param->cabac_refine      = 1;
-        param->rdo_dbk_switch    = 0;
-    }
-    else if (preset == XEVE_PRESET_SLOW)
-    {
-        param->max_cu_intra      = 32;
-        param->min_cu_intra      = 4;
-        param->max_cu_inter      = 64;
-        param->min_cu_inter      = 8;
-        param->me_ref_num        = 1;
-        param->me_algo           = 1;
-        param->me_range          = 128;
-        param->me_sub            = 3;
-        param->me_sub_pos        = 4;
-        param->me_sub_range      = 2;
-        param->skip_th           = 0;
-        param->merge_num         = 3;
-        param->rdoq              = 1;
-        param->cabac_refine      = 1;
-        param->rdo_dbk_switch    = 1;
-    }
-    else if (preset == XEVE_PRESET_PLACEBO)
-    {
-        param->max_cu_intra      = 64;
-        param->min_cu_intra      = 4;
-        param->max_cu_inter      = 64;
-        param->min_cu_inter      = 4;
-        param->me_ref_num        = 2;
-        param->me_algo           = 2;
-        param->me_range          = 384;
-        param->me_sub            = 3;
-        param->me_sub_pos        = 8;
-        param->me_sub_range      = 3;
-        param->skip_th           = 0;
-        param->merge_num         = 4;
-        param->rdoq              = 1;
-        param->cabac_refine      = 1;
-        param->rdo_dbk_switch    = 1;
-    }
-    else
-    {
-        return XEVE_ERR;
-    }
-
-    if (tune != XEVE_TUNE_NONE)
-    {
-        if (tune == XEVE_TUNE_ZEROLATENCY)
-        {
-            param->aq_mode = 1;
-            param->lookahead = 0;
-            param->cutree = 0;
-            param->bframes = 0;
-            param->me_ref_num = 1;
-            param->ref_pic_gap_length = 1;
-            param->use_fcst = 1;
-            param->inter_slice_type = 1;
-        }
-        else if (tune == XEVE_TUNE_PSNR)
-        {
-            param->aq_mode = 0;
-        }
-        else
-        {
-            return XEVE_ERR;
-        }
-    }
-
-    return XEVE_OK;
-}

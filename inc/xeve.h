@@ -130,6 +130,7 @@ extern "C"
 #define XEVE_CFG_SET_USE_DEBLOCK        (211)
 #define XEVE_CFG_SET_DEBLOCK_A_OFFSET   (212)
 #define XEVE_CFG_SET_DEBLOCK_B_OFFSET   (213)
+#define XEVE_CFG_SET_SEI_CMD            (300)
 #define XEVE_CFG_SET_USE_PIC_SIGNATURE  (301)
 #define XEVE_CFG_GET_COMPLEXITY         (500)
 #define XEVE_CFG_GET_SPEED              (501)
@@ -368,6 +369,8 @@ typedef struct _XEVE_PARAM
        - 0 : use open GOP (default)
        - 1 : use closed GOP */
     int            closed_gop;
+    /* use 'Annex-B (nal_unit_length)' format */
+    int            use_annexb;
     /* use filler data for tight constant bitrate */
     int            use_filler;
     /* XEVE_CHROMA_TABLE chroma_qp_table_struct */
@@ -395,6 +398,7 @@ typedef struct _XEVE_PARAM
     int            picture_crop_bottom_offset;
     int            rdo_dbk_switch;
     int            qp_incread_frame;
+    int            sei_cmd_info;
     int            use_pic_sign;
     int            f_ifrm;
     int            qp_max;
@@ -492,6 +496,45 @@ typedef struct _XEVE_PARAM
     /* preset parameter */
     int            ats_intra_fast;
     int            me_fast;
+    /* VUI options*/
+    int  sar;
+    int  sar_width, sar_height;
+    int  videoformat;
+    int  range;
+    int  colorprim;
+    int  transfer;
+    int  matrix_coefficients;
+    int  overscan_info_present_flag;
+    int  overscan_appropriate_flag;
+    int  chroma_loc_info_present_flag;
+    int  chroma_sample_loc_type_top_field;
+    int  chroma_sample_loc_type_bottom_field;
+    int  neutral_chroma_indication_flag;
+    int  field_seq_flag;
+    int  timing_info_present_flag;
+    int  num_units_in_tick;
+    int  time_scale;
+    int  fixed_pic_rate_flag;
+    int  nal_hrd_parameters_present_flag;
+    int  vcl_hrd_parameters_present_flag;
+    int  low_delay_hrd_flag;
+    int  pic_struct_present_flag;
+    int  bitstream_restriction_flag;
+    int  motion_vectors_over_pic_boundaries_flag;
+    int  max_bytes_per_pic_denom;
+    int  max_bits_per_mb_denom;
+    int  log2_max_mv_length_horizontal;
+    int  log2_max_mv_length_vertical;
+    int  num_reorder_pics;
+    int  max_dec_pic_buffering;
+    int aspect_ratio_info_present_flag;
+    int video_signal_type_present_flag;
+    int colour_description_present_flag;
+
+    /* SEI options*/
+    int  master_display;
+    int  max_cll;
+    int  max_fall;
 } XEVE_PARAM;
 
 /*****************************************************************************

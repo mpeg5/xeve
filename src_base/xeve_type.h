@@ -953,6 +953,7 @@ struct _XEVE_CTX
     int   (*fn_eco_pic_signature)(XEVE_CTX * ctx, XEVE_BSW * bs, u8 pic_sign[N_C][16]);
     int   (*fn_encode_sps)(XEVE_CTX * ctx);
     int   (*fn_encode_pps)(XEVE_CTX * ctx);
+    int   (*fn_encode_sei)(XEVE_CTX * ctx);
     int   (*fn_eco_sh)(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps, XEVE_SH * sh, int nut);
     int   (*fn_eco_split_mode)(XEVE_BSW *bs, XEVE_CTX *c, XEVE_CORE *core, int cud, int cup, int cuw, int cuh, int lcu_s, int x, int y);
     void  (*fn_eco_sbac_reset)(XEVE_SBAC *sbac, u8 slice_type, u8 slice_qp, int sps_cm_init_flag);
@@ -1007,5 +1008,10 @@ typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 #include "xeve_itdq_sse.h"
 #include "xeve_itdq_avx.h"
 #include "xeve_tq_avx.h"
+<<<<<<< HEAD
 #endif
+=======
+#include "xeve_enc.h"
+
+>>>>>>> abd8adf1e1ff162978d8aa5caf50a16b4ea1e89a
 #endif /* _XEVE_TYPE_H_ */

@@ -38,7 +38,33 @@
 #include <unistd.h>
 #endif
 
+<<<<<<< HEAD
+=======
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#ifdef _WIN32
+#define y4m_struct_stat struct _stati64
+#define y4m_fstat _fstati64
+#else
+#define y4m_struct_stat struct stat
+#define y4m_fstat fstat
+#endif
+
+>>>>>>> abd8adf1e1ff162978d8aa5caf50a16b4ea1e89a
 #define MAX_BS_BUF                 (16*1024*1024)
+
+
+static const char * const xeve_sar_names[] = { "unknown", "1:1", "12:11", "10:11", "16:11", "40:33", "24:11", "20:11",
+                                               "32:11", "80:33", "18:11", "15:11", "64:33", "160:99", "4:3", "3:2", "2:1", 0 };
+static const char * const xeve_video_format_names[] = { "component", "pal", "ntsc", "secam", "mac", "unknown", 0 };
+static const char * const xeve_fullrange_names[] = { "limited", "full", 0 };
+static const char * const xeve_colorprim_names[] = { "reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "film", "bt2020", "smpte428", "smpte431", "smpte432", 0 };
+static const char * const xeve_transfer_names[] = { "reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "linear", "log100",
+                                                    "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1", "bt2020-10", "bt2020-12",
+                                                    "smpte2084", "smpte428", "arib-std-b67", 0 };
+static const char * const xeve_colmatrix_names[] = { "gbr", "bt709", "unknown", "", "fcc", "bt470bg", "smpte170m", "smpte240m",
+                                                     "ycgco", "bt2020nc", "bt2020c", "smpte2085", "chroma-derived-nc", "chroma-derived-c", "ictcp", 0 };
 
 typedef enum _STATES {
     STATE_ENCODING,
@@ -56,6 +82,17 @@ typedef struct _Y4M_PARAMS
     int bit_depth;
 }Y4M_INFO;
 
+<<<<<<< HEAD
+=======
+static inline int y4m_is_regular_file( FILE *filehandle )
+{
+    y4m_struct_stat file_stat;
+    if( y4m_fstat( fileno( filehandle ), &file_stat ) )
+        return 1;
+    return S_ISREG(file_stat.st_mode);
+}
+
+>>>>>>> abd8adf1e1ff162978d8aa5caf50a16b4ea1e89a
 static void print_usage(const char **argv)
 {
     int i;
@@ -168,19 +205,26 @@ static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
 {
     int  ret, size, value;
 
+    size = 4;
+    ret = xeve_config(id, XEVE_CFG_SET_SEI_CMD, &args->info, &size);
+    if (XEVE_FAILED(ret))
+    {
+        logerr("failed to set config for sei command info messages\n");
+        return XEVE_ERR;
+    }
+
     if(args->hash)
     {
-        value = 1;
         size = 4;
-        ret = xeve_config(id, XEVE_CFG_SET_USE_PIC_SIGNATURE, &value, &size);
+        ret = xeve_config(id, XEVE_CFG_SET_USE_PIC_SIGNATURE, &args->hash, &size);
         if(XEVE_FAILED(ret))
         {
             logerr("failed to set config for picture signature\n");
-            return -1;
+            return XEVE_ERR;
         }
     }
 
-    return 0;
+    return XEVE_OK;
 }
 
 static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
@@ -193,7 +237,7 @@ static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
     else if (!strcmp(args->profile, "main")) tprofile = XEVE_PROFILE_MAIN;
     else return -1;
 
-    if (strlen(args->preset) == 0) tprofile = XEVE_PRESET_MEDIUM; /* default */
+    if (strlen(args->preset) == 0) tpreset = XEVE_PRESET_MEDIUM; /* default */
     else if (!strcmp(args->preset, "fast")) tpreset = XEVE_PRESET_FAST;
     else if (!strcmp(args->preset, "medium")) tpreset = XEVE_PRESET_MEDIUM;
     else if (!strcmp(args->preset, "slow")) tpreset = XEVE_PRESET_SLOW;
@@ -387,7 +431,16 @@ static int y4m_test(FILE * fp)
 
     /*Peek to check if y4m header is present*/
     if (!fread(buffer, 1, 8, fp)) return -1;
+<<<<<<< HEAD
     fseek( fp, 0, SEEK_SET );
+=======
+
+    int b_regular = y4m_is_regular_file(fp);
+    if(b_regular) {
+        fseek( fp, 0, SEEK_SET );
+    }
+
+>>>>>>> abd8adf1e1ff162978d8aa5caf50a16b4ea1e89a
     buffer[8] = '\0';
     if (memcmp(buffer, "YUV4MPEG", 8))
     {
@@ -561,6 +614,13 @@ static void y4m_update_param(ARGS_PARSER * args, Y4M_INFO * y4m, XEVE_PARAM * pa
     args->set_int(args, "input-depth", y4m->bit_depth);
 }
 
+static int parse_str_to_int(const char* arg, const char* const* names)
+{
+    for (int i = 0; names[i]; i++)
+        if (!strcmp(arg, names[i]))
+            return i;
+    return XEVE_ERR;
+}
 static int kbps_str_to_int(char * str)
 {
     int kbps = 0;
@@ -591,7 +651,309 @@ static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
     {
         param->vbv_bufsize = kbps_str_to_int(args->vbv_bufsize);
     }
-    return 0;
+    return XEVE_OK;
+}
+
+static int update_vui_param(ARGS_PARSER * args, XEVE_PARAM * param)
+{
+    if (strlen(args->sar) > 0)
+    {
+        param->sar = parse_str_to_int(args->sar, xeve_sar_names);
+        if (XEVE_ERR == param->sar) return param->sar;
+    }
+    if (strlen(args->videoformat) > 0)
+    {
+        param->videoformat = parse_str_to_int(args->videoformat, xeve_video_format_names);
+        if (XEVE_ERR == param->videoformat) return param->videoformat;
+    }
+    if (strlen(args->range) > 0)
+    {
+        param->range = parse_str_to_int(args->range, xeve_fullrange_names);
+        if (XEVE_ERR == param->range) return param->range;
+    }
+    if (strlen(args->colorprim) > 0)
+       {
+        param->colorprim = parse_str_to_int(args->colorprim, xeve_colorprim_names);
+        if (XEVE_ERR == param->colorprim) return param->colorprim;
+    }
+    if (strlen(args->transfer) > 0)
+    {
+        param->transfer = parse_str_to_int(args->transfer, xeve_transfer_names);
+        if (XEVE_ERR == param->transfer) return param->transfer;
+    }
+    if (strlen(args->matrix_coefficients) > 0)
+    {
+        param->matrix_coefficients = parse_str_to_int(args->matrix_coefficients, xeve_colmatrix_names);
+        if (XEVE_ERR == param->matrix_coefficients) return param->matrix_coefficients;
+    }
+    return XEVE_OK;
+}
+
+static int update_sei_param(ARGS_PARSER * args, XEVE_PARAM * param)
+{
+    if (strlen(args->master_display) > 0)
+    {
+        param->master_display = (int)strdup(args->master_display);
+    }
+    if (strlen(args->max_cll) > 0)
+    {
+        sscanf(args->max_cll, "%u,%u", &param->max_cll, &param->max_fall);
+    }
+    return XEVE_OK;
+}
+
+static int vui_param_check(XEVE_PARAM * param)
+{
+    int ret = 0;
+    if (param->sar < 0 || (param->sar > 16 && param->sar != 255))
+    {
+        ret = 1;
+        logerr("SAR value is out of range\n");
+        
+    }
+    else if (param->sar == 0)
+    {
+        param->aspect_ratio_info_present_flag = 0;
+    }
+    else
+    {
+        param->aspect_ratio_info_present_flag = 1;
+    }
+
+
+    if (param->sar == 255)
+    {
+        if (param->sar_height == 0 && param->sar_width == 0)
+        {
+            ret = 1;
+            logerr("SAR width/height must be set with SAR value 255\n");
+            
+        }
+    }
+
+
+    if (param->videoformat < 0 || param->videoformat > 5)
+    {
+          ret = 1;
+          logerr("Video-format value is out of range \n");
+          
+    }
+    else if (param->videoformat == 5)
+    {
+        param->video_signal_type_present_flag = 0;
+    }
+    else
+    {
+        param->video_signal_type_present_flag = 1;
+    }
+
+    if (param->range < 0 || param->range >1)
+    {
+          ret = 1;
+          logerr("Black level value is out of range\n");
+          
+    }
+    else if (param->range == 0)
+    {
+        param->video_signal_type_present_flag  = param->video_signal_type_present_flag || 0;
+    }
+    else
+    {
+        param->video_signal_type_present_flag = 1;
+    }
+
+   
+    if(param->colorprim <0 || (param->colorprim >12 && param->colorprim!=22))
+    {
+          ret = 1;
+          logerr("Colorprimaries value is out of range\n");
+    }
+    else if (param->colorprim == 2)
+    {
+        param->colour_description_present_flag = 0;
+    }
+    else
+    {
+        param->colour_description_present_flag = 1;
+    }
+
+
+    if (param->transfer < 0 || param->transfer > 13)
+    {
+        ret = 1;
+        logerr("Transfer Characteristics value is out of range\n");
+    }
+    else if (param->transfer == 2)
+    {
+        param->colour_description_present_flag = param->colour_description_present_flag || 0;
+    }
+    else
+    {
+        param->colour_description_present_flag = 1;
+    }
+
+    
+    if (param->matrix_coefficients < 0 || param->matrix_coefficients > 14)
+    {
+         ret = 1;
+         logerr("Matrix coefficients is out of range\n");
+    }
+    else if (param->matrix_coefficients == 2)
+    {
+         param->colour_description_present_flag = param->colour_description_present_flag || 0;
+    }
+    else
+    {
+        param->colour_description_present_flag = 1;
+    }
+
+
+    if (param->chroma_sample_loc_type_top_field < 0 || param->chroma_sample_loc_type_top_field >5)
+    {
+         ret = 1;
+         logerr("Chroma sample location top filed is out of range");
+    }
+    else if (param->chroma_sample_loc_type_top_field == 0)
+    {
+         param->chroma_loc_info_present_flag = param->chroma_loc_info_present_flag || 0;
+    }
+    else
+    {
+        param->chroma_loc_info_present_flag = 1;
+    }
+
+    if (param->chroma_sample_loc_type_bottom_field < 0 || param->chroma_sample_loc_type_bottom_field >5)
+    {
+         ret = 1;
+         logerr("Chroma sample location bottom filed is out of range");
+    }
+    else if (param->chroma_sample_loc_type_bottom_field == 0)
+    {
+         param->chroma_loc_info_present_flag = param->chroma_loc_info_present_flag || 0;
+    }
+    else
+    {
+        param->chroma_loc_info_present_flag = 1;
+    }
+
+
+    if (param->num_units_in_tick < 0)
+    {
+         ret = 1;
+         logerr("Num units in tick is out of range");
+    }
+    else if (param->num_units_in_tick == 0)
+    {
+         param->timing_info_present_flag = param->timing_info_present_flag || 0;
+    }
+    else
+    {
+        param->timing_info_present_flag = 1;
+    }
+
+    if (param->time_scale < 0)
+    {
+         ret = 1;
+         logerr("Time Scale is out of range");
+    }
+    else if (param->time_scale == 0)
+    {
+         param->timing_info_present_flag = param->timing_info_present_flag || 0;
+    }
+    else
+    {
+        param->timing_info_present_flag = 1;
+    }
+
+
+    if (param->max_bytes_per_pic_denom < 0 || param->max_bytes_per_pic_denom > 16)
+    {
+         ret = 1;
+         logerr("max_bytes_per_pic_denom is out of range");
+    }
+    else if (param->max_bytes_per_pic_denom == 2)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    if (param->max_bits_per_mb_denom < 0 || param->max_bits_per_mb_denom > 16)
+    {
+         ret = 1;
+         logerr("max_bits_per_mb_denom is out of range");
+    }
+    else if (param->max_bits_per_mb_denom == 1)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    if (param->log2_max_mv_length_horizontal < 0 || param->log2_max_mv_length_horizontal > 16)
+    {
+         ret = 1;
+         logerr("log2_max_mv_length_horizontal is out of range");
+    }
+    else if (param->log2_max_mv_length_horizontal == 16)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    if (param->log2_max_mv_length_vertical < 0 || param->log2_max_mv_length_vertical > 16)
+    {
+         ret = 1;
+         logerr("log2_max_mv_length_vertical is out of range");
+    }
+    else if (param->log2_max_mv_length_vertical == 16)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    if (param->max_dec_pic_buffering > 21 )  /* max  XEVE_MAX_NUM_REF_PICS   21 */
+    {
+         ret = 1;
+         logerr("max_dec_pic_buffering is out of range");
+    }
+    else if (param->max_dec_pic_buffering == 21)
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+    
+    if (param->num_reorder_pics > param->max_dec_pic_buffering )  
+    {
+         ret = 1;
+         logerr("num_reorder_pics is out of range");
+    }
+    else if (param->num_reorder_pics == param->max_dec_pic_buffering )
+    {
+         param->bitstream_restriction_flag = param->bitstream_restriction_flag || 0;
+    }
+    else
+    {
+        param->bitstream_restriction_flag = 1;
+    }
+
+
+    
+    return ret;
 }
 
 int main(int argc, const char **argv)
@@ -715,8 +1077,28 @@ int main(int argc, const char **argv)
     if (update_rc_param(args, param))
     {
         logerr("parameters for rate control is not proper\n");
-        ret = -1; goto ERR;
+        ret = XEVE_ERR; goto ERR;
     }
+    /* update vui parameters */
+    if (update_vui_param(args, param))
+    {
+        logerr("vui parameters is not proper\n");
+        ret = XEVE_ERR; goto ERR;
+    }
+    /* update sei parameters */
+    if (update_sei_param(args, param))
+    {
+        logerr("sei parameters is not proper\n");
+        ret = XEVE_ERR; goto ERR;
+    }
+
+    /* VUI parameter Range Checking*/
+    if (vui_param_check(param))
+    {
+        logerr("VUI Parameter out of range\n");
+        ret = XEVE_ERR; goto ERR;
+    }
+
     /* check mandatory parameters */
     if (args->check_mandatory(args, &err_arg))
     {
@@ -888,7 +1270,7 @@ int main(int argc, const char **argv)
         ret = xeve_encode(id, &bitb, &stat);
         if(XEVE_FAILED(ret))
         {
-            logerr("xeve_encode() failed\n");
+            logerr("xeve_encode() failed. ret=%d\n", ret);
             ret = -1; goto ERR;
         }
 

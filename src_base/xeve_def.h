@@ -1205,6 +1205,81 @@ typedef struct _XEVE_APS
     XEVE_ALF_SLICE_PARAM alf_aps_param;   // alf data
 } XEVE_APS;
 
+typedef enum _XEVE_SEI_PAYLOAD_TYPE
+{
+    BUFFERING_PERIOD = 0,
+    PICTURE_TIMING = 1,
+    USER_DATA_REGISTERED_ITU_T_T35 = 4,
+    USER_DATA_UNREGISTERED = 5,
+    RECOVERY_POINT = 6,
+    MASTERING_DISPLAY_INFO = 137,
+    CONTENT_LIGHT_LEVEL_INFO = 144,
+    AMBIENT_VIEWING_ENVIRONMENT = 148,
+} XEVE_SEI_PAYLOAD_TYPE;
+
+typedef struct _XEVE_SEI_PAYLOAD
+{
+    int payload_size;
+    XEVE_SEI_PAYLOAD_TYPE payload_type;
+    u8* payload;
+} XEVE_SEI_PAYLOAD;
+
+typedef struct _XEVE_SEI
+{
+    int num_payloads;
+    XEVE_SEI_PAYLOAD *payloads;
+} XEVE_SEI;
+
+typedef struct _XEVE_BUFFERING_PERIOD
+{
+    u32 initial_cpb_removaldelay;
+    u32 initial_cpb_removal_delay_offset;
+}XEVE_BUFFERING_PERIOD;
+
+typedef struct _XEVE_PICTURE_TIMING
+{
+    u32       pic_struct;
+    BOOL      clock_timestamp_flag;
+    BOOL      nuit_field_based_flag;
+    BOOL      full_timestamp_flag;
+    BOOL      discontinuity_flag;
+    BOOL      cnt_dropped_flag;
+    u64       n_frames;
+    u32       ct_type;
+    u64       seconds_value;
+    u64       minutes_value;
+    u64       hours_value;
+    BOOL      seconds_flag;
+    BOOL      minutes_flag;
+    BOOL      hours_flag;
+    u32       cpb_removal_delay;
+    u32       dpb_output_delay;
+}XEVE_PICTURE_TIMING;
+
+typedef struct _XEVE_RECOVERY_POINT
+{
+    int  recovery_poc_cnt;
+    BOOL exact_matching_flag;
+    BOOL broken_link_flag;
+}XEVE_RECOVERY_POINT;
+
+#define ISO_IEC_11578_LEN 16
+
+
+typedef struct _XEVE_MASTER_DISPLAY_COLOR_V
+{
+    u16 display_primary_x[3];
+    u16 display_primary_y[3];
+    u16 white_point_x, white_point_y;
+    u32 max_display_mastering_luminance;
+    u32 min_display_mastering_luminance;
+}XEVE_MASTER_DISPLAY_COLOR_V;
+
+typedef struct _XEVE_CONTENT_LIGHT_LEVEL_INFO
+{
+    u16 max_content_light_level;
+    u16 max_pic_average_light_level;
+}XEVE_CONTENT_LIGHT_LEVEL_INFO;
 typedef struct _XEVE_SH
 {
     int              slice_pic_parameter_set_id;

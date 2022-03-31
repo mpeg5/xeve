@@ -4011,11 +4011,13 @@ int xevem_platform_init(XEVE_CTX * ctx)
 
     ctx->fn_ready           = xevem_ready;
     ctx->fn_flush           = xevem_flush;
+    ctx->fn_enc_pic         = xevem_pic;
     ctx->fn_enc_header      = xevem_header;
     ctx->fn_enc_pic_prepare = xevem_pic_prepare;
     ctx->fn_loop_filter     = xevem_loop_filter;
     ctx->fn_encode_pps      = xevem_encode_pps;
     ctx->fn_encode_sps      = xevem_encode_sps;
+    ctx->fn_encode_sei      = xevem_encode_sei;
     ctx->fn_eco_sh          = xevem_eco_sh;
     ctx->fn_eco_split_mode  = xevem_eco_split_mode;
     ctx->fn_eco_coef        = xevem_eco_coef_main;
@@ -4053,7 +4055,7 @@ int xevem_encode_sps(XEVE_CTX * ctx)
     XEVE_SPS * sps = &ctx->sps;
     XEVE_NALU  nalu;
 
-    int* size_field = (int*)(*(&bs->cur));
+    u8* size_field = bs->cur;
     u8* cur_tmp = bs->cur;
 
     /* nalu header */
@@ -4068,7 +4070,7 @@ int xevem_encode_sps(XEVE_CTX * ctx)
     xeve_bsw_deinit(bs);
 
     /* write the bitstream size */
-    *size_field = (int)(bs->cur - cur_tmp) - 4;
+    xeve_eco_nal_unit_len(size_field, (int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }
@@ -4077,7 +4079,7 @@ int xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps)
 {
     XEVE_BSW     * bs = &ctx->bs[0];
     XEVE_NALU      nalu;
-    int          * size_field = (int*)(*(&bs->cur));
+    u8           * size_field = bs->cur;
     u8           * cur_tmp = bs->cur;
 
     /* nalu header */
@@ -4088,7 +4090,7 @@ int xevem_encode_aps(XEVE_CTX * ctx, XEVE_APS_GEN * aps)
     xeve_assert_rv(xevem_eco_aps_gen(bs, aps, ctx->sps.bit_depth_luma_minus8 + 8) == XEVE_OK, XEVE_ERR_INVALID_ARGUMENT);
 
     xeve_bsw_deinit(bs);
-    *size_field = (int)(bs->cur - cur_tmp) - 4;
+    xeve_eco_nal_unit_len(size_field, (int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }
@@ -4098,7 +4100,7 @@ int xevem_encode_pps(XEVE_CTX * ctx)
     XEVE_SPS * sps = &ctx->sps;
     XEVE_PPS * pps = &ctx->pps;
     XEVE_NALU  nalu;
-    int      * size_field = (int*)(*(&bs->cur));
+    u8       * size_field = bs->cur;
     u8       * cur_tmp = bs->cur;
 
     /* nalu header */
@@ -4113,7 +4115,33 @@ int xevem_encode_pps(XEVE_CTX * ctx)
     xeve_bsw_deinit(bs);
 
     /* write the bitstream size */
-    *size_field = (int)(bs->cur - cur_tmp) - 4;
+    xeve_eco_nal_unit_len(size_field, (int)(bs->cur - cur_tmp) - 4);
+    return XEVE_OK;
+}
+
+int xevem_encode_sei(XEVE_CTX * ctx)
+{
+    XEVE_BSW * bs = &ctx->bs[0];
+    //XEVE_SPS * sps = &ctx->sps;
+    XEVE_NALU  sei_nalu;
+    int ret;
+
+    int* size_field = (int*)(*(&bs->cur));
+    u8* cur_tmp = bs->cur;
+
+    /* nalu header */
+    xeve_set_nalu(&sei_nalu, XEVE_SEI_NUT, ctx->nalu.nuh_temporal_id);
+    xeve_eco_nalu(bs, &sei_nalu);
+
+    /* sei parameter set*/
+    ret = xeve_eco_emitsei(ctx, bs);
+    xeve_assert_rv(ret == XEVE_OK, XEVE_ERR_INVALID_ARGUMENT);
+
+    /* de-init BSW */
+    xeve_bsw_deinit(bs);
+
+    /* write the bitstream size */
+    xeve_eco_nal_unit_len(size_field, (int)(bs->cur - cur_tmp) - 4);
 
     return XEVE_OK;
 }
