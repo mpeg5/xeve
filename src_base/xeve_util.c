@@ -30,6 +30,10 @@
 
 #include "xeve_type.h"
 #include <math.h>
+#include <unistd.h>   
+#include <fcntl.h>
+#include <assert.h>
+#include <stdio.h>
 
 #define TX_SHIFT1(log2_size, bd)   ((log2_size) - 1 + bd - 8)
 #define TX_SHIFT2(log2_size)   ((log2_size) + 6)
@@ -1958,7 +1962,8 @@ static unsigned long long __xgetbv(unsigned int i)
 }
 #endif
 #define GET_CPU_INFO(A,B) ((B[((A >> 5) & 0x03)] >> (A & 0x1f)) & 1)
-
+#if ARM_NEON
+#else
 int xeve_check_cpu_info()
 {
     int support_sse  = 0;
@@ -1990,7 +1995,7 @@ int xeve_check_cpu_info()
     return (support_sse << 1) | support_avx | (support_avx2 << 2);
 }
 #endif
-
+#endif
 XEVE_CTX * xeve_ctx_alloc(void)
 {
     XEVE_CTX * ctx;
@@ -3652,7 +3657,18 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
 
 void xeve_platform_init_func(XEVE_CTX * ctx)
 {
-#if X86_SSE
+#if ARM_NEON
+        xeve_func_sad               = xeve_tbl_sad_16b;
+        xeve_func_ssd               = xeve_tbl_ssd_16b;
+        xeve_func_diff              = xeve_tbl_diff_16b;
+        xeve_func_satd              = xeve_tbl_satd_16b;
+        xeve_func_mc_l              = xeve_tbl_mc_l;
+        xeve_func_mc_c              = xeve_tbl_mc_c;
+        xeve_func_average_no_clip   = &xeve_average_16b_no_clip;
+        ctx->fn_itxb                = &xeve_tbl_itxb_neon;
+        xeve_func_txb               = &xeve_tbl_txb;
+        
+#elif X86_SSE
     int check_cpu, support_sse, support_avx, support_avx2;
 
     check_cpu = xeve_check_cpu_info();
@@ -3684,9 +3700,9 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         ctx->fn_itxb                = &xeve_tbl_itxb_sse;
         xeve_func_txb               = &xeve_tbl_txb; /*to be updated*/
     }
-    else
-#endif
-    {
+    
+#else
+    
         xeve_func_sad               = xeve_tbl_sad_16b;
         xeve_func_ssd               = xeve_tbl_ssd_16b;
         xeve_func_diff              = xeve_tbl_diff_16b;
@@ -3696,13 +3712,14 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip;
         ctx->fn_itxb                = &xeve_tbl_itxb;
         xeve_func_txb               = &xeve_tbl_txb;
-    }
+  
+#endif
 }
 
 int xeve_platform_init(XEVE_CTX * ctx)
 {
     int ret = XEVE_ERR_UNKNOWN;
-
+    
     /* create mode decision */
     ret = xeve_mode_create(ctx, 0);
     xeve_assert_rv(XEVE_OK == ret, ret);

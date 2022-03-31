@@ -147,7 +147,11 @@ void xeve_trace_line(char * pre);
 #include <tmmintrin.h>
 #include <smmintrin.h>
 #else
+#if ARM_NEON
+#include <arm_neon.h>
+#else
 #include <x86intrin.h>
+#endif
 #endif
 #endif
 #endif /* _XEVE_PORT_H_ */
