@@ -1,4 +1,6 @@
-# eXtra-fast Essential Video Encoder (XEVE)
+# eXtra-fast Essential Video Encoder (XEVE)  
+[![Build](https://github.com/mpeg5/xeve/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/mpeg5/xeve/actions/workflows/build.yml)  
+
 The **eXtra-fast Essential Video Encoder** (XEVE) is an opensource and fast MPEG-5 EVC encoder. 
 
 **MPEG-5 Essential Video Coding** (EVC) is a video compression standard of ISO/IEC Moving Picture Experts Grop (MPEG). The main goal of the EVC is to provide a significantly improved compression capability over existing video coding standards with timely publication of terms. 
