@@ -379,7 +379,7 @@ int xeve_eco_emitsei(XEVE_CTX * ctx, XEVE_BSW * bs)
         char *sei_xeve_msg = " xeve - MPEG-5 EVC codec - "
             "ESSENTIAL VIDEO CODING https://github.com/mpeg5/xeve - options: ";
 
-        sei_msg_ptr += sprintf(sei_msg_ptr, sei_xeve_msg);
+        sei_msg_ptr += sprintf(sei_msg_ptr, "%s", sei_xeve_msg);
 
         xeve_param2string(&ctx->param, sei_msg_ptr, ctx->sps.picture_crop_right_offset, ctx->sps.picture_crop_bottom_offset);
 
