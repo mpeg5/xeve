@@ -175,6 +175,9 @@ extern "C"
  * type and macro for media time
  *****************************************************************************/
 typedef long long                        XEVE_MTIME; /* in 100-nanosec unit */
+#define XEVE_TS_PTS                      0
+#define XEVE_TS_DTS                      1
+#define XEVE_TS_NUM                      2
 
 /*****************************************************************************
  * profiles
@@ -241,7 +244,7 @@ struct _XEVE_IMGB
     void              * a[XEVE_IMGB_MAX_PLANE];
 
     /* time-stamps */
-    XEVE_MTIME          ts[4];
+    XEVE_MTIME          ts[XEVE_TS_NUM];
 
     int                 ndata[4]; /* arbitrary data, if needs */
     void              * pdata[4]; /* arbitrary adedress if needs */
@@ -292,7 +295,7 @@ typedef struct _XEVE_BITB
     /* arbitrary address, if needs */
     void              * pdata[4];
     /* time-stamps */
-    XEVE_MTIME          ts[4];
+    XEVE_MTIME          ts[XEVE_TS_NUM];
 
 } XEVE_BITB;
 

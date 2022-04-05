@@ -1330,7 +1330,7 @@ int main(int argc, const char **argv)
             }
 
             /* store reconstructed image to list */
-            ilist_t = imgb_list_put(ilist_rec, imgb_rec, imgb_rec->ts[0]);
+            ilist_t = imgb_list_put(ilist_rec, imgb_rec, imgb_rec->ts[XEVE_TS_PTS]);
             if(ilist_t == NULL)
             {
                 logerr("cannot put reconstructed image to list\n");

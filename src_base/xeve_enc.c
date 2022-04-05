@@ -688,15 +688,15 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
     {
         if (ctx->pic_icnt == 0)
         {
-            ctx->ts.frame_first_pts = pic->imgb->ts[0];
+            ctx->ts.frame_first_pts = pic->imgb->ts[XEVE_TS_PTS];
         }
         else if (ctx->pic_icnt == ctx->ts.frame_delay)
         {
-            ctx->ts.frame_dealy_time = ctx->ts.frame_first_pts - pic->imgb->ts[0];
+            ctx->ts.frame_dealy_time = ctx->ts.frame_first_pts - pic->imgb->ts[XEVE_TS_PTS];
         }
     }
 
-    ctx->ts.frame_ts[ctx->pic_icnt % XEVE_MAX_INBUF_CNT] = pic->imgb->ts[0];
+    ctx->ts.frame_ts[ctx->pic_icnt % XEVE_MAX_INBUF_CNT] = pic->imgb->ts[XEVE_TS_PTS];
 
     return XEVE_OK;
 }
@@ -1280,24 +1280,22 @@ int xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat)
         }
     }
 
-    imgb_c->ts[0] = bitb->ts[0] = imgb_o->ts[0];
+    imgb_c->ts[XEVE_TS_PTS] = bitb->ts[XEVE_TS_PTS] = imgb_o->ts[XEVE_TS_PTS];
     if (ctx->ts.frame_delay > 0)
     {
         if (ctx->pic_cnt < ctx->ts.frame_delay)
         {
-            imgb_c->ts[1] = bitb->ts[1] = ctx->ts.frame_ts[ctx->pic_cnt % XEVE_MAX_INBUF_CNT] + ctx->ts.frame_dealy_time;
+            imgb_c->ts[XEVE_TS_DTS] = bitb->ts[XEVE_TS_DTS] = ctx->ts.frame_ts[ctx->pic_cnt % XEVE_MAX_INBUF_CNT] + ctx->ts.frame_dealy_time;
         }
         else
         {
-            imgb_c->ts[1] = bitb->ts[1] = ctx->ts.frame_ts[(ctx->pic_cnt - ctx->ts.frame_delay) % XEVE_MAX_INBUF_CNT];
+            imgb_c->ts[XEVE_TS_DTS] = bitb->ts[XEVE_TS_DTS] = ctx->ts.frame_ts[(ctx->pic_cnt - ctx->ts.frame_delay) % XEVE_MAX_INBUF_CNT];
         }
     }
     else
     {
-        imgb_c->ts[1] = bitb->ts[1] = ctx->ts.frame_ts[ctx->pic_cnt % XEVE_MAX_INBUF_CNT];
+        imgb_c->ts[XEVE_TS_DTS] = bitb->ts[XEVE_TS_DTS] = ctx->ts.frame_ts[ctx->pic_cnt % XEVE_MAX_INBUF_CNT];
     }
-    imgb_c->ts[2] = bitb->ts[2] = imgb_o->ts[2];
-    imgb_c->ts[3] = bitb->ts[3] = imgb_o->ts[3];
 
     ctx->pic_cnt++; /* increase picture count */
     ctx->param.f_ifrm = 0; /* clear force-IDR flag */
