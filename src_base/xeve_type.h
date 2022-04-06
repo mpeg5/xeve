@@ -556,6 +556,15 @@ typedef struct _XEVE_TS_INFO
     int                 num_remaining_tiles_in_slice_minus1[XEVE_MAX_NUM_TILES >> 1];
 } XEVE_TS_INFO;
 
+/* time stamp */
+typedef struct _XEVE_TIME_STAMP
+{
+    int                frame_delay;
+    XEVE_MTIME         frame_first_pts;
+    XEVE_MTIME         frame_dealy_time;
+    XEVE_MTIME         frame_ts[XEVE_MAX_INBUF_CNT];
+}XEVE_TIME_STAMP;
+
 typedef struct _XEVE_CU_DATA
 {
     s8                 split_mode[NUM_CU_DEPTH][NUM_BLOCK_SHAPE][MAX_CU_CNT_IN_LCU];
@@ -783,6 +792,8 @@ struct _XEVE_CTX
     XEVE_SH          * sh_array;
     /* reference picture manager */
     XEVE_PM            rpm;
+    /* time stamp */
+    XEVE_TIME_STAMP    ts;
     /* quantization value of current encoding slice */
     u8                 qp;
     /* encoding picture width */

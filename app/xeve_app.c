@@ -44,6 +44,11 @@
 #ifdef _WIN32
 #define y4m_struct_stat struct _stati64
 #define y4m_fstat _fstati64
+
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+
 #else
 #define y4m_struct_stat struct stat
 #define y4m_fstat fstat
@@ -1325,7 +1330,7 @@ int main(int argc, const char **argv)
             }
 
             /* store reconstructed image to list */
-            ilist_t = imgb_list_put(ilist_rec, imgb_rec, imgb_rec->ts[0]);
+            ilist_t = imgb_list_put(ilist_rec, imgb_rec, imgb_rec->ts[XEVE_TS_PTS]);
             if(ilist_t == NULL)
             {
                 logerr("cannot put reconstructed image to list\n");

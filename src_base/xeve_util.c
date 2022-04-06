@@ -1856,6 +1856,9 @@ void xeve_imgb_cpy(XEVE_IMGB * dst, XEVE_IMGB * src)
         dst->y[i] = src->y[i];
         dst->w[i] = src->w[i];
         dst->h[i] = src->h[i];
+    }
+    for (i = 0; i < XEVE_TS_NUM; i++)
+    {
         dst->ts[i] = src->ts[i];
     }
 }
