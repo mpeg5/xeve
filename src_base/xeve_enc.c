@@ -1968,7 +1968,7 @@ int xeve_header(XEVE_CTX * ctx)
         ret = ctx->fn_encode_pps(ctx);
         xeve_assert_rv(ret == XEVE_OK, ret);
 
-        // SEI Command info 
+        // SEI Command info
         if (ctx->param.sei_cmd_info)
         {
             ret = ctx->fn_encode_sei(ctx);
@@ -2259,8 +2259,6 @@ int xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
     }
 
     /* set default encoding parameter */
-    param->qp_max            = MAX_QUANT;
-    param->qp_min            = MIN_QUANT;
     param->gop_size          = param->bframes +1;
     param->lookahead         = XEVE_MIN(XEVE_MAX((param->cutree)? param->gop_size : 0, param->lookahead), XEVE_MAX_INBUF_CNT>>1);
     param->use_fcst          = ((param->use_fcst || param->lookahead) && (param->rc_type || param->aq_mode)) ? 1 : 0;
@@ -2312,6 +2310,9 @@ int xeve_param_init(XEVE_PARAM* param)
     param->tile_columns               = 1;
     param->num_slice_in_pic           = 1;
     param->use_annexb                 = 1;
+    param->qp_max                     = MAX_QUANT;
+    param->qp_min                     = MIN_QUANT;
+
     param->sei_cmd_info               = 1;
 
     param->sar                        = 0;
@@ -2550,7 +2551,7 @@ void xeve_param2string(XEVE_PARAM * param, char * sei_buf, int padx, int pady)
     sei_buf += sprintf(sei_buf, " keyint=%d", param->keyint);
     sei_buf += sprintf(sei_buf, " color-space=%d", param->cs);
     sei_buf += sprintf(sei_buf, " rc-type=%s", (param->rc_type == XEVE_RC_ABR) ? "ABR" : (param->rc_type == XEVE_RC_CRF) ? "CRF" : "CQP");
-    
+
     if (param->rc_type == XEVE_RC_ABR || param->rc_type == XEVE_RC_CRF)
     {
         if (param->rc_type == XEVE_RC_CRF)
