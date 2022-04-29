@@ -29,6 +29,7 @@
 */
 
 #include <math.h>
+#include <stdio.h>
 #include "xeve_type.h"
 
 void xeve_itx_pb2b(void *src, void *dst, int shift, int line, int step)
@@ -69,7 +70,9 @@ void xeve_itx_pb4b(void *src, void *dst, int shift, int line, int step)
     int j;
     s64 E[2], O[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
-
+    FILE *fp = fopen("trans_log.txt", "a"); 
+    fputs("xeve_itx_pb4b_neon_working", fp); 
+    fclose(fp); 
 #define RUN_ITX_PB4(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\

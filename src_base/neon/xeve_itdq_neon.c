@@ -225,24 +225,24 @@ void xeve_itx_pb4b_neon(void *src, void *dst, int shift, int line, int step)
 
 void xeve_itx_pb8b_neon(void *src, void *dst, int shift, int line, int step)
 {
-    xeve_itx_pb8b(src, dst, shift, line, step);
+  xeve_itx_pb8b(src, dst, shift, line, step);
 }
 
 void xeve_itx_pb16b_neon(void *src, void *dst, int shift, int line, int step)
 {
-    xeve_itx_pb16b(src, dst, shift, line, step);
+  xeve_itx_pb16b(src, dst, shift, line, step);
 }
 
 void xeve_itx_pb32b_neon(void *src, void *dst, int shift, int line, int step)
 {
-    xeve_itx_pb32b(src, dst, shift, line, step);
+  xeve_itx_pb32b(src, dst, shift, line, step);
 }
 
 void xeve_itx_pb64b_neon(void *src, void *dst, int shift, int line, int step)
 {
-    
-   xeve_itx_pb64b(src, dst, shift, line, step);
+  xeve_itx_pb64b(src, dst, shift, line, step);
 }
+
 
 const XEVE_ITXB xeve_tbl_itxb_neon[MAX_TR_LOG2] =
 {
