@@ -5,6 +5,13 @@ if(NOT SET_PROF)
   set(SET_PROF "MAIN")
 endif()
 
+if(NOT ARM)
+  set(ARM "FALSE")
+else()
+  add_definitions(-DARM=1)
+endif()
+
+message("ARM=${ARM}")
 if(("${SET_PROF}" STREQUAL "MAIN") OR ("${SET_PROF}" STREQUAL "BASE"))
   message("SET_PROF=${SET_PROF}")
 else()
