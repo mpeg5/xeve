@@ -142,19 +142,17 @@ void xeve_trace_line(char * pre);
 #define ARM_NEON                1
 
 #if X86_SSE
-#ifdef _WIN32
-#include <emmintrin.h>
-#include <xmmintrin.h>
-#include <tmmintrin.h>
-#include <smmintrin.h>
-#else
-#if ARM_NEON
-#include <arm_neon.h>
-#else
-#include <x86intrin.h>
+  #ifdef _WIN32
+    #include <emmintrin.h>
+    #include <xmmintrin.h>
+    #include <tmmintrin.h>
+    #include <smmintrin.h>
+  #else
+    #if ARM_NEON
+      #include <arm_neon.h>
+    #else
+      #include <x86intrin.h>
+    #endif
+  #endif 
 #endif
-#elif ARM
-#include <arm_neon.h>
-#endif
-#endif
-#endif /* _XEVE_PORT_H_ */
+#endif/* _XEVE_PORT_H_ */
