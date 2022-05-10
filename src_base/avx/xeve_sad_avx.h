@@ -27,7 +27,6 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef ARM
 #ifndef _XEVE_SAD_AVX_H_
 #define _XEVE_SAD_AVX_H_
 
@@ -38,4 +37,3 @@
 extern const XEVE_FN_SAD xeve_tbl_sad_16b_avx[8][8];
 #endif /* X86_SSE */
 #endif /* _XEVE_SAD_AVX_H_ */
-#endif
