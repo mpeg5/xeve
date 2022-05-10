@@ -1,8 +1,0 @@
-/usr/local/lib/aarch64-linux-gnu/xeveb/libxeveb.a
-/usr/local/include/xeveb/xeve.h
-/usr/local/lib/aarch64-linux-gnu/libxeveb.so.1.0
-/usr/local/lib/aarch64-linux-gnu/libxeveb.so.1
-/usr/local/lib/aarch64-linux-gnu/libxeveb.so
-/usr/local/include/xeveb/xeve_exports.h
-/usr/local/lib/aarch64-linux-gnu/pkgconfig/xeveb.pc
-/usr/local/bin/xeveb_app

@@ -85,16 +85,7 @@ ERR:
         xeve_delete_bs_buf(ctx);
         xeve_ctx_free(ctx);
     }
-      if(err) *err = ret;
-      FILE *fp;
-    fp = fopen("test.txt", "a");
-    if(fp == NULL){
-      return NULL;
-    } 
-    fputc('a', fp);
-    fputc('b', fp);
-    fputc('x', fp);
-    fclose(fp);
+    if(err) *err = ret;
     return NULL;
 }
 

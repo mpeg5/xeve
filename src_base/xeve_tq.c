@@ -30,7 +30,7 @@
 
 #include "xeve_tq.h"
 #include <math.h>
-#include <stdio.h>
+
 #define QUANT(c, scale, offset, shift) ((s16)((((c)*(scale)) + (offset)) >> (shift)))
 
 const XEVE_TXB(*xeve_func_txb)[MAX_TR_LOG2];
@@ -42,6 +42,7 @@ void tx_pb2b(void * src, void * dst, int shift, int line, int step)
     int j;
     s64 E, O;
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB2(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -68,6 +69,7 @@ void tx_pb4b(void * src, void * dst, int shift, int line, int step)
     int j;
     s64 E[2], O[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB4(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -99,6 +101,7 @@ void tx_pb8b(void * src, void * dst, int shift, int line, int step)
     s64 E[4], O[4];
     s64 EE[2], EO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB8(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -142,6 +145,7 @@ void tx_pb16b(void * src, void * dst, int shift, int line, int step)
     s64 EE[4], EO[4];
     s64 EEE[2], EEO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB16(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -198,6 +202,7 @@ void tx_pb32b(void * src, void * dst, int shift, int line, int step)
     s64 EEE[4], EEO[4];
     s64 EEEE[2], EEEO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB32(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -268,6 +273,7 @@ void tx_pb64b(void *src, void *dst, int shift, int line, int step)
     s64 EEEE[4], EEEO[4];
     s64 EEEEE[2], EEEEO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB64(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
