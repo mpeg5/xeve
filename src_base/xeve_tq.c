@@ -1,47 +1,48 @@
 /* Copyright (c) 2020, Samsung Electronics Co., Ltd.
    All Rights Reserved. */
-/*
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are met:
-   
-   - Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
-   
-   - Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-   
-   - Neither the name of the copyright owner, nor the names of its contributors
-   may be used to endorse or promote products derived from this software
-   without specific prior written permission.
-   
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-   ARE DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-   CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-   POSSIBILITY OF SUCH DAMAGE.
-*/
+   /*
+      Redistribution and use in source and binary forms, with or without
+      modification, are permitted provided that the following conditions are met:
+
+      - Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+      - Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+      - Neither the name of the copyright owner, nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+      THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+      AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+      IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+      ARE DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+      LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+      CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+      SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+      INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+      POSSIBILITY OF SUCH DAMAGE.
+   */
 
 #include "xeve_tq.h"
 #include <math.h>
-#include <stdio.h>
+
 #define QUANT(c, scale, offset, shift) ((s16)((((c)*(scale)) + (offset)) >> (shift)))
 
 const XEVE_TXB(*xeve_func_txb)[MAX_TR_LOG2];
 const int xeve_quant_scale[2][6] = { {26214, 23302, 20560, 18396, 16384, 14764},
                                      {26214, 23302, 20560, 18396, 16384, 14564} };
 
-void tx_pb2b(void * src, void * dst, int shift, int line, int step)
+void tx_pb2b(void* src, void* dst, int shift, int line, int step)
 {
     int j;
     s64 E, O;
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB2(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -53,7 +54,7 @@ void tx_pb2b(void * src, void * dst, int shift, int line, int step)
         *((type_dst * )dst + 1 * line + j) = (type_dst)((xeve_tbl_tm2[1][0] * O + add) >> shift);\
     }
 
-    if(step == 0)
+    if (step == 0)
     {
         RUN_TX_PB2(src, dst, s16, s32);
     }
@@ -63,11 +64,12 @@ void tx_pb2b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-void tx_pb4b(void * src, void * dst, int shift, int line, int step)
+void tx_pb4b(void* src, void* dst, int shift, int line, int step)
 {
     int j;
     s64 E[2], O[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB4(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -83,7 +85,7 @@ void tx_pb4b(void * src, void * dst, int shift, int line, int step)
         *((type_dst * )dst + 3 * line + j) = (type_dst)((xeve_tbl_tm4[3][0] * O[0] + xeve_tbl_tm4[3][1] * O[1] + add) >> shift);\
     }
 
-    if(step == 0)
+    if (step == 0)
     {
         RUN_TX_PB4(src, dst, s16, s32);
     }
@@ -93,12 +95,13 @@ void tx_pb4b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-void tx_pb8b(void * src, void * dst, int shift, int line, int step)
+void tx_pb8b(void* src, void* dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[4], O[4];
     s64 EE[2], EO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB8(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -125,7 +128,7 @@ void tx_pb8b(void * src, void * dst, int shift, int line, int step)
         *((type_dst * )dst + 7 * line + j) = (type_dst)((xeve_tbl_tm8[7][0] * O[0] + xeve_tbl_tm8[7][1] * O[1] + xeve_tbl_tm8[7][2] * O[2] + xeve_tbl_tm8[7][3] * O[3] + add) >> shift);\
     }
 
-    if(step == 0)
+    if (step == 0)
     {
         RUN_TX_PB8(src, dst, s16, s32);
     }
@@ -135,13 +138,14 @@ void tx_pb8b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-void tx_pb16b(void * src, void * dst, int shift, int line, int step)
+void tx_pb16b(void* src, void* dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[8], O[8];
     s64 EE[4], EO[4];
     s64 EEE[2], EEO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB16(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -180,7 +184,7 @@ void tx_pb16b(void * src, void * dst, int shift, int line, int step)
         }\
     }
 
-    if(step == 0)
+    if (step == 0)
     {
         RUN_TX_PB16(src, dst, s16, s32);
     }
@@ -190,7 +194,7 @@ void tx_pb16b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-void tx_pb32b(void * src, void * dst, int shift, int line, int step)
+void tx_pb32b(void* src, void* dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[16], O[16];
@@ -198,6 +202,7 @@ void tx_pb32b(void * src, void * dst, int shift, int line, int step)
     s64 EEE[4], EEO[4];
     s64 EEEE[2], EEEO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB32(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -247,7 +252,7 @@ void tx_pb32b(void * src, void * dst, int shift, int line, int step)
         }\
     }
 
-    if(step == 0)
+    if (step == 0)
     {
         RUN_TX_PB32(src, dst, s16, s32);
     }
@@ -257,10 +262,10 @@ void tx_pb32b(void * src, void * dst, int shift, int line, int step)
     }
 }
 
-void tx_pb64b(void *src, void *dst, int shift, int line, int step)
+void tx_pb64b(void* src, void* dst, int shift, int line, int step)
 {
     const int tx_size = 64;
-    const s8 * tm = xeve_tbl_tm64[0];
+    const s8* tm = xeve_tbl_tm64[0];
     int j, k;
     s64 E[32], O[32];
     s64 EE[16], EO[16];
@@ -268,6 +273,7 @@ void tx_pb64b(void *src, void *dst, int shift, int line, int step)
     s64 EEEE[4], EEEO[4];
     s64 EEEEE[2], EEEEO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
 #define RUN_TX_PB64(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -360,7 +366,7 @@ void tx_pb64b(void *src, void *dst, int shift, int line, int step)
         dst = (type_dst *)dst + 1;\
     }
 
-    if(step == 0)
+    if (step == 0)
     {
         RUN_TX_PB64(src, dst, s16, s32);
     }
@@ -380,8 +386,8 @@ const XEVE_TXB xeve_tbl_txb[MAX_TR_LOG2] =
     tx_pb64b
 };
 
-static void xeve_trans(s16 * coef, int log2_cuw, int log2_cuh, int bit_depth)
-{    
+static void xeve_trans(s16* coef, int log2_cuw, int log2_cuh, int bit_depth)
+{
     int shift1 = xeve_get_transform_shift(log2_cuw, 0, bit_depth);
     int shift2 = xeve_get_transform_shift(log2_cuh, 1, bit_depth);
 
@@ -390,7 +396,7 @@ static void xeve_trans(s16 * coef, int log2_cuw, int log2_cuh, int bit_depth)
     (*xeve_func_txb)[log2_cuh - 1](tb, coef, (shift1 + shift2), 1 << log2_cuw, 1);
 }
 
-void xeve_init_err_scale(XEVE_CTX * ctx)
+void xeve_init_err_scale(XEVE_CTX* ctx)
 {
     double err_scale;
     int qp;
@@ -411,13 +417,13 @@ void xeve_init_err_scale(XEVE_CTX * ctx)
     }
 }
 
-static __inline s64 get_ic_rate_cost_rl(u32 abs_level, u32 run, s32 ctx_run, u32 ctx_level, s64 lambda, XEVE_CORE * core)
+static __inline s64 get_ic_rate_cost_rl(u32 abs_level, u32 run, s32 ctx_run, u32 ctx_level, s64 lambda, XEVE_CORE* core)
 {
     s32 rate;
-    if(abs_level == 0)
+    if (abs_level == 0)
     {
         rate = 0;
-        if(run == 0)
+        if (run == 0)
         {
             rate += core->rdoq_est_run[ctx_run][1];
         }
@@ -429,7 +435,7 @@ static __inline s64 get_ic_rate_cost_rl(u32 abs_level, u32 run, s32 ctx_run, u32
     else
     {
         rate = GET_IEP_RATE;
-        if(run == 0)
+        if (run == 0)
         {
             rate += core->rdoq_est_run[ctx_run][0];
         }
@@ -438,7 +444,7 @@ static __inline s64 get_ic_rate_cost_rl(u32 abs_level, u32 run, s32 ctx_run, u32
             rate += core->rdoq_est_run[ctx_run + 1][0];
         }
 
-        if(abs_level == 1)
+        if (abs_level == 1)
         {
             rate += core->rdoq_est_level[ctx_level][0];
         }
@@ -453,7 +459,7 @@ static __inline s64 get_ic_rate_cost_rl(u32 abs_level, u32 run, s32 ctx_run, u32
 }
 
 static __inline u32 get_coded_level_rl(s64* rd64_uncoded_cost, s64* rd64_coded_cost, s64 level_double, u32 max_abs_level,
-                                       u32 run, u16 ctx_run, u16 ctx_level, s32 q_bits, s64 err_scale, s64 lambda, XEVE_CORE * core)
+    u32 run, u16 ctx_run, u16 ctx_level, s32 q_bits, s64 err_scale, s64 lambda, XEVE_CORE* core)
 {
     u32 best_abs_level = 0;
     s64 err1 = (level_double * err_scale) >> ERR_SCALE_PRECISION_BITS;
@@ -464,13 +470,13 @@ static __inline u32 get_coded_level_rl(s64* rd64_uncoded_cost, s64* rd64_coded_c
     *rd64_coded_cost = *rd64_uncoded_cost + get_ic_rate_cost_rl(0, run, ctx_run, ctx_level, lambda, core);
 
     min_abs_level = (max_abs_level > 1 ? max_abs_level - 1 : 1);
-    for(abs_level = max_abs_level; abs_level >= min_abs_level; abs_level--)
+    for (abs_level = max_abs_level; abs_level >= min_abs_level; abs_level--)
     {
         s64 i64Delta = level_double - ((s64)abs_level << q_bits);
         s64 err = (i64Delta * err_scale) >> ERR_SCALE_PRECISION_BITS;
         s64 dCurrCost = err * err + get_ic_rate_cost_rl(abs_level, run, ctx_run, ctx_level, lambda, core);
 
-        if(dCurrCost < *rd64_coded_cost)
+        if (dCurrCost < *rd64_coded_cost)
         {
             best_abs_level = abs_level;
             *rd64_coded_cost = dCurrCost;
@@ -479,12 +485,12 @@ static __inline u32 get_coded_level_rl(s64* rd64_uncoded_cost, s64* rd64_coded_c
     return best_abs_level;
 }
 
-int xeve_rdoq_set_ctx_cc(XEVE_CORE * core, int ch_type, int prev_level)
+int xeve_rdoq_set_ctx_cc(XEVE_CORE* core, int ch_type, int prev_level)
 {
     return (ch_type == Y_C ? 0 : 2);
 }
 
-int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, s16 *dst_tmp, int log2_cuw, int log2_cuh, int ch_type, XEVE_CORE * core, int bit_depth)
+int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16* src_coef, s16* dst_tmp, int log2_cuw, int log2_cuh, int ch_type, XEVE_CORE* core, int bit_depth)
 {
     const int qp_rem = qp % 6;
     const int ns_shift = ((log2_cuw + log2_cuh) & 1) ? 7 : 0;
@@ -494,7 +500,7 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
     const int log2_size = (log2_cuw + log2_cuh) >> 1;
     const int tr_shift = MAX_TX_DYNAMIC_RANGE - bit_depth - (log2_size);
     const u32 max_num_coef = 1 << (log2_cuw + log2_cuh);
-    const u16 *scan = xeve_tbl_scan[log2_cuw - 1][log2_cuh - 1];
+    const u16* scan = xeve_tbl_scan[log2_cuw - 1][log2_cuh - 1];
     const int ctx_last = (ch_type == Y_C) ? 0 : 1;
     const int q_bits = QUANT_SHIFT + tr_shift + (qp / 6);
     int nnz = 0;
@@ -511,7 +517,7 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
     s64 d64_best_cost = 0;
     s64 d64_base_cost = 0;
     s64 d64_coded_cost = 0;
-    s64 d64_uncoded_cost = 0;       
+    s64 d64_uncoded_cost = 0;
     s64 d64_block_uncoded_cost = 0;
     s64 err;
 
@@ -542,10 +548,10 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
         sum_all += max_abs_level;
     }
 
-    xeve_mset(dst_tmp, 0, sizeof(s16)*max_num_coef);
+    xeve_mset(dst_tmp, 0, sizeof(s16) * max_num_coef);
 
     if (sum_all == 0)
-    {       
+    {
         return nnz;
     }
 
@@ -570,7 +576,7 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
         {
             d64_best_cost = d64_block_uncoded_cost + GET_I_COST(core->rdoq_est_cbf_cr[0], lambda);
             d64_base_cost = d64_block_uncoded_cost + GET_I_COST(core->rdoq_est_cbf_cr[1], lambda);
-        }     
+        }
     }
 
     run = 0;
@@ -583,7 +589,7 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
         int ctx_run = core->ctx->fn_rdoq_set_ctx_cc(core, ch_type, prev_level);
         int ctx_level = ctx_run;
 
-        level = get_coded_level_rl(&d64_uncoded_cost, &d64_coded_cost, tmp_level_double[blk_pos], XEVE_ABS(tmp_coef[blk_pos]), run, ctx_run, ctx_level, q_bits, err_scale, lambda,  core);
+        level = get_coded_level_rl(&d64_uncoded_cost, &d64_coded_cost, tmp_level_double[blk_pos], XEVE_ABS(tmp_coef[blk_pos]), run, ctx_run, ctx_level, q_bits, err_scale, lambda, core);
         tmp_dst_coef[blk_pos] = tmp_coef[blk_pos] < 0 ? -(s32)(level) : level;
         d64_base_cost -= d64_uncoded_cost;
         d64_base_cost += d64_coded_cost;
@@ -634,12 +640,12 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
     return nnz;
 }
 
-static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int log2_cuw, int log2_cuh, u16 scale, int ch_type
-                        , int slice_type, XEVE_CORE * core, int bit_depth, int use_rdoq)
+static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16* coef, int log2_cuw, int log2_cuh, u16 scale, int ch_type
+    , int slice_type, XEVE_CORE* core, int bit_depth, int use_rdoq)
 {
     int nnz = 0;
 
-    if(use_rdoq)
+    if (use_rdoq)
     {
         s64 lev;
         s64 offset;
@@ -660,19 +666,19 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
         offset = (s64)((slice_type == SLICE_I) ? FAST_RDOQ_INTRA_RND_OFST : FAST_RDOQ_INTER_RND_OFST) << (s64)(shift - 9);
         zero_coeff_threshold = ((s64)1 << (s64)shift) - offset;
 
-        for(i = 0; i < (1 << (log2_cuw + log2_cuh)); i++)
+        for (i = 0; i < (1 << (log2_cuw + log2_cuh)); i++)
         {
             lev = (s64)XEVE_ABS(coef[i]) * (s64)scale * ns_scale;
-            if(lev >= zero_coeff_threshold)
+            if (lev >= zero_coeff_threshold)
             {
                 is_coded = 1;
                 break;
             }
         }
 
-        if(!is_coded)
+        if (!is_coded)
         {
-            xeve_mset(coef, 0, sizeof(coef[0])*((s64)1 << (log2_cuw + log2_cuh)));
+            xeve_mset(coef, 0, sizeof(coef[0]) * ((s64)1 << (log2_cuw + log2_cuh)));
             return nnz;
         }
     }
@@ -697,7 +703,7 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
         shift = QUANT_SHIFT + tr_shift + (qp / 6);
         offset = (s64)((slice_type == SLICE_I) ? 171 : 85) << (s64)(shift - 9);
 
-        for(i = 0; i < (1 << (log2_cuw + log2_cuh)); i++)
+        for (i = 0; i < (1 << (log2_cuw + log2_cuh)); i++)
         {
             sign = XEVE_SIGN_GET(coef[i]);
             lev = (s64)XEVE_ABS(coef[i]) * (s64)scale;
@@ -710,16 +716,16 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
     return nnz;
 }
 
-static int xeve_tq_nnz(u8 qp, double lambda, s16 * coef, int log2_cuw, int log2_cuh, u16 scale, int slice_type, int ch_type, int is_intra, XEVE_CORE * core, int bit_depth, int rdoq)
+static int xeve_tq_nnz(u8 qp, double lambda, s16* coef, int log2_cuw, int log2_cuh, u16 scale, int slice_type, int ch_type, int is_intra, XEVE_CORE* core, int bit_depth, int rdoq)
 {
     xeve_trans(coef, log2_cuw, log2_cuh, bit_depth);
     return xeve_quant_nnz(qp, lambda, is_intra, coef, log2_cuw, log2_cuh, scale, ch_type, slice_type, core, bit_depth, rdoq);
 }
 
-int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, int slice_type, int nnz[N_C], int is_intra, int run_stats)
+int xeve_sub_block_tq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int log2_cuw, int log2_cuh, int slice_type, int nnz[N_C], int is_intra, int run_stats)
 {
-    int run[N_C] = {run_stats & 1, (run_stats >> 1) & 1, (run_stats >> 2) & 1};
-    s16 *coef_temp[N_C];
+    int run[N_C] = { run_stats & 1, (run_stats >> 1) & 1, (run_stats >> 2) & 1 };
+    s16* coef_temp[N_C];
     s16 coef_temp_buf[N_C][MAX_TR_DIM];
     int i, j, c;
     int log2_w_sub = (log2_cuw > MAX_TR_LOG2) ? MAX_TR_LOG2 : log2_cuw;
@@ -732,27 +738,27 @@ int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM
     int sub_stride = (1 << log2_w_sub);
     u8 qp[N_C] = { core->qp_y, core->qp_u, core->qp_v };
     double lambda[N_C] = { core->lambda[0], core->lambda[1], core->lambda[2] };
-    int nnz_temp[N_C] = {0};
+    int nnz_temp[N_C] = { 0 };
     xeve_mset(core->nnz_sub, 0, sizeof(int) * N_C * MAX_SUB_TB_NUM);
-    if(!ctx->sps.chroma_format_idc)
+    if (!ctx->sps.chroma_format_idc)
     {
         run[1] = run[2] = 0;
     }
 
-    for(j = 0; j < loop_h; j++)
+    for (j = 0; j < loop_h; j++)
     {
-        for(i = 0; i < loop_w; i++)
+        for (i = 0; i < loop_w; i++)
         {
-            for(c = 0; c < N_C; c++)
+            for (c = 0; c < N_C; c++)
             {
-                if(run[c])
+                if (run[c])
                 {
                     int pos_sub_x = c == 0 ? (i * (1 << (log2_w_sub))) : (i * (1 << (log2_w_sub - w_shift)));
                     int pos_sub_y = c == 0 ? j * (1 << (log2_h_sub)) * (stride) : j * (1 << (log2_h_sub - h_shift)) * (stride >> w_shift);
 
-                    if(loop_h + loop_w > 2)
+                    if (loop_h + loop_w > 2)
                     {
-                        if(c==0)
+                        if (c == 0)
                             xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride, coef_temp_buf[c], sub_stride, log2_w_sub, log2_h_sub);
                         else
                             xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, coef_temp_buf[c], sub_stride >> w_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
@@ -764,15 +770,15 @@ int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM
                     }
 
                     int scale = xeve_quant_scale[ctx->param.tool_iqt][qp[c] % 6];
-                    if(c==0)
+                    if (c == 0)
                         core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub, log2_h_sub, scale, slice_type, c, is_intra, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.rdoq);
                     else
                         core->nnz_sub[c][(j << 1) | i] = xeve_tq_nnz(qp[c], lambda[c], coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale, slice_type, c, is_intra, core, ctx->sps.bit_depth_luma_minus8 + 8, ctx->param.rdoq);
                     nnz_temp[c] += core->nnz_sub[c][(j << 1) | i];
 
-                    if(loop_h + loop_w > 2)
+                    if (loop_h + loop_w > 2)
                     {
-                        if(c==0)
+                        if (c == 0)
                             xeve_block_copy(coef_temp_buf[c], sub_stride, coef[c] + pos_sub_x + pos_sub_y, stride, log2_w_sub, log2_h_sub);
                         else
                             xeve_block_copy(coef_temp_buf[c], sub_stride >> w_shift, coef[c] + pos_sub_x + pos_sub_y, stride >> w_shift, log2_w_sub - w_shift, log2_h_sub - h_shift);
@@ -782,7 +788,7 @@ int xeve_sub_block_tq(XEVE_CTX * ctx, XEVE_CORE * core, s16 coef[N_C][MAX_CU_DIM
         }
     }
 
-    for(c = 0; c < N_C; c++)
+    for (c = 0; c < N_C; c++)
     {
         nnz[c] = run[c] ? nnz_temp[c] : 0;
     }

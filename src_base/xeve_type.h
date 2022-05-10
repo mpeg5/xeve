@@ -1022,5 +1022,4 @@ typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 #endif
 #include "xeve_enc.h"
 
-
 #endif /* _XEVE_TYPE_H_ */

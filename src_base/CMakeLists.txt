@@ -2,7 +2,7 @@
 
 set( LIB_SOVERSION 1)
 
-file (GLOB ETM_INC "../inc/*.h")
+file (GLOB XEVE_INC "../inc/*.h")
 file (GLOB LIB_API_SRC "xeve.c")
 file (GLOB LIB_BASE_SRC "xeve_*.c")
 file (GLOB LIB_BASE_INC "xeve_*.h" )
@@ -51,7 +51,7 @@ generate_export_header(${LIB_NAME_BASE}_dynamic
 # This will cause the export macros to expand to nothing when building the static library.
 set_target_properties(${LIB_NAME_BASE} PROPERTIES COMPILE_FLAGS -DLIBSHARED_AND_STATIC_STATIC_DEFINE)
 
-source_group("base\\header" FILES ${LIB_BASE_INC} ${ETM_INC})
+source_group("base\\header" FILES ${LIB_BASE_INC} ${XEVE_INC})
 source_group("base\\source" FILES ${LIB_BASE_SRC} ${LIB_API_SRC})
 source_group("base\\sse\\header" FILES ${LIB_SSE_INC})
 source_group("base\\sse\\source" FILES ${LIB_SSE_SRC})
@@ -96,7 +96,7 @@ endif()
 # e.g cmake .. -DSET_PROF=BASE -DCMAKE_INSTALL_PREFIX='C:\Users\name\git\xeve_internal\build-windows\install'
 
 # List the headers we want to declare as public for installation.
-set(XEVE_PUBLIC_HEADERS "${ETM_INC}")
+set(XEVE_PUBLIC_HEADERS "${XEVE_INC}")
 set_target_properties(${LIB_NAME_BASE} PROPERTIES PUBLIC_HEADER "${XEVE_PUBLIC_HEADERS}")
 
 set(XEVE_PRIVATE_HEADERS "${LIB_BASE_INC}" "${LIB_SSE_INC}" "${LIB_AVX_INC}" "${LIB_NEON_INC}")

@@ -1,38 +1,37 @@
 /* Copyright (c) 2020, Samsung Electronics Co., Ltd.
    All Rights Reserved. */
-/*
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are met:
-   
-   - Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
-   
-   - Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-   
-   - Neither the name of the copyright owner, nor the names of its contributors
-   may be used to endorse or promote products derived from this software
-   without specific prior written permission.
-   
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-   ARE DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-   CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-   POSSIBILITY OF SUCH DAMAGE.
-*/
+   /*
+      Redistribution and use in source and binary forms, with or without
+      modification, are permitted provided that the following conditions are met:
+
+      - Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+      - Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+      - Neither the name of the copyright owner, nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+      THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+      AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+      IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+      ARE DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+      LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+      CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+      SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+      INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+      POSSIBILITY OF SUCH DAMAGE.
+   */
 
 #include <math.h>
-#include <stdio.h>
 #include "xeve_type.h"
 
-void xeve_itx_pb2b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb2b(void* src, void* dst, int shift, int line, int step)
 {
     int j;
     s64 E, O;
@@ -65,14 +64,12 @@ void xeve_itx_pb2b(void *src, void *dst, int shift, int line, int step)
     }
 }
 
-void xeve_itx_pb4b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb4b(void* src, void* dst, int shift, int line, int step)
 {
     int j;
     s64 E[2], O[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
-    FILE *fp = fopen("trans_log.txt", "a"); 
-    fputs("xeve_itx_pb4b_neon_working", fp); 
-    fclose(fp); 
+
 #define RUN_ITX_PB4(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -109,7 +106,7 @@ void xeve_itx_pb4b(void *src, void *dst, int shift, int line, int step)
     }
 }
 
-void xeve_itx_pb8b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb8b(void* src, void* dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[4], O[4];
@@ -164,7 +161,7 @@ void xeve_itx_pb8b(void *src, void *dst, int shift, int line, int step)
     }
 }
 
-void xeve_itx_pb16b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb16b(void* src, void* dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[8], O[8];
@@ -229,11 +226,11 @@ void xeve_itx_pb16b(void *src, void *dst, int shift, int line, int step)
     }
     else
     {
-        RUN_ITX_PB16(src, dst, s32, s16);    
+        RUN_ITX_PB16(src, dst, s32, s16);
     }
 }
 
-void xeve_itx_pb32b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb32b(void* src, void* dst, int shift, int line, int step)
 {
     int j, k;
     s64 E[16], O[16];
@@ -331,10 +328,10 @@ void xeve_itx_pb32b(void *src, void *dst, int shift, int line, int step)
     }
 }
 
-void xeve_itx_pb64b(void *src, void *dst, int shift, int line, int step)
+void xeve_itx_pb64b(void* src, void* dst, int shift, int line, int step)
 {
     const int tx_size = 64;
-    const s8 *tm = xeve_tbl_tm64[0];
+    const s8* tm = xeve_tbl_tm64[0];
     int j, k;
     s64 E[32], O[32];
     s64 EE[16], EO[16];
@@ -442,7 +439,7 @@ void xeve_itx_pb64b(void *src, void *dst, int shift, int line, int step)
     else
     {
         RUN_ITX_PB64(src, dst, s32, s16);
-    }    
+    }
 }
 
 const XEVE_ITXB xeve_tbl_itxb[MAX_TR_LOG2] =
@@ -455,27 +452,27 @@ const XEVE_ITXB xeve_tbl_itxb[MAX_TR_LOG2] =
     xeve_itx_pb64b
 };
 
-static void xeve_itrans(XEVE_CTX * ctx, s16 *coef, int log2_cuw, int log2_cuh, int bit_depth)
+static void xeve_itrans(XEVE_CTX* ctx, s16* coef, int log2_cuw, int log2_cuh, int bit_depth)
 {
     s32 tb[MAX_TR_DIM]; /* temp buffer */
     (*ctx->fn_itxb)[log2_cuh - 1](coef, tb, 0, 1 << log2_cuw, 0);
     (*ctx->fn_itxb)[log2_cuw - 1](tb, coef, (ITX_SHIFT1 + ITX_SHIFT2(bit_depth)), 1 << log2_cuh, 1);
 }
 
-static void xeve_dquant(s16 *coef, int log2_w, int log2_h, int scale, s32 offset, u8 shift)
+static void xeve_dquant(s16* coef, int log2_w, int log2_h, int scale, s32 offset, u8 shift)
 {
     int i;
     s64 lev;
 
     const int ns_scale = ((log2_w + log2_h) & 1) ? 181 : 1;
-    for(i = 0; i < (1 << (log2_w + log2_h)); i++)
+    for (i = 0; i < (1 << (log2_w + log2_h)); i++)
     {
         lev = (coef[i] * (scale * (s64)ns_scale) + offset) >> shift;
         coef[i] = (s16)XEVE_CLIP3(-32768, 32767, lev);
     }
 }
 
-static void itdq_cu(XEVE_CTX * ctx, s16 *coef, int log2_w, int log2_h, int scale)
+static void itdq_cu(XEVE_CTX* ctx, s16* coef, int log2_w, int log2_h, int scale)
 {
     s32 offset;
     u8 shift;
@@ -499,18 +496,18 @@ static void itdq_cu(XEVE_CTX * ctx, s16 *coef, int log2_w, int log2_h, int scale
     offset = (shift == 0) ? 0 : (1 << (shift - 1));
 
     xeve_dquant(coef, log2_w, log2_h, scale, offset, shift);
-    
-    for(j = 0; j < cuh; j++)
+
+    for (j = 0; j < cuh; j++)
     {
-        for(i = 0; i < cuw; i++)
+        for (i = 0; i < cuw; i++)
         {
-            if(coef_tmp[i] != 0)
+            if (coef_tmp[i] != 0)
             {
-                if(i > max_x)
+                if (i > max_x)
                 {
                     max_x = i;
                 }
-                if(j > max_y)
+                if (j > max_y)
                 {
                     max_y = j;
                 }
@@ -521,13 +518,13 @@ static void itdq_cu(XEVE_CTX * ctx, s16 *coef, int log2_w, int log2_h, int scale
 
     skip_w = cuw - 1 - max_x;
     skip_h = cuh - 1 - max_y;
-    
+
     xeve_itrans(ctx, coef, log2_w, log2_h, bit_depth);
 }
 
 void xeve_itdq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM])
 {
-    s16 *coef_temp[N_C];
+    s16* coef_temp[N_C];
     s16 coef_temp_buf[N_C][MAX_TR_DIM];
     int i, j, c;
     int log2_w_sub = (core->log2_cuw > MAX_TR_LOG2) ? MAX_TR_LOG2 : core->log2_cuw;
@@ -541,24 +538,24 @@ void xeve_itdq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int nn
     int w_shift = (XEVE_GET_CHROMA_W_SHIFT(ctx->sps.chroma_format_idc));
     int h_shift = (XEVE_GET_CHROMA_H_SHIFT(ctx->sps.chroma_format_idc));
 
-    for(j = 0; j < loop_h; j++)
+    for (j = 0; j < loop_h; j++)
     {
-        for(i = 0; i < loop_w; i++)
+        for (i = 0; i < loop_w; i++)
         {
-            for(c = 0; c < N_C; c++)
+            for (c = 0; c < N_C; c++)
             {
-                if((c != 0) && !ctx->sps.chroma_format_idc)
+                if ((c != 0) && !ctx->sps.chroma_format_idc)
                 {
                     continue;
                 }
-                if(nnz_sub[c][(j << 1) | i])
+                if (nnz_sub[c][(j << 1) | i])
                 {
                     int pos_sub_x = c == 0 ? (i * (1 << (log2_w_sub))) : (i * (1 << (log2_w_sub - w_shift)));
                     int pos_sub_y = c == 0 ? j * (1 << (log2_h_sub)) * (stride) : j * (1 << (log2_h_sub - h_shift)) * (stride >> w_shift);
 
-                    if(loop_h + loop_w > 2)
+                    if (loop_h + loop_w > 2)
                     {
-                        if(c == 0)
+                        if (c == 0)
                         {
                             xeve_block_copy(coef[c] + pos_sub_x + pos_sub_y, stride, coef_temp_buf[c], sub_stride, log2_w_sub, log2_h_sub);
                         }
@@ -575,7 +572,7 @@ void xeve_itdq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int nn
 
                     scale = xeve_tbl_dq_scale_b[qp[c] % 6] << (qp[c] / 6);
 
-                    if(c == 0)
+                    if (c == 0)
                     {
                         itdq_cu(ctx, coef_temp[c], log2_w_sub, log2_h_sub, scale);
                     }
@@ -584,9 +581,9 @@ void xeve_itdq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int nn
                         itdq_cu(ctx, coef_temp[c], log2_w_sub - w_shift, log2_h_sub - h_shift, scale);
                     }
 
-                    if(loop_h + loop_w > 2)
+                    if (loop_h + loop_w > 2)
                     {
-                        if(c == 0)
+                        if (c == 0)
                         {
                             xeve_block_copy(coef_temp_buf[c], sub_stride, coef[c] + pos_sub_x + pos_sub_y, stride, log2_w_sub, log2_h_sub);
                         }
