@@ -10,8 +10,8 @@ if(NOT ARM)
 else()
   add_definitions(-DARM=1)
 endif()
-
 message("ARM=${ARM}")
+
 if(("${SET_PROF}" STREQUAL "MAIN") OR ("${SET_PROF}" STREQUAL "BASE"))
   message("SET_PROF=${SET_PROF}")
 else()

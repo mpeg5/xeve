@@ -13,11 +13,8 @@ file (GLOB LIB_AVX_INC "../src_base/avx/xeve_*.h" )
 file (GLOB LIB_NEON_SRC "../src_base/neon/xeve_*.c")
 file (GLOB LIB_NEON_INC "../src_base/neon/xeve_*.h" )
 
-
 include(GenerateExportHeader)
 include_directories("${CMAKE_BINARY_DIR}")
-
-
 
 
 if("${ARM}" STREQUAL "TRUE")                      
@@ -29,7 +26,6 @@ else()
   add_library( ${LIB_NAME_BASE}_dynamic SHARED ${LIB_API_SRC} ${XEVE_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_SSE_SRC} ${LIB_SSE_INC}
                                              ${LIB_AVX_SRC} ${LIB_AVX_INC} )
 endif()
-
 
 set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR} SOVERSION ${LIB_SOVERSION})
 
