@@ -138,7 +138,13 @@ void xeve_trace_line(char * pre);
 #define xeve_assert_gv(x,r,v,g) \
     {if(!(x)){assert(x); (r)=(v); goto g;}}
 
+#ifndef ARM
 #define X86_SSE                 1
+#define ARM_NEON                0
+#else
+#define X86_SSE                 0
+#define ARM_NEON                1
+#endif
 
 #if X86_SSE
 #ifdef _WIN32
@@ -147,7 +153,11 @@ void xeve_trace_line(char * pre);
 #include <tmmintrin.h>
 #include <smmintrin.h>
 #else
+#if ARM_NEON
+#include <arm_neon.h>
+#else
 #include <x86intrin.h>
 #endif
+#endif 
 #endif
 #endif /* _XEVE_PORT_H_ */

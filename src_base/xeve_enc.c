@@ -704,7 +704,21 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
 
 void xeve_platform_init_func(XEVE_CTX * ctx)
 {
-#if X86_SSE
+#if ARM_NEON
+  if(1)
+  {
+        xeve_func_sad               = xeve_tbl_sad_16b;
+        xeve_func_ssd               = xeve_tbl_ssd_16b;
+        xeve_func_diff              = xeve_tbl_diff_16b;
+        xeve_func_satd              = xeve_tbl_satd_16b;
+        xeve_func_mc_l              = xeve_tbl_mc_l;
+        xeve_func_mc_c              = xeve_tbl_mc_c;
+        xeve_func_average_no_clip   = &xeve_average_16b_no_clip;
+        ctx->fn_itxb                = &xeve_tbl_itxb_neon;
+        xeve_func_txb               = &xeve_tbl_txb;
+  }
+  else
+#elif X86_SSE
     int check_cpu, support_sse, support_avx, support_avx2;
 
     check_cpu = xeve_check_cpu_info();

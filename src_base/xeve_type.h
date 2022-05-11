@@ -34,8 +34,10 @@
 #include "xeve_def.h"
 #include "xeve_bsw.h"
 #include "xeve_sad.h"
+#ifndef ARM
 #include "xeve_sad_sse.h"
 #include "xeve_sad_avx.h"
+#endif
 
 /* support RDOQ */
 #define SCALE_BITS               15    /* Inherited from TMuC, pressumably for fractional bit estimates in RDOQ */
@@ -1010,9 +1012,14 @@ typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 #include "xeve_util.h"
 #include "xeve_tbl.h"
 #include "xeve_itdq.h"
+
+#ifndef ARM
 #include "xeve_itdq_sse.h"
 #include "xeve_itdq_avx.h"
 #include "xeve_tq_avx.h"
+#else
+#include "xeve_itdq_neon.h"
+#endif
 #include "xeve_enc.h"
 
 #endif /* _XEVE_TYPE_H_ */
