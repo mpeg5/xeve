@@ -592,7 +592,14 @@ int xeve_enc(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
     pic_cnt = ctx->pic_icnt - ctx->frm_rnum;
     gop_size = ctx->param.gop_size;
 
-    ctx->force_slice = ((ctx->pic_ticnt % gop_size >= ctx->pic_ticnt - pic_cnt + 1) && FORCE_OUT(ctx)) ? 1 : 0;
+    if (ctx->param.keyint == 0)
+    {
+        ctx->force_slice = ((ctx->pic_ticnt % gop_size >= ctx->pic_ticnt - pic_cnt + 1) && FORCE_OUT(ctx)) ? 1 : 0;
+    }
+    else
+    {
+        ctx->force_slice = (((int)(ctx->pic_ticnt % ctx->param.keyint) % gop_size >= (int)(ctx->pic_ticnt % ctx->param.keyint) - pic_cnt + 1) && FORCE_OUT(ctx)) ? 1 : 0;
+    }
 
     xeve_assert_rv(bitb->addr && bitb->bsize > 0, XEVE_ERR_INVALID_ARGUMENT);
 
@@ -1003,7 +1010,7 @@ static void decide_normal_gop(XEVE_CTX * ctx, u32 pic_imcnt)
         ctx->poc.prev_poc_val = ctx->poc.poc_val;
         ctx->slice_ref_flag = 1;
     }
-    else if ((i_period != 0) && pic_imcnt % i_period == 0)
+    else if ((i_period != 0) && pic_imcnt % i_period == 0 && !ctx->param.closed_gop)
     {
         ctx->slice_type = SLICE_I;
         ctx->slice_depth = FRM_DEPTH_0;
@@ -1011,6 +1018,17 @@ static void decide_normal_gop(XEVE_CTX * ctx, u32 pic_imcnt)
         ctx->poc.prev_doc_offset = 0;
         ctx->poc.prev_poc_val = ctx->poc.poc_val;
         ctx->slice_ref_flag = 1;
+        ctx->ip_cnt += 1;
+    }
+    else if ((i_period != 0) && ctx->pic_cnt % i_period == 0 && ctx->param.closed_gop)
+    {
+        ctx->slice_type = SLICE_I;
+        ctx->slice_depth = FRM_DEPTH_0;
+        ctx->poc.poc_val = ctx->pic_cnt;
+        ctx->poc.prev_doc_offset = 0;
+        ctx->poc.prev_poc_val = ctx->poc.poc_val;
+        ctx->slice_ref_flag = 1;
+        ctx->ip_cnt += 1;
     }
     else if (pic_imcnt % gop_size == 0)
     {
@@ -1055,15 +1073,14 @@ static void decide_normal_gop(XEVE_CTX * ctx, u32 pic_imcnt)
             ctx->poc.poc_val = ((pic_imcnt / gop_size) * gop_size) - gop_size + pos + 1;
             ctx->slice_ref_flag = 0;
         }
-        /* find current encoding picture's(B picture) pic_icnt */
-        pic_icnt_b = ctx->poc.poc_val;
-
-        /* find pico again here */
-        ctx->pico_idx = (u8)(pic_icnt_b % ctx->pico_max_cnt);
-        ctx->pico = ctx->pico_buf[ctx->pico_idx];
-
-        PIC_ORIG(ctx) = &ctx->pico->pic;
     }
+
+    ctx->poc.poc_val += ctx->param.closed_gop ? (ctx->ip_cnt - 1) * i_period : 0;
+
+    /* find pico again here */
+    ctx->pico_idx = (u8)(ctx->poc.poc_val % ctx->pico_max_cnt);
+    ctx->pico = ctx->pico_buf[ctx->pico_idx];
+    PIC_ORIG(ctx) = &ctx->pico->pic;
 }
 
 static void decide_slice_type(XEVE_CTX * ctx)
@@ -1071,14 +1088,18 @@ static void decide_slice_type(XEVE_CTX * ctx)
     u32 pic_imcnt, pic_icnt;
     int i_period, gop_size;
     int force_cnt = 0;
+    int ip_pic_cnt, is_aligned_gop;
 
+    ip_pic_cnt = ctx->param.closed_gop && ctx->param.keyint > 0 ? ctx->pic_cnt % ctx->param.keyint : ctx->pic_cnt;
     i_period = ctx->param.keyint;
     gop_size = ctx->param.gop_size;
-    pic_icnt = (ctx->pic_cnt + ctx->param.bframes);
+    pic_icnt = (ip_pic_cnt + ctx->param.bframes);
     pic_imcnt = pic_icnt;
     ctx->pico_idx = pic_icnt % ctx->pico_max_cnt;
     ctx->pico = ctx->pico_buf[ctx->pico_idx];
     PIC_ORIG(ctx) = &ctx->pico->pic;
+    is_aligned_gop = ctx->param.closed_gop && i_period > 0 &&
+                     ((ip_pic_cnt + gop_size - 1) / gop_size) > ((i_period - 1) / gop_size) ? 0 : 1;
 
     if(gop_size == 1)
     {
@@ -1122,25 +1143,47 @@ static void decide_slice_type(XEVE_CTX * ctx)
         {
             ctx->slice_type = SLICE_I;
             ctx->slice_depth = FRM_DEPTH_0;
-            ctx->poc.poc_val = 0;
+            ctx->poc.poc_val = ctx->param.closed_gop ? ctx->ip_cnt * i_period : 0;
             ctx->poc.prev_doc_offset = 0;
             ctx->poc.prev_poc_val = ctx->poc.poc_val;
             ctx->slice_ref_flag = 1;
 
-            /* flush the first IDR picture */
-            PIC_ORIG(ctx) = &ctx->pico_buf[0]->pic;
-            ctx->pico = ctx->pico_buf[0];
+            /* find pico again here */
+            ctx->pico_idx = (u8)(ctx->poc.poc_val % ctx->pico_max_cnt);
+            ctx->pico = ctx->pico_buf[ctx->pico_idx];
+            PIC_ORIG(ctx) = &ctx->pico->pic;
+
+            ctx->ip_cnt += 1;
+            ctx->force_ignored_cnt = 0;
         }
         else if(ctx->force_slice)
         {
             for(force_cnt = ctx->force_ignored_cnt; force_cnt < gop_size; force_cnt++)
             {
-                pic_icnt = (ctx->pic_cnt + ctx->param.bframes + force_cnt);
+                pic_icnt = (ip_pic_cnt + ctx->param.bframes + force_cnt);
                 pic_imcnt = pic_icnt;
 
                 decide_normal_gop(ctx, pic_imcnt);
 
-                if(ctx->poc.poc_val <= (int)ctx->pic_ticnt)
+                if(ctx->poc.poc_val <= (int)ctx->pic_ticnt &&
+                   (ctx->param.keyint == 0 || ctx->poc.poc_val < ctx->param.keyint * (ctx->ip_cnt)))
+                {
+                    break;
+                }
+            }
+            ctx->force_ignored_cnt = force_cnt;
+        }
+        else if (!is_aligned_gop)
+        {
+            for (force_cnt = ctx->force_ignored_cnt; force_cnt < gop_size; force_cnt++)
+            {
+                pic_icnt = (ip_pic_cnt + ctx->param.bframes + force_cnt);
+                pic_imcnt = pic_icnt;
+
+                decide_normal_gop(ctx, pic_imcnt);
+
+                if (ctx->poc.poc_val < ctx->param.keyint * (ctx->ip_cnt) &&
+                    ctx->poc.poc_val == ctx->pico->pic.imgb->ts[0])
                 {
                     break;
                 }
@@ -2266,7 +2309,7 @@ int xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
 
         if(param->bframes != 0)
         {
-            if(param->keyint % (param->bframes + 1) != 0)
+            if(!param->closed_gop && param->keyint % (param->bframes + 1) != 0)
             {
                 xeve_assert_rv(0, XEVE_ERR_INVALID_ARGUMENT);
             }
