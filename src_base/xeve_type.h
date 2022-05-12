@@ -869,6 +869,8 @@ struct _XEVE_CTX
     u8                 log2_culine;
     /* log2 of SCU count in a LCU (== log2_culine * 2) */
     u8                 log2_cudim;
+    /* total count of intra picture */
+    u32                ip_cnt;
     /* picture buffer allocator */
     PICBUF_ALLOCATOR   pa;
     /* MAPS *******************************************************************/

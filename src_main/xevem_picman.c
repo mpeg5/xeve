@@ -295,7 +295,16 @@ void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     int availableRPLs = (ctx->sps.num_ref_pic_lists_in_sps0 < gopSize) ? ctx->sps.num_ref_pic_lists_in_sps0 : gopSize;
     for (int i = 0; i < availableRPLs; i++)
     {
-        int pocIdx = (ctx->poc.poc_val % gopSize == 0) ? gopSize : ctx->poc.poc_val % gopSize;
+        int pocIdx;
+        if (ctx->param.keyint > 0)
+        {
+            pocIdx = ((ctx->poc.poc_val % ctx->param.keyint) % gopSize == 0) ? gopSize : (ctx->poc.poc_val % ctx->param.keyint) % gopSize;
+        }
+        else
+        {
+            pocIdx = (ctx->poc.poc_val % gopSize == 0) ? gopSize : ctx->poc.poc_val % gopSize;
+        }
+
         if (pocIdx == ctx->sps.rpls_l0[i].poc)
         {
             sh->rpl_l0_idx = i;
