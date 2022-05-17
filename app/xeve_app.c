@@ -719,7 +719,7 @@ static int vui_param_check(XEVE_PARAM * param)
     {
         ret = 1;
         logerr("SAR value is out of range\n");
-        
+
     }
     else if (param->sar == 0)
     {
@@ -737,7 +737,7 @@ static int vui_param_check(XEVE_PARAM * param)
         {
             ret = 1;
             logerr("SAR width/height must be set with SAR value 255\n");
-            
+
         }
     }
 
@@ -746,7 +746,7 @@ static int vui_param_check(XEVE_PARAM * param)
     {
           ret = 1;
           logerr("Video-format value is out of range \n");
-          
+
     }
     else if (param->videoformat == 5)
     {
@@ -761,7 +761,7 @@ static int vui_param_check(XEVE_PARAM * param)
     {
           ret = 1;
           logerr("Black level value is out of range\n");
-          
+
     }
     else if (param->range == 0)
     {
@@ -772,7 +772,7 @@ static int vui_param_check(XEVE_PARAM * param)
         param->video_signal_type_present_flag = 1;
     }
 
-   
+
     if(param->colorprim <0 || (param->colorprim >12 && param->colorprim!=22))
     {
           ret = 1;
@@ -802,7 +802,7 @@ static int vui_param_check(XEVE_PARAM * param)
         param->colour_description_present_flag = 1;
     }
 
-    
+
     if (param->matrix_coefficients < 0 || param->matrix_coefficients > 14)
     {
          ret = 1;
@@ -946,8 +946,8 @@ static int vui_param_check(XEVE_PARAM * param)
         param->bitstream_restriction_flag = 1;
     }
 
-    
-    if (param->num_reorder_pics > param->max_dec_pic_buffering )  
+
+    if (param->num_reorder_pics > param->max_dec_pic_buffering )
     {
          ret = 1;
          logerr("num_reorder_pics is out of range");
@@ -962,7 +962,7 @@ static int vui_param_check(XEVE_PARAM * param)
     }
 
 
-    
+
     return ret;
 }
 
