@@ -1,9 +1,9 @@
-# eXtra-fast Essential Video Encoder (XEVE)  
-[![Build](https://github.com/mpeg5/xeve/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/mpeg5/xeve/actions/workflows/build.yml)  
+# eXtra-fast Essential Video Encoder (XEVE)
+[![Build](https://github.com/mpeg5/xeve/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/mpeg5/xeve/actions/workflows/build.yml)
 
-The **eXtra-fast Essential Video Encoder** (XEVE) is an opensource and fast MPEG-5 EVC encoder. 
+The **eXtra-fast Essential Video Encoder** (XEVE) is an opensource and fast MPEG-5 EVC encoder.
 
-**MPEG-5 Essential Video Coding** (EVC) is a video compression standard of ISO/IEC Moving Picture Experts Grop (MPEG). The main goal of the EVC is to provide a significantly improved compression capability over existing video coding standards with timely publication of terms. 
+**MPEG-5 Essential Video Coding** (EVC) is a video compression standard of ISO/IEC Moving Picture Experts Grop (MPEG). The main goal of the EVC is to provide a significantly improved compression capability over existing video coding standards with timely publication of terms.
 The EVC defines two profiles, including "**Baseline Profile**" and "**Main Profile**". The "Baseline profile" contains only technologies that are older than 20 years or otherwise freely available for use in the standard. In addition, the "Main profile" adds a small number of additional tools, each of which can be either cleanly disabled or switched to the corresponding baseline tool on an individual basis.
 
 ## Quality comparison
@@ -25,7 +25,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 - Build Requirements
   - CMake 3.12 or later (download from [https://cmake.org/](https://cmake.org/))
   - GCC 5.4.0 or later
-  
+
 - Build Instructions for **Baseline Profile**
   ```
   $mkdir build
@@ -49,7 +49,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   - Output Location
     - Executable application (xeve_app) can be found under build/bin/.
     - Library files (libxeve.so and libxexe.a) can be found under build/lib/.
-  - Application and libraries built with Main Profile can also support Baseline Profile operation. 
+  - Application and libraries built with Main Profile can also support Baseline Profile operation.
 
 
 ### Windows (64-bit)
@@ -66,7 +66,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     $make
     $sudo make install
     ```
-  - Microsoft Visual Studio 
+  - Microsoft Visual Studio
     ```
     $mkdir build
     $cd build
@@ -84,7 +84,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     $make
     $sudo make install
     ```
-  - Microsoft Visual Studio 
+  - Microsoft Visual Studio
     ```
     $mkdir build
     $cd build
@@ -93,12 +93,71 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     ```
     You can change '-G' option with proper version of Visual Studio.
   - Application and libraries built with Main Profile can also support Baseline Profile operation.
-    
+
+## How to generate installer
+
+### Linux (64-bit)
+- Generation of **DEB packages** instructions for **Baseline Profile**
+  - Follow build instruction **Baseline Profile** and build the project
+  - Generate **DEB packages**
+    ```
+    $make package
+    ```
+  - Output
+    - Base DEB package for **Baseline Profile**:
+      - package: xeve-base-dev_1.0.0_amd64.deb
+      - checksum file: xeve-base-dev_1.0.0_amd64.deb.md5
+    - Developer DEB package for **Baseline Profile**::
+      - package: base-base_1.0.0_amd64.deb
+      - checksum file: xeve-base_1.0.0_amd64.deb.md5 generated.
+
+- Generation of **DEB packages** instructions for **Main Profile**
+  - Follow build instruction for **Main Profile** and build the project
+  - Generate **DEB packages**
+    ```
+    $make package
+    ```
+  - Output
+    - Base DEB package for **Main Profile**:
+      - package: xeve-main-dev_1.0.0_amd64.deb
+      - checksum file: xeve-main-dev_1.0.0_amd64.deb.md5
+    - Developer DEB package for **Main Profile**:
+      - package: base-main_1.0.0_amd64.deb
+      - checksum file: xeve-base_1.0.0_amd64.deb.md5 generated.
+
+### Windows (64-bit)
+- Requirements
+  - NSIS 3.08 or later (download from [https://nsis.sourceforge.io/Download](https://nsis.sourceforge.io/Download))
+
+- Generation of **NSIS windows installer** instructions for **Baseline Profile** or for **Main Profile**
+  - Follow build instruction for **Baseline Profile** or for for **Main Profile** and build generated Visual Studio solution
+  - Generate **NSIS Windows installer**
+    - Using Command Prompt for VS
+      - Go to the build directory and issue the following command
+      ```
+      msbuild /P:Configuration=Release PACKAGE.vcxproj
+      ```
+
+    - Using Visual Studio IDE
+      - Open up the generated solution (XEVE.sln)
+      - Change build type from Debug to Release
+      - Go to the Solution Explorer, then select and mouse right click on the PACKAGE project located in CMakePredefinedTargets folder
+      - Choose Build item, when a pop down menu appears
+
+      As a result CPack processing message should appear and NSIS installer as well as as checksum file are generated into build directory.
+  - Output:
+    - Baseline Profile:
+      - xeve-base-1.0.0-win64.exe
+      - xeve-base-1.0.0-win64.exe.md5
+
+    - Main Profile:
+        - xeve-main-1.0.0-win64.exe
+        - xeve-main-1.0.0-win64.exe.md5
 ## How to use
 Full help message will be presented if xeve application is executed with '**--help**' option.
 ```
-Syntax: 
-  xeve_app -i 'input-file' [ options ] 
+Syntax:
+  xeve_app -i 'input-file' [ options ]
 
 Options:
   --help
@@ -129,9 +188,9 @@ Options:
   -m, --threads [INTEGER] (optional) [1]
     : force to use a specific number of threads
   -d, --input-depth [INTEGER] (optional) [8]
-    : input bit depth (8, 10) 
+    : input bit depth (8, 10)
   --codec-bit-depth [INTEGER] (optional) [10]
-    : codec internal bit depth (10, 12) 
+    : codec internal bit depth (10, 12)
   --input-csp [INTEGER] (optional) [1]
     : input color space (chroma format)
       - 0: YUV400
@@ -139,7 +198,7 @@ Options:
   --profile [STRING] (optional) [baseline]
     : profile setting flag  (main, baseline)
   --level-idc [INTEGER] (optional) [0]
-    : level setting 
+    : level setting
   --preset [STRING] (optional) [medium]
     : Encoder PRESET	 [fast, medium, slow, placebo]
   --tune [STRING] (optional) [None]
@@ -184,10 +243,10 @@ XEVE_IMGB image; /* input picture */
 while (!end_of_sequence)
 {
     end_of_seqeunce = read_image(&image); /* read new image */
-    
+
     xeve_push(id, &image); /* input new image to encoder */
     ret = xeve_encode(id, &bitb, &stat); /* actual encode image to bitstream */
-    
+
     if (ret == XEVE_OK && stat.write > 0)
     {
         write_bitstream(bitb.addr, stat.write); /* write encoded bitstream */
