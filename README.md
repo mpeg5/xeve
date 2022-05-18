@@ -103,6 +103,10 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     ```
     $make package
     ```
+    or
+    ```
+    cpack -G "DEB"
+    ```
   - Output
     - Base DEB package for **Baseline Profile**:
       - package: xeve-base-dev_1.0.0_amd64.deb
@@ -117,6 +121,10 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     ```
     $make package
     ```
+    or
+    ```
+    cpack -G "DEB"
+    ```
   - Output
     - Base DEB package for **Main Profile**:
       - package: xeve-main-dev_1.0.0_amd64.deb
@@ -124,6 +132,20 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     - Developer DEB package for **Main Profile**:
       - package: base-main_1.0.0_amd64.deb
       - checksum file: xeve-base_1.0.0_amd64.deb.md5 generated.
+      -
+- Generation of **RPM packages**
+  -  Follow build instruction and build the project
+  -  Generate **RPM packages**
+     ```
+     cpack -G "RPM" ..
+     ```
+
+- Generation of **ZIP archives**
+  -  Follow build instruction and build the project
+  -  Generate **ZIP archive**
+     ```
+     cpack -G "ZIP" ..
+     ```
 
 ### Windows (64-bit)
 - Requirements
