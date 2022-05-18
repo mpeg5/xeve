@@ -111,8 +111,8 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
 "eXtra-fast Essential Video Encoder, MPEG-5 EVC (Essential Video Coding), ${PACKAGE_PROFILE_NAME} profile")
 
 # Project homepage
-set(CPACK_PACKAGE_VENDOR "github.com/mpeg5/xeve")
-set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/mpeg5/xeve")
+set(CPACK_PACKAGE_VENDOR "MPEG-5")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/mpeg5/xeve/releases")
 set(CMAKE_PROJECT_HOMEPAGE_URL "https://github.com/mpeg5/xeve")
 
 # Installation directory on the target system
@@ -147,7 +147,7 @@ set(CPACK_COMPONENT_RUNTIME_DEPENDS Libraries)
 include(CPack)
 
 if( MSVC )
-  cpack_add_install_type(Full DISPLAY_NAME "Everything")
+  cpack_add_install_type(Full DISPLAY_NAME "All")
   cpack_add_install_type(Developer DISPLAY_NAME "Developer files")
 endif()
 
@@ -155,13 +155,13 @@ cpack_add_component_group(DevelopmentGroup
   DISPLAY_NAME "Development"
   EXPANDED
   DESCRIPTION
-  "All of the tools you'll ever need to develop software")
+  "All of the tools you'll ever need to develop libxeve dependent software")
 
 cpack_add_component_group(RuntimeGroup
   DISPLAY_NAME "Runtime"
   EXPANDED
   DESCRIPTION
- "Shared library and reference application that makes use of libxeve")
+ "Shared library and xeve_app reference application")
 
 cpack_add_component(Runtime DISPLAY_NAME "Application" DESCRIPTION  "Reference application that makes use of libxeve" GROUP RuntimeGroup INSTALL_TYPES Full Runtime)
 cpack_add_component(Libraries DISPLAY_NAME "Shared Libraries" DESCRIPTION "Shared libraries used to run xeve_app" GROUP RuntimeGroup INSTALL_TYPES Full Runtime Developer)
