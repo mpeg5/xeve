@@ -21,9 +21,7 @@ endif()
 
 get_versions(${VERSION_STRING} VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 if(VERSION_MAJOR STREQUAL ${VERSION_STRING})
-        message(WARNING "Version string parsing error")
-  set(VERSIONSTRING "v1.0.0")
-  get_versions(${VERSION_STRING} VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+  message(FATAL_ERROR "Version string parsing error")
 endif()
 message("XEVE VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
@@ -58,7 +56,7 @@ set(CMAKE_C_STANDARD 99)
 project (XEVE VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Set compiler flags and options. 
+# Set compiler flags and options.
 if( MSVC )
 elseif( UNIX OR MINGW )
     if(NOT CMAKE_BUILD_TYPE)
@@ -71,7 +69,7 @@ elseif( UNIX OR MINGW )
         set(OPT_DBG "-g")
     else()
         set(OPT_LV "O3")
-        set(OPT_DBG "-DNDEBUG") # disable assert 
+        set(OPT_DBG "-DNDEBUG") # disable assert
     endif()
 
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -Wall -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -Wno-attributes -Werror -Wno-strict-overflow -Wno-unknown-pragmas -Wno-stringop-overflow -std=c99")
