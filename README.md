@@ -97,8 +97,8 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 ## How to generate installer
 
 ### Linux (64-bit)
-- Generation of **DEB packages** instructions for **Baseline Profile**
-  - Follow build instruction **Baseline Profile** and build the project
+- Generation of **DEB packages** instructions
+  - Follow build instruction and build the project
   - Generate **DEB packages**
     ```
     $make package
@@ -112,27 +112,15 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
       - package: xeve-base-dev_1.0.0_amd64.deb
       - checksum file: xeve-base-dev_1.0.0_amd64.deb.md5
     - Developer DEB package for **Baseline Profile**::
-      - package: base-base_1.0.0_amd64.deb
+      - package: xeve-base_1.0.0_amd64.deb
       - checksum file: xeve-base_1.0.0_amd64.deb.md5 generated.
-
-- Generation of **DEB packages** instructions for **Main Profile**
-  - Follow build instruction for **Main Profile** and build the project
-  - Generate **DEB packages**
-    ```
-    $make package
-    ```
-    or
-    ```
-    cpack -G "DEB"
-    ```
-  - Output
     - Base DEB package for **Main Profile**:
       - package: xeve-main-dev_1.0.0_amd64.deb
       - checksum file: xeve-main-dev_1.0.0_amd64.deb.md5
     - Developer DEB package for **Main Profile**:
-      - package: base-main_1.0.0_amd64.deb
+      - package: xeve-main_1.0.0_amd64.deb
       - checksum file: xeve-base_1.0.0_amd64.deb.md5 generated.
-      -
+
 - Generation of **RPM packages**
   -  Follow build instruction and build the project
   -  Generate **RPM packages**
@@ -151,22 +139,28 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 - Requirements
   - NSIS 3.08 or later (download from [https://nsis.sourceforge.io/Download](https://nsis.sourceforge.io/Download))
 
-- Generation of **NSIS windows installer** instructions for **Baseline Profile** or for **Main Profile**
-  - Follow build instruction for **Baseline Profile** or for for **Main Profile** and build generated Visual Studio solution
+- Generation of **NSIS windows installer** instructions
+  - Follow build instruction and build the project
   - Generate **NSIS Windows installer**
-    - Using Command Prompt for VS
+    - Command Prompt for Visual Studio
       - Go to the build directory and issue the following command
-      ```
-      msbuild /P:Configuration=Release PACKAGE.vcxproj
-      ```
+        ```
+        msbuild /P:Configuration=Release PACKAGE.vcxproj
+        ```
 
-    - Using Visual Studio IDE
+    - Visual Studio IDE
       - Open up the generated solution (XEVE.sln)
       - Change build type from Debug to Release
       - Go to the Solution Explorer, then select and mouse right click on the PACKAGE project located in CMakePredefinedTargets folder
       - Choose Build item, when a pop down menu appears
 
-      As a result CPack processing message should appear and NSIS installer as well as as checksum file are generated into build directory.
+      > As a result CPack processing message should appear and NSIS installer as well as as checksum file are generated into build directory.
+
+    - MinGW-64
+      - Go to the build directory and issue the following command
+      ```
+      $make package
+      ```
   - Output:
     - Baseline Profile:
       - xeve-base-1.0.0-win64.exe
