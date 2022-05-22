@@ -1,6 +1,6 @@
 ﻿set( LIB_NAME_BASE xeveb )
 
-set( LIB_SOVERSION 1)
+set( LIB_SOVERSION ${VERSION_MAJOR})
 
 file (GLOB XEVE_INC "../inc/*.h")
 file (GLOB LIB_API_SRC "xeve.c")

@@ -3,7 +3,7 @@
 # For shared libraries VERSION and SOVERSION can be used to specify the build version and API version respectively
 # see https://cmake.org/cmake/help/latest/prop_tgt/SOVERSION.html
 #
-set( LIB_SOVERSION 1)
+set( LIB_SOVERSION ${VERSION_MAJOR})
 
 file (GLOB ETM_INC "../inc/*.h")
 file (GLOB LIB_BASE_SRC "../src_base/xeve_*.c")

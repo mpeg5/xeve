@@ -1,5 +1,30 @@
 cmake_minimum_required (VERSION 3.12)
 
+function(get_versions versionstring VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+    string(REGEX REPLACE "^([vV])([0-9]*)([.][0-9]*[.][0-9]*-?.*)$" "\\2" numbers ${versionstring} )
+    set(VERSION_MAJOR ${numbers} PARENT_SCOPE)
+    string(REGEX REPLACE "^([vV][0-9]*[.])([0-9]*)([.][0-9]*-?.*)$" "\\2" numbers ${versionstring} )
+    set(VERSION_MINOR ${numbers} PARENT_SCOPE)
+    string(REGEX REPLACE "^([vV][0-9]*[.][0-9]*[.])([0-9]*)(-?.*)$" "\\2" numbers ${versionstring} )
+    set(VERSION_PATCH ${numbers} PARENT_SCOPE)
+endfunction()
+
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/version.txt")
+  message(FATAL_ERROR "version.txt file does not exist")
+endif()
+
+file(STRINGS "version.txt" VERSION_STRING)
+
+if(NOT ${VERSION_STRING} MATCHES "^[vV][0-9]*[.][0-9]*[.][0-9]*$")
+  message(FATAL_ERROR "Version string taken from version.txt doesn't match required format v[VERSION_MAJOR].[VERSION_MINOR].[VERSION_PATCH]")
+endif()
+
+get_versions(${VERSION_STRING} VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+if(VERSION_MAJOR STREQUAL ${VERSION_STRING})
+  message(FATAL_ERROR "Version string parsing error")
+endif()
+message("XEVE VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+
 # Check input arguments.
 if(NOT SET_PROF)
   set(SET_PROF "MAIN")
@@ -28,7 +53,7 @@ cmake_policy(SET CMP0048 NEW)
 set(CMAKE_C_STANDARD 99)
 
 # Maps to a solution file (XEVE.sln).
-project (XEVE VERSION 1.0.0)
+project (XEVE VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Set compiler flags and options.
