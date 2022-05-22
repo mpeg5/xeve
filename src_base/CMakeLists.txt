@@ -17,7 +17,7 @@ include(GenerateExportHeader)
 include_directories("${CMAKE_BINARY_DIR}")
 
 
-if("${ARM}" STREQUAL "TRUE")                      
+if("${ARM}" STREQUAL "TRUE")
   add_library( ${LIB_NAME_BASE} STATIC ${LIB_API_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_NEON_INC} ${LIB_NEON_SRC})
   add_library( ${LIB_NAME_BASE}_dynamic SHARED ${LIB_API_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_NEON_INC} ${LIB_NEON_SRC})
 else()
@@ -40,7 +40,7 @@ set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES VERSION ${PROJECT_VERS
 #endif()
 
 # Generate export macros for libraries
-generate_export_header(${LIB_NAME_BASE}_dynamic           
+generate_export_header(${LIB_NAME_BASE}_dynamic
                        BASE_NAME XEVE
                        EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/xeve_exports.h)
 
@@ -56,7 +56,7 @@ source_group("base\\avx\\source" FILES ${LIB_AVX_SRC})
 source_group("base\\neon\\header" FILES ${LIB_NEON_INC})
 source_group("base\\neon\\source" FILES ${LIB_NEON_SRC})
 
-if("${ARM}" STREQUAL "TRUE")  
+if("${ARM}" STREQUAL "TRUE")
   include_directories( ${LIB_NAME_BASE} PUBLIC . .. ../inc ./neon)
 else()
   include_directories( ${LIB_NAME_BASE} PUBLIC . .. ../inc ./sse ./avx)
@@ -71,7 +71,7 @@ set( NEON ${LIB_NEON_SRC})
 
 set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES OUTPUT_NAME ${LIB_NAME_BASE})
 
-if( MSVC )                      
+if( MSVC )
   target_compile_definitions( ${LIB_NAME_BASE} PUBLIC ANY _CRT_SECURE_NO_WARNINGS )
   set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES FOLDER lib
                                                             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -82,7 +82,7 @@ elseif( UNIX OR MINGW )
   endif()
   set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES FOLDER lib
                                                             LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-  target_compile_definitions( ${LIB_NAME_BASE} PUBLIC ANY LINUX )  
+  target_compile_definitions( ${LIB_NAME_BASE} PUBLIC ANY LINUX )
   target_link_libraries(${LIB_NAME_BASE} m)
 endif()
 
@@ -115,14 +115,14 @@ install(TARGETS ${LIB_NAME_BASE}
 #
 install(TARGETS ${LIB_NAME_BASE}_dynamic
         RUNTIME COMPONENT Libraries DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY 
-            COMPONENT Libraries DESTINATION ${CMAKE_INSTALL_LIBDIR} 
-            NAMELINK_COMPONENT Development DESTINATION ${CMAKE_INSTALL_LIBDIR} 
+        LIBRARY
+            COMPONENT Libraries DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            NAMELINK_COMPONENT Development DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE COMPONENT Development DESTINATION ${CMAKE_INSTALL_LIBDIR}/${LIB_NAME_BASE}/import
 )
 
 install( FILES
-    ${PROJECT_BINARY_DIR}/xeve_exports.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${LIB_NAME_BASE}
+    ${PROJECT_BINARY_DIR}/xeve_exports.h COMPONENT Development DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${LIB_NAME_BASE}
 )
 
 if( NOT MSVC )
@@ -132,6 +132,6 @@ if( NOT MSVC )
         IMMEDIATE @ONLY)
 
     install( FILES
-        "${CMAKE_BINARY_DIR}/${LIB_NAME_BASE}.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+        "${CMAKE_BINARY_DIR}/${LIB_NAME_BASE}.pc" COMPONENT Development DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
     )
 endif()

@@ -31,7 +31,7 @@ set(CMAKE_C_STANDARD 99)
 project (XEVE VERSION 1.0.0)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Set compiler flags and options. 
+# Set compiler flags and options.
 if( MSVC )
 elseif( UNIX OR MINGW )
     if(NOT CMAKE_BUILD_TYPE)
@@ -44,7 +44,7 @@ elseif( UNIX OR MINGW )
         set(OPT_DBG "-g")
     else()
         set(OPT_LV "O3")
-        set(OPT_DBG "-DNDEBUG") # disable assert 
+        set(OPT_DBG "-DNDEBUG") # disable assert
     endif()
 
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -Wall -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -Wno-attributes -Werror -Wno-strict-overflow -Wno-unknown-pragmas -Wno-stringop-overflow -std=c99")
@@ -75,3 +75,94 @@ if(NOT TARGET uninstall)
   add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 endif()
+
+########################################
+# add CPack to project
+########################################
+
+if( MSVC )
+  set(CPACK_GENERATOR "NSIS")
+elseif( UNIX )
+  set(CPACK_GENERATOR "DEB")
+endif()
+
+# Package name
+if(("${SET_PROF}" STREQUAL "BASE"))
+  set(PACKAGE_PROFILE_NAME "base")
+endif()
+
+if(("${SET_PROF}" STREQUAL "MAIN"))
+  set(PACKAGE_PROFILE_NAME "main")
+endif()
+
+string(TOLOWER "${PROJECT_NAME}" PACKAGE_NAME)
+string(CONCAT PACKAGE_NAME ${PACKAGE_NAME} "-${PACKAGE_PROFILE_NAME}")
+set(CPACK_PACKAGE_NAME ${PACKAGE_NAME})
+
+# Package License & Readme file
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
+
+# Package checksum
+set(CPACK_PACKAGE_CHECKSUM MD5)
+
+# Short description of the project
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+"eXtra-fast Essential Video Encoder, MPEG-5 EVC (Essential Video Coding), ${PACKAGE_PROFILE_NAME} profile")
+
+# Project homepage
+set(CPACK_PACKAGE_VENDOR "MPEG-5")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/mpeg5/xeve/releases")
+set(CMAKE_PROJECT_HOMEPAGE_URL "https://github.com/mpeg5/xeve")
+
+# Installation directory on the target system
+string(TOLOWER "${PROJECT_NAME}" PROJECT_NAME_LOWER)
+set(PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME_LOWER} ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PACKAGE_INSTALL_DIRECTORY}")
+
+if( UNIX )
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MPEG-Five") #required​
+  set(CPACK_PACKAGE_CONTACT "mpegfive@gmail.com") #required
+
+  set(CPACK_DEB_COMPONENT_INSTALL ON)
+
+  # If enabled (ON) multiple packages are generated.
+  # By default a single package containing files of all components is generated.
+  set(CPACK_DEB_COMPONENT_INSTALL YES)
+
+  # This may be set to DEB-DEFAULT to allow CPackDeb to generate package file name by itself in deb format:
+  # <PackageName>_<VersionNumber>-<DebianRevisionNumber>_<DebianArchitecture>.deb
+  set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+
+  set(CPACK_DEBIAN_RUNTIMEGROUP_PACKAGE_NAME "${CPACK_PACKAGE_NAME}")
+  set(CPACK_DEBIAN_DEVELOPMENTGROUP_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-dev")
+  set(CPACK_DEBIAN_DEVELOPMENTGROUP_PACKAGE_DEPENDS ${CPACK_PACKAGE_NAME})
+endif()
+
+# Dependencies
+set(CPACK_COMPONENTS_ALL Runtime Libraries Development)
+set(CPACK_COMPONENT_DEVELOPMENT_DEPENDS Libraries)
+set(CPACK_COMPONENT_RUNTIME_DEPENDS Libraries)
+
+include(CPack)
+
+if( MSVC )
+  cpack_add_install_type(Full DISPLAY_NAME "All")
+  cpack_add_install_type(Developer DISPLAY_NAME "Developer files")
+endif()
+
+cpack_add_component_group(DevelopmentGroup
+  DISPLAY_NAME "Development"
+  EXPANDED
+  DESCRIPTION
+  "All of the tools you'll ever need to develop libxeve dependent software")
+
+cpack_add_component_group(RuntimeGroup
+  DISPLAY_NAME "Runtime"
+  EXPANDED
+  DESCRIPTION
+ "Shared library and xeve_app reference application")
+
+cpack_add_component(Runtime DISPLAY_NAME "Application" DESCRIPTION  "Reference application that makes use of libxeve" GROUP RuntimeGroup INSTALL_TYPES Full Runtime)
+cpack_add_component(Libraries DISPLAY_NAME "Shared Libraries" DESCRIPTION "Shared libraries used to run xeve_app" GROUP RuntimeGroup INSTALL_TYPES Full Runtime Developer)
+cpack_add_component(Development DISPLAY_NAME "C++ Headers and static libraries used to build programs with libxeve" DESCRIPTION "C/C++ header files for use with libxeve" GROUP DevelopmentGroup INSTALL_TYPES Full Developer)
