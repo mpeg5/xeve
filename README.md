@@ -109,17 +109,17 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     ```
   - Output
     - Base DEB package for **Baseline Profile**:
-      - package: xeve-base-dev_1.0.0_amd64.deb
-      - checksum file: xeve-base-dev_1.0.0_amd64.deb.md5
+      - package: xeve-base-dev_0.3.5_amd64.deb
+      - checksum file: xeve-base-dev_0.3.5_amd64.deb.md5
     - Developer DEB package for **Baseline Profile**::
-      - package: xeve-base_1.0.0_amd64.deb
-      - checksum file: xeve-base_1.0.0_amd64.deb.md5 generated.
+      - package: xeve-base_0.3.5_amd64.deb
+      - checksum file: xeve-base_0.3.5_amd64.deb.md5 generated.
     - Base DEB package for **Main Profile**:
-      - package: xeve-main-dev_1.0.0_amd64.deb
-      - checksum file: xeve-main-dev_1.0.0_amd64.deb.md5
+      - package: xeve-main-dev_0.3.5_amd64.deb
+      - checksum file: xeve-main-dev_0.3.5_amd64.deb.md5
     - Developer DEB package for **Main Profile**:
-      - package: xeve-main_1.0.0_amd64.deb
-      - checksum file: xeve-base_1.0.0_amd64.deb.md5 generated.
+      - package: xeve-main_0.3.5_amd64.deb
+      - checksum file: xeve-base_0.3.5_amd64.deb.md5 generated.
 
 - Generation of **RPM packages**
   -  Follow build instruction and build the project
@@ -163,12 +163,12 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
       ```
   - Output:
     - Baseline Profile:
-      - xeve-base-1.0.0-win64.exe
-      - xeve-base-1.0.0-win64.exe.md5
+      - xeve-base-0.3.5-win64.exe
+      - xeve-base-0.3.5-win64.exe.md5
 
     - Main Profile:
-        - xeve-main-1.0.0-win64.exe
-        - xeve-main-1.0.0-win64.exe.md5
+        - xeve-main-0.3.5-win64.exe
+        - xeve-main-0.3.5-win64.exe.md5
 ## How to use
 Full help message will be presented if xeve application is executed with '**--help**' option.
 ```
