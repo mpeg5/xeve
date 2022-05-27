@@ -1,0 +1,64 @@
+name: Prepare packages
+on:
+  release:
+    types: [published]
+
+  workflow_dispatch:
+
+jobs:
+
+  package-baseline-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get -y install \
+          build-essential \
+          cmake
+        
+      - name: build xeve baseline, generate packages and md5
+        run: |
+          mkdir build-base
+          cd build-base
+          cmake .. -DSET_PROF=BASE -DBUILD_TYPE=Release
+          make
+          make package
+        
+      - name: 'Upload base artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve-baseline-packages-${{ github.event.release.tag_name }}
+          path: |
+            ${{ github.workspace }}/build-base/*.deb
+            ${{ github.workspace }}/build-base/*.md5
+          retention-days: 7
+
+  package-main-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get -y install \
+          build-essential \
+          cmake
+        
+      - name: build xeve main, generate packages and md5
+        run: |
+          mkdir build-main
+          cd build-main
+          cmake .. -DBUILD_TYPE=Release
+          make
+          make package
+        
+      - name: 'Upload main artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve-main-packages-${{ github.event.release.tag_name }}
+          path: |
+            ${{ github.workspace }}/build-main/*.deb
+            ${{ github.workspace }}/build-main/*.md5
+          retention-days: 7
