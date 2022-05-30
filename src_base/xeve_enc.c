@@ -1401,7 +1401,7 @@ void xeve_set_vui(XEVE_CTX * ctx, XEVE_VUI * vui)
     vui->chroma_sample_loc_type_bottom_field = ctx->param.chroma_sample_loc_type_bottom_field;
     vui->neutral_chroma_indication_flag = ctx->param.neutral_chroma_indication_flag;
     vui->field_seq_flag = ctx->param.field_seq_flag;
-    vui->timing_info_present_flag = ctx->param.sar_width;
+    vui->timing_info_present_flag = ctx->param.timing_info_present_flag;
     vui->num_units_in_tick = ctx->param.num_units_in_tick;
     vui->time_scale = ctx->param.time_scale;
     vui->fixed_pic_rate_flag = ctx->param.fixed_pic_rate_flag;
@@ -1444,7 +1444,6 @@ void xeve_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
     sps->chroma_format_idc = XEVE_CFI_FROM_CF(XEVE_CS_GET_FORMAT(ctx->param.cs));
     sps->dquant_flag = 0;
     sps->log2_max_pic_order_cnt_lsb_minus4 = POC_LSB_BIT - 4;
-    sps->sps_max_dec_pic_buffering_minus1 = 0; //[TBF]
 
     if (ctx->param.bframes > 0)
     {
@@ -1456,6 +1455,7 @@ void xeve_set_sps(XEVE_CTX * ctx, XEVE_SPS * sps)
     }
 
     sps->log2_sub_gop_length = (int)(log2(ctx->param.gop_size) + .5);
+    sps->sps_max_dec_pic_buffering_minus1 = (int)pow(2.0, sps->log2_sub_gop_length) + sps->max_num_ref_pics - 1;
     sps->log2_ref_pic_gap_length = (int)(log2(ctx->param.ref_pic_gap_length) + .5);
     sps->long_term_ref_pics_flag = 0;
     sps->vui_parameters_present_flag = 0;
@@ -2409,7 +2409,8 @@ int xeve_param_init(XEVE_PARAM* param)
     param->matrix_coefficients        = 2;
     param->master_display             = 2;
 
-
+    param->max_dec_pic_buffering      = 21;
+    param->num_reorder_pics           = 21;
     return XEVE_OK;
 }
 

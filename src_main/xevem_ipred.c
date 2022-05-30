@@ -131,7 +131,8 @@ void xevem_get_nbr(int x, int y, int cuw, int cuh, pel *src, int s_src, u16 avai
 
     for (i = 0; i < (scuh + scuw); i++)
     {
-        int is_avail = (x_scu < w_scu) && (y_scu + i < h_scu);
+        /*Check if right neighbours are available */
+        int is_avail = (x_scu + scuw + i < w_scu) && (y_scu + i < h_scu);
         if (is_avail && MCU_GET_COD(map_scu[scup + scuw + i * w_scu]) && (!constrained_intra_pred || MCU_GET_IF(map_scu[scup + scuw + i * w_scu])) &&
             (map_tidx[scup] == map_tidx[scup + scuw + i * w_scu]))
         {
