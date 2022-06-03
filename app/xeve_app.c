@@ -854,7 +854,9 @@ static int vui_param_check(XEVE_PARAM * param)
     }
     else if (param->num_units_in_tick == 0)
     {
-         param->timing_info_present_flag = param->timing_info_present_flag || 0;
+        /*If num_units_in_tick is not present, set to fps, to propagate the coded fps */
+        param->num_units_in_tick = param->fps;
+        param->timing_info_present_flag = param->timing_info_present_flag || 0;
     }
     else
     {
@@ -868,7 +870,9 @@ static int vui_param_check(XEVE_PARAM * param)
     }
     else if (param->time_scale == 0)
     {
-         param->timing_info_present_flag = param->timing_info_present_flag || 0;
+        /*If time_scale is not present, set to 1, to propagate the coded fps */
+        param->time_scale = 1;
+        param->timing_info_present_flag = param->timing_info_present_flag || 0;
     }
     else
     {
