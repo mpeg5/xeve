@@ -189,10 +189,10 @@ void xeve_itx_pb4b_neon(void* src, void* dst, int shift, int line, int step)
                 v2 = vaddq_s32(v2, add_s2);
                 v3 = vaddq_s32(v3, add_s2);
                 
-                v0 = vshlq_s32(v0, vdupq_n_s32(-shift_));
-                v1 = vshlq_s32(v1, vdupq_n_s32(-shift_));
-                v2 = vshlq_s32(v2, vdupq_n_s32(-shift_));
-                v3 = vshlq_s32(v3, vdupq_n_s32(-shift_));
+                v0 = vshlq_s32(v0, vdupq_n_s32(-shift));
+                v1 = vshlq_s32(v1, vdupq_n_s32(-shift));
+                v2 = vshlq_s32(v2, vdupq_n_s32(-shift));
+                v3 = vshlq_s32(v3, vdupq_n_s32(-shift));
                 
                 // CLIPPING
                 v0 = vmaxq_s32(v0, min_val);
