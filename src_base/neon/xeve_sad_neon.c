@@ -299,16 +299,16 @@ const XEVE_FN_SAD xeve_tbl_sad_16b_neon[8][8] =
 
 
 /* DIFF **********************************************************************/
-#define NEON_DIFF_16B_4PEL(src1, src2, diff, m00, m01, m02)     
-    m00 = vld1_s16((src1));     
-    m01 = vld1_s16((src2));     
-    m02 = vsub_s16(m00, m01);     
+#define NEON_DIFF_16B_4PEL(src1, src2, diff, m00, m01, m02) \
+    m00 = vld1_s16((src1)); \
+    m01 = vld1_s16((src2)); \
+    m02 = vsub_s16(m00, m01); \
     vst1_s16((int16_t*)(diff), m02);
 
-#define NEON_DIFF_16B_8PEL(src1, src2, diff, m00, m01, m02)     
-    m00 = vld1q_s16((src1));     
-    m01 = vld1q_s16((src2));     
-    m02 = vsubq_s16(m00, m01);     
+#define NEON_DIFF_16B_8PEL(src1, src2, diff, m00, m01, m02) \
+    m00 = vld1q_s16((src1)); \
+    m01 = vld1q_s16((src2)); \
+    m02 = vsubq_s16(m00, m01); \
     vst1q_s16((int16_t*)(diff), m02);
 
 static void diff_16b_neon_4x2(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int s_diff, s16 * diff, int bit_depth)
@@ -558,28 +558,28 @@ const XEVE_FN_DIFF xeve_tbl_diff_16b_neon[8][8] =
 };
 
 /* SSD ***********************************************************************/
-#define NEON_SSD_16B_4PEL(src1, src2, shift, s00, s01, s02, ssd)     
-    s00 = vld1_s16((src1));     
-    s01 = vld1_s16((src2));     
-    s00 = vsub_s16(s00, s01);     
-    s02 = vmovl_s16(s00);     
-    s02 = vmulq_s32(s02, s02);     
-    s02 = vshrq_n_s32(s02, 4);     
+#define NEON_SSD_16B_4PEL(src1, src2, shift, s00, s01, s02, ssd) \
+    s00 = vld1_s16((src1)); \
+    s01 = vld1_s16((src2)); \
+    s00 = vsub_s16(s00, s01); \
+    s02 = vmovl_s16(s00); \
+    s02 = vmulq_s32(s02, s02); \
+    s02 = vshrq_n_s32(s02, 4); \
     ssd += vaddvq_s32(s02);
 
 
-#define NEON_SSD_16B_8PEL(src1, src2, shift, s00, s01, s02, s00a, s00b, ssd)     
-    s00 = vld1q_s16((src1));     
-    s01 = vld1q_s16((src2));     
-    s02 = vsubq_s16(s00, s01);     
-    s00a = vmovl_s16(vget_high_s16(s02));     
-    s00b = vmovl_s16(vget_low_s16(s02));     
-    s00a = vmulq_s32(s00a, s00a);     
-    s00b = vmulq_s32(s00b, s00b);     
-    s00a = vshrq_n_s32(s00a, 4);     
-    s00b = vshrq_n_s32(s00b, 4);     
-    ssd += vaddvq_s32(s00a);     
-    ssd += vaddvq_s32(s00b);     
+#define NEON_SSD_16B_8PEL(src1, src2, shift, s00, s01, s02, s00a, s00b, ssd) \
+    s00 = vld1q_s16((src1)); \
+    s01 = vld1q_s16((src2)); \
+    s02 = vsubq_s16(s00, s01); \
+    s00a = vmovl_s16(vget_high_s16(s02)); \
+    s00b = vmovl_s16(vget_low_s16(s02)); \
+    s00a = vmulq_s32(s00a, s00a); \
+    s00b = vmulq_s32(s00b, s00b); \
+    s00a = vshrq_n_s32(s00a, 4); \
+    s00b = vshrq_n_s32(s00b, 4); \
+    ssd += vaddvq_s32(s00a); \
+    ssd += vaddvq_s32(s00b); \
 
 static s64 ssd_16b_neon_4x2(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth)
 {

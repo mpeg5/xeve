@@ -46,4 +46,4 @@ int sad_16b_neon_8x2n(int w, int h, void * src1, void * src2, int s_src1, int s_
 int sad_16b_neon_16nx1n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth);
 
 #endif /* ARM_NEON */
-#endif /* _XEVE_SAD_NEON_H_ */
+#endif /* _XEVE_SAD_neon_H_ */
