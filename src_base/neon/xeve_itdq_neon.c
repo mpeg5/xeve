@@ -59,7 +59,7 @@ t2 = vpaddq_s32(t0, t1);
 void xeve_itx_pb4b_neon(void* src, void* dst, int shift, int line, int step)
 {
     int add = shift == 0 ? 0 : 1 << (shift - 1);
-
+    
     if (step == 0)
     {
         if (line > 2)

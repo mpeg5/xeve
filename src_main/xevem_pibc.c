@@ -35,7 +35,9 @@
 
 #include "xevem_type.h"
 #include "xevem_mc.h"
+#if x86_SSE
 #include "xevem_mc_sse.h"
+#endif
 #include <math.h>
 
 #define ENABLE_IBC_CHROMA_REFINE 0

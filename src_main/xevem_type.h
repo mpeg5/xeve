@@ -158,9 +158,7 @@ typedef struct _XEVEM_CTX
 #include "xevem_ibc_hash.h"
 #include "xevem_ipred.h"
 #include "xevem_itdq.h"
-#include "xevem_itdq_sse.h"
 #include "xevem_mc.h"
-#include "xevem_mc_sse.h"
 #include "xevem_mode.h"
 #include "xevem_picman.h"
 #include "xevem_pred.h"
@@ -168,9 +166,12 @@ typedef struct _XEVEM_CTX
 #include "xevem_tbl.h"
 #include "xevem_tq.h"
 #include "xevem_util.h"
+#ifndef ARM
 #include "xevem_tq_avx.h"
 #include "xevem_itdq_avx.h"
-
+#include "xevem_itdq_sse.h"
+#include "xevem_mc_sse.h"
+#endif
 #if GRAB_STAT
 #include "xevem_stat.h"
 #endif
