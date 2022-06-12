@@ -51,8 +51,8 @@ int sad_16b_neon_4x2(int w, int h, void* src1, void* src2, int s_src1, int s_src
     int16x4_t abs_diff_4x16b = vabd_s16(src_4x16b, pred_4x16b);
     int16x4_t abs_diff_4x16b_1 = vabd_s16(src_4x16b_1, pred_4x16b_1);
     
-  	sad = vaddv_s16(abs_diff_4x16b);
-  	sad += vaddv_s16(abs_diff_4x16b_1);
+    sad = vaddv_s16(abs_diff_4x16b);
+    sad += vaddv_s16(abs_diff_4x16b_1);
 
     return (sad >> (bit_depth - 8));
 }
@@ -101,9 +101,9 @@ int sad_16b_neon_4x4(int w, int h, void* src1, void* src2, int s_src1, int s_src
         -- 4x16b translates to 4 datapoints each stored in 16bit 
     */
     int16x4_t src_4x16b, pred_4x16b, abs_diff_4x16b;
-  	int16x4_t src_4x16b_1, pred_4x16b_1, abs_diff_4x16b_1;
-  	int16x4_t src_4x16b_2, pred_4x16b_2, abs_diff_4x16b_2;
-  	int16x4_t src_4x16b_3, pred_4x16b_3, abs_diff_4x16b_3;
+    int16x4_t src_4x16b_1, pred_4x16b_1, abs_diff_4x16b_1;
+    int16x4_t src_4x16b_2, pred_4x16b_2, abs_diff_4x16b_2;
+    int16x4_t src_4x16b_3, pred_4x16b_3, abs_diff_4x16b_3;
     
     src_4x16b = vld1_s16((s1));
     pred_4x16b = vld1_s16((s2));
