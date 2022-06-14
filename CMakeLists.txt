@@ -1,3 +1,50 @@
+# ========================================
+# Linux
+# ========================================
+# $ cd /home/${USER}/git/xeve
+# $ mkdir build_main
+# $ cd build_main
+#
+# $ cmake ..
+# $ make -j <threads>
+# $ make install
+# $ make package
+
+# ========================================
+# Windows
+# ========================================
+#
+# ----------------------------------------
+# MingGW 64 with MSVC compiler
+# ----------------------------------------
+#
+# 1. Open "x64 Native Tools Command Prompt for VS 2019" and write the following command
+#
+# c:\msys64>msys2_shell.cmd -mingw64
+#
+# 2. MinGW shell
+#
+# $ cd /home/${USER}/git/xeve
+# $ mkdir build_main
+# $ cd build_main
+# $ cmake .. -G "MinGW Makefiles" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DMSVC=true -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE -DCMAKE_INSTALL_PREFIX=/usr
+# $ cmake --build . -j <threads>
+# $ cmake --install .
+# $ cmake --build . --package
+#
+# ----------------------------------------
+# MingGW 64 with gcc compiler
+# ----------------------------------------
+# MinGW shell
+#
+# $ cd /home/${USER}/git/xeve
+# $ mkdir build_main
+# $ cd build_main
+# $ cmake .. -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX=/usr
+# $ cmake --build . -j <threads>
+# $ cmake --install .
+# $ cmake --build . --package
+
 cmake_minimum_required (VERSION 3.12)
 
 function(get_versions versionstring VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
@@ -25,6 +72,8 @@ if(VERSION_MAJOR STREQUAL ${VERSION_STRING})
 endif()
 message("XEVE VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
+add_definitions(-Dxeve_dynamic_EXPORTS)
+
 # Check input arguments.
 if(NOT SET_PROF)
   set(SET_PROF "MAIN")
@@ -44,11 +93,6 @@ else()
   return()
 endif()
 
-option(XEVE_APP_STATIC_BUILD "xeve_app will be statically linked against static xeve library" ON)
-if(XEVE_APP_STATIC_BUILD)
-    add_definitions(-DXEVE_STATIC_DEFINE)
-endif(XEVE_APP_STATIC_BUILD)
-
 cmake_policy(SET CMP0048 NEW)
 set(CMAKE_C_STANDARD 99)
 
@@ -58,6 +102,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Set compiler flags and options.
 if( MSVC )
+# set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MTd")
+# set (CMAKE_LIB_LINKER_FLAGS "${CMAKE_LIB_LINKER_FLAGS} /NODEFAULTLIB:libucrt.lib")
 elseif( UNIX OR MINGW )
     if(NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE "Release")
@@ -82,6 +128,9 @@ message ("c Flags: " ${CMAKE_C_FLAGS})
 message ("linker Flags: " ${CMAKE_EXE_LINKER_FLAGS})
 
 # Sub-directories where more CMakeLists.txt exist
+set( LIB_NAME xeve)
+set( LIB_NAME_BASE xeveb)
+
 if(("${SET_PROF}" STREQUAL "BASE"))
    add_subdirectory(src_base)
 endif()
@@ -122,6 +171,7 @@ endif()
 
 string(TOLOWER "${PROJECT_NAME}" PACKAGE_NAME)
 string(CONCAT PACKAGE_NAME ${PACKAGE_NAME} "-${PACKAGE_PROFILE_NAME}")
+
 set(CPACK_PACKAGE_NAME ${PACKAGE_NAME})
 
 # Package License & Readme file
@@ -164,7 +214,6 @@ if( UNIX )
   set(CPACK_DEBIAN_DEVELOPMENTGROUP_PACKAGE_DEPENDS ${CPACK_PACKAGE_NAME})
 endif()
 
-# Dependencies
 set(CPACK_COMPONENTS_ALL Runtime Libraries Development)
 set(CPACK_COMPONENT_DEVELOPMENT_DEPENDS Libraries)
 set(CPACK_COMPONENT_RUNTIME_DEPENDS Libraries)
@@ -191,3 +240,4 @@ cpack_add_component_group(RuntimeGroup
 cpack_add_component(Runtime DISPLAY_NAME "Application" DESCRIPTION  "Reference application that makes use of libxeve" GROUP RuntimeGroup INSTALL_TYPES Full Runtime)
 cpack_add_component(Libraries DISPLAY_NAME "Shared Libraries" DESCRIPTION "Shared libraries used to run xeve_app" GROUP RuntimeGroup INSTALL_TYPES Full Runtime Developer)
 cpack_add_component(Development DISPLAY_NAME "C++ Headers and static libraries used to build programs with libxeve" DESCRIPTION "C/C++ header files for use with libxeve" GROUP DevelopmentGroup INSTALL_TYPES Full Developer)
+

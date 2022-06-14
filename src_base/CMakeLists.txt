@@ -1,25 +1,26 @@
-﻿set( LIB_NAME_BASE xeveb )
-
+﻿# For shared libraries VERSION and SOVERSION can be used to specify the build version and API version respectively
+# see https://cmake.org/cmake/help/latest/prop_tgt/SOVERSION.html
+#
 set( LIB_SOVERSION ${VERSION_MAJOR})
 
 file (GLOB XEVE_INC "../inc/*.h")
-file (GLOB LIB_API_SRC "xeve.c")
-file (GLOB LIB_BASE_SRC "xeve_*.c")
-file (GLOB LIB_BASE_INC "xeve_*.h" )
-file (GLOB LIB_SSE_SRC "sse/xeve_*.c")
-file (GLOB LIB_SSE_INC "sse/xeve_*.h" )
-file (GLOB LIB_AVX_SRC "../src_base/avx/xeve_*.c")
-file (GLOB LIB_AVX_INC "../src_base/avx/xeve_*.h" )
-file (GLOB LIB_NEON_SRC "../src_base/neon/xeve_*.c")
-file (GLOB LIB_NEON_INC "../src_base/neon/xeve_*.h" )
+file (GLOB LIB_API_SRC "./xeve.c")
+file (GLOB LIB_BASE_SRC "./xeve_*.c")
+file (GLOB LIB_BASE_INC "./xeve_*.h" )
+file (GLOB LIB_SSE_SRC "./sse/xeve_*.c")
+file (GLOB LIB_SSE_INC "./sse/xeve_*.h" )
+file (GLOB LIB_AVX_SRC "./avx/xeve_*.c")
+file (GLOB LIB_AVX_INC "./avx/xeve_*.h" )
+file (GLOB LIB_NEON_SRC "/neon/xeve_*.c")
+file (GLOB LIB_NEON_INC "./neon/xeve_*.h" )
 
 include(GenerateExportHeader)
 include_directories("${CMAKE_BINARY_DIR}")
 
 
 if("${ARM}" STREQUAL "TRUE")
-  add_library( ${LIB_NAME_BASE} STATIC ${LIB_API_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_NEON_INC} ${LIB_NEON_SRC})
-  add_library( ${LIB_NAME_BASE}_dynamic SHARED ${LIB_API_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_NEON_INC} ${LIB_NEON_SRC})
+  add_library( ${LIB_NAME_BASE} STATIC ${LIB_API_SRC} ${XEVE_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_NEON_INC} ${LIB_NEON_SRC})
+  add_library( ${LIB_NAME_BASE}_dynamic SHARED ${LIB_API_SRC} ${XEVE_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_NEON_INC} ${LIB_NEON_SRC})
 else()
   add_library( ${LIB_NAME_BASE} STATIC ${LIB_API_SRC} ${XEVE_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_SSE_SRC} ${LIB_SSE_INC}
                                      ${LIB_AVX_SRC} ${LIB_AVX_INC} )
@@ -32,15 +33,15 @@ set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES VERSION ${PROJECT_VERS
 # @todo Consider using WINDOWS_EXPORT_ALL_SYMBOLS instead of generate_export_header
 # @see https://cmake.org/cmake/help/latest/prop_tgt/WINDOWS_EXPORT_ALL_SYMBOLS.html#prop_tgt:WINDOWS_EXPORT_ALL_SYMBOLS
 #if(MSVC)
-    # @see https://blog.kitware.com/create-dlls-on-windows-without-declspec-using-new-cmake-export-all-feature/
-    # @see https://cmake.org/cmake/help/v3.3/module/GenerateExportHeader.html
-    #
-    #set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-    #set(BUILD_SHARED_LIBS TRUE)
+#    # @see https://blog.kitware.com/create-dlls-on-windows-without-declspec-using-new-cmake-export-all-feature/
+#    # @see https://cmake.org/cmake/help/v3.3/module/GenerateExportHeader.html
+#    #
+#    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+#    set(BUILD_SHARED_LIBS TRUE)
 #endif()
 
 # Generate export macros for libraries
-generate_export_header(${LIB_NAME_BASE}_dynamic
+generate_export_header(${LIB_NAME_BASE}
                        BASE_NAME XEVE
                        EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/xeve_exports.h)
 
@@ -62,9 +63,6 @@ else()
   include_directories( ${LIB_NAME_BASE} PUBLIC . .. ../inc ./sse ./avx)
 endif()
 
-set_target_properties(${LIB_NAME_BASE} PROPERTIES FOLDER lib
-                                                  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
 set( SSE ${BASE_INC_FILES} ${LIB_SSE_SRC})
 set( AVX ${LIB_AVX_SRC} )
 set( NEON ${LIB_NEON_SRC})
@@ -72,9 +70,18 @@ set( NEON ${LIB_NEON_SRC})
 set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES OUTPUT_NAME ${LIB_NAME_BASE})
 
 if( MSVC )
-  target_compile_definitions( ${LIB_NAME_BASE} PUBLIC ANY _CRT_SECURE_NO_WARNINGS )
-  set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES FOLDER lib
-                                                            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    target_compile_definitions( ${LIB_NAME_BASE} PUBLIC ANY _CRT_SECURE_NO_WARNINGS )
+    target_compile_definitions( ${LIB_NAME_BASE}_dynamic PUBLIC ANY _CRT_SECURE_NO_WARNINGS )
+
+    # Since both the import library associated with DLL and the static library have the same names
+    # they must be build in different locations to avoid overwriting.
+    #
+    set_target_properties(${LIB_NAME_BASE} PROPERTIES FOLDER lib
+                            ARCHIVE_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}/static/lib)
+
+    set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES FOLDER lib
+                            ARCHIVE_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}/import/lib)
+
 elseif( UNIX OR MINGW )
   if("${ARM}" STREQUAL "FALSE")
     set_property( SOURCE ${SSE} APPEND PROPERTY COMPILE_FLAGS "-msse4.1" )
@@ -94,6 +101,7 @@ endif()
 # List the headers we want to declare as public for installation.
 set(XEVE_PUBLIC_HEADERS "${XEVE_INC}")
 set_target_properties(${LIB_NAME_BASE} PROPERTIES PUBLIC_HEADER "${XEVE_PUBLIC_HEADERS}")
+set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES PUBLIC_HEADER "${XEVE_PUBLIC_HEADERS}")
 
 set(XEVE_PRIVATE_HEADERS "${LIB_BASE_INC}" "${LIB_SSE_INC}" "${LIB_AVX_INC}" "${LIB_NEON_INC}")
 
@@ -118,20 +126,19 @@ install(TARGETS ${LIB_NAME_BASE}_dynamic
         LIBRARY
             COMPONENT Libraries DESTINATION ${CMAKE_INSTALL_LIBDIR}
             NAMELINK_COMPONENT Development DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE COMPONENT Development DESTINATION ${CMAKE_INSTALL_LIBDIR}/${LIB_NAME_BASE}/import
+        ARCHIVE COMPONENT Development DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        PUBLIC_HEADER COMPONENT Development DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${LIB_NAME_BASE}
 )
 
 install( FILES
     ${PROJECT_BINARY_DIR}/xeve_exports.h COMPONENT Development DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${LIB_NAME_BASE}
 )
 
-if( NOT MSVC )
-    configure_file(
-        "${CMAKE_SOURCE_DIR}/pkgconfig/${LIB_NAME_BASE}.pc.in"
-        "${CMAKE_BINARY_DIR}/${LIB_NAME_BASE}.pc"
-        IMMEDIATE @ONLY)
+configure_file(
+    "${CMAKE_SOURCE_DIR}/pkgconfig/${LIB_NAME_BASE}.pc.in"
+    "${CMAKE_BINARY_DIR}/${LIB_NAME_BASE}.pc"
+    IMMEDIATE @ONLY)
 
-    install( FILES
-        "${CMAKE_BINARY_DIR}/${LIB_NAME_BASE}.pc" COMPONENT Development DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-    )
-endif()
+install( FILES
+    "${CMAKE_BINARY_DIR}/${LIB_NAME_BASE}.pc" COMPONENT Development DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+)
