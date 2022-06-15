@@ -1,50 +1,3 @@
-# ========================================
-# Linux
-# ========================================
-# $ cd /home/${USER}/git/xeve
-# $ mkdir build_main
-# $ cd build_main
-#
-# $ cmake ..
-# $ make -j <threads>
-# $ make install
-# $ make package
-
-# ========================================
-# Windows
-# ========================================
-#
-# ----------------------------------------
-# MingGW 64 with MSVC compiler
-# ----------------------------------------
-#
-# 1. Open "x64 Native Tools Command Prompt for VS 2019" and write the following command
-#
-# c:\msys64>msys2_shell.cmd -mingw64
-#
-# 2. MinGW shell
-#
-# $ cd /home/${USER}/git/xeve
-# $ mkdir build_main
-# $ cd build_main
-# $ cmake .. -G "MinGW Makefiles" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DMSVC=true -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE -DCMAKE_INSTALL_PREFIX=/usr
-# $ cmake --build . -j <threads>
-# $ cmake --install .
-# $ cmake --build . --package
-#
-# ----------------------------------------
-# MingGW 64 with gcc compiler
-# ----------------------------------------
-# MinGW shell
-#
-# $ cd /home/${USER}/git/xeve
-# $ mkdir build_main
-# $ cd build_main
-# $ cmake .. -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX=/usr
-# $ cmake --build . -j <threads>
-# $ cmake --install .
-# $ cmake --build . --package
-
 cmake_minimum_required (VERSION 3.12)
 
 function(get_versions versionstring VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
@@ -104,8 +57,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Set compiler flags and options.
 if( MSVC )
-# set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MTd")
-# set (CMAKE_LIB_LINKER_FLAGS "${CMAKE_LIB_LINKER_FLAGS} /NODEFAULTLIB:libucrt.lib")
+    add_compile_options(
+        $<$<CONFIG:>:/MD> #---------|
+        $<$<CONFIG:Debug>:/MDd> #---|-- Dynamically link the runtime libraries
+        $<$<CONFIG:Release>:/MD> #--|
+    )
 elseif( UNIX OR MINGW )
     if(NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE "Release")
