@@ -12,6 +12,8 @@ file (GLOB LIB_SSE_SRC "../src_base/sse/xeve_*.c")
 file (GLOB LIB_SSE_INC "../src_base/sse/xeve_*.h" )
 file (GLOB LIB_AVX_SRC "../src_base/avx/xeve_*.c")
 file (GLOB LIB_AVX_INC "../src_base/avx/xeve_*.h" )
+file (GLOB LIB_NEON_SRC "../src_base/neon/xeve_*.c")
+file (GLOB LIB_NEON_INC "../src_base/neon/xeve_*.h" )
 file (GLOB LIB_API_MAIN_SRC "./xevem.c")
 file (GLOB LIB_MAIN_SRC "./xevem_*.c")
 file (GLOB LIB_MAIN_INC "./xevem_*.h" )
@@ -22,11 +24,15 @@ file (GLOB LIB_MAIN_AVX_INC "./avx/xevem_*.h" )
 
 include(GenerateExportHeader)
 include_directories("${CMAKE_BINARY_DIR}")
-
-add_library( ${LIB_NAME} STATIC ${LIB_API_MAIN_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC}
-                                ${LIB_SSE_SRC} ${LIB_SSE_INC} ${LIB_MAIN_SSE_SRC} ${LIB_MAIN_SSE_INC} ${LIB_AVX_SRC} ${LIB_AVX_INC} ${LIB_MAIN_AVX_SRC} ${LIB_MAIN_AVX_INC} )
-add_library( ${LIB_NAME}_dynamic SHARED ${LIB_API_MAIN_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC}
-                                        ${LIB_SSE_SRC} ${LIB_SSE_INC} ${LIB_MAIN_SSE_SRC} ${LIB_MAIN_SSE_INC} ${LIB_AVX_SRC} ${LIB_AVX_SRC} ${LIB_AVX_INC} ${LIB_MAIN_AVX_SRC} ${LIB_MAIN_AVX_INC})
+if("${ARM}" STREQUAL "TRUE")
+  add_library( ${LIB_NAME} STATIC ${LIB_API_MAIN_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC} ${LIB_NEON_INC} ${LIB_NEON_SRC} )
+  add_library( ${LIB_NAME}_dynamic SHARED ${LIB_API_MAIN_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC} ${LIB_NEON_INC} ${LIB_NEON_SRC})
+else()
+  add_library( ${LIB_NAME} STATIC ${LIB_API_MAIN_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC}
+                                  ${LIB_SSE_SRC} ${LIB_SSE_INC} ${LIB_MAIN_SSE_SRC} ${LIB_MAIN_SSE_INC} ${LIB_AVX_SRC} ${LIB_AVX_INC} ${LIB_MAIN_AVX_SRC} ${LIB_MAIN_AVX_INC} )
+  add_library( ${LIB_NAME}_dynamic SHARED ${LIB_API_MAIN_SRC} ${ETM_INC} ${LIB_BASE_SRC} ${LIB_BASE_INC} ${LIB_MAIN_SRC} ${LIB_MAIN_INC}
+                                          ${LIB_SSE_SRC} ${LIB_SSE_INC} ${LIB_MAIN_SSE_SRC} ${LIB_MAIN_SSE_INC} ${LIB_AVX_SRC} ${LIB_AVX_SRC} ${LIB_AVX_INC} ${LIB_MAIN_AVX_SRC} ${LIB_MAIN_AVX_INC})
+endif()
 
 set_target_properties(${LIB_NAME}_dynamic PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR} SOVERSION ${LIB_SOVERSION})
 
@@ -61,8 +67,14 @@ source_group("main\\sse\\header" FILES ${LIB_MAIN_SSE_INC})
 source_group("main\\sse\\source" FILES ${LIB_MAIN_SSE_SRC})
 source_group("main\\avx\\header" FILES ${LIB_MAIN_AVX_INC})
 source_group("main\\avx\\source" FILES ${LIB_MAIN_AVX_SRC})
+source_group("base\\neon\\header" FILES ${LIB_NEON_INC})
+source_group("base\\neon\\source" FILES ${LIB_NEON_SRC})
 
-include_directories( ${LIB_NAME} PUBLIC . .. ../inc ./sse ./avx ../src_base ../src_base/sse ../src_base/avx)
+if("${ARM}" STREQUAL "TRUE")
+  include_directories( ${LIB_NAME} PUBLIC . .. ../inc ../src_base ../src_base/neon)
+else()
+  include_directories( ${LIB_NAME} PUBLIC . .. ../inc ./sse ./avx ../src_base ../src_base/sse ../src_base/avx)
+endif()
 
 set_target_properties(${LIB_NAME} PROPERTIES FOLDER lib
                                                ARCHIVE_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/lib)
@@ -79,8 +91,10 @@ if( MSVC )
   set_target_properties(${LIB_NAME}_dynamic PROPERTIES FOLDER lib
                                                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 elseif( UNIX OR MINGW )
-  set_property( SOURCE ${SSE} APPEND PROPERTY COMPILE_FLAGS "-msse4.1" )
-  set_property( SOURCE ${AVX} APPEND PROPERTY COMPILE_FLAGS " -mavx2" )
+  if("${ARM}" STREQUAL "FALSE")
+    set_property( SOURCE ${SSE} APPEND PROPERTY COMPILE_FLAGS "-msse4.1" )
+    set_property( SOURCE ${AVX} APPEND PROPERTY COMPILE_FLAGS " -mavx2" )
+  endif()
 
   set_target_properties(${LIB_NAME}_dynamic PROPERTIES FOLDER lib
                                                        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

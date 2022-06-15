@@ -37,6 +37,8 @@
 #ifndef ARM
 #include "xeve_sad_sse.h"
 #include "xeve_sad_avx.h"
+#else
+#include "xeve_sad_neon.h"
 #endif
 
 /* support RDOQ */

@@ -37,7 +37,9 @@
 #include "xevem_type.h"
 #include "xevem_recon.h"
 #include "xevem_mc.h"
+#if x86_SSE
 #include "xevem_mc_sse.h"
+#endif
 #include <math.h>
 
 
