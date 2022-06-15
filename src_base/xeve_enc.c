@@ -714,9 +714,9 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
 #if ARM_NEON
   if(1)
   {
-        xeve_func_sad               = xeve_tbl_sad_16b;
-        xeve_func_ssd               = xeve_tbl_ssd_16b;
-        xeve_func_diff              = xeve_tbl_diff_16b;
+        xeve_func_sad               = xeve_tbl_sad_16b_neon;
+        xeve_func_ssd               = xeve_tbl_ssd_16b_neon;
+        xeve_func_diff              = xeve_tbl_diff_16b_neon;
         xeve_func_satd              = xeve_tbl_satd_16b;
         xeve_func_mc_l              = xeve_tbl_mc_l;
         xeve_func_mc_c              = xeve_tbl_mc_c;

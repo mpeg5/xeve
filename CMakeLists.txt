@@ -83,6 +83,8 @@ if(NOT ARM)
   set(ARM "FALSE")
 else()
   add_definitions(-DARM=1)
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flax-vector-conversions")
+  set(CMAKE_EXE_LINKER_FLAGS "-static")
 endif()
 message("ARM=${ARM}")
 
