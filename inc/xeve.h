@@ -592,6 +592,7 @@ int  XEVE_EXPORT xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
 int  XEVE_EXPORT xeve_config(XEVE id, int cfg, void * buf, int * size);
 int  XEVE_EXPORT xeve_param_default(XEVE_PARAM* param);
 int  XEVE_EXPORT xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune);
+int  XEVE_EXPORT xeve_check_conf(XEVE_CDSC* cdsc);
 
 #ifdef __cplusplus
 } /* extern "C" */
