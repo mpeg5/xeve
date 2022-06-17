@@ -122,84 +122,6 @@ ERR:
     if(args) args->release(args);
 }
 
-int check_conf(XEVE_CDSC* cdsc)
-{
-    XEVE_PARAM * param;
-    int ret = 0;
-    int min_block_size = 4;
-    param = &cdsc->param;
-
-    if(param->profile == 0)
-    {
-        if (param->tool_amvr    == 1) { logerr("AMVR cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_mmvd    == 1) { logerr("MMVD cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_affine  == 1) { logerr("Affine cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_dmvr    == 1) { logerr("DMVR cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_admvp   == 1) { logerr("ADMVP cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_hmvp    == 1) { logerr("HMVP cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_addb    == 1) { logerr("ADDB cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_alf     == 1) { logerr("ALF cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_htdf    == 1) { logerr("HTDF cannot be on in base profile\n"); ret = -1; }
-        if (param->btt          == 1) { logerr("BTT cannot be on in base profile\n"); ret = -1; }
-        if (param->suco         == 1) { logerr("SUCO cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_eipd    == 1) { logerr("EIPD cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_iqt     == 1) { logerr("IQT cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_cm_init == 1) { logerr("CM_INIT cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_adcc    == 1) { logerr("ADCC cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_ats     == 1) { logerr("ATS_INTRA cannot be on in base profile\n"); ret = -1; }
-        if (param->ibc_flag     == 1) { logerr("IBC cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_rpl     == 1) { logerr("RPL cannot be on in base profile\n"); ret = -1; }
-        if (param->tool_pocs    == 1) { logerr("POCS cannot be on in base profile\n"); ret = -1; }
-    }
-    else
-    {
-        if (param->tool_admvp   == 0 && param->tool_affine == 1) { logerr("AFFINE cannot be on when ADMVP is off\n"); ret = -1; }
-        if (param->tool_admvp   == 0 && param->tool_amvr   == 1) { logerr("AMVR cannot be on when ADMVP is off\n"); ret = -1; }
-        if (param->tool_admvp   == 0 && param->tool_dmvr   == 1) { logerr("DMVR cannot be on when ADMVP is off\n"); ret = -1; }
-        if (param->tool_admvp   == 0 && param->tool_mmvd   == 1) { logerr("MMVD cannot be on when ADMVP is off\n"); ret = -1; }
-        if (param->tool_eipd    == 0 && param->ibc_flag    == 1) { logerr("IBC cannot be on when EIPD is off\n"); ret = -1; }
-        if (param->tool_iqt     == 0 && param->tool_ats    == 1) { logerr("ATS cannot be on when IQT is off\n"); ret = -1; }
-        if (param->tool_cm_init == 0 && param->tool_adcc   == 1) { logerr("ADCC cannot be on when CM_INIT is off\n"); ret = -1; }
-    }
-
-    if (param->btt == 1)
-    {
-        if (param->framework_cb_max && param->framework_cb_max < 5) { logerr("Maximun Coding Block size cannot be smaller than 5\n"); ret = -1; }
-        if (param->framework_cb_max > 7) { logerr("Maximun Coding Block size cannot be greater than 7\n"); ret = -1; }
-        if (param->framework_cb_min && param->framework_cb_min < 2) { logerr("Minimum Coding Block size cannot be smaller than 2\n"); ret = -1; }
-        if ((param->framework_cb_max || param->framework_cb_min) &&
-            param->framework_cb_min > param->framework_cb_max) { logerr("Minimum Coding Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
-        if (param->framework_cu14_max > 6) { logerr("Maximun 1:4 Coding Block size cannot be greater than 6\n"); ret = -1; }
-        if ((param->framework_cb_max || param->framework_cu14_max) &&
-            param->framework_cu14_max > param->framework_cb_max) { logerr("Maximun 1:4 Coding Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
-        if (param->framework_tris_max > 6) { logerr("Maximun Tri-split Block size be greater than 6\n"); ret = -1; }
-        if ((param->framework_tris_max || param->framework_cb_max) &&
-            param->framework_tris_max > param->framework_cb_max) { logerr("Maximun Tri-split Block size cannot be greater than Maximum coding Block size\n"); ret = -1; }
-        if ((param->framework_tris_min || param->framework_cb_min) &&
-            param->framework_tris_min < param->framework_cb_min + 2) { logerr("Maximun Tri-split Block size cannot be smaller than Minimum Coding Block size plus two\n"); ret = -1; }
-        if(param->framework_cb_min) min_block_size = 1 << param->framework_cb_min;
-        else min_block_size = 8;
-    }
-
-    if (param->suco == 1)
-    {
-        if (param->framework_suco_max > 6) { logerr("Maximun SUCO size cannot be greater than 6\n"); ret = -1; }
-        if (param->framework_cb_max && param->framework_suco_max > param->framework_cb_max) { logerr("Maximun SUCO size cannot be greater than Maximum coding Block size\n"); ret = -1; }
-        if (param->framework_suco_min < 4) { logerr("Minimun SUCO size cannot be smaller than 4\n"); ret = -1; }
-        if (param->framework_cb_min && param->framework_suco_min < param->framework_cb_min) { logerr("Minimun SUCO size cannot be smaller than Minimum coding Block size\n"); ret = -1; }
-        if (param->framework_suco_min > param->framework_suco_max) { logerr("Minimum SUCO size cannot be greater than Maximum SUCO size\n"); ret = -1; }
-    }
-
-    if (XEVE_CS_GET_FORMAT(param->cs) != XEVE_CF_YCBCR400)
-    {
-        int pic_m = 2;
-        if ((param->w & (pic_m - 1)) != 0) { logerr("Current encoder does not support odd picture width\n"); ret = -1; }
-        if ((param->h & (pic_m - 1)) != 0) { logerr("Current encoder does not support odd picture height\n"); ret = -1; }
-    }
-
-    return ret;
-}
-
 static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
 {
     int  ret, size, value;
@@ -1150,7 +1072,7 @@ int main(int argc, const char **argv)
 
     cdsc.max_bs_buf_size = MAX_BS_BUF; /* maximum bitstream buffer size */
 
-    if (check_conf(&cdsc))
+    if (xeve_check_conf(&cdsc))
     {
         logerr("invalid configuration\n");
         ret = -1; goto ERR;
