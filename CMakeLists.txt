@@ -25,6 +25,8 @@ if(VERSION_MAJOR STREQUAL ${VERSION_STRING})
 endif()
 message("XEVE VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
+add_definitions(-Dxeve_dynamic_EXPORTS)
+
 # Check input arguments.
 if(NOT SET_PROF)
   set(SET_PROF "MAIN")
@@ -46,11 +48,6 @@ else()
   return()
 endif()
 
-option(XEVE_APP_STATIC_BUILD "xeve_app will be statically linked against static xeve library" ON)
-if(XEVE_APP_STATIC_BUILD)
-    add_definitions(-DXEVE_STATIC_DEFINE)
-endif(XEVE_APP_STATIC_BUILD)
-
 cmake_policy(SET CMP0048 NEW)
 set(CMAKE_C_STANDARD 99)
 
@@ -60,6 +57,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Set compiler flags and options.
 if( MSVC )
+    add_compile_options(
+        $<$<CONFIG:>:/MD> #---------|
+        $<$<CONFIG:Debug>:/MDd> #---|-- Dynamically link the runtime libraries
+        $<$<CONFIG:Release>:/MD> #--|
+    )
 elseif( UNIX OR MINGW )
     if(NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE "Release")
@@ -84,6 +86,9 @@ message ("c Flags: " ${CMAKE_C_FLAGS})
 message ("linker Flags: " ${CMAKE_EXE_LINKER_FLAGS})
 
 # Sub-directories where more CMakeLists.txt exist
+set( LIB_NAME xeve)
+set( LIB_NAME_BASE xeveb)
+
 if(("${SET_PROF}" STREQUAL "BASE"))
    add_subdirectory(src_base)
 endif()
@@ -124,6 +129,7 @@ endif()
 
 string(TOLOWER "${PROJECT_NAME}" PACKAGE_NAME)
 string(CONCAT PACKAGE_NAME ${PACKAGE_NAME} "-${PACKAGE_PROFILE_NAME}")
+
 set(CPACK_PACKAGE_NAME ${PACKAGE_NAME})
 
 # Package License & Readme file
@@ -166,7 +172,6 @@ if( UNIX )
   set(CPACK_DEBIAN_DEVELOPMENTGROUP_PACKAGE_DEPENDS ${CPACK_PACKAGE_NAME})
 endif()
 
-# Dependencies
 set(CPACK_COMPONENTS_ALL Runtime Libraries Development)
 set(CPACK_COMPONENT_DEVELOPMENT_DEPENDS Libraries)
 set(CPACK_COMPONENT_RUNTIME_DEPENDS Libraries)
@@ -193,3 +198,4 @@ cpack_add_component_group(RuntimeGroup
 cpack_add_component(Runtime DISPLAY_NAME "Application" DESCRIPTION  "Reference application that makes use of libxeve" GROUP RuntimeGroup INSTALL_TYPES Full Runtime)
 cpack_add_component(Libraries DISPLAY_NAME "Shared Libraries" DESCRIPTION "Shared libraries used to run xeve_app" GROUP RuntimeGroup INSTALL_TYPES Full Runtime Developer)
 cpack_add_component(Development DISPLAY_NAME "C++ Headers and static libraries used to build programs with libxeve" DESCRIPTION "C/C++ header files for use with libxeve" GROUP DevelopmentGroup INSTALL_TYPES Full Developer)
+
