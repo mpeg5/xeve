@@ -1248,12 +1248,10 @@ int xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune)
     return XEVE_OK;
 }
 
-int xeve_check_conf(XEVE_CDSC* cdsc)
+int xeve_param_check(const XEVE_PARAM* param)
 {
-    XEVE_PARAM * param;
     int ret = 0;
     int min_block_size = 4;
-    param = &cdsc->param;
 
     if(param->profile == 0)
     {

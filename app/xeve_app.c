@@ -1072,7 +1072,7 @@ int main(int argc, const char **argv)
 
     cdsc.max_bs_buf_size = MAX_BS_BUF; /* maximum bitstream buffer size */
 
-    if (xeve_check_conf(&cdsc))
+    if (xeve_param_check(param))
     {
         logerr("invalid configuration\n");
         ret = -1; goto ERR;
