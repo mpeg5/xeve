@@ -10,11 +10,11 @@ if(("${SET_PROF}" STREQUAL "MAIN"))
     add_executable (${EXE_NAME} ${ENC_SRC} ${ENC_INC} )
     include_directories( ${EXE_NAME} PUBLIC . .. ../inc ../src_base ../src_main ${BASE_SRC_PATH})
 
-    if(XEVE_APP_STATIC_BUILD)
-        target_link_libraries (${EXE_NAME} xeve)
-    else()
-        target_link_libraries (${EXE_NAME} xeve_dynamic)
-    endif()
+    # Comment the following line for dynamic linking
+    target_link_libraries (${EXE_NAME} xeve)
+
+    # Uncomment the following line for dynamic linking
+    # target_link_libraries (${EXE_NAME} xeve_dynamic)
 
     set_property(TARGET ${EXE_NAME} PROPERTY FOLDER "app")
     set_target_properties(${EXE_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -38,11 +38,11 @@ if(("${SET_PROF}" STREQUAL "BASE"))
     add_executable (${EXE_NAME_BASE} ${ENC_SRC} ${ENC_INC} )
     include_directories( ${EXE_NAME_BASE} PUBLIC . .. ../inc ../src_base ../src_main ${BASE_SRC_PATH})
 
-    if(XEVE_APP_STATIC_BUILD)
-        target_link_libraries (${EXE_NAME_BASE} xeveb)
-    else()
-        target_link_libraries (${EXE_NAME_BASE} xeveb_dynamic)
-    endif()
+    # Comment the following line for dynamic linking
+    target_link_libraries (${EXE_NAME_BASE} xeveb)
+
+    # Uncomment the following line for dynamic linking
+    # target_link_libraries (${EXE_NAME_BASE} xeveb_dynamic)
 
     set_property(TARGET ${EXE_NAME_BASE} PROPERTY FOLDER "app")
     set_target_properties(${EXE_NAME_BASE} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

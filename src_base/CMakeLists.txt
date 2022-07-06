@@ -11,7 +11,7 @@ file (GLOB LIB_SSE_SRC "./sse/xeve_*.c")
 file (GLOB LIB_SSE_INC "./sse/xeve_*.h" )
 file (GLOB LIB_AVX_SRC "./avx/xeve_*.c")
 file (GLOB LIB_AVX_INC "./avx/xeve_*.h" )
-file (GLOB LIB_NEON_SRC "/neon/xeve_*.c")
+file (GLOB LIB_NEON_SRC "./neon/xeve_*.c")
 file (GLOB LIB_NEON_INC "./neon/xeve_*.h" )
 
 include(GenerateExportHeader)
