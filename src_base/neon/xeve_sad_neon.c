@@ -1773,14 +1773,14 @@ int xeve_had_16x8_neon(pel* org, pel* cur, int s_org, int s_cur, int step, int b
         pred7_8x16b = vzip2q_s16(src4_8x16b, src5_8x16b);
         src6_8x16b = vzip2q_s16(src6_8x16b, src7_8x16b);
 
-        out1_8x16b = _mm_unpacklo_epi32(out3_8x16b, pred0_8x16b);
-        out3_8x16b = _mm_unpackhi_epi32(out3_8x16b, pred0_8x16b);
-        pred1_8x16b = _mm_unpacklo_epi32(out2_8x16b, pred3_8x16b);
-        pred3_8x16b = _mm_unpackhi_epi32(out2_8x16b, pred3_8x16b);
-        out5_8x16b = _mm_unpacklo_epi32(out7_8x16b, src2_8x16b);
-        out7_8x16b = _mm_unpackhi_epi32(out7_8x16b, src2_8x16b);
-        pred5_8x16b = _mm_unpacklo_epi32(pred7_8x16b, src6_8x16b);
-        pred7_8x16b = _mm_unpackhi_epi32(pred7_8x16b, src6_8x16b);
+        out1_8x16b = vzip1q_s32(out3_8x16b, pred0_8x16b);
+        out3_8x16b = vzip2q_s32(out3_8x16b, pred0_8x16b);
+        pred1_8x16b = vzip1q_s32(out2_8x16b, pred3_8x16b);
+        pred3_8x16b = vzip2q_s32(out2_8x16b, pred3_8x16b);
+        out5_8x16b = vzip1q_s32(out7_8x16b, src2_8x16b);
+        out7_8x16b = vzip2q_s32(out7_8x16b, src2_8x16b);
+        pred5_8x16b = vzip1q_s32(pred7_8x16b, src6_8x16b);
+        pred7_8x16b = vzip2q_s32(pred7_8x16b, src6_8x16b);
 
         out0_8x16b = vzip1q_s64(out1_8x16b,pred1_8x16b);
         out1_8x16b = vzip2q_s64(out1_8x16b,pred1_8x16b);
@@ -3491,10 +3491,10 @@ int xeve_had_8x4_neon(pel *org, pel *cur, int s_org, int s_cur, int step, int bi
         m2[2] = vzip2q_s16(m1[0], m1[1]);
         m2[3] = vzip2q_s16(m1[2], m1[3]);
 
-        m1[0] = _mm_unpacklo_epi32(m2[0], m2[1]);
-        m1[1] = _mm_unpackhi_epi32(m2[0], m2[1]);
-        m1[2] = _mm_unpacklo_epi32(m2[2], m2[3]);
-        m1[3] = _mm_unpackhi_epi32(m2[2], m2[3]);
+        m1[0] = vzip1q_s32(m2[0], m2[1]);
+        m1[1] = vzip2q_s32(m2[0], m2[1]);
+        m1[2] = vzip1q_s32(m2[2], m2[3]);
+        m1[3] = vzip2q_s32(m2[2], m2[3]);
 
         // horizontal
         // finish transpose
