@@ -718,9 +718,9 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         xeve_func_ssd               = xeve_tbl_ssd_16b_neon;
         xeve_func_diff              = xeve_tbl_diff_16b_neon;
         xeve_func_satd              = xeve_tbl_satd_16b_neon;
-        xeve_func_mc_l              = xeve_tbl_mc_l;
-        xeve_func_mc_c              = xeve_tbl_mc_c;
-        xeve_func_average_no_clip   = &xeve_average_16b_no_clip;
+        xeve_func_mc_l              = xeve_tbl_mc_l_neon;
+        xeve_func_mc_c              = xeve_tbl_mc_c_neon;
+        xeve_func_average_no_clip   = &xeve_average_16b_no_clip_neon;
         ctx->fn_itxb                = &xeve_tbl_itxb_neon;
         xeve_func_txb               = &xeve_tbl_txb;
   }
