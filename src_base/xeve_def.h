@@ -1519,6 +1519,7 @@ enum TQC_RUN {
 #include "xeve_mc_sse.h"
 #include "xeve_mc_avx.h"
 #else
+#include "xeve_mc_neon.h"
 #endif
 #include "xeve_type.h"
 
