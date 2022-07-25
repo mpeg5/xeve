@@ -46,4 +46,4 @@ void xeve_mc_filter_l_8pel_horz_no_clip_neon(s16 *ref, int src_stride, s16 *pred
                                      , int height, int offset, int shift);
 #endif /* ARM_NEON */
 
-#endif
+#endif /* _XEVE_MC_NEON_H_ */
