@@ -95,34 +95,9 @@ static void tx_pb8_avx(s16* src, s16* dst, int shift, int line)
 
             src += 8 * 8;
 
-#define CALCU_2x8(c0, c1, d0, d1) \
-            v0 = _mm256_madd_epi16(s0, c0); \
-            v1 = _mm256_madd_epi16(s1, c0); \
-            v2 = _mm256_madd_epi16(s2, c0); \
-            v3 = _mm256_madd_epi16(s3, c0); \
-            v4 = _mm256_madd_epi16(s0, c1); \
-            v5 = _mm256_madd_epi16(s1, c1); \
-            v6 = _mm256_madd_epi16(s2, c1); \
-            v7 = _mm256_madd_epi16(s3, c1); \
-            v0 = _mm256_hadd_epi32(v0, v1); \
-            v2 = _mm256_hadd_epi32(v2, v3); \
-            v4 = _mm256_hadd_epi32(v4, v5); \
-            v6 = _mm256_hadd_epi32(v6, v7); \
-            d0 = _mm256_hadd_epi32(v0, v2); \
-            d1 = _mm256_hadd_epi32(v4, v6)
-
             CALCU_2x8(coeff[0], coeff[4], d0, d1);
             CALCU_2x8(coeff[2], coeff[5], d2, d3);
-
-            d0 = _mm256_add_epi32(d0, add);
-            d1 = _mm256_add_epi32(d1, add);
-            d2 = _mm256_add_epi32(d2, add);
-            d3 = _mm256_add_epi32(d3, add);
-
-            d0 = _mm256_srai_epi32(d0, shift);
-            d1 = _mm256_srai_epi32(d1, shift);
-            d2 = _mm256_srai_epi32(d2, shift);
-            d3 = _mm256_srai_epi32(d3, shift);
+            CALCU_2x8_ADD_SHIFT(d0, d1, d2, d3, add, shift)
 
             d0 = _mm256_packs_epi32(d0, d1);
             d1 = _mm256_packs_epi32(d2, d3);
@@ -137,17 +112,7 @@ static void tx_pb8_avx(s16* src, s16* dst, int shift, int line)
 
             CALCU_2x8(coeff[1], coeff[6], d0, d1);
             CALCU_2x8(coeff[3], coeff[7], d2, d3);
-#undef CALCU_2x8
-
-            d0 = _mm256_add_epi32(d0, add);
-            d1 = _mm256_add_epi32(d1, add);
-            d2 = _mm256_add_epi32(d2, add);
-            d3 = _mm256_add_epi32(d3, add);
-
-            d0 = _mm256_srai_epi32(d0, shift);
-            d1 = _mm256_srai_epi32(d1, shift);
-            d2 = _mm256_srai_epi32(d2, shift);
-            d3 = _mm256_srai_epi32(d3, shift);
+            CALCU_2x8_ADD_SHIFT(d0, d1, d2, d3, add, shift);
 
             d0 = _mm256_packs_epi32(d0, d1);
             d1 = _mm256_packs_epi32(d2, d3);
@@ -169,36 +134,9 @@ static void tx_pb8_avx(s16* src, s16* dst, int shift, int line)
         s0 = _mm256_loadu2_m128i((const __m128i*) & src[2 * 8], (const __m128i*) & src[0]);
         s1 = _mm256_loadu2_m128i((const __m128i*) & src[3 * 8], (const __m128i*) & src[8]);
 
-#define CALCU_2x8(c0, c1, c2, c3, d0, d1) \
-            v0 = _mm256_madd_epi16(s0, c0); \
-            v1 = _mm256_madd_epi16(s1, c0); \
-            v2 = _mm256_madd_epi16(s0, c1); \
-            v3 = _mm256_madd_epi16(s1, c1); \
-            v4 = _mm256_madd_epi16(s0, c2); \
-            v5 = _mm256_madd_epi16(s1, c2); \
-            v6 = _mm256_madd_epi16(s0, c3); \
-            v7 = _mm256_madd_epi16(s1, c3); \
-            v0 = _mm256_hadd_epi32(v0, v1); \
-            v2 = _mm256_hadd_epi32(v2, v3); \
-            v4 = _mm256_hadd_epi32(v4, v5); \
-            v6 = _mm256_hadd_epi32(v6, v7); \
-            d0 = _mm256_hadd_epi32(v0, v2); \
-            d1 = _mm256_hadd_epi32(v4, v6); \
-            d0 = _mm256_permute4x64_epi64(d0, 0xd8); \
-            d1 = _mm256_permute4x64_epi64(d1, 0xd8)
-
-        CALCU_2x8(coeff[0], coeff[4], coeff[2], coeff[5], d0, d1);
-        CALCU_2x8(coeff[1], coeff[6], coeff[3], coeff[7], d2, d3);
-
-        d0 = _mm256_add_epi32(d0, add);
-        d1 = _mm256_add_epi32(d1, add);
-        d2 = _mm256_add_epi32(d2, add);
-        d3 = _mm256_add_epi32(d3, add);
-
-        d0 = _mm256_srai_epi32(d0, shift);
-        d1 = _mm256_srai_epi32(d1, shift);
-        d2 = _mm256_srai_epi32(d2, shift);
-        d3 = _mm256_srai_epi32(d3, shift);
+        CALCU_2x4(coeff[0], coeff[4], coeff[2], coeff[5], d0, d1);
+        CALCU_2x4(coeff[1], coeff[6], coeff[3], coeff[7], d2, d3);
+        CALCU_2x8_ADD_SHIFT(d0, d1, d2, d3, add, shift);
 
         d0 = _mm256_packs_epi32(d0, d1);
         d1 = _mm256_packs_epi32(d2, d3);
@@ -419,20 +357,11 @@ static void tx_pb16_avx(s16* src, s16* dst, int shift, int line)
             dst_reg[i] = _mm256_add_epi32(v1, v2);
         }
 
-#undef CALCU_LINE
+        CALCU_2x8_ADD_SHIFT(dst_reg[0], dst_reg[2], dst_reg[4], dst_reg[6], add, shift);
 
-        d0 = _mm256_add_epi32(dst_reg[0], add);
-        d1 = _mm256_add_epi32(dst_reg[2], add);
-        d2 = _mm256_add_epi32(dst_reg[4], add);
-        d3 = _mm256_add_epi32(dst_reg[6], add);
 
-        d0 = _mm256_srai_epi32(d0, shift);
-        d1 = _mm256_srai_epi32(d1, shift);
-        d2 = _mm256_srai_epi32(d2, shift);
-        d3 = _mm256_srai_epi32(d3, shift);
-
-        d0 = _mm256_packs_epi32(d0, d1);
-        d1 = _mm256_packs_epi32(d2, d3);
+        d0 = _mm256_packs_epi32(dst_reg[0], dst_reg[2]);
+        d1 = _mm256_packs_epi32(dst_reg[4], dst_reg[6]);
         d0 = _mm256_permute4x64_epi64(d0, 0xd8);
         d1 = _mm256_permute4x64_epi64(d1, 0xd8);
 
@@ -1124,42 +1053,39 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             v[4] = _mm256_hadd_epi32(v[4], v[6]);
             dst_reg[i] = _mm256_hadd_epi32(v[0], v[4]);
         }
-
-        t[0] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x20);
-        t[1] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x31);
-        t[2] = _mm256_permute2x128_si256(dst_reg[2], dst_reg[3], 0x20);
-        t[3] = _mm256_permute2x128_si256(dst_reg[2], dst_reg[3], 0x31);
-        t[4] = _mm256_permute2x128_si256(dst_reg[4], dst_reg[5], 0x20);
-        t[5] = _mm256_permute2x128_si256(dst_reg[4], dst_reg[5], 0x31);
-        t[6] = _mm256_permute2x128_si256(dst_reg[6], dst_reg[7], 0x20);
-        t[7] = _mm256_permute2x128_si256(dst_reg[6], dst_reg[7], 0x31);
-
-        d0 = _mm256_add_epi32(t[0], t[1]);
-        d1 = _mm256_add_epi32(t[2], t[3]);
-        d2 = _mm256_add_epi32(t[4], t[5]);
-        d3 = _mm256_add_epi32(t[6], t[7]);
-
-        d0 = _mm256_add_epi32(d0, add);
-        d1 = _mm256_add_epi32(d1, add);
-        d2 = _mm256_add_epi32(d2, add);
-        d3 = _mm256_add_epi32(d3, add);
-
-        d0 = _mm256_srai_epi32(d0, shift);
-        d1 = _mm256_srai_epi32(d1, shift);
-        d2 = _mm256_srai_epi32(d2, shift);
-        d3 = _mm256_srai_epi32(d3, shift);
-
-        d0 = _mm256_packs_epi32(d0, d1);
-        d1 = _mm256_packs_epi32(d2, d3);
-
-        m0 = _mm256_castsi256_si128(d0);
-        m1 = _mm256_extracti128_si256(d0, 1);
-        m2 = _mm_srli_si128(m0, 8);
-        m3 = _mm_srli_si128(m1, 8);
-        m4 = _mm256_castsi256_si128(d1);
-        m5 = _mm256_extracti128_si256(d1, 1);
-        m6 = _mm_srli_si128(m4, 8);
+#define PERFORM_OP\
+        t[0] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x20);\
+        t[1] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x31);\
+        t[2] = _mm256_permute2x128_si256(dst_reg[2], dst_reg[3], 0x20);\
+        t[3] = _mm256_permute2x128_si256(dst_reg[2], dst_reg[3], 0x31);\
+        t[4] = _mm256_permute2x128_si256(dst_reg[4], dst_reg[5], 0x20);\
+        t[5] = _mm256_permute2x128_si256(dst_reg[4], dst_reg[5], 0x31);\
+        t[6] = _mm256_permute2x128_si256(dst_reg[6], dst_reg[7], 0x20);\
+        t[7] = _mm256_permute2x128_si256(dst_reg[6], dst_reg[7], 0x31);\
+        d0 = _mm256_add_epi32(t[0], t[1]);\
+        d1 = _mm256_add_epi32(t[2], t[3]);\
+        d2 = _mm256_add_epi32(t[4], t[5]);\
+        d3 = _mm256_add_epi32(t[6], t[7]);\
+        d0 = _mm256_add_epi32(d0, add);\
+        d1 = _mm256_add_epi32(d1, add);\
+        d2 = _mm256_add_epi32(d2, add);\
+        d3 = _mm256_add_epi32(d3, add);\
+        d0 = _mm256_srai_epi32(d0, shift);\
+        d1 = _mm256_srai_epi32(d1, shift);\
+        d2 = _mm256_srai_epi32(d2, shift);\
+        d3 = _mm256_srai_epi32(d3, shift);\
+        d0 = _mm256_packs_epi32(d0, d1);\
+        d1 = _mm256_packs_epi32(d2, d3);\
+        m0 = _mm256_castsi256_si128(d0);\
+        m1 = _mm256_extracti128_si256(d0, 1);\
+        m2 = _mm_srli_si128(m0, 8);\
+        m3 = _mm_srli_si128(m1, 8);\
+        m4 = _mm256_castsi256_si128(d1);\
+        m5 = _mm256_extracti128_si256(d1, 1);\
+        m6 = _mm_srli_si128(m4, 8);\
         m7 = _mm_srli_si128(m5, 8);
+
+        PERFORM_OP;
 
         _mm_storel_epi64((__m128i*)(dst + 1 * line), m0);
         _mm_storel_epi64((__m128i*)(dst + 3 * line), m1);
@@ -1186,41 +1112,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
 
 #undef _mm256_madd1_epi32_xeve
 
-        t[0] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x20);
-        t[1] = _mm256_permute2x128_si256(dst_reg[0], dst_reg[1], 0x31);
-        t[2] = _mm256_permute2x128_si256(dst_reg[2], dst_reg[3], 0x20);
-        t[3] = _mm256_permute2x128_si256(dst_reg[2], dst_reg[3], 0x31);
-        t[4] = _mm256_permute2x128_si256(dst_reg[4], dst_reg[5], 0x20);
-        t[5] = _mm256_permute2x128_si256(dst_reg[4], dst_reg[5], 0x31);
-        t[6] = _mm256_permute2x128_si256(dst_reg[6], dst_reg[7], 0x20);
-        t[7] = _mm256_permute2x128_si256(dst_reg[6], dst_reg[7], 0x31);
-
-        d0 = _mm256_add_epi32(t[0], t[1]);
-        d1 = _mm256_add_epi32(t[2], t[3]);
-        d2 = _mm256_add_epi32(t[4], t[5]);
-        d3 = _mm256_add_epi32(t[6], t[7]);
-
-        d0 = _mm256_add_epi32(d0, add);
-        d1 = _mm256_add_epi32(d1, add);
-        d2 = _mm256_add_epi32(d2, add);
-        d3 = _mm256_add_epi32(d3, add);
-
-        d0 = _mm256_srai_epi32(d0, shift);
-        d1 = _mm256_srai_epi32(d1, shift);
-        d2 = _mm256_srai_epi32(d2, shift);
-        d3 = _mm256_srai_epi32(d3, shift);
-
-        d0 = _mm256_packs_epi32(d0, d1);
-        d1 = _mm256_packs_epi32(d2, d3);
-
-        m0 = _mm256_castsi256_si128(d0);
-        m1 = _mm256_extracti128_si256(d0, 1);
-        m2 = _mm_srli_si128(m0, 8);
-        m3 = _mm_srli_si128(m1, 8);
-        m4 = _mm256_castsi256_si128(d1);
-        m5 = _mm256_extracti128_si256(d1, 1);
-        m6 = _mm_srli_si128(m4, 8);
-        m7 = _mm_srli_si128(m5, 8);
+        PERFORM_OP;
 
         _mm_storel_epi64((__m128i*)(dst + 17 * line), m0);
         _mm_storel_epi64((__m128i*)(dst + 19 * line), m1);

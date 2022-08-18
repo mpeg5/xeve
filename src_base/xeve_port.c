@@ -31,6 +31,7 @@
 #include <stdarg.h>
 #include "xeve_port.h"
 
+#if XEVE_TRACE
 void xeve_trace0(char * filename, int line, const char *fmt, ...)
 {
     char str[1024]={'\0',};
@@ -57,3 +58,4 @@ void xeve_trace_line(char * pre)
     printf("%s\n", str);
 }
 
+#endif /* XEVE_TRACE */

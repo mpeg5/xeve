@@ -47,7 +47,7 @@ void xeve_get_default_motion_main(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int vali
                                 , u32 *map_scu, s16(*map_unrefined_mv)[REFP_NUM][MV_D], int scup, int w_scu, XEVE_HISTORY_BUFFER * history_buffer, int hmvp_flag);
 void xevem_get_motion_merge(int poc, int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM], int cuw, int cuh, int w_scu, int h_scu
                               , s8 refi[REFP_NUM][MAX_NUM_MVP], s16 mvp[REFP_NUM][MAX_NUM_MVP][MV_D], u32 *map_scu, u16 avail_lr, s16(*map_unrefined_mv)[REFP_NUM][MV_D]
-                              , XEVE_HISTORY_BUFFER history_buffer, u8 ibc_flag, XEVE_REFP(*refplx)[REFP_NUM], XEVE_SH* sh, int log2_max_cuwh, u8 *map_tidx);
+                              , XEVE_HISTORY_BUFFER *history_buffer, u8 ibc_flag, XEVE_REFP(*refplx)[REFP_NUM], XEVE_SH* sh, int log2_max_cuwh, u8 *map_tidx);
 void xeve_get_motion_from_mvr(u8 mvr_idx, int poc, int scup, int lidx, s8 cur_refi, int num_refp, s16(*map_mv)[REFP_NUM][MV_D], s8(*map_refi)[REFP_NUM], XEVE_REFP(*refp)[REFP_NUM]
                             , int cuw, int cuh, int w_scu, int h_scu, u16 avail, s16 mvp[MAX_NUM_MVP][MV_D], s8 refi_pred[MAX_NUM_MVP], u32* map_scu, u16 avail_lr, s16(*map_unrefined_mv)[REFP_NUM][MV_D]
                             , XEVE_HISTORY_BUFFER * history_buffer, int hmvp_flag, u8* map_tidx);

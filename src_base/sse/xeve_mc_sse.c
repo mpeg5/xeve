@@ -32,7 +32,6 @@
 #include "xeve_mc_sse.h"
 #include <assert.h>
 
-#if X86_SSE
 /****************************************************************************
  * motion compensation for luma
  ****************************************************************************/
@@ -1920,4 +1919,3 @@ void xeve_average_16b_no_clip_sse(s16 *src, s16 *ref, s16 *dst, int s_src, int s
         }
     }
 }
-#endif /* X86_SSE */

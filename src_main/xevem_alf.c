@@ -430,6 +430,7 @@ int alf_create(ADAPTIVE_LOOP_FILTER * alf, const int pic_width, const int pic_he
 
     // Classification
     alf->classifier = (ALF_CLASSIFIER**)malloc(pic_height * sizeof(ALF_CLASSIFIER*));
+    xeve_assert_gv(alf->classifier, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     for (int i = 0; i < pic_height; i++)
     {
         alf->classifier[i] = (ALF_CLASSIFIER*)malloc(pic_width * sizeof(ALF_CLASSIFIER));
@@ -2059,6 +2060,10 @@ int xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* a
     int ret;
     ADAPTIVE_LOOP_FILTER * alf = &enc_alf->alf;
     int x_l, x_r, y_l, y_r;
+    pel* buffer_l = NULL;
+    pel* buffer_cb = NULL;
+    pel* buffer_cr = NULL;
+
     const u8 channel = comp_id == Y_C ? LUMA_CH : CHROMA_CH;
     u8 is_luma = channel == LUMA_CH ? 1 : 0;
 
@@ -2094,15 +2099,15 @@ int xeve_alf_recon(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, ALF_SLICE_PARAM* a
     const int m = MAX_ALF_FILTER_LENGTH >> 1;
     int l_zero_offset = (MAX_CU_SIZE + m + m) * m + m;
     int l_stride = MAX_CU_SIZE + 2 * m;
-    pel *buffer_l = (pel*)xeve_malloc(sizeof(pel) * (MAX_CU_SIZE + 2 * m) * (MAX_CU_SIZE + 2 * m));
+    buffer_l = (pel*)xeve_malloc(sizeof(pel) * (MAX_CU_SIZE + 2 * m) * (MAX_CU_SIZE + 2 * m));
     xeve_assert_gv(buffer_l, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     xeve_mset(buffer_l, 0, sizeof(pel) * (MAX_CU_SIZE + 2 * m) * (MAX_CU_SIZE + 2 * m));
     pel *tmp_buffer = buffer_l + l_zero_offset;
     int l_zero_offset_chroma = ((MAX_CU_SIZE >> 1) + m + m) * m + m;
     int l_stride_chroma = (MAX_CU_SIZE >> 1) + m + m;
-    pel *buffer_cb = (pel*)xeve_malloc(sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));
+    buffer_cb = (pel*)xeve_malloc(sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));
     xeve_assert_gv(buffer_cb, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    pel *buffer_cr = (pel*)xeve_malloc(sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));
+    buffer_cr = (pel*)xeve_malloc(sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));
     xeve_assert_gv(buffer_cr, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
     xeve_mset(buffer_cb, 0, sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));
     xeve_mset(buffer_cr, 0, sizeof(pel) * ((MAX_CU_SIZE >> 1) + 2 * m) *((MAX_CU_SIZE >> 1) + 2 * m));

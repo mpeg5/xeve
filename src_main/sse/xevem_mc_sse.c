@@ -38,7 +38,6 @@
 #include "xevem_mc_sse.h"
 #include <assert.h>
 
-#if X86_SSE
 /****************************************************************************
  * motion compensation for luma
  ****************************************************************************/
@@ -1523,4 +1522,3 @@ void xevem_equal_coeff_computer_sse(pel *residue, int residue_stride, int **deri
         }
     }
 }
-#endif /* X86_SSE */

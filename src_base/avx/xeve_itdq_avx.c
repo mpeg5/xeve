@@ -1634,6 +1634,13 @@ dst = _mm256_add_epi32(v[0], v[1]);
 static void itx_pb64b_avx(void *src, void *dst, int shift, int line, int step)
 {
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+    int i_src[64];
+    i_src[0] = 0;
+    for (int i = 1; i < 64; i++)
+    {
+        i_src[i] = i_src[i - 1] + line;
+    }
+
     if (step == 0)
     {
         if (line > 4)
@@ -1656,12 +1663,7 @@ static void itx_pb64b_avx(void *src, void *dst, int shift, int line, int step)
                 }
             }
 
-            int i, j, i_src[64];
-            i_src[0] = 0;
-            for (int i = 1; i < 64; i++)
-            {
-                i_src[i] = i_src[i - 1] + line;
-            }
+            int i, j;
 
             for (j = 0; j < line; j += 8)
             {
@@ -1976,7 +1978,7 @@ d[d7] = _mm256_permute2f128_si256(v[6], v[7], 0x31);
             const __m256i min_val = _mm256_set1_epi32(MIN_TX_VAL_32);
             const __m256i add_s2 = _mm256_set1_epi32(add);
             __m256i coef[32][32];
-            int i, j, i_src[64];
+            int i, j;
 
             for (i = 0; i < 32; i++)
             {
@@ -1985,13 +1987,6 @@ d[d7] = _mm256_permute2f128_si256(v[6], v[7], 0x31);
                     coef[i][j] = _mm256_set1_epi64x(((s64)(xeve_tbl_tm64[j + 32][i]) << 32) | (xeve_tbl_tm64[j][i] & 0xFFFFFFFF));
                 }
             }
-
-            i_src[0] = 0;
-            for (i = 1; i < 64; i++)
-            {
-                i_src[i] = i_src[i - 1] + line;
-            }
-
 
             for (j = 0; j < line; j += 8)
             {

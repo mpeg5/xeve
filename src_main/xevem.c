@@ -408,10 +408,6 @@ int xevem_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         {
             sh->mmvd_group_enable_flag = !(ctx->refp[0][0].poc == ctx->refp[0][1].poc);
         }
-        else if (ctx->sps.tool_mmvd && (ctx->slice_type == SLICE_P))
-        {
-            sh->mmvd_group_enable_flag = 0;
-        }
         else
         {
             sh->mmvd_group_enable_flag = 0;

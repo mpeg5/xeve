@@ -32,6 +32,8 @@
 #define _XEVEM_TQ_AVX_H_
 
 #if X86_SSE
+#include "xeve_tq_avx.h"
+
 extern const XEVE_TX xeve_tbl_tx_avx[MAX_TR_LOG2];
 #endif /* X86_SSE */
 

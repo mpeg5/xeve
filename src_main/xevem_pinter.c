@@ -2252,7 +2252,7 @@ static double pinter_residue_rdo(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, i
 static void get_mmvd_mvp_list(s8(*map_refi)[REFP_NUM], XEVE_REFP refp[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int w_scu, int h_scu, int scup, u16 avail, int log2_cuw, int log2_cuh, int slice_t
                             , int real_mv[][2][3], u32 *map_scu, int REF_SET[][XEVE_MAX_NUM_ACTIVE_REF_FRAME], u16 avail_lr
                             , u32 curr_ptr, u8 num_refp[REFP_NUM]
-                            , XEVE_HISTORY_BUFFER history_buffer, int admvp_flag, XEVE_SH* sh, int log2_max_cuwh, u8* map_tidx)
+                            , XEVE_HISTORY_BUFFER *history_buffer, int admvp_flag, XEVE_SH* sh, int log2_max_cuwh, u8* map_tidx)
 {
     int ref_mvd = 0;
     int ref_mvd1 = 0;
@@ -2652,7 +2652,7 @@ static void get_mmvd_mvp_list(s8(*map_refi)[REFP_NUM], XEVE_REFP refp[REFP_NUM],
 
 static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], int log2_cuw, int log2_cuh, int slice_t, int scup
                            , s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM], int w_scu, u16 avail, int REF_SET[][XEVE_MAX_NUM_ACTIVE_REF_FRAME]
-                           , int h_scu, u32 *map_scu, u16 avail_lr, XEVE_HISTORY_BUFFER history_buffer, int admvp_flag, XEVE_SH* sh, int log2_max_cuwh
+                           , int h_scu, u32 *map_scu, u16 avail_lr, XEVE_HISTORY_BUFFER *history_buffer, int admvp_flag, XEVE_SH* sh, int log2_max_cuwh
                            , u32 curr_ptr)
 {
     int nn;
@@ -2672,10 +2672,8 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
 
     if(cuw*cuh <= NUM_SAMPLES_BLOCK)
         small_cu = 1;
-    for(k = 0; k < MMVD_BASE_MV_NUM; k++)
-    {
-        base_skip[k] = 1;
-    }
+
+    xeve_mset(base_skip, 0, sizeof(int) * MMVD_BASE_MV_NUM);
 
     int sld[MMVD_BASE_MV_NUM*MMVD_BASE_MV_NUM][2] = {
     {0, 0}, {1, 1}, {2, 2}, {3, 3},
@@ -2706,7 +2704,7 @@ static void mmvd_base_skip(XEVE_CTX *ctx, XEVE_CORE *core, int real_mv[][2][3], 
 
     for(k = 0; k < MMVD_BASE_MV_NUM - 1; k++)
     {
-        if(base_skip[k] == 1)
+        if(base_skip[k] == 0)
         {
             for(nn = k + 1; nn < MMVD_BASE_MV_NUM; nn++)
             {
@@ -2818,7 +2816,7 @@ static double analyze_skip(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log
     else
     {
         xevem_get_motion_merge(ctx->poc.poc_val, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, pi->refp[0], cuw, cuh, ctx->w_scu, ctx->h_scu, pi->refi_pred, pi->mvp, ctx->map_scu, core->avail_lr
-                                   , ctx->map_unrefined_mv, mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
+                                   , ctx->map_unrefined_mv, &mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
     }
 
     if(ctx->pps.cu_qp_delta_enabled_flag)
@@ -3019,7 +3017,7 @@ static double analyze_merge(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int lo
     else
     {
         xevem_get_motion_merge(ctx->poc.poc_val, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, pi->refp[0], cuw, cuh, ctx->w_scu, ctx->h_scu, pi->refi_pred, pi->mvp, ctx->map_scu, core->avail_lr
-                             , ctx->map_unrefined_mv, mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
+                             , ctx->map_unrefined_mv, &mcore->history_buffer, mcore->ibc_flag, (XEVE_REFP(*)[2])ctx->refp[0], ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
     }
 
     for(idx0 = 0; idx0 < (cuw*cuh <= NUM_SAMPLES_BLOCK ? MAX_NUM_MVP_SMALL_CU : MAX_NUM_MVP); idx0++)
@@ -4566,10 +4564,10 @@ static double pinter_analyze_cu(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, in
 
         get_mmvd_mvp_list(ctx->map_refi, ctx->refp[0], ctx->map_mv, ctx->w_scu, ctx->h_scu, core->scup, core->avail_cu, log2_cuw, log2_cuh, ctx->slice_type, real_mv, ctx->map_scu, REF_SET, core->avail_lr
                         , ctx->poc.poc_val, ctx->rpm.num_refp
-                        , mcore->history_buffer, ctx->sps.tool_admvp, ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
+                        , &mcore->history_buffer, ctx->sps.tool_admvp, ctx->sh, ctx->log2_max_cuwh, ctx->map_tidx);
 
         mmvd_base_skip(ctx, core, real_mv, log2_cuw, log2_cuh, ctx->slice_type, core->scup, ctx->map_refi, ctx->map_mv, ctx->refp[0], ctx->w_scu, core->avail_cu, REF_SET
-                     , ctx->h_scu, ctx->map_scu, core->avail_lr, mcore->history_buffer, ctx->sps.tool_admvp, ctx->sh, ctx->log2_max_cuwh, ctx->poc.poc_val);
+                     , ctx->h_scu, ctx->map_scu, core->avail_lr, &mcore->history_buffer, ctx->sps.tool_admvp, ctx->sh, ctx->log2_max_cuwh, ctx->poc.poc_val);
     }
     /* skip mode */
     cost = cost_inter[PRED_SKIP] = analyze_skip(ctx, core, x, y, log2_cuw, log2_cuh);

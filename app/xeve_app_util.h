@@ -82,6 +82,9 @@ static void log_line(char * pre)
     printf("%s\n", str);
 }
 
+
+#define MAX_INP_STR_SIZE 128
+
 #if defined(__GNUC__)
 #define __FILENAME__ \
     (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
