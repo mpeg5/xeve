@@ -150,7 +150,7 @@ int xeve_rc_rcore_set(XEVE_CTX * ctx)
     return XEVE_OK;
 }
 
-double rc_bpf_ra[3][8][10] =
+static double rc_bpf_ra[3][8][10] =
 {
     { /* GOP 4 */
         { 2.21, 2.21, 0.95, 0.47 },
@@ -163,7 +163,7 @@ double rc_bpf_ra[3][8][10] =
     },
 };
 
-double rc_bpf_ld[3][10] =
+static double rc_bpf_ld[3][10] =
 {
     { 15.00, 50.00, 50.00,  0.00,  0.00 }, // LD GOP 2
     { 15.00, 30.00, 25.00, 30.00,  0.00 }, // LD GOP 4

@@ -92,12 +92,9 @@ static int xeve_ctu_mt_core(void * arg)
     assert(arg != NULL);
 
     XEVE_BSW  * bs;
-    XEVE_SH   * sh;
     XEVE_CORE * core = (XEVE_CORE *)arg;
     XEVE_CTX  * ctx = core->ctx;
-    int ctb_cnt_in_row, ret;
     bs = &ctx->bs[core->thread_cnt];
-    sh = ctx->sh;
     int i = core->tile_num;
 
     /* CABAC Initialize for each Tile */
@@ -107,7 +104,6 @@ static int xeve_ctu_mt_core(void * arg)
     /*Set entry point for each ctu row in the tile*/
     int sp_x_lcu = ctx->tile[core->tile_num].ctba_rs_first % ctx->w_lcu;
     int sp_y_lcu = ctx->tile[core->tile_num].ctba_rs_first / ctx->w_lcu;
-    ctb_cnt_in_row = ctx->tile[i].w_ctb; //Total LCUs in the current row
     xeve_update_core_loc_param_mt(ctx, core);
 
     int bef_cu_qp = ctx->tile[i].qp_prev_eco[core->thread_cnt];
@@ -122,7 +118,7 @@ static int xeve_ctu_mt_core(void * arg)
         }
 
         /* initialize structures *****************************************/
-        ret = ctx->fn_mode_init_lcu(ctx, core);
+        int ret = ctx->fn_mode_init_lcu(ctx, core);
         xeve_assert_rv(ret == XEVE_OK, ret);
 
         /* mode decision *************************************************/
@@ -212,15 +208,10 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
     XEVE_CORE     * core;
     XEVE_BSW      * bs;
     XEVE_SH       * sh;
-    XEVE_APS      * aps;
-    int             ret;
-    u32             i;
     int             ctb_cnt_in_tile = 0;
     int             col_bd = 0;
     int             num_slice_in_pic = ctx->param.num_slice_in_pic;
     u8            * tiles_in_slice;
-    u16             total_tiles_in_slice;
-    int             tile_cnt = 0;
     u8            * curr_temp = ctx->bs[0].cur;
     int             last_intra_poc = INT_MAX;
 
@@ -234,7 +225,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         bs = &ctx->bs[0];
         core = ctx->core[0];
         core->ctx = ctx;
-        aps = &ctx->aps;
+        XEVE_APS* aps = &ctx->aps;
 
         if ((int)ctx->poc.poc_val > last_intra_poc)
         {
@@ -255,7 +246,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         xeve_set_sh(ctx, sh);
 
         /* initialize reference pictures */
-        ret = xeve_picman_refp_init(&ctx->rpm, ctx->sps.max_num_ref_pics, ctx->slice_type, ctx->poc.poc_val, ctx->nalu.nuh_temporal_id, ctx->last_intra_poc, ctx->refp);
+        int ret = xeve_picman_refp_init(&ctx->rpm, ctx->sps.max_num_ref_pics, ctx->slice_type, ctx->poc.poc_val, ctx->nalu.nuh_temporal_id, ctx->last_intra_poc, ctx->refp);
         xeve_assert_rv(ret == XEVE_OK, ret);
 
         ctx->fn_mode_analyze_frame(ctx);
@@ -287,10 +278,6 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
         {
             sh->mmvd_group_enable_flag = !(ctx->refp[0][0].poc == ctx->refp[0][1].poc);
         }
-        else if (ctx->sps.tool_mmvd && (ctx->slice_type == SLICE_P))
-        {
-            sh->mmvd_group_enable_flag = 0;
-        }
         else
         {
             sh->mmvd_group_enable_flag = 0;
@@ -304,12 +291,11 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 
         /* Tile wise encoding with in a slice */
         u32 k = 0;
-        total_tiles_in_slice = sh->num_tiles_in_slice;
+        u16 total_tiles_in_slice = sh->num_tiles_in_slice;
         THREAD_CONTROLLER * tc;
         int res;
-        i = 0;
+        u32 i = 0;
         tc = ctx->tc;
-        int parallel_task = 1;
         int thread_cnt = 0, thread_cnt1 = 0;;
         int task_completed = 0;
         int tile_cnt = 0;
@@ -320,7 +306,7 @@ int xeve_pic(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
             //Limiting parallel task to the number of LCU rows
             i = tiles_in_slice[tile_cnt++];
             int temp_store_total_ctb = ctx->tile[i].f_ctb;
-            parallel_task = (ctx->param.threads > ctx->tile[i].h_ctb) ? ctx->tile[i].h_ctb : ctx->param.threads;
+            int parallel_task = (ctx->param.threads > ctx->tile[i].h_ctb) ? ctx->tile[i].h_ctb : ctx->param.threads;
             ctx->parallel_rows = parallel_task;
             ctx->tile[i].qp = ctx->sh->qp;
 
@@ -625,7 +611,7 @@ int xeve_enc(XEVE_CTX * ctx, XEVE_BITB * bitb, XEVE_STAT * stat)
 
 int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
 {
-    XEVE_PIC  * pic, * spic;
+    XEVE_PIC  * pic;
     XEVE_PICO * pico;
     XEVE_IMGB * imgb;
 
@@ -675,7 +661,7 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
     /* generate sub-picture for RC and Forecast */
     if (ctx->param.use_fcst)
     {
-        spic = pico->spic;
+        XEVE_PIC* spic = pico->spic;
         xeve_gen_subpic(pic->y, spic->y, spic->w_l, spic->h_l, pic->s_l, spic->s_l, 10);
 
         xeve_mset(pico->sinfo.map_pdir, 0, sizeof(u8) * ctx->fcst.f_blk);
@@ -730,7 +716,6 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
 
     check_cpu = xeve_check_cpu_info();
     support_sse  = (check_cpu >> 1) & 1;
-    support_avx  = check_cpu & 1;
     support_avx2 = (check_cpu >> 2) & 1;
 
     if (support_avx2)
@@ -851,7 +836,7 @@ int xeve_create_bs_buf(XEVE_CTX  * ctx, int max_bs_buf_size)
     u8 * bs_buf, *bs_buf_temp;
     if (ctx->param.threads > 1)
     {
-        bs_buf = (u8 *)xeve_malloc(sizeof(u8 *) * (ctx->param.threads - 1) * max_bs_buf_size);
+        bs_buf = (u8 *)xeve_malloc(sizeof(u8) * (ctx->param.threads - 1) * max_bs_buf_size);
         for (int task_id = 1; task_id < ctx->param.threads; task_id++)
         {
             bs_buf_temp = bs_buf + ((task_id - 1) * max_bs_buf_size);
@@ -967,7 +952,6 @@ int xeve_check_frame_delay(XEVE_CTX * ctx)
 int xeve_check_more_frames(XEVE_CTX * ctx)
 {
     XEVE_PICO  * pico;
-    int           i;
 
     if(FORCE_OUT(ctx))
     {
@@ -975,7 +959,7 @@ int xeve_check_more_frames(XEVE_CTX * ctx)
         ctx->pic_icnt++;
         /**********************************************************/
 
-        for(i=0; i<ctx->pico_max_cnt; i++)
+        for(int i = 0; i < ctx->pico_max_cnt; i++)
         {
             pico = ctx->pico_buf[i];
             if(pico != NULL)
@@ -1363,11 +1347,7 @@ int xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat)
         ctx->rcore->real_bits = (stat->write - stat->sei_size) << 3;
     }
 
-    if (imgb_o)
-    {
-        imgb_o->release(imgb_o);
-    }
-
+    imgb_o->release(imgb_o);
     return XEVE_OK;
 }
 
@@ -1738,12 +1718,12 @@ int xeve_ready(XEVE_CTX* ctx)
     }
     else //RA case
     {
-        ctx->pico_max_cnt = 1 + ((ctx->param.gop_size) << 1);
+        ctx->pico_max_cnt = XEVE_MAX_INBUF_CNT;
     }
 
     if (ctx->param.bframes)
     {
-        ctx->frm_rnum = XEVE_MAX(ctx->param.bframes + 1, ctx->param.lookahead);
+        ctx->frm_rnum = ctx->param.use_fcst ? ctx->param.lookahead : ctx->param.bframes + 1;
     }
     else
     {
@@ -2267,7 +2247,7 @@ static void tbl_derived_chroma_qp_mapping(XEVE_CTX * ctx, XEVE_CHROMA_TABLE * st
             assert(qpOutVal[j] >= -qp_bd_offset_c && qpOutVal[j] <= MAX_QP);
         }
 
-        ctx->qp_chroma_dynamic[i][qpInVal[0]] = qpOutVal[0];
+        ctx->qp_chroma_dynamic[i][qpInVal[0]] = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP, qpOutVal[0]);
         for (int k = qpInVal[0] - 1; k >= -qp_bd_offset_c; k--)
         {
             ctx->qp_chroma_dynamic[i][k] = XEVE_CLIP3(-qp_bd_offset_c, MAX_QP, ctx->qp_chroma_dynamic[i][k + 1] - 1);
@@ -2631,125 +2611,126 @@ int xeve_param_apply_ppt_baseline(XEVE_PARAM* param, int profile, int preset, in
 
 void xeve_param2string(XEVE_PARAM * param, char * sei_buf, int padx, int pady)
 {
-    sei_buf += sprintf(sei_buf, "profile=%d", param->profile);
-    sei_buf += sprintf(sei_buf, " threads=%d", param->threads);
-    sei_buf += sprintf(sei_buf, " input-res=%dx%d", param->w - padx, param->h - pady);
-    sei_buf += sprintf(sei_buf, " fps=%u", param->fps);
-    sei_buf += sprintf(sei_buf, " keyint=%d", param->keyint);
-    sei_buf += sprintf(sei_buf, " color-space=%d", param->cs);
-    sei_buf += sprintf(sei_buf, " rc-type=%s", (param->rc_type == XEVE_RC_ABR) ? "ABR" : (param->rc_type == XEVE_RC_CRF) ? "CRF" : "CQP");
+    int max_n = 200;
+    sei_buf += snprintf(sei_buf, max_n, "profile=%d", param->profile);
+    sei_buf += snprintf(sei_buf, max_n, " threads=%d", param->threads);
+    sei_buf += snprintf(sei_buf, max_n, " input-res=%dx%d", param->w - padx, param->h - pady);
+    sei_buf += snprintf(sei_buf, max_n, " fps=%u", param->fps);
+    sei_buf += snprintf(sei_buf, max_n, " keyint=%d", param->keyint);
+    sei_buf += snprintf(sei_buf, max_n, " color-space=%d", param->cs);
+    sei_buf += snprintf(sei_buf, max_n, " rc-type=%s", (param->rc_type == XEVE_RC_ABR) ? "ABR" : (param->rc_type == XEVE_RC_CRF) ? "CRF" : "CQP");
 
     if (param->rc_type == XEVE_RC_ABR || param->rc_type == XEVE_RC_CRF)
     {
         if (param->rc_type == XEVE_RC_CRF)
-            sei_buf += sprintf(sei_buf, " crf=%df", param->crf);
+            sei_buf += snprintf(sei_buf, max_n, " crf=%df", param->crf);
         else
-            sei_buf += sprintf(sei_buf, " bitrate=%d", param->bitrate);
+            sei_buf += snprintf(sei_buf, max_n, " bitrate=%d", param->bitrate);
 
         if (param->vbv_bufsize)
         {
-            sei_buf += sprintf(sei_buf, "vbv-bufsize=%d", param->vbv_bufsize);
+            sei_buf += snprintf(sei_buf, max_n, "vbv-bufsize=%d", param->vbv_bufsize);
         }
-        sei_buf += sprintf(sei_buf, "use-filler=%d", param->use_filler);
+        sei_buf += snprintf(sei_buf, max_n, "use-filler=%d", param->use_filler);
     }
     else if (param->rc_type == XEVE_RC_CQP)
     {
-        sei_buf += sprintf(sei_buf, " qp=%d", param->qp);
-        sei_buf += sprintf(sei_buf, " qp_cb_offset=%d", param->qp_cb_offset);
-        sei_buf += sprintf(sei_buf, " qp_cr_offset=%d", param->qp_cr_offset);
+        sei_buf += snprintf(sei_buf, max_n, " qp=%d", param->qp);
+        sei_buf += snprintf(sei_buf, max_n, " qp_cb_offset=%d", param->qp_cb_offset);
+        sei_buf += snprintf(sei_buf, max_n, " qp_cr_offset=%d", param->qp_cr_offset);
     }
 
-    sei_buf += sprintf(sei_buf, " info=%d", param->sei_cmd_info);
-    sei_buf += sprintf(sei_buf, " hash=%d", param->use_pic_sign);
+    sei_buf += snprintf(sei_buf, max_n, " info=%d", param->sei_cmd_info);
+    sei_buf += snprintf(sei_buf, max_n, " hash=%d", param->use_pic_sign);
 
-    sei_buf += sprintf(sei_buf, " bframes=%d", param->bframes);
-    sei_buf += sprintf(sei_buf, " aq-mode=%d", param->aq_mode);
-    sei_buf += sprintf(sei_buf, " lookahead=%d", param->lookahead);
-    sei_buf += sprintf(sei_buf, " closed-gop=%d", param->closed_gop);
+    sei_buf += snprintf(sei_buf, max_n, " bframes=%d", param->bframes);
+    sei_buf += snprintf(sei_buf, max_n, " aq-mode=%d", param->aq_mode);
+    sei_buf += snprintf(sei_buf, max_n, " lookahead=%d", param->lookahead);
+    sei_buf += snprintf(sei_buf, max_n, " closed-gop=%d", param->closed_gop);
 
-    sei_buf += sprintf(sei_buf, " disable-hgop=%d", param->disable_hgop);
-    sei_buf += sprintf(sei_buf, " ref_pic_gap_length=%d", param->ref_pic_gap_length);
-    sei_buf += sprintf(sei_buf, " codec-bit-depth=%d", param->codec_bit_depth);
-    sei_buf += sprintf(sei_buf, " level-idc=%d", param->level_idc);
-    sei_buf += sprintf(sei_buf, " cu-tree=%d", param->cutree);
-    sei_buf += sprintf(sei_buf, " constrained-ip=%d", param->constrained_intra_pred);
-    sei_buf += sprintf(sei_buf, " use-deblock=%d", param->use_deblock);
+    sei_buf += snprintf(sei_buf, max_n, " disable-hgop=%d", param->disable_hgop);
+    sei_buf += snprintf(sei_buf, max_n, " ref_pic_gap_length=%d", param->ref_pic_gap_length);
+    sei_buf += snprintf(sei_buf, max_n, " codec-bit-depth=%d", param->codec_bit_depth);
+    sei_buf += snprintf(sei_buf, max_n, " level-idc=%d", param->level_idc);
+    sei_buf += snprintf(sei_buf, max_n, " cu-tree=%d", param->cutree);
+    sei_buf += snprintf(sei_buf, max_n, " constrained-ip=%d", param->constrained_intra_pred);
+    sei_buf += snprintf(sei_buf, max_n, " use-deblock=%d", param->use_deblock);
 
-    sei_buf += sprintf(sei_buf, " inter-slice-type=%d", param->inter_slice_type);
-    sei_buf += sprintf(sei_buf, " rdo-deblk-switch=%d", param->rdo_dbk_switch);
-    sei_buf += sprintf(sei_buf, " qp-increased-frame=%d", param->qp_incread_frame);
-    sei_buf += sprintf(sei_buf, " forced-idr-frame-flag=%d", param->f_ifrm);
-    sei_buf += sprintf(sei_buf, " qp-increased-frame=%d", param->qp_incread_frame);
+    sei_buf += snprintf(sei_buf, max_n, " inter-slice-type=%d", param->inter_slice_type);
+    sei_buf += snprintf(sei_buf, max_n, " rdo-deblk-switch=%d", param->rdo_dbk_switch);
+    sei_buf += snprintf(sei_buf, max_n, " qp-increased-frame=%d", param->qp_incread_frame);
+    sei_buf += snprintf(sei_buf, max_n, " forced-idr-frame-flag=%d", param->f_ifrm);
+    sei_buf += snprintf(sei_buf, max_n, " qp-increased-frame=%d", param->qp_incread_frame);
 
-    sei_buf += sprintf(sei_buf, " qp-max=%d qp-min=%d", param->qp_max, param->qp_min);
-    sei_buf += sprintf(sei_buf, " gop-size=%d", param->gop_size);
-    sei_buf += sprintf(sei_buf, " use-fcst=%d", param->use_fcst);
-    sei_buf += sprintf(sei_buf, " chroma-format-idc=%d", param->chroma_format_idc);
-    sei_buf += sprintf(sei_buf, " cs-w-shift=%d cs-h-shift=%d", param->cs_w_shift, param->cs_h_shift);
+    sei_buf += snprintf(sei_buf, max_n, " qp-max=%d qp-min=%d", param->qp_max, param->qp_min);
+    sei_buf += snprintf(sei_buf, max_n, " gop-size=%d", param->gop_size);
+    sei_buf += snprintf(sei_buf, max_n, " use-fcst=%d", param->use_fcst);
+    sei_buf += snprintf(sei_buf, max_n, " chroma-format-idc=%d", param->chroma_format_idc);
+    sei_buf += snprintf(sei_buf, max_n, " cs-w-shift=%d cs-h-shift=%d", param->cs_w_shift, param->cs_h_shift);
 
 
-    sei_buf += sprintf(sei_buf, " max-cu-intra=%d min-cu-intra=%d max-cu-inter=%d min-cu-inter=%d ", param->max_cu_intra
+    sei_buf += snprintf(sei_buf, max_n, " max-cu-intra=%d min-cu-intra=%d max-cu-inter=%d min-cu-inter=%d ", param->max_cu_intra
         , param->min_cu_intra, param->max_cu_inter, param->min_cu_inter);
-    sei_buf += sprintf(sei_buf, " max-num-ref=%d", param->ref);
+    sei_buf += snprintf(sei_buf, max_n, " max-num-ref=%d", param->ref);
 
-    sei_buf += sprintf(sei_buf, " me-ref-num=%d me-algo=%d me-range=%d me-sub=%d me-sub-pos=%d me-sub-range=%d ", param->me_ref_num
+    sei_buf += snprintf(sei_buf, max_n, " me-ref-num=%d me-algo=%d me-range=%d me-sub=%d me-sub-pos=%d me-sub-range=%d ", param->me_ref_num
         , param->me_algo, param->me_range, param->me_sub, param->me_sub_pos, param->me_sub_range);
 
-    sei_buf += sprintf(sei_buf, " rdoq=%d", param->rdoq);
-    sei_buf += sprintf(sei_buf, " cabac-refine=%d", param->cabac_refine);
-    sei_buf += sprintf(sei_buf, " intra-block-copy=%d", param->ibc_flag);
-    sei_buf += sprintf(sei_buf, " btt=%d", param->btt);
-    sei_buf += sprintf(sei_buf, " suco=%d", param->suco);
-    sei_buf += sprintf(sei_buf, " amvr=%d", param->tool_amvr);
-    sei_buf += sprintf(sei_buf, " vd=%d", param->tool_mmvd);
-    sei_buf += sprintf(sei_buf, " affine=%d", param->tool_affine);
-    sei_buf += sprintf(sei_buf, " dmvr=%d", param->tool_dmvr);
-    sei_buf += sprintf(sei_buf, " addb=%d", param->tool_addb);
-    sei_buf += sprintf(sei_buf, " alf=%d", param->tool_alf);
-    sei_buf += sprintf(sei_buf, " htdf=%d", param->tool_htdf);
-    sei_buf += sprintf(sei_buf, " admvp=%d", param->tool_admvp);
-    sei_buf += sprintf(sei_buf, " hmvp=%d", param->tool_hmvp);
-    sei_buf += sprintf(sei_buf, " eipd=%d", param->tool_eipd);
-    sei_buf += sprintf(sei_buf, " iqt=%d", param->tool_iqt);
-    sei_buf += sprintf(sei_buf, " cm-init=%d", param->tool_cm_init);
-    sei_buf += sprintf(sei_buf, " adcc=%d", param->tool_adcc);
-    sei_buf += sprintf(sei_buf, " rpl=%d", param->tool_rpl);
-    sei_buf += sprintf(sei_buf, " pocs=%d", param->tool_pocs);
-    sei_buf += sprintf(sei_buf, " ats=%d", param->tool_ats);
-    sei_buf += sprintf(sei_buf, " pocs=%d", param->tool_pocs);
+    sei_buf += snprintf(sei_buf, max_n, " rdoq=%d", param->rdoq);
+    sei_buf += snprintf(sei_buf, max_n, " cabac-refine=%d", param->cabac_refine);
+    sei_buf += snprintf(sei_buf, max_n, " intra-block-copy=%d", param->ibc_flag);
+    sei_buf += snprintf(sei_buf, max_n, " btt=%d", param->btt);
+    sei_buf += snprintf(sei_buf, max_n, " suco=%d", param->suco);
+    sei_buf += snprintf(sei_buf, max_n, " amvr=%d", param->tool_amvr);
+    sei_buf += snprintf(sei_buf, max_n, " vd=%d", param->tool_mmvd);
+    sei_buf += snprintf(sei_buf, max_n, " affine=%d", param->tool_affine);
+    sei_buf += snprintf(sei_buf, max_n, " dmvr=%d", param->tool_dmvr);
+    sei_buf += snprintf(sei_buf, max_n, " addb=%d", param->tool_addb);
+    sei_buf += snprintf(sei_buf, max_n, " alf=%d", param->tool_alf);
+    sei_buf += snprintf(sei_buf, max_n, " htdf=%d", param->tool_htdf);
+    sei_buf += snprintf(sei_buf, max_n, " admvp=%d", param->tool_admvp);
+    sei_buf += snprintf(sei_buf, max_n, " hmvp=%d", param->tool_hmvp);
+    sei_buf += snprintf(sei_buf, max_n, " eipd=%d", param->tool_eipd);
+    sei_buf += snprintf(sei_buf, max_n, " iqt=%d", param->tool_iqt);
+    sei_buf += snprintf(sei_buf, max_n, " cm-init=%d", param->tool_cm_init);
+    sei_buf += snprintf(sei_buf, max_n, " adcc=%d", param->tool_adcc);
+    sei_buf += snprintf(sei_buf, max_n, " rpl=%d", param->tool_rpl);
+    sei_buf += snprintf(sei_buf, max_n, " pocs=%d", param->tool_pocs);
+    sei_buf += snprintf(sei_buf, max_n, " ats=%d", param->tool_ats);
+    sei_buf += snprintf(sei_buf, max_n, " pocs=%d", param->tool_pocs);
     if (1 == param->use_deblock)
-        sei_buf += sprintf(sei_buf, " deblock-alpha-offset=%d deblock-beta-offset=%d", param->deblock_alpha_offset, param->deblock_beta_offset);
-    sei_buf += sprintf(sei_buf, " dra=%d", param->tool_dra);
+        sei_buf += snprintf(sei_buf, max_n, " deblock-alpha-offset=%d deblock-beta-offset=%d", param->deblock_alpha_offset, param->deblock_beta_offset);
+    sei_buf += snprintf(sei_buf, max_n, " dra=%d", param->tool_dra);
 
-    sei_buf += sprintf(sei_buf, " aspect-ration-info-flag=%d", param->aspect_ratio_info_present_flag);
+    sei_buf += snprintf(sei_buf, max_n, " aspect-ration-info-flag=%d", param->aspect_ratio_info_present_flag);
     if (param->aspect_ratio_info_present_flag)
     {
-        sei_buf += sprintf(sei_buf, " sar=%d", param->sar);
+        sei_buf += snprintf(sei_buf, max_n, " sar=%d", param->sar);
         if (param->sar == EXTENDED_SAR)
-            sei_buf += sprintf(sei_buf, " sar-width : sar-height=%d:%d", param->sar_width, param->sar_height);
+            sei_buf += snprintf(sei_buf, max_n, " sar-width : sar-height=%d:%d", param->sar_width, param->sar_height);
     }
-    sei_buf += sprintf(sei_buf, " overscan=%d", param->overscan_info_present_flag);
+    sei_buf += snprintf(sei_buf, max_n, " overscan=%d", param->overscan_info_present_flag);
     if (param->overscan_info_present_flag)
-        sei_buf += sprintf(sei_buf, " overscan-crop=%d", param->overscan_appropriate_flag);
-    sei_buf += sprintf(sei_buf, " videoformat=%d", param->videoformat);
-    sei_buf += sprintf(sei_buf, " range=%d", param->range);
-    sei_buf += sprintf(sei_buf, " colorprim=%d", param->colorprim);
-    sei_buf += sprintf(sei_buf, " transfer=%d", param->transfer);
-    sei_buf += sprintf(sei_buf, " colormatrix=%d", param->matrix_coefficients);
+        sei_buf += snprintf(sei_buf, max_n, " overscan-crop=%d", param->overscan_appropriate_flag);
+    sei_buf += snprintf(sei_buf, max_n, " videoformat=%d", param->videoformat);
+    sei_buf += snprintf(sei_buf, max_n, " range=%d", param->range);
+    sei_buf += snprintf(sei_buf, max_n, " colorprim=%d", param->colorprim);
+    sei_buf += snprintf(sei_buf, max_n, " transfer=%d", param->transfer);
+    sei_buf += snprintf(sei_buf, max_n, " colormatrix=%d", param->matrix_coefficients);
     if (param->master_display)
-        sei_buf += sprintf(sei_buf, " master-display=%d", param->master_display);
+        sei_buf += snprintf(sei_buf, max_n, " master-display=%d", param->master_display);
     if (param->max_cll)
-        sei_buf += sprintf(sei_buf, " max-content-light-level=%d", param->max_cll);
-    sei_buf += sprintf(sei_buf, " chromaloc=%d", param->chroma_loc_info_present_flag);
+        sei_buf += snprintf(sei_buf, max_n, " max-content-light-level=%d", param->max_cll);
+    sei_buf += snprintf(sei_buf, max_n, " chromaloc=%d", param->chroma_loc_info_present_flag);
     if (param->chroma_loc_info_present_flag)
-        sei_buf += sprintf(sei_buf, " chromaloc-top=%d chromaloc-bottom=%d",
+        sei_buf += snprintf(sei_buf, max_n, " chromaloc-top=%d chromaloc-bottom=%d",
             param->chroma_sample_loc_type_top_field, param->chroma_sample_loc_type_bottom_field);
-    sei_buf += sprintf(sei_buf, " field-seq-flag=%d", param->field_seq_flag);
-    sei_buf += sprintf(sei_buf, " vui-timing-info-flag=%d", param->timing_info_present_flag);
-    sei_buf += sprintf(sei_buf, " fixed-pic-rate-flag=%d", param->fixed_pic_rate_flag);
-    sei_buf += sprintf(sei_buf, " nal-hrd-params-present-flag=%d", param->nal_hrd_parameters_present_flag);
-    sei_buf += sprintf(sei_buf, " vcl-hrd-params-present-flag=%d", param->vcl_hrd_parameters_present_flag);
-    sei_buf += sprintf(sei_buf, " num-reorder-pics=%d", param->num_reorder_pics);
+    sei_buf += snprintf(sei_buf, max_n, " field-seq-flag=%d", param->field_seq_flag);
+    sei_buf += snprintf(sei_buf, max_n, " vui-timing-info-flag=%d", param->timing_info_present_flag);
+    sei_buf += snprintf(sei_buf, max_n, " fixed-pic-rate-flag=%d", param->fixed_pic_rate_flag);
+    sei_buf += snprintf(sei_buf, max_n, " nal-hrd-params-present-flag=%d", param->nal_hrd_parameters_present_flag);
+    sei_buf += snprintf(sei_buf, max_n, " vcl-hrd-params-present-flag=%d", param->vcl_hrd_parameters_present_flag);
+    sei_buf += snprintf(sei_buf, max_n, " num-reorder-pics=%d", param->num_reorder_pics);
 
     return;
 }

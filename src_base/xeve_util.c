@@ -478,30 +478,6 @@ void xeve_check_motion_availability(int scup, int cuw, int cuh, int w_scu, int h
     }
 }
 
-s8 xeve_get_first_refi(int scup, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int cuw, int cuh, int w_scu, int h_scu, u32 *map_scu, u8 mvr_idx, u16 avail_lr
-                     , s16(*map_unrefined_mv)[REFP_NUM][MV_D], u8* map_tidx)
-{
-    int neb_addr[MAX_NUM_POSSIBLE_SCAND], valid_flag[MAX_NUM_POSSIBLE_SCAND];
-    s8  refi = 0, default_refi;
-    s16 default_mv[MV_D];
-
-    xeve_check_motion_availability(scup, cuw, cuh, w_scu, h_scu, neb_addr, valid_flag, map_scu, avail_lr, 1, 0, map_tidx);
-    xeve_get_default_motion(neb_addr, valid_flag, 0, lidx, map_refi, map_mv, &default_refi, default_mv, map_scu, map_unrefined_mv, scup, w_scu);
-
-    assert(mvr_idx < 5);
-    //neb-position is coupled with mvr index
-    if (valid_flag[mvr_idx])
-    {
-        refi = REFI_IS_VALID(map_refi[neb_addr[mvr_idx]][lidx]) ? map_refi[neb_addr[mvr_idx]][lidx] : default_refi;
-    }
-    else
-    {
-        refi = default_refi;
-    }
-
-    return refi;
-}
-
 int xeve_get_default_motion(int neb_addr[MAX_NUM_POSSIBLE_SCAND], int valid_flag[MAX_NUM_POSSIBLE_SCAND], s8 cur_refi, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], s8 *refi, s16 mv[MV_D]
                            , u32 *map_scu, s16(*map_unrefined_mv)[REFP_NUM][MV_D], int scup, int w_scu)
 {
@@ -667,70 +643,6 @@ void xeve_get_mv_dir(XEVE_REFP refp[REFP_NUM], u32 poc, int scup, int c_scu, u16
         mvp[REFP_1][MV_X] = -dpoc_L1 * mvc[MV_X] / dpoc_co;
         mvp[REFP_1][MV_Y] = -dpoc_L1 * mvc[MV_Y] / dpoc_co;
     }
-}
-
-int xeve_get_avail_cu(int neb_scua[MAX_NEB2], u32 * map_cu, u8* map_tidx)
-{
-    int slice_num_x;
-    u16 avail_cu = 0;
-
-    xeve_assert(neb_scua[NEB_X] >= 0);
-
-    slice_num_x = MCU_GET_SN(map_cu[neb_scua[NEB_X]]);
-
-    /* left */
-    if(neb_scua[NEB_A] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_A]])) &&
-       (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_A]]))
-    {
-        avail_cu |= AVAIL_LE;
-    }
-    /* up */
-    if(neb_scua[NEB_B] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_B]])) &&
-       (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_B]]))
-    {
-        avail_cu |= AVAIL_UP;
-    }
-    /* up-right */
-    if(neb_scua[NEB_C] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_C]])) &&
-       (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_C]]))
-    {
-        if(MCU_GET_COD(map_cu[neb_scua[NEB_C]]))
-        {
-            avail_cu |= AVAIL_UP_RI;
-        }
-    }
-    /* up-left */
-    if(neb_scua[NEB_D] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_D]])) &&
-       (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_D]]))
-    {
-        avail_cu |= AVAIL_UP_LE;
-    }
-    /* low-left */
-    if(neb_scua[NEB_E] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_E]])) &&
-       (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_E]]))
-    {
-        if(MCU_GET_COD(map_cu[neb_scua[NEB_E]]))
-        {
-            avail_cu |= AVAIL_LO_LE;
-        }
-    }
-    /* right */
-    if(neb_scua[NEB_H] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_H]])) &&
-       (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_H]]))
-    {
-        avail_cu |= AVAIL_RI;
-    }
-    /* low-right */
-    if(neb_scua[NEB_I] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_I]])) &&
-       (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_I]]))
-    {
-        if(MCU_GET_COD(map_cu[neb_scua[NEB_I]]))
-        {
-            avail_cu |= AVAIL_LO_RI;
-        }
-    }
-
-    return avail_cu;
 }
 
 u16 xeve_get_avail_inter(int x_scu, int y_scu, int w_scu, int h_scu, int scup, int cuw, int cuh, u32 * map_scu, u8* map_tidx)
@@ -916,37 +828,6 @@ ERR:
     if(pic) xeve_mfree(pic);
     return NULL;
 }
-
-/******************************************************************************
- * generate sub-picture
- ******************************************************************************/
-void arace_gen_subpic(void * src_y, void * dst_y, int w, int h, int s_s,
-    int d_s, int bit_depth)
-{
-    /* source bottom and top top */
-    u8 * src_b, * src_t, * dst;
-    int     x, k, y;
-
-    /* top source */
-    src_t = (u8 *)src_y;
-    /* bottom source */
-    src_b = src_t + s_s;
-    dst   = (u8 *)dst_y;
-
-    for(y = 0; y < h; y++)
-    {
-        for(x = 0; x < w; x++)
-        {
-            k =  x << 1;
-            dst[x] = (src_t[k] + src_b[k] + src_t[k+1] + src_b[k+1] + 2) >> 2;
-        }
-
-        src_t += (s_s << 1);
-        src_b += (s_s << 1);
-        dst   += d_s;
-    }
-}
-
 
 int xeve_picbuf_signature(XEVE_PIC *pic, u8 signature[N_C][16])
 {
@@ -1888,7 +1769,7 @@ XEVE_IMGB * xeve_imgb_create(int w, int h, int cs, int opt, int pad[XEVE_IMGB_MA
         imgb->x[i] = 0;
         imgb->y[i] = 0;
 
-        a_size = (align != NULL)? align[i] : 0;
+        a_size = (align != NULL) ? align[i] : 1; /* 0; */ // Keeping a_size as 0 will lead to division  by 0 in XEVE_ALIGN_VAL
         p_size = (pad != NULL)? pad[i] : 0;
 
         imgb->aw[i] = XEVE_ALIGN_VAL(w, a_size);
@@ -2370,3 +2251,124 @@ void xeve_set_tile_in_slice(XEVE_CTX * ctx)
     }
 }
 
+#ifdef UNUSED_CURRENTLY
+
+int xeve_get_avail_cu(int neb_scua[MAX_NEB2], u32* map_cu, u8* map_tidx)
+{
+    int slice_num_x;
+    u16 avail_cu = 0;
+
+    xeve_assert(neb_scua[NEB_X] >= 0);
+
+    slice_num_x = MCU_GET_SN(map_cu[neb_scua[NEB_X]]);
+
+    /* left */
+    if (neb_scua[NEB_A] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_A]])) &&
+        (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_A]]))
+    {
+        avail_cu |= AVAIL_LE;
+    }
+    /* up */
+    if (neb_scua[NEB_B] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_B]])) &&
+        (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_B]]))
+    {
+        avail_cu |= AVAIL_UP;
+    }
+    /* up-right */
+    if (neb_scua[NEB_C] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_C]])) &&
+        (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_C]]))
+    {
+        if (MCU_GET_COD(map_cu[neb_scua[NEB_C]]))
+        {
+            avail_cu |= AVAIL_UP_RI;
+        }
+    }
+    /* up-left */
+    if (neb_scua[NEB_D] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_D]])) &&
+        (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_D]]))
+    {
+        avail_cu |= AVAIL_UP_LE;
+    }
+    /* low-left */
+    if (neb_scua[NEB_E] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_E]])) &&
+        (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_E]]))
+    {
+        if (MCU_GET_COD(map_cu[neb_scua[NEB_E]]))
+        {
+            avail_cu |= AVAIL_LO_LE;
+        }
+    }
+    /* right */
+    if (neb_scua[NEB_H] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_H]])) &&
+        (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_H]]))
+    {
+        avail_cu |= AVAIL_RI;
+    }
+    /* low-right */
+    if (neb_scua[NEB_I] >= 0 && (slice_num_x == MCU_GET_SN(map_cu[neb_scua[NEB_I]])) &&
+        (map_tidx[neb_scua[NEB_X]] == map_tidx[neb_scua[NEB_I]]))
+    {
+        if (MCU_GET_COD(map_cu[neb_scua[NEB_I]]))
+        {
+            avail_cu |= AVAIL_LO_RI;
+        }
+    }
+
+    return avail_cu;
+}
+
+s8 xeve_get_first_refi(int scup, int lidx, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], int cuw, int cuh, int w_scu, int h_scu, u32* map_scu, u8 mvr_idx, u16 avail_lr
+    , s16(*map_unrefined_mv)[REFP_NUM][MV_D], u8* map_tidx)
+{
+    int neb_addr[MAX_NUM_POSSIBLE_SCAND], valid_flag[MAX_NUM_POSSIBLE_SCAND];
+    s8  refi = 0, default_refi;
+    s16 default_mv[MV_D];
+
+    xeve_check_motion_availability(scup, cuw, cuh, w_scu, h_scu, neb_addr, valid_flag, map_scu, avail_lr, 1, 0, map_tidx);
+    xeve_get_default_motion(neb_addr, valid_flag, 0, lidx, map_refi, map_mv, &default_refi, default_mv, map_scu, map_unrefined_mv, scup, w_scu);
+
+    assert(mvr_idx < 5);
+    //neb-position is coupled with mvr index
+    if (valid_flag[mvr_idx])
+    {
+        refi = REFI_IS_VALID(map_refi[neb_addr[mvr_idx]][lidx]) ? map_refi[neb_addr[mvr_idx]][lidx] : default_refi;
+    }
+    else
+    {
+        refi = default_refi;
+    }
+
+    return refi;
+}
+
+
+/******************************************************************************
+ * generate sub-picture
+ ******************************************************************************/
+void arace_gen_subpic(void* src_y, void* dst_y, int w, int h, int s_s,
+    int d_s, int bit_depth)
+{
+    /* source bottom and top top */
+    u8* src_b, * src_t, * dst;
+    int     x, k, y;
+
+    /* top source */
+    src_t = (u8*)src_y;
+    /* bottom source */
+    src_b = src_t + s_s;
+    dst = (u8*)dst_y;
+
+    for (y = 0; y < h; y++)
+    {
+        for (x = 0; x < w; x++)
+        {
+            k = x << 1;
+            dst[x] = (src_t[k] + src_b[k] + src_t[k + 1] + src_b[k + 1] + 2) >> 2;
+        }
+
+        src_t += (s_s << 1);
+        src_b += (s_s << 1);
+        dst += d_s;
+    }
+}
+#endif

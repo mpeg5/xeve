@@ -1147,13 +1147,8 @@ static void check_run_split(XEVE_CORE *core, int log2_cuw, int log2_cuh, int cup
 
     if(!next_split)
     {
+        xeve_mset(split_allow, 0, sizeof(int) * MAX_SPLIT_NUM);
         split_allow[0] = 1;
-
-        for(i = 1; i < MAX_SPLIT_NUM; i++)
-        {
-            split_allow[i] = 0;
-        }
-
         return;
     }
     if(mcore->bef_data[log2_cuw - 2][log2_cuh - 2][cup][bef_data_idx].split_visit)
@@ -1229,12 +1224,8 @@ static void check_run_split(XEVE_CORE *core, int log2_cuw, int log2_cuh, int cup
         }
         else
         {
+            xeve_mset(run_list, 0, sizeof(int) * MAX_SPLIT_NUM);
             run_list[0] = 1;
-
-            for(i = 1; i < MAX_SPLIT_NUM; i++)
-            {
-                run_list[i] = 0;
-            }
         }
     }
     else

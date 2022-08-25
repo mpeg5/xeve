@@ -407,7 +407,7 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
         case 'F':
         {
             if (sscanf(p + 1, "%d:%d", &fps_n, &fps_d) != 2) return XEVE_ERR;
-             y4m->fps = (int)((fps_n /fps_d*1.0) + 0.5);
+             y4m->fps = (int)((fps_n /(fps_d*1.0)) + 0.5);
             break;
         }
         case 'I':
@@ -897,7 +897,7 @@ int main(int argc, const char **argv)
     STATES             state = STATE_ENCODING;
     unsigned char    * bs_buf = NULL;
     FILE             * fp_inp = NULL;
-    XEVE               id;
+    XEVE               id = NULL; // set to NULL to avoid uninitialized data defect in goto ERR 
     XEVE_CDSC          cdsc;
     XEVE_PARAM       * param = NULL;
     XEVE_BITB          bitb;
@@ -919,7 +919,7 @@ int main(int argc, const char **argv)
     int                profile, preset, tune;
     char             * err_arg = NULL;
     ARGS_PARSER      * args = NULL;
-    char               fname_inp[128], fname_out[128], fname_rec[128];
+    char               fname_inp[MAX_INP_STR_SIZE], fname_out[MAX_INP_STR_SIZE], fname_rec[MAX_INP_STR_SIZE];
     int                is_out = 0, is_rec = 0;
     int                max_frames = 0;
     int                skip_frames = 0;

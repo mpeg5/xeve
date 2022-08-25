@@ -1288,7 +1288,7 @@ static int args_get_str(ARGS_PARSER * args, char * keyl, char * str, int * flag)
     if(args_get(args, keyl, (void **)&p, flag)) return -1;
     if(p)
     {
-        if(str) strcpy(str, p);
+        if(str) strncpy(str, p, MAX_INP_STR_SIZE);
     }
     return ret;
 }
@@ -1449,7 +1449,6 @@ static ARGS_PARSER * args_create(void)
     return args;
 
 ERR:
-    if(opts) free(opts);
     if(args) free(args);
     return NULL;
 }

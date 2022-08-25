@@ -198,6 +198,7 @@ int xeve_bsw_write(XEVE_BSW * bs, u32 val, int len) /* len(1 ~ 32) */
     int leftbits;
 
     xeve_assert(bs);
+    xeve_assert(len <= 32); // to avoid shifting by a negative value
 
     leftbits = bs->leftbits;
     val <<= (32 - len);

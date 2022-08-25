@@ -518,7 +518,7 @@ static void get_merge_insert_mv(s8* refi_dst, s16 *mvp_dst_L0, s16 *mvp_dst_L1, 
 
 void xevem_get_motion_merge(int ptr, int slice_type, int scup, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D], XEVE_REFP refp[REFP_NUM]
                               , int cuw, int cuh, int w_scu, int h_scu, s8 refi[REFP_NUM][MAX_NUM_MVP], s16 mvp[REFP_NUM][MAX_NUM_MVP][MV_D], u32 *map_scu, u16 avail_lr
-                              , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER history_buffer, u8 ibc_flag, XEVE_REFP(*refplx)[REFP_NUM]
+                              , s16(*map_unrefined_mv)[REFP_NUM][MV_D], XEVE_HISTORY_BUFFER *history_buffer, u8 ibc_flag, XEVE_REFP(*refplx)[REFP_NUM]
                               , XEVE_SH* sh, int log2_max_cuwh, u8* map_tidx)
 {
     BOOL tmp_bottom_right = 0; // Bottom first
@@ -685,13 +685,13 @@ void xevem_get_motion_merge(int ptr, int slice_type, int scup, s8(*map_refi)[REF
     if (cnt < (small_cu ? MAX_NUM_MVP_SMALL_CU : MAX_NUM_MVP))
     {
 
-        for (k = 3; k <= XEVE_MIN(history_buffer.currCnt, small_cu ? ALLOWED_CHECKED_NUM_SMALL_CU : ALLOWED_CHECKED_NUM); k += 4)
+        for (k = 3; k <= XEVE_MIN(history_buffer->currCnt, small_cu ? ALLOWED_CHECKED_NUM_SMALL_CU : ALLOWED_CHECKED_NUM); k += 4)
         {
             ref_dst = &(refi[0][cnt]);
             map_mv_dst_L0 = mvp[REFP_0][cnt];
             map_mv_dst_L1 = mvp[REFP_1][cnt];
-            ref_src = history_buffer.history_refi_table[history_buffer.currCnt - k];
-            map_mv_src = &(history_buffer.history_mv_table[history_buffer.currCnt - k][0][0]);
+            ref_src = history_buffer->history_refi_table[history_buffer->currCnt - k];
+            map_mv_src = &(history_buffer->history_mv_table[history_buffer->currCnt - k][0][0]);
             get_merge_insert_mv(ref_dst, map_mv_dst_L0, map_mv_dst_L1, ref_src, map_mv_src, slice_type, cuw, cuh, is_sps_admvp);
             check_redundancy(slice_type, mvp, refi, &cnt);
             cnt++;
