@@ -13,11 +13,14 @@ MPEG-5 EVC Baseline Profile can show 2-times better coding gain over MPEG-4 AVC/
 
 ![MPEG-5 Baseline Profile vs. MPEG-4 AVC/H.264](./doc/image/tos_evc_bp_vs_avc_1350kbps.jpg)
 
+(CC) Blender Foundation | [mango.blender.org](https://mango.blender.org)
 
 ### MPEG-5 Main Profile vs. HEVC/H.265
 MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 codec and superior quality on the same bitrate
 
 ![MPEG-5 Main Profile vs. HEVC/H.265](./doc/image/tos_evc_mp_vs_hevc_900kbps.jpg)
+
+(CC) Blender Foundation | [mango.blender.org](https://mango.blender.org)
 
 ## How to build
 
