@@ -97,6 +97,6 @@ jobs:
         with:
           name: xeve-main-packages-${{ github.event.release.tag_name }}
           path: |
-            ${{ github.workspace }}/build-main/*
+            ${{ github.workspace }}/build-main/*.exe
             ${{ github.workspace }}/build-main/*.md5
           retention-days: 7
