@@ -29,7 +29,7 @@ jobs:
       - name: 'Upload base artifacts'
         uses: actions/upload-artifact@v3
         with:
-          name: xeve-baseline-packages-${{ github.event.release.tag_name }}
+          name: xeve-baseline-linux-packages-${{ github.event.release.tag_name }}
           path: |
             ${{ github.workspace }}/build-base/*.deb
             ${{ github.workspace }}/build-base/*.md5
@@ -57,13 +57,13 @@ jobs:
       - name: 'Upload main artifacts'
         uses: actions/upload-artifact@v3
         with:
-          name: xeve-main-packages-${{ github.event.release.tag_name }}
+          name: xeve-main-linux-packages-${{ github.event.release.tag_name }}
           path: |
             ${{ github.workspace }}/build-main/*.deb
             ${{ github.workspace }}/build-main/*.md5
           retention-days: 7
           
-  package-base-windows:
+  package-baseline-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
@@ -84,7 +84,7 @@ jobs:
           scoop bucket add extras
           scoop install nsis
 
-      - name: build xeve base, generate packages and md5
+      - name: build xeve baseline, generate packages and md5
         run: |
           mkdir build-base
           cd build-base
@@ -92,10 +92,10 @@ jobs:
           make
           make package
 
-      - name: 'Upload base artifacts'
+      - name: 'Upload baseline artifacts'
         uses: actions/upload-artifact@v3
         with:
-          name: xeve-base-packages-${{ github.event.release.tag_name }}
+          name: xeve-baseline-windows-packages-${{ github.event.release.tag_name }}
           path: |
             ${{ github.workspace }}/build-base/*.exe
             ${{ github.workspace }}/build-base/*.md5
@@ -133,7 +133,7 @@ jobs:
       - name: 'Upload main artifacts'
         uses: actions/upload-artifact@v3
         with:
-          name: xeve-main-packages-${{ github.event.release.tag_name }}
+          name: xeve-main-windows-packages-${{ github.event.release.tag_name }}
           path: |
             ${{ github.workspace }}/build-main/*.exe
             ${{ github.workspace }}/build-main/*.md5
