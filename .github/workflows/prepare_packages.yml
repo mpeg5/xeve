@@ -62,3 +62,41 @@ jobs:
             ${{ github.workspace }}/build-main/*.deb
             ${{ github.workspace }}/build-main/*.md5
           retention-days: 7
+          
+  package-main-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+          
+      - name: Get CMake
+        uses: symbitic/install-cmake@master
+
+      - name: Install NSIS
+        run: |
+          iwr -useb get.scoop.sh -outfile 'install.ps1'
+          .\install.ps1 -RunAsAdmin
+          scoop update
+          scoop bucket add extras
+          scoop install nsis
+
+      - name: build xeve main, generate packages and md5
+        run: |
+          mkdir build-main
+          cd build-main
+          cmake .. -G "MinGW Makefiles" -DBUILD_TYPE=Release
+          make
+          make package
+
+      - name: 'Upload main artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve-main-packages-${{ github.event.release.tag_name }}
+          path: |
+            ${{ github.workspace }}/build-main/*
+            ${{ github.workspace }}/build-main/*.md5
+          retention-days: 7
