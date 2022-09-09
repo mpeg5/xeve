@@ -29,7 +29,7 @@ jobs:
       - name: 'Upload base artifacts'
         uses: actions/upload-artifact@v3
         with:
-          name: xeve-baseline-packages-${{ github.event.release.tag_name }}
+          name: xeve-baseline-linux-packages-${{ github.event.release.tag_name }}
           path: |
             ${{ github.workspace }}/build-base/*.deb
             ${{ github.workspace }}/build-base/*.md5
@@ -57,8 +57,84 @@ jobs:
       - name: 'Upload main artifacts'
         uses: actions/upload-artifact@v3
         with:
-          name: xeve-main-packages-${{ github.event.release.tag_name }}
+          name: xeve-main-linux-packages-${{ github.event.release.tag_name }}
           path: |
             ${{ github.workspace }}/build-main/*.deb
+            ${{ github.workspace }}/build-main/*.md5
+          retention-days: 7
+          
+  package-baseline-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+          
+      - name: Get CMake
+        uses: symbitic/install-cmake@master
+
+      - name: Install NSIS
+        run: |
+          iwr -useb get.scoop.sh -outfile 'install.ps1'
+          .\install.ps1 -RunAsAdmin
+          scoop update
+          scoop bucket add extras
+          scoop install nsis
+
+      - name: build xeve baseline, generate packages and md5
+        run: |
+          mkdir build-base
+          cd build-base
+          cmake .. -G "MinGW Makefiles" -DSET_PROF=BASE -DBUILD_TYPE=Release
+          make
+          make package
+
+      - name: 'Upload baseline artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve-baseline-windows-packages-${{ github.event.release.tag_name }}
+          path: |
+            ${{ github.workspace }}/build-base/*.exe
+            ${{ github.workspace }}/build-base/*.md5
+          retention-days: 7
+
+  package-main-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+          
+      - name: Get CMake
+        uses: symbitic/install-cmake@master
+
+      - name: Install NSIS
+        run: |
+          iwr -useb get.scoop.sh -outfile 'install.ps1'
+          .\install.ps1 -RunAsAdmin
+          scoop update
+          scoop bucket add extras
+          scoop install nsis
+
+      - name: build xeve main, generate packages and md5
+        run: |
+          mkdir build-main
+          cd build-main
+          cmake .. -G "MinGW Makefiles" -DBUILD_TYPE=Release
+          make
+          make package
+
+      - name: 'Upload main artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve-main-windows-packages-${{ github.event.release.tag_name }}
+          path: |
+            ${{ github.workspace }}/build-main/*.exe
             ${{ github.workspace }}/build-main/*.md5
           retention-days: 7
