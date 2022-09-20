@@ -36,614 +36,1007 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
-#define ARGS_GET_CMD_OPT_VAL_TYPE(x)  ((x) & 0x0C)
-#define ARGS_GET_IS_OPT_TYPE_PPT(x)   (((x) >> 1) & 0x01)
+#define ARGS_GET_CMD_OPT_VAL_TYPE(x)    ((x) & 0x0C)
+#define ARGS_GET_IS_OPT_TYPE_PPT(x)     (((x) >> 1) & 0x01)
 
-#define ARGS_END_KEY                  (0)
-#define ARGS_NO_KEY                   (127)
-#define ARGS_KEY_LONG_CONFIG          "config"
-#define ARGS_MAX_NUM_CONF_FILES       (16)
+#define ARGS_END_KEY                    (0)
+#define ARGS_NO_KEY                     (127)
+#define ARGS_KEY_LONG_CONFIG            "config"
+#define ARGS_MAX_NUM_CONF_FILES         (16)
 
-#define ARGS_MAX_KEY_LONG             (64)
+#define ARGS_MAX_KEY_LONG               (64)
 
-#define ARGS_OPT_DEFAULT_VALUE_MAXLEN (256)
+#define ARGS_OPT_DEFAULT_VALUE_MAXLEN   (256)
+#define  ARGS_OPT_ALLOWED_VALUES_MAXLEN (512)
 
-#define ARGS_OPT_HELP_STRING_MAXLEN   (1024)
+#define ARGS_OPT_HELP_STRING_MAXLEN     (1024)
 
-#define ARGS_VAL_TYPE_MANDATORY       ( 1 << 0) /* mandatory or not */
-#define ARGS_VAL_TYPE_NONE            ( 1 << 2) /* no value */
-#define ARGS_VAL_TYPE_INTEGER         ( 2 << 2) /* integer type value */
-#define ARGS_VAL_TYPE_STRING          ( 3 << 2) /* string type value */
+#define ARGS_VAL_TYPE_MANDATORY         (1 << 0) /* mandatory or not */
+#define ARGS_VAL_TYPE_NONE              (1 << 2) /* no value */
+#define ARGS_VAL_TYPE_INTEGER           (2 << 2) /* integer type value */
+#define ARGS_VAL_TYPE_STRING            (3 << 2) /* string type value */
+#define ARGS_VAL_TYPE_CONST             (4 << 2) /* const type value */
+#define ARGS_VAL_TYPE_ENUM              (5 << 2) /* integer type value */
 
-// typedef union _VALUE {
-//     int i;
-//     char* str;
-// } VALUE;
 
-typedef struct _ARGS_OPT
-{
-    char   key; /* option keyword. ex) -f */
-    char   key_long[ARGS_MAX_KEY_LONG]; /* option long keyword, ex) --file */
-    int    val_type; /* value type */
+typedef enum OptionType {
+    OPT_TYPE_INT = ARGS_VAL_TYPE_INTEGER,
+    OPT_TYPE_STRING = ARGS_VAL_TYPE_STRING,
+    OPT_TYPE_CONST = ARGS_VAL_TYPE_CONST,  // list of pairs {{"a",1},{"b",2},{"c",3}}
+    OPT_TYPE_ENUM = ARGS_VAL_TYPE_ENUM     // list of integer values {1,2,3,4}
+} OptionType;
+
+typedef struct Range {
+    int min;
+    int max;
+} Range;
+
+typedef struct NamedConstant {
+    char* name;
+    int value;
+} NamedConstant;
+
+typedef int Enum;
+
+#define MAX_ELEMENTS 20
+#define ENUM_END INT_MIN
+
+/* Structure for storing command line option data */
+typedef struct _ARGS_OPT {
+    char   key;                             /* option keyword. ex) -f */
+    char   key_long[ARGS_MAX_KEY_LONG];     /* option long keyword, ex) --file */
+    OptionType type;
     union {
-        int i;
-        const char *str;
-    } default_val;
-    int    flag; /* flag to setting or not */
-    void * val; /* actual value */
-    char   desc[512]; /* description of option */
+        int i;                              // val type: int
+        Enum e;                             // val type: int
+        NamedConstant constant;             // val type: int
+        const char *str;                    // val type: string
+    } default_val;                          /* default value */
+    union {
+        Range range;
+        Enum enums[MAX_ELEMENTS];
+        NamedConstant constants[MAX_ELEMENTS];
+        const char *strings[MAX_ELEMENTS];
+    } allowed_val;                          /* allowed values */
+    int is_mandatory;                       /* flag: 0 - option is optional; 1 - option is mandatory */
+    int is_set;                             /* flag: 0 - option is not set; 1 - option set */
+    char* desc;                             /* option description */
+    void* opt_storage;                      /* pointer to option storage */
 } ARGS_OPT;
 
 /* Define various command line options as a table */
-const ARGS_OPT args_opt_table[] = {
-    {
-        'v',  "verbose", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "verbose (log) level\n"
-        "      - 0: no message\n"
-        "      - 1: only error message\n"
-        "      - 2: simple messages\n"
-        "      - 3: frame-level messages"
-    },
-    /*
-    {
-        ARGS_NO_KEY, ARGS_KEY_LONG_CONFIG, ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "file name of configuration"
-    },
-    */
-    {
-        'i', "input", ARGS_VAL_TYPE_STRING | ARGS_VAL_TYPE_MANDATORY, { .str = " " }, 0, NULL,
-        "file name of input video (raw YUV or Y4M), `stdin` for standard input instead of regular file "
-    },
-    {
-        'o', "output", ARGS_VAL_TYPE_STRING, { .str = " " }, 0, NULL,
-        "file name of output bitstream"
-    },
-    {
-        'r', "recon", ARGS_VAL_TYPE_STRING, { .str = " " }, 0, NULL,
-        "file name of reconstructed video"
-    },
-    {
-        'w',  "width", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY, { .i = 0 }, 0, NULL,
-        "pixel width of input video"
-    },
-    {
-        'h',  "height", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY, { .i = 0 },  0, NULL,
-        "pixel height of input video"
-    },
-    {
-        'q',  "qp", ARGS_VAL_TYPE_INTEGER, { .i = 17 },  0, NULL,
-        "QP value (0~51)"
-    },
-    {
-        'z',  "fps", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY, { .i = 30 },  0, NULL,
-        "frame rate (frame per second)"
-    },
-    {
-        'I',  "keyint", ARGS_VAL_TYPE_INTEGER, { .i = 200 },  0, NULL,
-        "I-picture period"
-    },
-    {
-        'b',  "bframes", ARGS_VAL_TYPE_INTEGER, { .i = 15 },  0, NULL,
-        "maximum number of B frames (1,3,7,15)"
-    },
-    {
-        'm',  "threads", ARGS_VAL_TYPE_INTEGER, { .i = 0 },  0, NULL,
-        "force to use a specific number of threads"
-    },
-    {
-        'd',  "input-depth", ARGS_VAL_TYPE_INTEGER, { .i = 8 },  0, NULL,
-        "input bit depth (8, 10) "
-    },
-    {
-        ARGS_NO_KEY,  "codec-bit-depth", ARGS_VAL_TYPE_INTEGER, { .i = 10 },  0, NULL,
-        "codec internal bit depth (10, 12) "
-    },
-    {
-        ARGS_NO_KEY,  "input-csp", ARGS_VAL_TYPE_INTEGER, { .i = 1 },  0, NULL,
-        "input color space (chroma format)\n"
-        "      - 0: YUV400\n"
-        "      - 1: YUV420"
-    },
-    {
-        ARGS_NO_KEY,  "profile", ARGS_VAL_TYPE_STRING, { .str = "baseline" },  0, NULL,
-        "profile setting flag  (main, baseline)"
-    },
-    {
-        ARGS_NO_KEY,  "level-idc", ARGS_VAL_TYPE_INTEGER, { .i = 0 },  0, NULL,
-        "level setting "
-    },
-    {
-        ARGS_NO_KEY,  "preset", ARGS_VAL_TYPE_STRING, { .str = "fast" },  0, NULL,
-        "Encoder PRESET"
-        "\t [fast, medium, slow, placebo]"
-    },
-    {
-        ARGS_NO_KEY,  "tune", ARGS_VAL_TYPE_STRING, { .str = "psnr" },  0, NULL,
-        "Encoder TUNE"
-        "\t [psnr, zerolatency]"
-    },
-    {
-        ARGS_NO_KEY,  "aq-mode", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "use adaptive quantization block qp adaptation\n"
-        "      - 0: off\n"
-        "      - 1: adaptive quantization"
-    },
-    {
-        ARGS_NO_KEY,  "frames", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "maximum number of frames to be encoded"
-    },
-    {
-        ARGS_NO_KEY,  "seek", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "number of skipped frames before encoding"
-    },
-    {
-        ARGS_NO_KEY,  "info", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "embed SEI messages identifying encoder parameters and command line arguments"
-        "      - 0: off\n"
-        "      - 1: emit sei info"
-    },
-    {
-        ARGS_NO_KEY,  "hash", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "embed picture signature (HASH) for conformance checking in decoding"
-    },
-    {
-        ARGS_NO_KEY,  "cutree", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "use cutree block qp adaptation\n"
-        "      - 0: off\n"
-        "      - 1: cutree"
-    },
-    {
-        ARGS_NO_KEY,  "cu-qp-delta-area", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "cu-qp-delta-area (>= 6)"
-    },
-    {
-        ARGS_NO_KEY,  "rdo-dbk-switch", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "switch to on/off rdo-dbk (0, 1) "
-    },
-    {
-        ARGS_NO_KEY,  "ref-pic-gap-length", ARGS_VAL_TYPE_INTEGER, { .i = 1 }, 0, NULL,
-        "reference picture gap length (1, 2, 4, 8, 16) only available when -b is 0"
-    },
-    {
-        ARGS_NO_KEY,  "closed-gop", ARGS_VAL_TYPE_NONE, { .i = 0 }, 0, NULL,
-        "use closed GOP structure. if not set, open GOP is used"
-    },
-    {
-        ARGS_NO_KEY,  "ibc", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "use IBC feature. if not set, IBC feature is disabled"
-    },
-    {
-        ARGS_NO_KEY,  "ibc-search-range-x", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "set ibc search range in horizontal direction"
-    },
-    {
-        ARGS_NO_KEY,  "ibc-search-range-y", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "set ibc search range in vertical direction"
-    },
-    {
-        ARGS_NO_KEY,  "ibc-hash-search-flag", ARGS_VAL_TYPE_NONE, { .i = 0 }, 0, NULL,
-        "use IBC hash based block matching search feature. if not set, it is disable"
-    },
-    {
-        ARGS_NO_KEY,  "ibc-hash-search-max-cand", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Max candidates for hash based IBC search"
-    },
-    {
-        ARGS_NO_KEY,  "ibc-hash-search-range-4smallblk", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Small block search range in IBC based search"
-    },
-    {
-        ARGS_NO_KEY,  "ibc-fast-method", ARGS_VAL_TYPE_INTEGER, { .i = 1 }, 0, NULL,
-        "Fast methods for IBC\n"
-        "      - 1: Buffer IBC block vector (current not support)\n"
-        "      - 2: Adaptive search range"
-    },
-    {
-        ARGS_NO_KEY,  "disable-hgop", ARGS_VAL_TYPE_NONE, { .i = 0 }, 0, NULL,
-        "disable hierarchical GOP. if not set, hierarchical GOP is used"
-    },
-    {
-        ARGS_NO_KEY,  "btt", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "binary and ternary splits on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "suco", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "split unit coding ordering on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "qp-add-frm", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "one more qp are added after this number of frames, disable:0"
-    },
-    {
-        ARGS_NO_KEY,  "ctu", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Max size of Coding Block (log scale)"
-    },
-    {
-        ARGS_NO_KEY,  "min-cu-size", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "MIN size of Coding Block (log scale)"
-    },
-    {
-        ARGS_NO_KEY,  "cu14-max", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Max size of 4N in 4NxN or Nx4N block (log scale)"
-    },
-    {
-        ARGS_NO_KEY,  "tris-max", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Max size of Tri-split allowed"
-    },
-    {
-        ARGS_NO_KEY,  "tris-min", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Min size of Tri-split allowed"
-    },
-    {
-        ARGS_NO_KEY,  "suco-max", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Max size of suco allowed from top"
-    },
-    {
-        ARGS_NO_KEY,  "suco-min", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Min size of suco allowed from top"
-    }
-    ,
-    {
-        ARGS_NO_KEY,  "amvr", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "amvr on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "mmvd", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "mmvd on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "affine", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "affine on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "dmvr", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "dmvr on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "addb", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "addb on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "alf", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "alf on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "htdf", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "htdf on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "admvp", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "admvp on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "hmvp", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "hmvp on/off flag"
-    },
+ARGS_OPT args_opt_table[] = {
+        // verbose
+        { .key = 'v', .key_long = "verbose", .type = OPT_TYPE_CONST, { .constant = {"no message", 0} },
+                                         .allowed_val = { .constants = { {"no message", 0}, {"only error message", 1}, {"simple messages", 2}, {"frame-level messages", 3} } },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "verbose (log) level",
+                                         .opt_storage = NULL },
+        // input
+        { .key = 'i', .key_long = "input", .type = OPT_TYPE_STRING,    .default_val = { .str = "" },
+                                         .allowed_val = { .strings =  {NULL} },
+                                         .is_mandatory = 1, .is_set = 0,
+                                         .desc = "file name of input video (raw YUV or Y4M), `stdin` for standard input instead of regular file",
+                                         .opt_storage = NULL },
 
-    {
-        ARGS_NO_KEY,  "eipd", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "eipd on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "iqt", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "iqt on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "cm-init", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "cm-init on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "adcc", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "adcc on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "rpl", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "rpl on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "pocs", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "pocs on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "qp-cb-offset", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "cb qp offset"
-    },
-    {
-        ARGS_NO_KEY,  "qp-cr-offset", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "cr qp offset"
-    },
-    {
-        ARGS_NO_KEY, "ats", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "ats on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "constrained-intra-pred", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "constrained intra pred"
-    },
-    {
-        ARGS_NO_KEY,  "deblock", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Deblocking filter on/off flag"
-    },
-    {
-        ARGS_NO_KEY,  "dbfoffsetA", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "ADDB Deblocking filter offset for alpha"
-    },
-    {
-        ARGS_NO_KEY,  "dbfoffsetB", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "ADDB Deblocking filter offset for beta"
-    },
-    {
-        ARGS_NO_KEY,  "tile-uniform-spacing", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "uniform or non-uniform tile spacing"
-    },
-    {
-        ARGS_NO_KEY,  "num-tile-columns", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Number of tile columns"
-    },
-    {
-        ARGS_NO_KEY,  "num-tile-rows", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Number of tile rows"
-    },
-    {
-        ARGS_NO_KEY,  "tile-column-width-array", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of Tile Column Width"
-    },
-    {
-        ARGS_NO_KEY,  "tile-row-height-array", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of Tile Row Height"
-    },
-    {
-        ARGS_NO_KEY,  "num-slices-in-pic", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Number of slices in the pic"
-    },
-    {
-        ARGS_NO_KEY,  "tile-array-in-slice", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of Slice Boundaries"
-    },
-    {
-        ARGS_NO_KEY,  "arbitrary-slice-flag", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Array of Slice Boundaries"
-    },
-    {
-        ARGS_NO_KEY,  "num-remaining-tiles-in-slice", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of Slice Boundaries"
-    },
-    {
-        ARGS_NO_KEY,  "lp-filter-across-tiles-en-flag", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Loop filter across tiles enabled or disabled"
-    },
-    {
-        ARGS_NO_KEY,  "rc-type", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Rate control type, (0: OFF, 1: ABR, 2: CRF)"
-    },
-    {
-        ARGS_NO_KEY,  "bitrate", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Bitrate in terms of kilo-bits per second: Kbps(none,K,k), Mbps(M,m)\n"
-        "      ex) 100 = 100K = 0.1M"
-    },
-    {
-        ARGS_NO_KEY,  "crf", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Constant Rate Factor CRF-value [10-49]"
-    },
-    {
-        ARGS_NO_KEY,  "vbv-bufsize", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "VBV buffer size: Kbits(none,K,k), Mbits(M,m)\n"
-        "      ex) 100 / 100K / 0.1M"
-    },
-    {
-        ARGS_NO_KEY,  "use-filler", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "user filler flag"
-    },
-    {
-        ARGS_NO_KEY,  "lookahead", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "number of pre analysis frames for rate control and cutree, disable:0"
-    },
-    {
-        ARGS_NO_KEY,  "chroma-qp-table-present-flag", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "chroma-qp-table-present-flag"
-    },
-    {
-        ARGS_NO_KEY,  "chroma-qp-num-points-in-table", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Number of pivot points for Cb and Cr channels"
-    },
-    {
-        ARGS_NO_KEY,  "chroma-qp-delta-in-val-cb", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of input pivot points for Cb"
-    },
-    {
-        ARGS_NO_KEY,  "chroma-qp-delta-out-val-cb", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of input pivot points for Cb"
-    },
-    {
-        ARGS_NO_KEY,  "chroma-qp-delta-in-val-cr", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of input pivot points for Cr"
-    },
-    {
-        ARGS_NO_KEY,  "chroma-qp-delta-out-val-cr", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of input pivot points for Cr"
-    },
+        // output
+        { .key = 'o', .key_long = "output", .type = OPT_TYPE_STRING,    .default_val = { .str = "" },
+                                         .allowed_val = { .strings =  {NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "file name of output bitstream",
+                                         .opt_storage = NULL },
 
-    {
-        ARGS_NO_KEY,  "dra-enable-flag", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "DRA enable flag"
-    },
-    {
-        ARGS_NO_KEY,  "dra-number-ranges", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Number of DRA ranges"
-    },
-    {
-        ARGS_NO_KEY,  "dra-range", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of dra ranges"
-    },
-    {
-        ARGS_NO_KEY,  "dra-scale", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Array of input dra ranges"
-    },
-    {
-        ARGS_NO_KEY,  "dra-chroma-qp-scale", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "DRA chroma qp scale value"
-    },
-    {
-        ARGS_NO_KEY,  "dra-chroma-qp-offset", ARGS_VAL_TYPE_STRING, { .str = " "},
-        0, NULL ,
-        "DRA chroma qp offset"
-    },
-    {
-        ARGS_NO_KEY,  "dra-chroma-cb-scale", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "DRA chroma cb scale"
-    },
-    {
-        ARGS_NO_KEY,  "dra-chroma-cr-scale", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "DRA chroma cr scale"
-    },
-    {
-        ARGS_NO_KEY,  "dra-hist-norm", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "DRA hist norm"
-    },
-    {
-        ARGS_NO_KEY,  "rpl-extern", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Whether to input external RPL"
-    },
-    {
-        ARGS_NO_KEY,  "inter-slice-type", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "INTER-SLICE-TYPE"
-    },
-    {
-        ARGS_NO_KEY,  "picture-cropping-flag", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "picture crop flag"
-    },
-    {
-        ARGS_NO_KEY,  "picture-crop-left", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "left offset of picture crop"
-    },
-    {
-        ARGS_NO_KEY,  "picture-crop-right", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "right offset of picture crop"
-    },
-    {
-        ARGS_NO_KEY,  "picture-crop-top", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "top offset of picture crop"
-    },
-    {
-        ARGS_NO_KEY,  "picture-crop-bottom", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "bottom offset of picture crop"
-    },
-    {
-        ARGS_NO_KEY,  "ref", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Number of reference pictures"
-    },
-    {
-        ARGS_NO_KEY,  "sar", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "sar <width:height|int> possible values 1 to 16 and 255"
-    },
-    {
-        ARGS_NO_KEY,  "sar-width", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "sar <width:height|int>"
-    },
-    {
-        ARGS_NO_KEY,  "sar-height", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "sar <width:height|int>"
-    },
-    {
-        ARGS_NO_KEY,  "videoformat", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        " 0-component, 1-pal, 2-ntsc, 3-secam, 4-mac. 5-unspecified"
-    },
-    {
-        ARGS_NO_KEY,  "range", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "black level and range of luma and chroma signals as 1- full or 0- limited"
-    },
-    {
-        ARGS_NO_KEY,  "colorprim", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "1- bt709, 2-unspecified, 3- reserved, 4- bt470m, 5- bt470bg, 6- smpte170m,\
-         7- smpte240m, 8- Generic film, 9- bt2020, 10-smpte428, 11-smpte431, 12-smpte432, \
-         22-EBU Tech. 3213 Default 2-unspecified"
-    },
-    {
-        ARGS_NO_KEY,  "transfer", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "1- transfer characteristics from bt709, 2-unspecified, 3-reserved, 4-bt470m, 5-bt470bg, 6-smpte170m,\
-         7-smpte240m, 8-linear, 9-log100, 10-log316, 11-iec61966-2-4, 12-bt1361e, 13-iec61966-2-1,\
-         14-bt2020-10, 15-bt2020-12, 16-smpte2084, 17-smpte428, 198-arib-std-b67. Default 2-unspecified"
-    },
-    {
-        ARGS_NO_KEY,  "matrix-coefficients", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "0-gbr, 1-bt709, 2-unspecified, 3-reserved, 4-fcc, 5-bt470bg, 6-smpte170m, 7-smpte240m, \
-          8-ycgco, 9-bt2020nc, 10-bt2020c, 11-smpte2085, 12-chroma-derived-nc, 13-chroma-derived-c, 14-ictcp, 15-255 reserved}; "
-    },
-    {
-        ARGS_NO_KEY,  "master-display", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "SMPTE ST 2086 master display color volume info SEI (HDR)\
-          format: G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)"
-    },
-    {
-        ARGS_NO_KEY,  "max-content-light-level", ARGS_VAL_TYPE_STRING, { .str = " "}, 0, NULL,
-        "Specify content light level info SEI as (cll,fall) (HDR)"
-    },
-    {
-        ARGS_NO_KEY,  "chromaloc-tf", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Chroma location for Top field - Range from 0 to 5"
-    },
-    {
-        ARGS_NO_KEY,  "chromaloc-bf", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Chroma location for Bottom field - Range from 0 to 5"
-    },
-    {
-        ARGS_NO_KEY,  "neutral-chroma-flag", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Value can be 0 or 1"
-    },
-    {
-        ARGS_NO_KEY,  "frame-field-flag", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "1 indicates fields and 0 indicates frames"
-    },
-    {
-        ARGS_NO_KEY,  "units-in-tick", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Number of units in tick, value should be > 0"
-    },
-    {
-        ARGS_NO_KEY,  "time-scale", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Time Scale, value should be > 0"
-    },
-    {
-        ARGS_NO_KEY,  "fixed-pic-rate-flag", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Fixed picture rate flag, default 0"
-    },
-    {
-        ARGS_NO_KEY,  "pic-struct", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "Fixed picture rate flag, default 0"
-    },
-    {
-        ARGS_NO_KEY,  "mv-over-pic-boundaries", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 1, NULL,
-        "mvs over picture boundaries flag"
-    },
-    {
-        ARGS_NO_KEY,  "max-bytes-per-pic-denom", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 2, NULL,
-        "max bytes per picture denom, valid range 0 to 16"
-    },
-    {
-        ARGS_NO_KEY,  "max-bits-per-cu-denom", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 1, NULL,
-        "max bits per cu denom, valid range 0 to 16"
-    },
-    {
-        ARGS_NO_KEY,  "log2-max-mv-len-hor", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 16, NULL,
-        "max mv length horizontal log2, valid range 0 to 16"
-    },
-    {
-        ARGS_NO_KEY,  "log2-max-mv-len-ver", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 16, NULL,
-        "max mv length vertical log2, valid range o to 16"
-    },
-    {
-        ARGS_NO_KEY,  "num-reorder-pics", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "# of reorder pics, valid range 0 to max_dec_pic_buffering \
-         default = max_dec_pic_buffering"
-    },
-    {
-        ARGS_NO_KEY,  "max-dec-pic-buffering", ARGS_VAL_TYPE_INTEGER, { .i = 0 }, 0, NULL,
-        "max picture buffering in decoder, valid range 0 to num-reorder-pic \
-         default num-reorder-pic"
-    },
-    {ARGS_END_KEY, "", ARGS_VAL_TYPE_NONE, { .i = 0 }, 0, NULL, ""} /* termination */
-};
+        // recon
+        { .key = 'r', .key_long = "recon", .type = OPT_TYPE_STRING,    .default_val = { .str = "" },
+                                         .allowed_val = { .strings =  {NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "file name of reconstructed video",
+                                         .opt_storage = NULL },
 
+        // width
+        { .key = 'w', .key_long = "width", .type = OPT_TYPE_INT,    .default_val = { .i = -1 },
+                                         .allowed_val = { .range = {128,3840} }, // SQCIF	128 × 96 / 4K 3840 x 2160 / 8K 7680 x 4320
+                                         .is_mandatory = 1, .is_set = 0,
+                                         .desc = "pixel width of input video",
+                                         .opt_storage = NULL },
+
+        // height
+        { .key = 'h', .key_long = "height", .type = OPT_TYPE_INT,    .default_val = { .i = -1 },
+                                         .allowed_val = { .range = {96,2160} }, // SQCIF	128 × 96 / 4K 3840 x 2160 / 8K 7680 x 4320
+                                         .is_mandatory = 1, .is_set = 0,
+                                         .desc = "pixel height of input video",
+                                         .opt_storage = NULL },
+
+        // qp
+        { .key = 'q', .key_long = "qp", .type = OPT_TYPE_INT,    .default_val = { .i = 17 },
+                                         .allowed_val = { .range = {0,51} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "QP value",
+                                         .opt_storage = NULL },
+
+        // fps
+        { .key = 'z', .key_long = "fps", .type = OPT_TYPE_INT,    .default_val = { .i = 30 },
+                                         .allowed_val = { .range={0, 60} },
+                                         .is_mandatory = 1, .is_set = 0,
+                                         .desc = "frame rate (frame per second)",
+                                         .opt_storage = NULL },
+
+        // keyint
+        { .key = 'I', .key_long = "keyint", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range = {0,0} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "I-picture period",
+                                         .opt_storage = NULL },
+
+        // bframes
+        { .key = 'b', .key_long = "bframes", .type = OPT_TYPE_ENUM,    .default_val = { .e = 15 },
+                                         .allowed_val = { .enums = {1,3,7,15, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "maximum number of B frames",
+                                         .opt_storage = NULL },
+
+        // threads
+        { .key = 'm', .key_long = "threads", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range = {0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "force to use a specific number of threads",
+                                         .opt_storage = NULL },
+
+        // input-depth
+        { .key = 'd', .key_long = "input-depth", .type = OPT_TYPE_ENUM,    .default_val = { .e = 8 },
+                                         .allowed_val = { .enums = {8, 10, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "input bit depth (8, 10)",
+                                         .opt_storage = NULL },
+
+        // codec-bit-depth
+        { .key = ARGS_NO_KEY, .key_long = "codec-bit-depth", .type = OPT_TYPE_ENUM,    .default_val = { .e = 10 },
+                                         .allowed_val = { .enums = {10,12,ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "codec internal bit depth",
+                                         .opt_storage = NULL },
+
+        // input-csp
+        { .key = ARGS_NO_KEY, .key_long = "input-csp", .type = OPT_TYPE_CONST,    .default_val = { .constant = {"YUV420",1}} ,
+                                         .allowed_val = { .constants = {{"YUV400", 0}, {"YUV420", 1}}} ,
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "input color space (chroma format)",
+                                         .opt_storage = NULL },
+
+        // profile
+        { .key = ARGS_NO_KEY, .key_long = "profile", .type = OPT_TYPE_STRING,    .default_val = { .str = "baseline" },
+                                         .allowed_val = { .strings = {"main","baseline"} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "profile setting flag  (main, baseline)",
+                                         .opt_storage = NULL },
+
+        // level-idc
+        { .key = ARGS_NO_KEY, .key_long = "level-idc", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range = {0,INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "level setting",
+                                         .opt_storage = NULL },
+
+        // preset
+        { .key = ARGS_NO_KEY, .key_long = "preset", .type = OPT_TYPE_STRING,    .default_val = { .str = "fast" },
+                                         .allowed_val = { .strings = {"fast", "medium", "slow", "placebo" } },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Encoder PRESET",
+                                         .opt_storage = NULL },
+
+        // tune
+        { .key = ARGS_NO_KEY, .key_long = "tune", .type = OPT_TYPE_STRING,    .default_val = { .str = "none" },
+                                         .allowed_val = { .strings = {"none", "psnr","zerolatency"} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Encoder TUNE",
+                                         .opt_storage = NULL },
+
+        // aq-mode
+        { .key = ARGS_NO_KEY, .key_long = "aq-mode", .type = OPT_TYPE_CONST,    .default_val = { .constant = {"off",0} },
+                                         .allowed_val = { .constants = {{"off",0},{"adaptive quantization",1}} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "use adaptive quantization block qp adaptation",
+                                         .opt_storage = NULL },
+
+        // frames
+        { .key = ARGS_NO_KEY, .key_long = "frames", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range = {1,INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "maximum number of frames to be encoded",
+                                         .opt_storage = NULL },
+
+        // seek
+        { .key = ARGS_NO_KEY, .key_long = "seek", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range = {1,INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "number of skipped frames before encoding",
+                                         .opt_storage = NULL },
+
+        // info
+        { .key = ARGS_NO_KEY, .key_long = "info", .type = OPT_TYPE_CONST,    .default_val = { .constant = {"off",0} },
+                                         .allowed_val = { .constants = {{"off",0},{"emit sei info",1}} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "embed SEI messages identifying encoder parameters and command line arguments",
+                                         .opt_storage = NULL },
+
+        // hash
+        { .key = ARGS_NO_KEY, .key_long = "hash", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums = {0,1,ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "embed picture signature (HASH) for conformance checking in decoding",
+                                         .opt_storage = NULL },
+
+        // cutree
+        { .key = ARGS_NO_KEY, .key_long = "cutree", .type = OPT_TYPE_CONST,    .default_val = { .constant = {"off", 0} },
+                                         .allowed_val = { .constants = { {"off", 0}, {"on", 1} } },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "use cutree block qp adaptation",
+                                         .opt_storage = NULL },
+
+        // cu-qp-delta-area
+        { .key = ARGS_NO_KEY, .key_long = "cu-qp-delta-area", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range = {6, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "cu-qp-delta-area (>= 6)",
+                                         .opt_storage = NULL },
+
+        // rdo-dbk-switch
+        { .key = ARGS_NO_KEY, .key_long = "rdo-dbk-switch", .type = OPT_TYPE_CONST,    .default_val = { .constant = {"off", 0} },
+                                         .allowed_val = { .constants={{"off", 0}, {"on", 1}} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "switch to on/off rdo-dbk (0, 1)",
+                                         .opt_storage = NULL },
+
+        // ref-pic-gap-length
+        { .key = ARGS_NO_KEY, .key_long = "ref-pic-gap-length", .type = OPT_TYPE_ENUM,    .default_val = { .e = 1 },
+                                         .allowed_val = { .enums={1, 2, 4, 8, 16, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "reference picture gap length available when -b is 0",
+                                         .opt_storage = NULL },
+
+        // closed-gop
+        { .key = ARGS_NO_KEY, .key_long = "closed-gop", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "use closed GOP structure. if not set, open GOP is used",
+                                         .opt_storage = NULL },
+
+        // ibc
+        { .key = ARGS_NO_KEY, .key_long = "ibc", .type = OPT_TYPE_INT,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "use IBC feature. if not set, IBC feature is disabled",
+                                         .opt_storage = NULL },
+
+        // ibc-search-range-x
+        { .key = ARGS_NO_KEY, .key_long = "ibc-search-range-x", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "set ibc search range in horizontal direction",
+                                         .opt_storage = NULL },
+
+        // ibc-search-range-y
+        { .key = ARGS_NO_KEY, .key_long = "ibc-search-range-y", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "set ibc search range in vertical direction",
+                                         .opt_storage = NULL },
+
+        // ibc-hash-search-flag
+        { .key = ARGS_NO_KEY, .key_long = "ibc-hash-search-flag", .type = OPT_TYPE_INT,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "use IBC hash based block matching search feature. if not set, it is disable",
+                                         .opt_storage = NULL },
+
+        // ibc-hash-search-max-cand
+        { .key = ARGS_NO_KEY, .key_long = "ibc-hash-search-max-cand", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Max candidates for hash based IBC search",
+                                         .opt_storage = NULL },
+
+        // ibc-hash-search-range-4smallblk
+        { .key = ARGS_NO_KEY, .key_long = "ibc-hash-search-range-4smallblk", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Small block search range in IBC based search",
+                                         .opt_storage = NULL },
+
+        // ibc-fast-method
+        { .key = ARGS_NO_KEY, .key_long = "ibc-fast-method", .type = OPT_TYPE_CONST,    .default_val = { .constant = {"Buffer IBC block vector (current not support)",1 }},
+                                         .allowed_val = { .constants={{"Buffer IBC block vector (current not support)",1}, {"Adaptive search range",2}} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Fast methods for IBC",
+                                         .opt_storage = NULL },
+
+        // disable-hgop
+        { .key = ARGS_NO_KEY, .key_long = "disable-hgop", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 } ,
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "disable hierarchical GOP. if not set, hierarchical GOP is used",
+                                         .opt_storage = NULL },
+
+        // btt
+        { .key = ARGS_NO_KEY, .key_long = "bbt", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "binary and ternary splits on/off flag",
+                                         .opt_storage = NULL },
+
+        // suco
+        { .key = ARGS_NO_KEY, .key_long = "suco", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, 1} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "split unit coding ordering on/off flag",
+                                         .opt_storage = NULL },
+
+        // qp-add-frm
+        { .key = ARGS_NO_KEY, .key_long = "qp-add-frm", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "one more qp are added after this number of frames, disable:0",
+                                         .opt_storage = NULL },
+
+        // ctu
+        { .key = ARGS_NO_KEY, .key_long = "ctu", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Max size of Coding Block (log scale)",
+                                         .opt_storage = NULL },
+
+        // min-cu-size
+        { .key = ARGS_NO_KEY, .key_long = "min-cu-size", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "MIN size of Coding Block (log scale)",
+                                         .opt_storage = NULL },
+
+        // cu14-max
+        { .key = ARGS_NO_KEY, .key_long = "cu14-max", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Max size of 4N in 4NxN or Nx4N block (log scale)",
+                                         .opt_storage = NULL },
+
+        // tris-max
+        { .key = ARGS_NO_KEY, .key_long = "tris-max", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Max size of Tri-split allowed",
+                                         .opt_storage = NULL },
+
+        // tris-min
+        { .key = ARGS_NO_KEY, .key_long = "tris-min", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Min size of Tri-split allowed",
+                                         .opt_storage = NULL },
+
+        // suco-max
+        { .key = ARGS_NO_KEY, .key_long = "suco-max", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Max size of suco allowed from top",
+                                         .opt_storage = NULL },
+
+        // suco-min
+        { .key = ARGS_NO_KEY, .key_long = "suco-min", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Min size of suco allowed from top",
+                                         .opt_storage = NULL },
+
+        // amvr
+        { .key = ARGS_NO_KEY, .key_long = "amvr", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "amvr on/off flag",
+                                         .opt_storage = NULL },
+
+        // mmvd
+        { .key = ARGS_NO_KEY, .key_long = "mmvd", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "mmvd on/off flag",
+                                         .opt_storage = NULL },
+
+        // affine
+        { .key = ARGS_NO_KEY, .key_long = "affine", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "affine on/off flag",
+                                         .opt_storage = NULL },
+
+        // dmvr
+        { .key = ARGS_NO_KEY, .key_long = "dmvr", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "dmvr on/off flag",
+                                         .opt_storage = NULL },
+
+        // addb
+        { .key = ARGS_NO_KEY, .key_long = "addb", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "addb on/off flag",
+                                         .opt_storage = NULL },
+
+        // alf
+        { .key = ARGS_NO_KEY, .key_long = "alf", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "alf on/off flag",
+                                         .opt_storage = NULL },
+
+        // htdf
+        { .key = ARGS_NO_KEY, .key_long = "htdf", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "htdf on/off flag",
+                                         .opt_storage = NULL },
+
+        // admvp
+        { .key = ARGS_NO_KEY, .key_long = "admvp", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "admvp on/off flag",
+                                         .opt_storage = NULL },
+
+        // hmvp
+        { .key = ARGS_NO_KEY, .key_long = "hmvp", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "hmvp on/off flag",
+                                         .opt_storage = NULL },
+
+        // eipd
+        { .key = ARGS_NO_KEY, .key_long = "eipd", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "eipd on/off flag",
+                                         .opt_storage = NULL },
+
+        // iqt
+        { .key = ARGS_NO_KEY, .key_long = "iqt", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "iqt on/off flag",
+                                         .opt_storage = NULL },
+
+        // cm-init
+        { .key = ARGS_NO_KEY, .key_long = "cm-init", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "cm-init on/off flag",
+                                         .opt_storage = NULL },
+
+        // adcc
+        { .key = ARGS_NO_KEY, .key_long = "adcc", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "adcc on/off flag",
+                                         .opt_storage = NULL },
+
+        // rpl
+        { .key = ARGS_NO_KEY, .key_long = "rpl", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "rpl on/off flag",
+                                         .opt_storage = NULL },
+
+        // pocs
+        { .key = ARGS_NO_KEY, .key_long = "pocs", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "pocs on/off flag",
+                                         .opt_storage = NULL },
+
+        // qp-cb-offset
+        { .key = ARGS_NO_KEY, .key_long = "qp-cb-offset", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = " cb qp offset",
+                                         .opt_storage = NULL },
+
+        // qp-cr-offset
+        { .key = ARGS_NO_KEY, .key_long = "qp-cr-offset", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "cr qp offset",
+                                         .opt_storage = NULL },
+
+        // ats
+        { .key = ARGS_NO_KEY, .key_long = "ats", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "ats on/off flag",
+                                         .opt_storage = NULL },
+
+        // constrained-intra-pred
+        { .key = ARGS_NO_KEY, .key_long = "constrained-intra-pred", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "constrained intra pred",
+                                         .opt_storage = NULL },
+
+        // deblock
+        { .key = ARGS_NO_KEY, .key_long = "deblock", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Deblocking filter on/off flag",
+                                         .opt_storage = NULL },
+
+        // dbfoffsetA
+        { .key = ARGS_NO_KEY, .key_long = "dbfoffsetA", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "ADDB Deblocking filter offset for alpha",
+                                         .opt_storage = NULL },
+
+        // dbfoffsetB
+        { .key = ARGS_NO_KEY, .key_long = "dbfoffsetB", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "ADDB Deblocking filter offset for beta",
+                                         .opt_storage = NULL },
+
+        // tile-uniform-spacing
+        { .key = ARGS_NO_KEY, .key_long = "tile-uniform-spacing", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "uniform or non-uniform tile spacing",
+                                         .opt_storage = NULL },
+
+        // num-tile-columns
+        { .key = ARGS_NO_KEY, .key_long = "num-tile-columns", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Number of tile columns",
+                                         .opt_storage = NULL },
+
+        // num-tile-rows
+        { .key = ARGS_NO_KEY, .key_long = "num-tile-rows", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Number of tile rows",
+                                         .opt_storage = NULL },
+
+        // tile-column-width-array
+        { .key = ARGS_NO_KEY, .key_long = "tile-column-width-array", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of Tile Column Width",
+                                         .opt_storage = NULL },
+
+        // tile-row-height-array
+        { .key = ARGS_NO_KEY, .key_long = "tile-row-height-array", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of Tile Row Height",
+                                         .opt_storage = NULL },
+
+        // num-slices-in-pic
+        { .key = ARGS_NO_KEY, .key_long = "num-slices-in-pic", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Number of slices in the pic",
+                                         .opt_storage = NULL },
+
+        // tile-array-in-slice
+        { .key = ARGS_NO_KEY, .key_long = "tile-array-in-slice", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of Slice Boundaries",
+                                         .opt_storage = NULL },
+
+        // arbitrary-slice-flag ???
+        { .key = ARGS_NO_KEY, .key_long = "arbitrary-slice-flag", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of Slice Boundaries",
+                                         .opt_storage = NULL },
+
+        // num-remaining-tiles-in-slice ???
+        { .key = ARGS_NO_KEY, .key_long = "num-remaining-tiles-in-slice", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of Slice Boundaries",
+                                         .opt_storage = NULL },
+
+        // lp-filter-across-tiles-en-flag
+        { .key = ARGS_NO_KEY, .key_long = "lp-filter-across-tiles-en-flag", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Loop filter across tiles enabled or disabled",
+                                         .opt_storage = NULL },
+
+        // rc-type
+        { .key = ARGS_NO_KEY, .key_long = "rc-type", .type = OPT_TYPE_CONST,    .default_val = { .constant = {"OFF", 0} },
+                                         .allowed_val = { .constants={{"OFF", 0}, {"ABR", 1}, {"CRF", 2}} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Rate control type, (0: OFF, 1: ABR, 2: CRF)",
+                                         .opt_storage = NULL },
+
+        // bitrate
+        { .key = ARGS_NO_KEY, .key_long = "bitrate", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Bitrate in terms of kilo-bits per second: Kbps(none,K,k), Mbps(M,m) ex) 100 = 100K = 0.1M",
+                                         .opt_storage = NULL },
+
+        // crf
+        { .key = ARGS_NO_KEY, .key_long = "crf", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={10, 49} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Constant Rate Factor CRF-value [10-49]",
+                                         .opt_storage = NULL },
+
+        // vbv-bufsize
+        { .key = ARGS_NO_KEY, .key_long = "vbv-bufsize", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "VBV buffer size: Kbits(none,K,k), Mbits(M,m) ex) 100 / 100K / 0.1M",
+                                         .opt_storage = NULL },
+
+        // use-filler
+        { .key = ARGS_NO_KEY, .key_long = "use-filler", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "user filler flag",
+                                         .opt_storage = NULL },
+
+        // lookahead
+        { .key = ARGS_NO_KEY, .key_long = "lookahead", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "number of pre analysis frames for rate control and cutree, disable:0",
+                                         .opt_storage = NULL },
+
+        // chroma-qp-table-present-flag
+        { .key = ARGS_NO_KEY, .key_long = "chroma-qp-table-present-flag", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "chroma-qp-table-present-flag",
+                                         .opt_storage = NULL },
+
+        // chroma-qp-num-points-in-table ???
+        { .key = ARGS_NO_KEY, .key_long = "chroma-qp-num-points-in-table", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Number of pivot points for Cb and Cr channels",
+                                         .opt_storage = NULL },
+
+        // chroma-qp-delta-in-val-cb
+        { .key = ARGS_NO_KEY, .key_long = "chroma-qp-delta-in-val-cb", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of input pivot points for Cb",
+                                         .opt_storage = NULL },
+
+        // chroma-qp-delta-out-val-cb
+        { .key = ARGS_NO_KEY, .key_long = "chroma-qp-delta-out-val-cb", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of input pivot points for Cb",
+                                         .opt_storage = NULL },
+
+        // chroma-qp-delta-in-val-cr
+        { .key = ARGS_NO_KEY, .key_long = "chroma-qp-delta-in-val-cr", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of input pivot points for Cr",
+                                         .opt_storage = NULL },
+
+        // chroma-qp-delta-out-val-cr
+        { .key = ARGS_NO_KEY, .key_long = "chroma-qp-delta-out-val-cr", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of input pivot points for Cr", // ??? input ?
+                                         .opt_storage = NULL },
+
+        // dra-enable-flag
+        { .key = ARGS_NO_KEY, .key_long = "dra-enable-flag", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "DRA enable flag",
+                                         .opt_storage = NULL },
+
+        // dra-number-ranges
+        { .key = ARGS_NO_KEY, .key_long = "dra-number-ranges", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Number of DRA ranges",
+                                         .opt_storage = NULL },
+
+        // dra-range
+        { .key = ARGS_NO_KEY, .key_long = "dra-range", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of dra ranges",
+                                         .opt_storage = NULL },
+
+        // dra-scale
+        { .key = ARGS_NO_KEY, .key_long = "dra-scale", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Array of input dra ranges",
+                                         .opt_storage = NULL },
+
+        // dra-chroma-qp-scale
+        { .key = ARGS_NO_KEY, .key_long = "dra-chroma-qp-scale", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "DRA chroma qp scale value",
+                                         .opt_storage = NULL },
+
+        // dra-chroma-qp-offset ???
+        { .key = ARGS_NO_KEY, .key_long = "dra-chroma-qp-offset", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "DRA chroma qp offset",
+                                         .opt_storage = NULL },
+
+        // dra-chroma-cb-scale
+        { .key = ARGS_NO_KEY, .key_long = "dra-chroma-cb-scale", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "DRA chroma cb scale",
+                                         .opt_storage = NULL },
+
+        // dra-chroma-cr-scale
+        { .key = ARGS_NO_KEY, .key_long = "dra-chroma-cr-scale", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "DRA chroma cr scale",
+                                         .opt_storage = NULL },
+
+        // dra-hist-norm
+        { .key = ARGS_NO_KEY, .key_long = "dra-hist-norm", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "DRA hist norm",
+                                         .opt_storage = NULL },
+
+        // rpl-extern
+        { .key = ARGS_NO_KEY, .key_long = "rpl-extern", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Whether to input external RPL",
+                                         .opt_storage = NULL },
+
+        // inter-slice-type
+        { .key = ARGS_NO_KEY, .key_long = "inter-slice-type", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "INTER-SLICE-TYPE",
+                                         .opt_storage = NULL },
+
+        // picture-cropping-flag
+        { .key = ARGS_NO_KEY, .key_long = "picture-cropping-flag", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "picture crop flag",
+                                         .opt_storage = NULL },
+
+        // picture-crop-left
+        { .key = ARGS_NO_KEY, .key_long = "picture-crop-left", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "left offset of picture crop",
+                                         .opt_storage = NULL },
+
+        // picture-crop-right
+        { .key = ARGS_NO_KEY, .key_long = "picture-crop-right", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "right offset of picture crop",
+                                         .opt_storage = NULL },
+
+        // picture-crop-top
+        { .key = ARGS_NO_KEY, .key_long = "picture-crop-top", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "top offset of picture crop",
+                                         .opt_storage = NULL },
+
+        // picture-crop-bottom
+        { .key = ARGS_NO_KEY, .key_long = "picture-crop-bottom", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "bottom offset of picture crop",
+                                         .opt_storage = NULL },
+
+        // ref
+        { .key = ARGS_NO_KEY, .key_long = "ref", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Number of reference pictures",
+                                         .opt_storage = NULL },
+
+        // sar
+        { .key = ARGS_NO_KEY, .key_long = "sar", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "sar <width:height|int> possible values 1 to 16 and 255",
+                                         .opt_storage = NULL },
+
+        // sar-width
+        { .key = ARGS_NO_KEY, .key_long = "sar-width", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "sar <width:height|int>",
+                                         .opt_storage = NULL },
+
+        // sar-height
+        { .key = ARGS_NO_KEY, .key_long = "sar-heigh", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "sar <width:height|int>",
+                                         .opt_storage = NULL },
+
+        // videoformat
+        { .key = ARGS_NO_KEY, .key_long = "videoformat", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={"component", "pal", "ntsc", "secam", "mac", "unspecified"} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "",
+                                         .opt_storage = NULL },
+
+        // range
+        { .key = ARGS_NO_KEY, .key_long = "range", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "black level and range of luma and chroma signals as 1- full or 0- limited",
+                                         .opt_storage = NULL },
+
+        // colorprim
+        { .key = ARGS_NO_KEY, .key_long = "colorprim", .type = OPT_TYPE_STRING,    .default_val = { .str = "" },
+                                         .allowed_val = { .strings={"reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "film", "bt2020", "smpte428", "smpte431", "smpte432" } },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "",
+                                         .opt_storage = NULL },
+
+        // transfer
+        { .key = ARGS_NO_KEY, .key_long = "transfer", .type = OPT_TYPE_STRING,    .default_val = { .str = "" },
+                                         .allowed_val = { .strings={"reserved", "bt709", "unknown", "reserved", "bt470m", "bt470bg", "smpte170m", "smpte240m", "linear", "log100", "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1", "bt2020-10", "bt2020-12", "smpte2084", "smpte428", "arib-std-b67"} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "transfer characteristics",
+                                         .opt_storage = NULL },
+
+        // matrix-coefficients
+        { .key = ARGS_NO_KEY, .key_long = "matrix-coefficients", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={"gbr", "bt709", "unknown", "fcc", "bt470bg", "smpte170m", "smpte240m", "ycgco", "bt2020nc", "bt2020c", "smpte2085", "chroma-derived-nc", "chroma-derived-c", "ictcp"}},
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "",
+                                         .opt_storage = NULL },
+
+        // master-display
+        { .key = ARGS_NO_KEY, .key_long = "master-display", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "SMPTE ST 2086 master display color volume info SEI (HDR) format: G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)",
+                                         .opt_storage = NULL },
+
+        // max-content-light-level
+        { .key = ARGS_NO_KEY, .key_long = "max-content-light-level", .type = OPT_TYPE_STRING,    .default_val = { .str = " " },
+                                         .allowed_val = { .strings={NULL} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Specify content light level info SEI as (cll,fall) (HDR)",
+                                         .opt_storage = NULL },
+
+        // chromaloc-tf
+        { .key = ARGS_NO_KEY, .key_long = "chromaloc-tf", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, 5} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Chroma location for Top field - Range from 0 to 5",
+                                         .opt_storage = NULL },
+
+        // chromaloc-bf
+        { .key = ARGS_NO_KEY, .key_long = "chromaloc-bf", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, 5} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Chroma location for Bottom field - Range from 0 to 5",
+                                         .opt_storage = NULL },
+
+        // neutral-chroma-flag
+        { .key = ARGS_NO_KEY, .key_long = "neutral-chroma-flag", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Value can be 0 or 1",
+                                         .opt_storage = NULL },
+
+        // frame-field-flag
+        { .key = ARGS_NO_KEY, .key_long = "frame-field-flag", .type = OPT_TYPE_ENUM,    .default_val = { .e = 0 },
+                                         .allowed_val = { .enums={0, 1, ENUM_END} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "1 indicates fields and 0 indicates frames",
+                                         .opt_storage = NULL },
+        // units-in-tick
+        { .key = ARGS_NO_KEY, .key_long = "units-in-tick", .type = OPT_TYPE_INT,    .default_val = { .i = 1 },
+                                         .allowed_val = { .range={1, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Number of units in tick, value should be > 0",
+                                         .opt_storage = NULL },
+
+        // time-scale
+        { .key = ARGS_NO_KEY, .key_long = "time-scale", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={1, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Time Scale, value should be > 0",
+                                         .opt_storage = NULL },
+
+        // fixed-pic-rate-flag
+        { .key = ARGS_NO_KEY, .key_long = "fixed-pic-rate-flag", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Fixed picture rate flag, default 0",
+                                         .opt_storage = NULL },
+
+        // pic-struct
+        { .key = ARGS_NO_KEY, .key_long = "pic-struct", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "Fixed picture rate flag, default 0",
+                                         .opt_storage = NULL },
+
+        // mv-over-pic-boundaries
+        { .key = ARGS_NO_KEY, .key_long = "mv-over-pic-boundaries", .type = OPT_TYPE_INT,    .default_val = { .i = 1 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "mvs over picture boundaries flag",
+                                         .opt_storage = NULL },
+
+        // max-bytes-per-pic-denom
+        { .key = ARGS_NO_KEY, .key_long = "max-bytes-per-pic-denom", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, 16} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "max bytes per picture denom, valid range 0 to 16",
+                                         .opt_storage = NULL },
+
+        // max-bits-per-cu-denom
+        { .key = ARGS_NO_KEY, .key_long = "max-bits-per-cu-denom", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, 16} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "max bits per cu denom, valid range 0 to 16",
+                                         .opt_storage = NULL },
+
+        // log2-max-mv-len-hor
+        { .key = ARGS_NO_KEY, .key_long = "log2-max-mv-len-hor", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, 16} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "max mv length horizontal log2, valid range 0 to 16",
+                                         .opt_storage = NULL },
+
+        // log2-max-mv-len-ver
+        { .key = ARGS_NO_KEY, .key_long = "log2-max-mv-len-ver", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, 16} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "max mv length vertical log2, valid range o to 16",
+                                         .opt_storage = NULL },
+
+        // num-reorder-pics
+        { .key = ARGS_NO_KEY, .key_long = "num-reorder-pics", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "# of reorder pics, valid range 0 to max_dec_pic_buffering default = max_dec_pic_buffering",
+                                         .opt_storage = NULL },
+
+        // max-dec-pic-buffering
+        { .key = ARGS_NO_KEY, .key_long = "max-dec-pic-buffering", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "max picture buffering in decoder, valid range 0 to num-reorder-pic default num-reorder-pic",
+                                         .opt_storage = NULL },
+
+        // {ARGS_END_KEY, "", ARGS_VAL_TYPE_NONE, { .i = 0 }, 0, NULL, ""} /* termination */
+        { .key = ARGS_END_KEY, .key_long = "", .type = OPT_TYPE_INT,    .default_val = { .i = 0 },
+                                         .allowed_val = { .range={0, INT_MAX} },
+                                         .is_mandatory = 0, .is_set = 0,
+                                         .desc = "",
+                                         .opt_storage = NULL } // termination
+    };
 struct _ARGS_PARSER
 {
     ARGS_OPT * opts;
@@ -1150,9 +1543,9 @@ int xeve_args_check_mandatory(ARGS_PARSER * args, char ** err_arg)
 
     while (o->key != 0)
     {
-        if (o->val_type & ARGS_VAL_TYPE_MANDATORY)
+        if (o->is_mandatory)
         {
-            if (o->flag == 0)
+            if (o->is_set == 0)
             {
                 /* not filled all mandatory argument */
                 *err_arg = o->key_long;
@@ -1184,18 +1577,20 @@ int XEVE_EXPORT xeve_args_get_option_val(ARGS_PARSER * args, char* keyl,  char**
     //if( !args->initialized )
     //    return XEVE_ERR;
 
-    if(!args->opts[idx].val)
+    if(!args->opts[idx].opt_storage)
         return XEVE_ERR;
 
-    if( args->opts[idx].flag != 1 )
+    if( args->opts[idx].is_set != 1 )
         return XEVE_ERR;
 
     opt = args->opts + idx;
 
-    switch(ARGS_GET_CMD_OPT_VAL_TYPE(opt->val_type))
+    switch(opt->type)
     {
-        case ARGS_VAL_TYPE_INTEGER:
-            snprintf(buf, ARGS_OPT_VALUE_MAXLEN, "%d", *((int*)(args->opts[idx].val)));
+        case OPT_TYPE_INT:
+        case OPT_TYPE_ENUM:
+        case OPT_TYPE_CONST:
+            snprintf(buf, ARGS_OPT_VALUE_MAXLEN, "%d", *((int*)(args->opts[idx].opt_storage)));
 
             len = strlen(buf);
             *val = (char*)malloc(len+1);
@@ -1203,9 +1598,9 @@ int XEVE_EXPORT xeve_args_get_option_val(ARGS_PARSER * args, char* keyl,  char**
             // *val[len-1] = '\0';
 
             break;
-        case ARGS_VAL_TYPE_STRING:
+        case OPT_TYPE_STRING:
 
-            str = (char*)(args->opts[idx].val);
+            str = (char*)(args->opts[idx].opt_storage);
             if(!str) return XEVE_ERR;
 
             len = strlen(str);
@@ -1213,7 +1608,6 @@ int XEVE_EXPORT xeve_args_get_option_val(ARGS_PARSER * args, char* keyl,  char**
             strncpy(*val, str, len+1);
 
             break;
-        case ARGS_VAL_TYPE_NONE:
         default:
             return XEVE_ERR;
     }
@@ -1238,29 +1632,30 @@ int XEVE_EXPORT xeve_args_set_option_val(ARGS_PARSER * args, char* keyl,  char* 
     if( idx<0 )
         return XEVE_ERR_INVALID_ARGUMENT;
 
-    if(!args->opts[idx].val)
+    if(!args->opts[idx].opt_storage)
         return XEVE_ERR;
 
     opt = args->opts + idx;
 
-    switch(ARGS_GET_CMD_OPT_VAL_TYPE(opt->val_type))
+    switch(opt->type)
     {
-        case ARGS_VAL_TYPE_INTEGER:
+        case OPT_TYPE_INT:
+        case OPT_TYPE_ENUM:
+        case OPT_TYPE_CONST:
             ival = strtol(val, &endptr, 10);
             if (*endptr != '\0')
                 return XEVE_ERR_INVALID_ARGUMENT;
 
-            *((int*)(args->opts[idx].val)) = ival;
-            args->opts[idx].flag = 1;
+            *((int*)(args->opts[idx].opt_storage)) = ival;
+            args->opts[idx].is_set = 1;
 
             break;
-        case ARGS_VAL_TYPE_STRING:
+        case OPT_TYPE_STRING:
 
-            strncpy((char*)(args->opts[idx].val), val, ARGS_OPT_VALUE_MAXLEN-1);
-            args->opts[idx].flag = 1;
+            strncpy((char*)(args->opts[idx].opt_storage), val, ARGS_OPT_VALUE_MAXLEN-1);
+            args->opts[idx].is_set = 1;
 
             break;
-        case ARGS_VAL_TYPE_NONE:
         default:
             return XEVE_ERR;
     }
@@ -1273,7 +1668,11 @@ int XEVE_EXPORT xeve_args_get_option_description(ARGS_PARSER * args, char* keyl,
     int optional = 0;
     char vtype[32];
     ARGS_OPT * opt = NULL;
+    int i = 0;
+    int n = 0;
+
     char default_value[ARGS_OPT_DEFAULT_VALUE_MAXLEN] = { 0 };
+    char allowed_values[ ARGS_OPT_ALLOWED_VALUES_MAXLEN] = { 0 };
 
     *help = NULL;
 
@@ -1290,38 +1689,77 @@ int XEVE_EXPORT xeve_args_get_option_description(ARGS_PARSER * args, char* keyl,
 
     opt = args->opts + idx;
 
-    switch(ARGS_GET_CMD_OPT_VAL_TYPE(opt->val_type))
+    switch(opt->type)
     {
-        case ARGS_VAL_TYPE_INTEGER:
+        case OPT_TYPE_INT:
+        case OPT_TYPE_ENUM:
+        case OPT_TYPE_CONST:
             strcpy(vtype, "INTEGER");
-            if(opt->val != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [%d]", *(int*)(opt->val));
+            if(opt->opt_storage != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [default: %d]", *(int*)(opt->opt_storage));
             break;
-        case ARGS_VAL_TYPE_STRING:
+        case OPT_TYPE_STRING:
             strcpy(vtype, "STRING");
-            if(opt->val != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [%s]", strlen((char*)(opt->val)) == 0 ? "None" : (char*)(opt->val));
+            if(opt->opt_storage != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [default: %s]", strlen((char*)(opt->opt_storage)) == 0 ? "None" : (char*)(opt->opt_storage));
             break;
-        case ARGS_VAL_TYPE_NONE:
         default:
-            strcpy(vtype, "FLAG");
-            if(opt->val != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [%s]", *(int*)(opt->val) ? "On" : "Off");
             break;
     }
 
-    optional = !(opt->val_type & ARGS_VAL_TYPE_MANDATORY);
+    optional = !(opt->is_mandatory);
 
-    // allocate memorry for help string
+    // allocate memory for help string
     *help = (char*)malloc(ARGS_OPT_HELP_STRING_MAXLEN);
+
+
+    NamedConstant* constants = NULL;
+    Enum* enums = NULL;
+    const char **strings;
+
+
+    switch(opt->type)
+    {
+        case OPT_TYPE_INT:
+            break;
+        case OPT_TYPE_ENUM:
+            enums = args_opt_table[idx].allowed_val.enums;
+
+            n += snprintf(allowed_values+n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "\n          allowed values: [");
+            while(enums[i]!=ENUM_END) {
+                n += snprintf(allowed_values+n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "%d, ", args_opt_table[idx].allowed_val.enums[i]);
+                i++;
+            }
+            n += snprintf(allowed_values+n-2,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "]");
+            break;
+        case OPT_TYPE_CONST:
+            constants = args_opt_table[idx].allowed_val.constants;
+            while(constants[i].name) {
+                n += snprintf(allowed_values + n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "\n          - %d: %s",args_opt_table[idx].allowed_val.constants[i].value, args_opt_table[idx].allowed_val.constants[i].name);
+                i++;
+            }
+            break;
+        case OPT_TYPE_STRING:
+            strings = args_opt_table[idx].allowed_val.strings;
+            while(strings[i]) {
+                n += snprintf(allowed_values + n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "\n          - %s",args_opt_table[idx].allowed_val.strings[i]);
+                i++;
+            }
+            break;
+        default:
+            break;
+    }
 
     if(opt->key != ARGS_NO_KEY)
     {
-        snprintf(*help, ARGS_OPT_HELP_STRING_MAXLEN, "  -%c, --%s [%s]%s%s\n    : %s", opt->key, opt->key_long,
-                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", opt->desc);
+        snprintf(*help, ARGS_OPT_HELP_STRING_MAXLEN, "  -%c, --%s [%s]%s%s\n    : %s %s", opt->key, opt->key_long,
+                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", opt->desc, allowed_values);
     }
     else
     {
-        snprintf(*help, ARGS_OPT_HELP_STRING_MAXLEN, "  --%s [%s]%s%s\n    : %s", opt->key_long,
-                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", opt->desc);
+        snprintf(*help, ARGS_OPT_HELP_STRING_MAXLEN, "  --%s [%s]%s%s\n    : %s %s", opt->key_long,
+                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", opt->desc, allowed_values);
     }
+
+
 
     return XEVE_OK;
 }
@@ -1354,74 +1792,31 @@ char* xeve_args_next_key(ARGS_PARSER * args, char* keyl)   /* returns next value
 {
     ARGS_OPT *opt = NULL;
     int idx = 0;
+    int next_idx = 0;
 
     // do some checks
     if( !args)
         return NULL;
 
     if(keyl)
+    {
         idx = args_search_long_key(args->opts, keyl);
+        if( idx  < 0 ) return NULL;
 
-    if( idx  < 0 )
-        return NULL;
+        next_idx = idx + 1;
 
-    // if next idx is out of bound
-    if((idx + 1)> args->num_option-1) return NULL;
+        // if next idx is out of bound
+        if( next_idx > args->num_option-1) return NULL;
 
-    opt = args->opts + (idx+1);
+
+    } else {
+        next_idx = 0;
+    }
+
+    opt = args->opts + next_idx;
 
     return opt->key_long;
 }
-
-#if 0
-int xeve_args_get_option_description(ARGS_PARSER * args, int idx, char ** help)
-{
-    int optional = 0;
-    char vtype[32];
-    ARGS_OPT * o = NULL;
-    char default_value[ARGS_OPT_DEFAULT_VALUE_MAXLEN] = { 0 };
-
-    // do some checks
-    if(!args || idx<0 || idx>(args->num_option-1))
-        return XEVE_ERR_INVALID_ARGUMENT;
-
-    // allocate memorry for help string
-    *help = (char*)malloc(ARGS_OPT_HELP_STRING_MAXLEN);
-
-    o = args->opts + idx;
-
-    switch(ARGS_GET_CMD_OPT_VAL_TYPE(o->val_type))
-    {
-        case ARGS_VAL_TYPE_INTEGER:
-            strcpy(vtype, "INTEGER");
-            if(o->val != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [%d]", *(int*)(o->val));
-            break;
-        case ARGS_VAL_TYPE_STRING:
-            strcpy(vtype, "STRING");
-            if(o->val != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [%s]", strlen((char*)(o->val)) == 0 ? "None" : (char*)(o->val));
-            break;
-        case ARGS_VAL_TYPE_NONE:
-        default:
-            strcpy(vtype, "FLAG");
-            if(o->val != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [%s]", *(int*)(o->val) ? "On" : "Off");
-            break;
-    }
-    optional = !(o->val_type & ARGS_VAL_TYPE_MANDATORY);
-
-    if(o->key != ARGS_NO_KEY)
-    {
-        snprintf(*help, ARGS_OPT_HELP_STRING_MAXLEN, "  -%c, --%s [%s]%s%s\n    : %s", o->key, o->key_long,
-                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", o->desc);
-    }
-    else
-    {
-        snprintf(*help, ARGS_OPT_HELP_STRING_MAXLEN, "  --%s [%s]%s%s\n    : %s", o->key_long,
-                vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", o->desc);
-    }
-
-    return XEVE_OK;
-}
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Internal function implementations
@@ -1466,20 +1861,22 @@ static int args_search_short_arg(ARGS_OPT * ops, const char key)
 
 int args_read_value(ARGS_OPT * ops, const char * argv)
 {
-    if(argv == NULL || ops->val == NULL)
+    if(argv == NULL || ops->opt_storage == NULL)
     {
         return -1;
     }
     if(argv[0] == '-' && (argv[1] < '0' || argv[1] > '9')) return -1;
 
-    switch(ARGS_GET_CMD_OPT_VAL_TYPE(ops->val_type))
+    switch(ops->type)
     {
-        case ARGS_VAL_TYPE_INTEGER:
-            *((int*)ops->val) = atoi(argv);
+        case OPT_TYPE_INT:
+        case OPT_TYPE_ENUM:
+        case OPT_TYPE_CONST:
+            *((int*)ops->opt_storage) = atoi(argv);
             break;
 
         case ARGS_VAL_TYPE_STRING:
-            strcpy((char*)ops->val, argv);
+            strcpy((char*)ops->opt_storage, argv);
             break;
 
         default:
@@ -1510,22 +1907,22 @@ static int args_parse_cfg(FILE* fp, ARGS_OPT* ops, int is_type_ppt)
         oidx = args_search_long_key(ops, tag);
         if (oidx < 0) continue;
 
-        if (ops[oidx].val == NULL)
+        if (ops[oidx].opt_storage == NULL)
         {
             return -1;
         }
 
-        if (ARGS_GET_IS_OPT_TYPE_PPT(ops[oidx].val_type) == is_type_ppt)
+        if (ARGS_GET_IS_OPT_TYPE_PPT(ops[oidx].type) == is_type_ppt)
         {
-            if (ARGS_GET_CMD_OPT_VAL_TYPE(ops[oidx].val_type) != ARGS_VAL_TYPE_NONE)
+            if (ARGS_GET_CMD_OPT_VAL_TYPE(ops[oidx].type) != ARGS_VAL_TYPE_NONE)
             {
                 if (args_read_value(ops + oidx, val)) continue;
             }
             else
             {
-                *((int*)ops[oidx].val) = 1;
+                *((int*)ops[oidx].opt_storage) = 1;
             }
-            ops[oidx].flag = 1;
+            ops[oidx].is_set = 1;
         }
     }
     return 0;
@@ -1566,7 +1963,7 @@ static int args_parse_cmd(int argc, const char * argv[], ARGS_OPT * ops, int * i
         goto ERR;
     }
 
-    if(ARGS_GET_CMD_OPT_VAL_TYPE(ops[oidx].val_type) !=
+    if(ARGS_GET_CMD_OPT_VAL_TYPE(ops[oidx].type) !=
        ARGS_VAL_TYPE_NONE)
     {
         if(aidx + 1 >= argc) {
@@ -1581,9 +1978,9 @@ static int args_parse_cmd(int argc, const char * argv[], ARGS_OPT * ops, int * i
     }
     else
     {
-        *((int*)ops[oidx].val) = 1;
+        *((int*)ops[oidx].opt_storage) = 1;
     }
-    ops[oidx].flag = 1;
+    ops[oidx].is_set = 1;
     *idx = *idx + 1;
 
     return ops[oidx].key;
@@ -1616,7 +2013,7 @@ static int args_set_storage_for_option_by_long_key(ARGS_OPT * opts, char * key_l
 
     idx = args_search_long_key(opts, buf);
     if (idx < 0) return -1;
-    opts[idx].val = var;
+    opts[idx].opt_storage = var;
     return 0;
 }
 
@@ -1625,6 +2022,6 @@ static int args_set_storage_for_option_by_short_key(ARGS_OPT * opts, char * key,
     int idx;
     idx = args_search_short_arg(opts, key[0]);
     if (idx < 0) return -1;
-    opts[idx].val = var;
+    opts[idx].opt_storage = var;
     return 0;
 }
