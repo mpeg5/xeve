@@ -198,7 +198,13 @@ static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
     if ((ret = xeve_args_get_option_val(args, "profile", &profile_str)) != XEVE_OK)
         goto ERR;
 
-    if (profile_str || strlen(profile_str) == 0) tprofile = XEVE_PROFILE_BASELINE; /* default */
+    if (!profile_str)
+    {
+        ret = XEVE_ERR;
+        goto ERR;
+    }
+
+    if (strlen(profile_str) == 0) tprofile = XEVE_PROFILE_BASELINE; /* default */
     else if (!strcmp(profile_str, "baseline")) tprofile = XEVE_PROFILE_BASELINE;
     else if (!strcmp(profile_str, "main")) tprofile = XEVE_PROFILE_MAIN;
     else
@@ -210,7 +216,13 @@ static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
     if ((ret = xeve_args_get_option_val(args, "preset", &preset_str)) != XEVE_OK)
         goto ERR;
 
-    if (preset_str || strlen(preset_str) == 0) tpreset = XEVE_PRESET_MEDIUM; /* default */
+    if (!preset_str)
+    {
+        ret = XEVE_ERR;
+        goto ERR;
+    }
+
+    if (strlen(preset_str) == 0) tpreset = XEVE_PRESET_MEDIUM; /* default */
     else if (!strcmp(preset_str, "fast")) tpreset = XEVE_PRESET_FAST;
     else if (!strcmp(preset_str, "medium")) tpreset = XEVE_PRESET_MEDIUM;
     else if (!strcmp(preset_str, "slow")) tpreset = XEVE_PRESET_SLOW;
@@ -224,7 +236,13 @@ static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
     if ((ret = xeve_args_get_option_val(args, "tune", &tune_str)) != XEVE_OK)
         goto ERR;
 
-    if (tune_str || strlen(tune_str) == 0) ttune = XEVE_TUNE_NONE;
+    if (!tune_str)
+    {
+        ret = XEVE_ERR;
+        goto ERR;
+    }
+
+    if (strlen(tune_str) == 0) ttune = XEVE_TUNE_NONE;
     else if (!strcmp(tune_str, "zerolatency")) ttune = XEVE_TUNE_ZEROLATENCY;
     else if (!strcmp(tune_str, "psnr")) ttune = XEVE_TUNE_PSNR;
     else
@@ -301,12 +319,16 @@ static void print_config(ARGS_PARSER * args, XEVE_PARAM * param)
     if ((ret = xeve_args_get_option_val(args, "frames", &val)) != XEVE_OK)
         goto ERR;
 
+    if(!val) goto ERR;
+
     frames = strtol(val, &endptr, 10);
     if (*endptr != '\0')
         goto ERR;
 
     if ((ret = xeve_args_get_option_val(args, "input-depth", &val)) != XEVE_OK)
        goto ERR;
+
+    if(!val) goto ERR;
 
     input_depth = strtol(val, &endptr, 10);
     if (*endptr != '\0')
@@ -1196,6 +1218,12 @@ int main(int argc, const char **argv)
         ret = -1; goto ERR;
     }
 
+    if(!fname_inp)
+    {
+        ret = -1;
+        goto ERR;
+    }
+
     if (!strcmp( fname_inp, "stdin" ) ) {
         fp_inp = stdin;
 
@@ -1236,6 +1264,10 @@ int main(int argc, const char **argv)
         if ((ret = xeve_args_get_option_val(args, "input-csp", &val)) != XEVE_OK)
         {
             logerr("cannot get input-csp value");
+            ret = -1; goto ERR;
+        }
+        if(!val)
+        {
             ret = -1; goto ERR;
         }
 
