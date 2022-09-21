@@ -347,7 +347,7 @@ static void print_config(ARGS_PARSER * args, XEVE_PARAM * param)
         logv2("Output YUV file         : %s \n", fname_rec_str);
     }
 
-    if (fname_cfg_str && fname_cfg_str && strlen(fname_cfg_str) > 0)
+    if (fname_cfg_str && strlen(fname_cfg_str) > 0)
     {
         logv2("\tconfig file name         = %s\n", fname_cfg_str);
     }

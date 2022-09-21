@@ -154,7 +154,7 @@ ARGS_OPT args_opt_table[] = {
         { .key = 'w', .key_long = "width", .value_type = VAL_TYPE_INT,
                                             .has_default = 0, .default_value = { .integer = { 0, NULL } },
                                             .values_rage_type = AVT_MIN_MAX_RANGE,
-                                            .allowed_values =  { .range = {128,3840} }, // SQCIF	128 × 96 / 4K 3840 x 2160 / 8K 7680 x 4320
+                                            .allowed_values =  { .range = {128,3840} }, // SQCIF	128 × 96 / 4K 3840 x 2160
                                             .is_mandatory = 1, .is_set = 0,
                                             .desc = "pixel width of input video",
                                             .opt_storage = NULL },
@@ -163,7 +163,7 @@ ARGS_OPT args_opt_table[] = {
         { .key = 'h', .key_long = "height", .value_type = VAL_TYPE_INT,
                                             .has_default = 0, .default_value = { .integer = { 0, NULL } },
                                             .values_rage_type = AVT_MIN_MAX_RANGE,
-                                            .allowed_values =  { .range = {96,2160} }, // SQCIF	128 × 96 / 4K 3840 x 2160 / 8K 7680 x 4320
+                                            .allowed_values =  { .range = {96,2160} }, // SQCIF	128 × 96 / 4K 3840 x 2160
                                             .is_mandatory = 1, .is_set = 0,
                                             .desc = "pixel height of input video",
                                             .opt_storage = NULL },
@@ -1997,7 +1997,6 @@ int XEVE_EXPORT xeve_args_get_option_description(ARGS_PARSER * args, char* keyl,
                     if(integers[i].descr) {
                         n += snprintf(allowed_values + n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "\n          - %d: %s",args_opt_table[idx].allowed_values.list.integers[i].value, args_opt_table[idx].allowed_values.list.integers[i].descr);
                     } else {
-                        // n += snprintf(allowed_values+n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "%d, ", args_opt_table[idx].allowed_values.list.integers[i].value);
                         n += snprintf(allowed_values + n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "\n            %d",args_opt_table[idx].allowed_values.list.integers[i].value);
                     }
                     i++;
@@ -2007,25 +2006,7 @@ int XEVE_EXPORT xeve_args_get_option_description(ARGS_PARSER * args, char* keyl,
                 int max =  args_opt_table[idx].allowed_values.range.max;
                 n += snprintf(allowed_values,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "\n          - range [%d,  %d]", min, max);
             }
-
             break;
-        // case OPT_TYPE_ENUM:
-        //     enums = args_opt_table[idx].allowed_values.enums;
-
-        //     n += snprintf(allowed_values+n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "\n          allowed values: [");
-        //     while(enums[i]!=ENUM_END) {
-        //         n += snprintf(allowed_values+n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "%d, ", args_opt_table[idx].allowed_values.enums[i]);
-        //         i++;
-        //     }
-        //     n += snprintf(allowed_values+n-2,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "]");
-        //     break;
-        // case OPT_TYPE_CONST:
-        //     constants = args_opt_table[idx].allowed_values.constants;
-        //     while(constants[i].name) {
-        //         n += snprintf(allowed_values + n,  ARGS_OPT_ALLOWED_VALUES_MAXLEN, "\n          - %d: %s",args_opt_table[idx].allowed_values.constants[i].value, args_opt_table[idx].allowed_values.constants[i].name);
-        //         i++;
-        //     }
-        //     break;
         case VAL_TYPE_STRING:
             strings = args_opt_table[idx].allowed_values.list.strings;
             while(strings[i].value) {
@@ -2048,8 +2029,6 @@ int XEVE_EXPORT xeve_args_get_option_description(ARGS_PARSER * args, char* keyl,
                 vtype, (optional) ? " (optional)" : "", (optional) ? default_value : "", opt->desc, allowed_values);
     }
 
-
-
     return XEVE_OK;
 }
 
@@ -2061,23 +2040,7 @@ int xeve_args_num_options(ARGS_PARSER * args)
     return args->num_option;
 }
 
-/* Three-part iterator */
-char* xeve_args_first_key(ARGS_PARSER * args)             /* returns smallest element in n */
-{
-    ARGS_OPT *opt = NULL;
-
-    // do some checks
-    if( !args )
-        return NULL;
-
-    if(!args->num_option) return NULL;
-
-    opt = args->opts;
-    return opt->key_long;
-}
-
-// int nums_done(ARGS_PARSER * args, char* key);        /* returns 1 if key is past end */
-char* xeve_args_next_key(ARGS_PARSER * args, char* keyl)   /* returns next value after key */
+char* xeve_args_next_key(ARGS_PARSER * args, char* keyl)
 {
     ARGS_OPT *opt = NULL;
     int idx = 0;
@@ -2199,18 +2162,15 @@ static int args_parse_cfg(FILE* fp, ARGS_OPT* ops, int is_type_ppt)
             return -1;
         }
 
-        //if (ARGS_GET_IS_OPT_TYPE_PPT(ops[oidx].value_type) == is_type_ppt)
-        //{
-            if (ops[oidx].value_type == VAL_TYPE_INT || ops[oidx].value_type == VAL_TYPE_STRING)
-            {
-                if (args_read_value(ops + oidx, val)) continue;
-            }
-            else
-            {
-                *((int*)ops[oidx].opt_storage) = 1;
-            }
-            ops[oidx].is_set = 1;
-        //}
+        if (ops[oidx].value_type == VAL_TYPE_INT || ops[oidx].value_type == VAL_TYPE_STRING)
+        {
+            if (args_read_value(ops + oidx, val)) continue;
+        }
+        else
+        {
+            *((int*)ops[oidx].opt_storage) = 1;
+        }
+        ops[oidx].is_set = 1;
     }
     return 0;
 }

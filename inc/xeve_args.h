@@ -69,15 +69,13 @@ int XEVE_EXPORT xeve_args_init(ARGS_PARSER * args, XEVE_PARAM* param);
  * @brief Parse application input arguments
  *
  * @param args
- * @param argc number of command line argumnets (strings in argv) passed to main()
- * @param argv table containing command line arguments (strings) pased to main
+ * @param argc number of command line argumnets (strings in argv)
+ * @param argv table containing command line arguments (strings)
  * @param errstr
  * @return int
  */
 int XEVE_EXPORT xeve_args_parse(ARGS_PARSER * args, int argc, const char* argv[], char ** errstr);
 
-// zwraca kod bledu jesli opcja nie jest ustawiona lub niedostepna (nie ma takiej opcji)
-// Sa opcje ktore poiadaja wartosc numeryczna. w gesti uzytkownika pozostaje ewentualna konwersja do int
 /**
  * @brief Returns string value for an option of a given key value
  *
