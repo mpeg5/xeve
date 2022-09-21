@@ -1810,7 +1810,7 @@ int xeve_args_parse(ARGS_PARSER * args, int argc, const char* argv[], char ** er
 
 int xeve_args_check_mandatory(ARGS_PARSER * args, char ** err_arg)
 {
-     // do some checks
+    // do some checks
     if(!args)
         return XEVE_ERR_INVALID_ARGUMENT;
 
@@ -2136,7 +2136,7 @@ int args_read_value(ARGS_OPT * ops, const char * argv)
 static int args_parse_cfg(FILE* fp, ARGS_OPT* ops, int is_type_ppt)
 {
     char* parser;
-    char line[256] = "", tag[50] = "", val[256] = "";
+    char line[256] = {0}, tag[50] = {0}, val[256] = {0};
     int oidx;
 
     while (fgets(line, sizeof(line), fp))
@@ -2146,11 +2146,11 @@ static int args_parse_cfg(FILE* fp, ARGS_OPT* ops, int is_type_ppt)
 
         parser = strtok(line, "= \t");
         if (parser == NULL) continue;
-        strncpy(tag, parser, sizeof(tag));
+        strncpy(tag, parser, sizeof(tag)-1);
 
         parser = strtok(NULL, "=\n");
         if (parser == NULL) continue;
-        strncpy(val, parser, sizeof(val));
+        strncpy(val, parser, sizeof(val)-1);
 
         oidx = args_search_long_key(ops, tag);
         if (oidx < 0) continue;
