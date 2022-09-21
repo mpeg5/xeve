@@ -1403,10 +1403,12 @@ ARGS_PARSER * xeve_args_create(void)
 
     args = malloc(sizeof(ARGS_PARSER));
     if(args == NULL) goto ERR;
+
     memset(args, 0, sizeof(ARGS_PARSER));
 
     opts = malloc(sizeof(args_opt_table));
     if (opts == NULL) goto ERR;
+
     memcpy(opts, args_opt_table, sizeof(args_opt_table));
     args->opts = opts;
     args->num_option = ((int)(sizeof(args_opt_table)/sizeof(args_opt_table[0]))-1);
@@ -1415,10 +1417,6 @@ ARGS_PARSER * xeve_args_create(void)
     return args;
 
 ERR:
-    if(opts) {
-        free(opts);
-        opts = NULL;
-    }
 
     if(args) {
         free(args);
@@ -1812,11 +1810,11 @@ int xeve_args_parse(ARGS_PARSER * args, int argc, const char* argv[], char ** er
 
 int xeve_args_check_mandatory(ARGS_PARSER * args, char ** err_arg)
 {
-    ARGS_OPT * o = args->opts;
-
-    // do some checks
+     // do some checks
     if(!args)
         return XEVE_ERR_INVALID_ARGUMENT;
+
+    ARGS_OPT * o = args->opts;
 
     while (o->key != 0)
     {
@@ -1965,11 +1963,11 @@ int XEVE_EXPORT xeve_args_get_option_description(ARGS_PARSER * args, char* keyl,
     switch(opt->value_type)
     {
         case VAL_TYPE_INT:
-            strcpy(vtype, "INTEGER");
+            strncpy(vtype, "INTEGER", sizeof(vtype));
             if(opt->opt_storage != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [default: %d]", *(int*)(opt->opt_storage));
             break;
         case VAL_TYPE_STRING:
-            strcpy(vtype, "STRING");
+            strncpy(vtype, "STRING", sizeof(vtype));
             if(opt->opt_storage != NULL) snprintf(default_value, ARGS_OPT_DEFAULT_VALUE_MAXLEN, " [default: %s]", strlen((char*)(opt->opt_storage)) == 0 ? "None" : (char*)(opt->opt_storage));
             break;
         default:
@@ -2126,7 +2124,7 @@ int args_read_value(ARGS_OPT * ops, const char * argv)
             break;
 
         case VAL_TYPE_STRING:
-            strcpy((char*)ops->opt_storage, argv);
+            strncpy((char*)ops->opt_storage, argv, ARGS_OPT_DEFAULT_VALUE_MAXLEN);
             break;
 
         default:
@@ -2148,11 +2146,11 @@ static int args_parse_cfg(FILE* fp, ARGS_OPT* ops, int is_type_ppt)
 
         parser = strtok(line, "= \t");
         if (parser == NULL) continue;
-        strcpy(tag, parser);
+        strncpy(tag, parser, sizeof(tag));
 
         parser = strtok(NULL, "=\n");
         if (parser == NULL) continue;
-        strcpy(val, parser);
+        strncpy(val, parser, sizeof(val));
 
         oidx = args_search_long_key(ops, tag);
         if (oidx < 0) continue;
