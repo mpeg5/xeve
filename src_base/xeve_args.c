@@ -154,7 +154,7 @@ ARGS_OPT args_opt_table[] = {
         { .key = 'w', .key_long = "width", .value_type = VAL_TYPE_INT,
                                             .has_default = 0, .default_value = { .integer = { 0, NULL } },
                                             .values_rage_type = AVT_MIN_MAX_RANGE,
-                                            .allowed_values =  { .range = {128,3840} }, // SQCIF	128 × 96 / 4K 3840 x 2160
+                                            .allowed_values =  { .range = {128,16000} }, // min: SQCIF (128 × 96) max: 16K (16000 x 9000)
                                             .is_mandatory = 1, .is_set = 0,
                                             .desc = "pixel width of input video",
                                             .opt_storage = NULL },
@@ -163,7 +163,7 @@ ARGS_OPT args_opt_table[] = {
         { .key = 'h', .key_long = "height", .value_type = VAL_TYPE_INT,
                                             .has_default = 0, .default_value = { .integer = { 0, NULL } },
                                             .values_rage_type = AVT_MIN_MAX_RANGE,
-                                            .allowed_values =  { .range = {96,2160} }, // SQCIF	128 × 96 / 4K 3840 x 2160
+                                            .allowed_values =  { .range = {96,9000} }, // min: SQCIF (128 × 96) max: 16K (16000 x 9000)
                                             .is_mandatory = 1, .is_set = 0,
                                             .desc = "pixel height of input video",
                                             .opt_storage = NULL },
@@ -1868,14 +1868,12 @@ int XEVE_EXPORT xeve_args_get_option_val(ARGS_PARSER * args, char* keyl,  char**
             len = strlen(buf);
             *val = (char*)malloc(len+1);
             strncpy(*val, buf, len+1);
-            // *val[len-1] = '\0';
+            // *val[len] = 0;
 
             break;
         case VAL_TYPE_STRING:
 
             str = (char*)(args->opts[idx].opt_storage);
-            if(!str) return XEVE_ERR;
-
             len = strlen(str);
             *val = (char*)malloc(len+1);
             strncpy(*val, str, len+1);
