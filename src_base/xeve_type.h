@@ -1023,6 +1023,7 @@ typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 #include "xeve_tq_avx.h"
 #else
 #include "xeve_itdq_neon.h"
+#include "xeve_tq_neon.h"
 #endif
 #include "xeve_enc.h"
 

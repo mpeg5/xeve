@@ -708,7 +708,7 @@ void xeve_platform_init_func(XEVE_CTX * ctx)
         xeve_func_mc_c              = xeve_tbl_mc_c_neon;
         xeve_func_average_no_clip   = &xeve_average_16b_no_clip_neon;
         ctx->fn_itxb                = &xeve_tbl_itxb_neon;
-        xeve_func_txb               = &xeve_tbl_txb;
+        xeve_func_txb               = &xeve_tbl_txb_neon;
   }
   else
 #elif X86_SSE
