@@ -30,6 +30,7 @@
 
 #include <math.h>
 #include "xeve_type.h"
+#include "xeve_param_parse.h"
 
 XEVE xeve_create(XEVE_CDSC * cdsc, int * err)
 {
@@ -329,7 +330,7 @@ int xeve_param_check(const XEVE_PARAM* param)
     int ret = 0;
     int min_block_size = 4;
 
-    // Param check done to avoid main profile toolset inside baseline profile 
+    // Param check done to avoid main profile toolset inside baseline profile
     if (param->tool_amvr    == 1) { xeve_trace("AMVR cannot be on in base profile\n"); ret = -1; }
     if (param->tool_mmvd    == 1) { xeve_trace("MMVD cannot be on in base profile\n"); ret = -1; }
     if (param->tool_affine  == 1) { xeve_trace("Affine cannot be on in base profile\n"); ret = -1; }
@@ -359,3 +360,15 @@ int xeve_param_check(const XEVE_PARAM* param)
 
     return ret;
 }
+
+int  XEVE_EXPORT xeve_param_parse(XEVE_PARAM* param, const char* name, const char* value)
+{
+    if (!param || !name || !value)
+    {
+        return XEVE_ERR_INVALID_ARGUMENT;
+    }
+
+    int ret = xeve_param_set_val(param, name, value);
+    return ret;
+}
+
