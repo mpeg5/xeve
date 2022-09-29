@@ -46,21 +46,21 @@
     { .name=#param, .type=data_type, .offset=OFFSET(param) }
 
 /* Type of data stored by a given param from XEVE_PARAM stuct */
-typedef enum DataType {
+typedef enum DATA_TYPE {
     DT_INTEGER    = (1 << 0), /* integer type value */
-    DT_DOUBLE     = (1 << 1), /* integer type value */
-    DT_STRING     = (1 << 2)  /* string type value */
-} DataType;
+    DT_DOUBLE     = (1 << 1), /* double type value  */
+    DT_STRING     = (1 << 2)  /* string type value  */
+} DATA_TYPE;
 
 /* Structure for storing metadata for XEVE_PARAM */
-typedef struct XeveParamMetadata {
+typedef struct XEVE_PARAM_METADATA {
     const char* name;   /* text string conneced to param of a given name */
-    DataType    type;   /* data type for a given param */
+    DATA_TYPE   type;   /* data type for a given param */
     int         offset; /* the offset relative to the XEVE_PARAM structure where the param value is stored */
-} XeveParamMetadata;
+} XEVE_PARAM_METADATA;
 
 /* Define various command line options as a table */
-static const XeveParamMetadata xeve_params_metadata[] = {
+static const XEVE_PARAM_METADATA xeve_params_metadata[] = {
     SET_XEVE_PARAM_METADATA( profile,                                   DT_INTEGER ),
     SET_XEVE_PARAM_METADATA( threads,                                   DT_INTEGER ),
     SET_XEVE_PARAM_METADATA( w,                                         DT_INTEGER ),
@@ -207,7 +207,7 @@ static const XeveParamMetadata xeve_params_metadata[] = {
     SET_XEVE_PARAM_METADATA( ats_intra_fast,                            DT_INTEGER ),
     SET_XEVE_PARAM_METADATA( me_fast,                                   DT_INTEGER ),
 
-    // /* VUI options*/
+    /* VUI options*/
     SET_XEVE_PARAM_METADATA( sar,                                       DT_INTEGER ),
     SET_XEVE_PARAM_METADATA( sar_width,                                 DT_INTEGER ),
     SET_XEVE_PARAM_METADATA( sar_height,                                DT_INTEGER ),
@@ -243,7 +243,7 @@ static const XeveParamMetadata xeve_params_metadata[] = {
     SET_XEVE_PARAM_METADATA( video_signal_type_present_flag,            DT_INTEGER ),
     SET_XEVE_PARAM_METADATA( colour_description_present_flag,           DT_INTEGER ),
 
-    // /* SEI options*/
+    /* SEI options*/
     SET_XEVE_PARAM_METADATA( master_display,                            DT_INTEGER ),
     SET_XEVE_PARAM_METADATA( max_cll,                                   DT_INTEGER ),
     SET_XEVE_PARAM_METADATA( max_fall,                                  DT_INTEGER ),
@@ -255,7 +255,7 @@ static const XeveParamMetadata xeve_params_metadata[] = {
 static int xeve_param_search_name(const char * name)
 {
     int idx = 0;
-    const XeveParamMetadata* param_meta = xeve_params_metadata;
+    const XEVE_PARAM_METADATA* param_meta = xeve_params_metadata;
 
     while(param_meta->name != PARAMS_END_KEY)
     {
@@ -272,8 +272,9 @@ static int xeve_param_search_name(const char * name)
 int xeve_param_set_val(XEVE_PARAM* params, const char* name,  const char* value)
 {
     int ival;
+    double dval;
     char *endptr;
-    const XeveParamMetadata* param_meta = xeve_params_metadata;
+    const XEVE_PARAM_METADATA* param_meta = xeve_params_metadata;
 
     int idx = xeve_param_search_name(name);
     if( idx < 0 )
@@ -289,6 +290,14 @@ int xeve_param_set_val(XEVE_PARAM* params, const char* name,  const char* value)
                 return XEVE_ERR_INVALID_ARGUMENT;
 
             *((int*)((void*)params + param_meta->offset)) = ival;
+
+            break;
+        case DT_DOUBLE:
+            dval = strtod(value, &endptr);
+            if (*endptr != '\0')
+                return XEVE_ERR_INVALID_ARGUMENT;
+
+            *((double*)((void*)params + param_meta->offset)) = dval;
 
             break;
         case DT_STRING:
