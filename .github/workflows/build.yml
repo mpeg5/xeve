@@ -95,6 +95,10 @@ jobs:
           cmake .. -G "MinGW Makefiles" -DSET_PROF=BASE
           make
           
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v3
+        path: build/bin/xeve_app.zip
+          
 # TODO: need to check build paths on Windows          
 #       - name: 'Upload executable Artifact'
 #         uses: actions/upload-artifact@v3
