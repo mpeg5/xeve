@@ -34,6 +34,15 @@ jobs:
             ${{ github.workspace }}/build-base/*.deb
             ${{ github.workspace }}/build-base/*.md5
           retention-days: 7
+      
+      - name: Upload To Github Release
+        uses: xresloader/upload-to-github-release@v1.3.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          file: "*.deb;*.md5;*.h"
+          update_latest_release: true
+          verbose: true
 
   package-main-linux:
     runs-on: ubuntu-latest
