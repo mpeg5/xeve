@@ -361,7 +361,7 @@ int xeve_param_check(const XEVE_PARAM* param)
     return ret;
 }
 
-int  XEVE_EXPORT xeve_param_parse(XEVE_PARAM* param, const char* name, const char* value)
+int xeve_param_parse(XEVE_PARAM* param, const char* name, const char* value)
 {
     if (!param || !name || !value)
     {
