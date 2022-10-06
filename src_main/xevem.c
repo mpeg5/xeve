@@ -35,6 +35,7 @@
 
 #include <math.h>
 #include "xevem_type.h"
+#include "xeve_param_parse.h"
 
 static int xevem_eco_tree(XEVE_CTX * ctx, XEVE_CORE * core, int x0, int y0, int cup, int cuw, int cuh, int cud
                        , int next_split, const int parent_split, int* same_layer_split, const int node_idx, const int* parent_split_allow
@@ -1317,5 +1318,16 @@ int xeve_param_check(const XEVE_PARAM* param)
         if ((param->h & (pic_m - 1)) != 0) { xeve_trace("Current encoder does not support odd picture height\n"); ret = -1; }
     }
 
+    return ret;
+}
+
+int xeve_param_parse(XEVE_PARAM* param, const char* name, const char* value)
+{
+    if (!param || !name || !value)
+    {
+        return XEVE_ERR_INVALID_ARGUMENT;
+    }
+
+    int ret = xeve_param_set_val(param, name, value);
     return ret;
 }
