@@ -42,7 +42,7 @@ else()
 endif()
 
 if(NOT ${VERSION_STRING} MATCHES "^[vV][0-9]*[.][0-9]*[.][0-9]*$")
-  message(FATAL_ERROR "Version string taken from version.txt doesn't match required format v[VERSION_MAJOR].[VERSION_MINOR].[VERSION_PATCH]")
+  message(FATAL_ERROR "Version string doesn't match required format v[VERSION_MAJOR].[VERSION_MINOR].[VERSION_PATCH]")
 endif()
 
 get_versions(${VERSION_STRING} VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
