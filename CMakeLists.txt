@@ -9,14 +9,40 @@ function(get_versions versionstring VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
     set(VERSION_PATCH ${numbers} PARENT_SCOPE)
 endfunction()
 
-if(NOT EXISTS "${CMAKE_SOURCE_DIR}/version.txt")
-  message(FATAL_ERROR "version.txt file does not exist")
+execute_process(
+    COMMAND git describe --abbrev=0 --tags
+    RESULT_VARIABLE RESULT
+    OUTPUT_VARIABLE OUTPUT)
+
+if(NOT RESULT EQUAL 0)
+
+  find_program(GIT_COMMAND "git")
+  if(GIT_COMMAND)
+    message(WARNING "There is no valid git repository in your working directory \"${CMAKE_SOURCE_DIR}\" .")
+  else()
+    message(WARNING "You have no git tool installed.")
+  endif()
+
+  if(NOT EXISTS "${CMAKE_SOURCE_DIR}/version.txt")
+    message(FATAL_ERROR
+	    "version.txt file doesn't exist!\n"
+	    "Since your working directory doesn't contain a git repository you must provide \"${CMAKE_SOURCE_DIR}/version.txt\" file containing a valid version string.\n"
+	    "The version string provided to version.txt must match the following format:\n\tv[VERSION_MAJOR].[VERSION_MINOR].[VERSION_PATCH]\n"
+	    "To get the information on version of the downloaded library please follow the link below:\n\t https://github.com/mpeg5/xeve"
+	    )
+  endif()
+
+  message("Version string has been taken from version.txt file.")
+  file(STRINGS "version.txt" VERSION_STRING)
+
+else()
+  message("Version string has been taken from git tag.")
+  set(VERSION_STRING ${OUTPUT})
+  string(REGEX REPLACE "\n$" "" VERSION_STRING "${VERSION_STRING}")
 endif()
 
-file(STRINGS "version.txt" VERSION_STRING)
-
 if(NOT ${VERSION_STRING} MATCHES "^[vV][0-9]*[.][0-9]*[.][0-9]*$")
-  message(FATAL_ERROR "Version string taken from version.txt doesn't match required format v[VERSION_MAJOR].[VERSION_MINOR].[VERSION_PATCH]")
+  message(FATAL_ERROR "Version string doesn't match required format v[VERSION_MAJOR].[VERSION_MINOR].[VERSION_PATCH]")
 endif()
 
 get_versions(${VERSION_STRING} VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
