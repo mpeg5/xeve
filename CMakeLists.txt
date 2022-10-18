@@ -11,6 +11,7 @@ endfunction()
 
 execute_process(
     COMMAND git describe --abbrev=0 --tags
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     RESULT_VARIABLE RESULT
     OUTPUT_VARIABLE OUTPUT)
 
