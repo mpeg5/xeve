@@ -289,7 +289,7 @@ int xeve_param_set_val(XEVE_PARAM* params, const char* name,  const char* value)
             if (*endptr != '\0')
                 return XEVE_ERR_INVALID_ARGUMENT;
 
-            *((int*)((void*)params + param_meta->offset)) = ival;
+            *((int*)((char*)params + param_meta->offset)) = ival;
 
             break;
         case DT_DOUBLE:
@@ -297,17 +297,17 @@ int xeve_param_set_val(XEVE_PARAM* params, const char* name,  const char* value)
             if (*endptr != '\0')
                 return XEVE_ERR_INVALID_ARGUMENT;
 
-            *((double*)((void*)params + param_meta->offset)) = dval;
+            *((double*)((char*)params + param_meta->offset)) = dval;
 
             break;
         case DT_STRING:
 
-            strncpy((char*)((void*)params + param_meta->offset), value, PARAM_STR_MAX_LEN);
+            strncpy((char*)((char*)params + param_meta->offset), value, PARAM_STR_MAX_LEN);
 
             // If PARAM_STR_MAX_LEN is less than or equal to the length of val,
             // a null character (\0) is not appended to the copied string (char*)(args->opts[idx].opt_storage)
             // The line below prevents truncation of destination string to not-null terminated string
-            ((char*)((void*)params + param_meta->offset))[PARAM_STR_MAX_LEN-1] = 0;
+            ((char*)((char*)params + param_meta->offset))[PARAM_STR_MAX_LEN-1] = 0;
 
             break;
         default:
