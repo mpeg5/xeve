@@ -1,0 +1,94 @@
+name: Release packages
+on:
+  release:
+    types: [published]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  # Matrix job - Create packages and attach them to latest release assets.
+  make-package:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        profile: [BASE, MAIN]
+
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies (Linux)
+        if: ${{matrix.os == 'ubuntu-latest'}}
+        run: |
+          sudo apt-get update -qq && sudo apt-get -y install \
+          build-essential \
+          cmake
+      - name: Set up MinGW (Windows)
+        if: ${{matrix.os == 'windows-latest'}}
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
+      - name: Get CMake (Windows)
+        if: ${{matrix.os == 'windows-latest'}}
+        uses: jwlawson/actions-setup-cmake@v1.13.0
+
+      - name: Install NSIS (Windows)
+        if: ${{matrix.os == 'windows-latest'}}
+        run: |
+          iwr -useb get.scoop.sh -outfile 'install.ps1'
+          .\install.ps1 -RunAsAdmin
+          scoop update
+          scoop bucket add extras
+          scoop install nsis
+
+      - name: Build Linux versions of xeve, generate packages and md5
+        if: ${{matrix.os == 'ubuntu-latest'}}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DSET_PROF=${{matrix.profile}} -DBUILD_TYPE=Release
+          make
+          make package
+
+      - name: Build Windows versions of xeve, generate packages and md5
+        if: ${{matrix.os == 'windows-latest'}}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "MinGW Makefiles" -DSET_PROF=${{matrix.profile}} -DBUILD_TYPE=Release
+          make
+          make package
+
+      - name: 'Upload Linux artifacts'
+        if: ${{matrix.os == 'ubuntu-latest'}}
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve-${{matrix.profile}}-linux-packages-${{github.event.release.tag_name}}
+          path: |
+            ${{ github.workspace }}/build/*.deb
+            ${{ github.workspace }}/build/*.md5
+          retention-days: 7
+
+      - name: 'Upload Windows artifacts'
+        if: ${{matrix.os == 'windows-latest'}}
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve-${{matrix.profile}}-windows-packages-${{github.event.release.tag_name}}
+          path: |
+            ${{ github.workspace }}/build/*.exe
+            ${{ github.workspace }}/build/*.md5
+          retention-days: 7
+
+      - name: Upload assets to GitHub Release
+        uses: xresloader/upload-to-github-release@v1.3.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          file: "build/*.deb; build/*.exe; build/*.md5"
+          update_latest_release: true
+          draft: false
+          overwrite: true
