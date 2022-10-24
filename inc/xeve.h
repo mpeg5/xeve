@@ -585,14 +585,91 @@ typedef struct _XEVE_STAT
 
 typedef void  * XEVE; /* XEVE instance identifier */
 
+/**
+ * @brief Create encoder object
+ *
+ * @param cdsc context containing coding parameters
+ * @param err error code
+ * @return encoder instance identifier on success, otherwise NULL
+ */
 XEVE XEVE_EXPORT xeve_create(XEVE_CDSC * cdsc, int * err);
+
+/**
+ * @brief Destroy encoder object
+ *
+ * @param id encoder instance identifier returned by xeve_create()
+ */
 void XEVE_EXPORT xeve_delete(XEVE id);
+
+/**
+ * @brief Push input frame to encoder
+ *
+ * @param id encoder instance identifier returned by xeve_create()
+ * @param[in] imgb input frame
+ * @return XEVE_OK on success
+ */
 int  XEVE_EXPORT xeve_push(XEVE id, XEVE_IMGB * imgb);
+
+/**
+ * @brief Encode pushed data
+ *
+ * @param id encoder haninstance identifier returned by xeve_create()
+ * @param[out] bitb output bitstream buffer
+ * @param[out] stat encoding status information
+ * @return XEVE_OK on success
+ */
 int  XEVE_EXPORT xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
+
+/**
+ * @brief Set or get encoder parameter using constant value
+ *
+ * Use XEVE_CFG_SET_<PARAM_NAME> constant as cfg param to set encoder param or XEVE_CFG_GET_<PARAM_NAME> to get encoder parameter
+ *
+ * @param id encoder haninstance identifier returned by xeve_create()
+ * @param cfg the constant value that defines the encoder parameter and type operation to do (get or set)
+ * @param buf input or output buffer depending on the cfg param
+ * @param size size of the input or output buffer depending on the cfg param
+ * @return XEVE_OK on success, otherwise XEVE_ERR
+ */
 int  XEVE_EXPORT xeve_config(XEVE id, int cfg, void * buf, int * size);
+
+/**
+ * @brief Initialize xeve encoder with default parameters
+ *
+ * @param[in] param encoding parameters
+ * @return XEVE_OK on success, otherwise XEVE_ERR
+ */
 int  XEVE_EXPORT xeve_param_default(XEVE_PARAM* param);
+
+/**
+ * @brief Set profile, preset and tune parameters
+ *
+ * @param param encoding parameters
+ * @param[in] profile encoding profile (form 0 to 1) [0:baseline, 1: main]
+ * @param[in] preset encoding preset for setting encoding speed (from 0 to 4) [0:default, 1:fast, 2:medium, 3:slow, 4:placebo]
+ * @param[in] tune tuning parameter for special purpose operation (from 0 to 2) [0:none, 1: zerolatency, 2:psnr]
+ * @return XEVE_OK on success, otherwise XEVE_ERR
+ */
 int  XEVE_EXPORT xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune);
+
+/**
+ * @brief Check the correctness of coding parameters
+ *
+ * @param[in] param encoding parameters
+ * @return XEVE_OK on success, otherwise XEVE_ERR
+ */
 int  XEVE_EXPORT xeve_param_check(const XEVE_PARAM* param);
+
+/**
+ * @brief Set encoder parameter by name
+ *
+ * @param param encoding parameters
+ * @param[in] name name of the parameter
+ * @param[in] value value of the parameter of a given name
+ * @retval XEVE_OK on success
+ * @retval XEVE_ERR_INVALID_ARGUMENT
+ * @retval XEVE_ERR
+ */
 int  XEVE_EXPORT xeve_param_parse(XEVE_PARAM * param, const char * name, const char * value);
 
 #ifdef __cplusplus
