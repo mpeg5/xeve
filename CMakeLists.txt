@@ -10,7 +10,7 @@ function(get_versions versionstring VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 endfunction()
 
 execute_process(
-    COMMAND git describe --abbrev=0 --tags
+    COMMAND git describe --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=0 --tags
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     RESULT_VARIABLE RESULT
     OUTPUT_VARIABLE OUTPUT)
