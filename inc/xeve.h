@@ -613,7 +613,7 @@ int  XEVE_EXPORT xeve_push(XEVE id, XEVE_IMGB * imgb);
 /**
  * @brief Encode pushed data
  *
- * @param id encoder haninstance identifier returned by xeve_create()
+ * @param id encoder instance identifier returned by xeve_create()
  * @param[out] bitb output bitstream buffer
  * @param[out] stat encoding status information
  * @return XEVE_OK on success
@@ -625,7 +625,7 @@ int  XEVE_EXPORT xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat);
  *
  * Use XEVE_CFG_SET_<PARAM_NAME> constant as cfg param to set encoder param or XEVE_CFG_GET_<PARAM_NAME> to get encoder parameter
  *
- * @param id encoder haninstance identifier returned by xeve_create()
+ * @param id encoder instance identifier returned by xeve_create()
  * @param cfg the constant value that defines the encoder parameter and type operation to do (get or set)
  * @param buf input or output buffer depending on the cfg param
  * @param size size of the input or output buffer depending on the cfg param
