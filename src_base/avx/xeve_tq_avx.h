@@ -33,6 +33,7 @@
 
 #if X86_SSE
 extern const XEVE_TXB xeve_tbl_txb_avx[MAX_TR_LOG2];
+#endif /* X86_SSE */
 
 #define CALCU_2x8(c0, c1, d0, d1) \
     v0 = _mm256_madd_epi16(s0, c0); \
@@ -116,7 +117,5 @@ extern const XEVE_TXB xeve_tbl_txb_avx[MAX_TR_LOG2];
     d5 = _mm256_srai_epi32(d5, shift); \
     d6 = _mm256_srai_epi32(d6, shift); \
     d7 = _mm256_srai_epi32(d7, shift)
-
-#endif /* X86_SSE */
 
 #endif /* _XEVE_TQ_AVX_H_  */

@@ -309,7 +309,7 @@ void xeve_it_MxN_ats_intra(s16 *coef, int tuw, int tuh, int bit_depth, const int
     xeve_func_itrans[t_idx_h][log2_minus1_w](t, coef, shift_2nd, tuh, 0, skip_w);
 }
 
-static void itx_pb2(s16 *src, s16 *dst, int shift, int line)
+void itx_pb2(s16 *src, s16 *dst, int shift, int line)
 {
     int j;
     int E, O;
@@ -325,7 +325,7 @@ static void itx_pb2(s16 *src, s16 *dst, int shift, int line)
     }
 }
 
-static void itx_pb4(s16 *src, s16 *dst, int shift, int line)
+void itx_pb4(s16 *src, s16 *dst, int shift, int line)
 {
     int j;
     int E[2], O[2];
@@ -347,7 +347,7 @@ static void itx_pb4(s16 *src, s16 *dst, int shift, int line)
     }
 }
 
-static void itx_pb8(s16 *src, s16 *dst, int shift, int line)
+void itx_pb8(s16 *src, s16 *dst, int shift, int line)
 {
     int j, k;
     int E[4], O[4];
@@ -381,7 +381,7 @@ static void itx_pb8(s16 *src, s16 *dst, int shift, int line)
     }
 }
 
-static void itx_pb16(s16 *src, s16 *dst, int shift, int line)
+void itx_pb16(s16 *src, s16 *dst, int shift, int line)
 {
     int j, k;
     int E[8], O[8];
@@ -427,7 +427,7 @@ static void itx_pb16(s16 *src, s16 *dst, int shift, int line)
     }
 }
 
-static void itx_pb32(s16 *src, s16 *dst, int shift, int line)
+void itx_pb32(s16 *src, s16 *dst, int shift, int line)
 {
     int j, k;
     int E[16], O[16];
@@ -505,7 +505,7 @@ static void itx_pb32(s16 *src, s16 *dst, int shift, int line)
     }
 }
 
-static void itx_pb64(s16 *src, s16 *dst, int shift, int line)
+void itx_pb64(s16 *src, s16 *dst, int shift, int line)
 {
     const int tx_size = 64;
     const s8 *tm = xeve_tbl_tm64[0];

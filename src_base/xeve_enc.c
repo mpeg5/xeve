@@ -1753,8 +1753,6 @@ int xeve_ready(XEVE_CTX* ctx)
 
         if (ctx->param.use_fcst)
         {
-            ctx->pico_buf[i]->spic = xeve_alloc_spic_l(ctx->w, ctx->h);
-
             f_blk = ctx->fcst.f_blk;
             size = sizeof(u8) * f_blk;
             ctx->pico_buf[i]->sinfo.map_pdir = xeve_malloc(size);
@@ -1835,6 +1833,7 @@ ERR:
     xeve_mfree_fast(ctx->map_depth);
     xeve_mfree_fast(ctx->map_cu_mode);
     xeve_mfree_fast(ctx->sh_array);
+    xeve_mfree(ctx->tile);
 
     //free the threadpool and created thread if any
     if (ctx->sync_block)
@@ -1862,14 +1861,13 @@ ERR:
             ctx->tc = 0;
         }
     }
-
+    xeve_mfree_fast(ctx->map_tidx);
     xeve_mfree_fast((void*)ctx->sync_flag);
 
-    if (ctx->param.use_fcst)
+    for (i = 0; i < ctx->pico_max_cnt; i++)
     {
-        for (i = 0; i < ctx->pico_max_cnt; i++)
+        if (ctx->param.use_fcst)
         {
-            xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir);
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir_bi);
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv);
@@ -1880,8 +1878,10 @@ ERR:
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_blk);
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_scu);
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.transfer_cost);
-            xeve_mfree_fast(ctx->pico_buf[i]);
         }
+        if(ctx->pico_buf[i] != NULL)
+            xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
+        xeve_mfree_fast(ctx->pico_buf[i]);
     }
 
     if (core)
@@ -1889,7 +1889,7 @@ ERR:
         xeve_core_free(core);
     }
 
-    if (ctx->param.rc_type != 0 || ctx->param.lookahead != 0)
+    if (ctx->param.rc_type != 0 || ctx->param.lookahead != 0 || ctx->param.use_fcst != 0)
     {
         xeve_rc_delete(ctx);
     }
@@ -1911,7 +1911,7 @@ void xeve_flush(XEVE_CTX * ctx)
     xeve_mfree_fast(ctx->map_ipm);
     xeve_mfree_fast(ctx->map_depth);
     xeve_mfree_fast(ctx->sh_array);
-
+    xeve_mfree(ctx->tile);
     //release the sync block
     if (ctx->sync_block)
     {
@@ -1940,7 +1940,7 @@ void xeve_flush(XEVE_CTX * ctx)
         }
     }
 
-        xeve_mfree_fast((void*) ctx->sync_flag);
+    xeve_mfree_fast((void*) ctx->sync_flag);
 
     xeve_mfree_fast(ctx->map_cu_mode);
     xeve_picbuf_free(ctx->pic_dbk);
@@ -1951,29 +1951,32 @@ void xeve_flush(XEVE_CTX * ctx)
         xeve_core_free(ctx->core[i]);
     }
 
-    for(i = 0; i < ctx->pico_max_cnt; i++)
+    for (i = 0; i < ctx->pico_max_cnt; i++)
     {
+        if (ctx->param.use_fcst)
+        {
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir_bi);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv_bi);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv_pga);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_uni_lcost);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_bi_lcost);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_blk);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_scu);
+            xeve_mfree_fast(ctx->pico_buf[i]->sinfo.transfer_cost);
+        }
         xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
-
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir);
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_pdir_bi);
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv);
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv_bi);
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_mv_pga);
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_uni_lcost);
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_bi_lcost);
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_blk);
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_scu);
-        xeve_mfree_fast(ctx->pico_buf[i]->sinfo.transfer_cost);
         xeve_mfree_fast(ctx->pico_buf[i]);
     }
+    xeve_mfree_fast(ctx->map_tidx);
 
     for(i = 0; i < XEVE_MAX_INBUF_CNT; i++)
     {
         if(ctx->inbuf[i]) ctx->inbuf[i]->release(ctx->inbuf[i]);
     }
 
-    if (ctx->param.rc_type != 0 ||  ctx->param.aq_mode !=0)
+    if (ctx->param.rc_type != 0 || ctx->param.lookahead != 0 || ctx->param.use_fcst != 0)
     {
         xeve_rc_delete(ctx);
     }

@@ -105,10 +105,10 @@ static void tx_pb8_avx(s16* src, s16* dst, int shift, int line)
             d0 = _mm256_permute4x64_epi64(d0, 0xd8);
             d1 = _mm256_permute4x64_epi64(d1, 0xd8);
 
-            _mm_store_si128((__m128i*)dst, _mm256_castsi256_si128(d0));
-            _mm_store_si128((__m128i*)(dst + 1 * line), _mm256_extracti128_si256(d0, 1));
-            _mm_store_si128((__m128i*)(dst + 2 * line), _mm256_castsi256_si128(d1));
-            _mm_store_si128((__m128i*)(dst + 3 * line), _mm256_extracti128_si256(d1, 1));
+            _mm_storeu_si128((__m128i*)dst, _mm256_castsi256_si128(d0));
+            _mm_storeu_si128((__m128i*)(dst + 1 * line), _mm256_extracti128_si256(d0, 1));
+            _mm_storeu_si128((__m128i*)(dst + 2 * line), _mm256_castsi256_si128(d1));
+            _mm_storeu_si128((__m128i*)(dst + 3 * line), _mm256_extracti128_si256(d1, 1));
 
             CALCU_2x8(coeff[1], coeff[6], d0, d1);
             CALCU_2x8(coeff[3], coeff[7], d2, d3);
@@ -120,10 +120,10 @@ static void tx_pb8_avx(s16* src, s16* dst, int shift, int line)
             d0 = _mm256_permute4x64_epi64(d0, 0xd8);
             d1 = _mm256_permute4x64_epi64(d1, 0xd8);
 
-            _mm_store_si128((__m128i*)(dst + 4 * line), _mm256_castsi256_si128(d0));
-            _mm_store_si128((__m128i*)(dst + 5 * line), _mm256_extracti128_si256(d0, 1));
-            _mm_store_si128((__m128i*)(dst + 6 * line), _mm256_castsi256_si128(d1));
-            _mm_store_si128((__m128i*)(dst + 7 * line), _mm256_extracti128_si256(d1, 1));
+            _mm_storeu_si128((__m128i*)(dst + 4 * line), _mm256_castsi256_si128(d0));
+            _mm_storeu_si128((__m128i*)(dst + 5 * line), _mm256_extracti128_si256(d0, 1));
+            _mm_storeu_si128((__m128i*)(dst + 6 * line), _mm256_castsi256_si128(d1));
+            _mm_storeu_si128((__m128i*)(dst + 7 * line), _mm256_extracti128_si256(d1, 1));
 
             dst += 8;
         }
@@ -220,14 +220,14 @@ static void tx_pb16_avx(s16* src, s16* dst, int shift, int line)
             coeffs[6] = _mm256_set_epi16(18, -50, 75, -89, 89, -75, 50, -18, -18, 50, -75, 89, -89, 75, -50, 18);
             coeffs[7] = _mm256_set_epi16(-9, 26, -43, 57, -70, 80, -87, 90, -90, 87, -80, 70, -57, 43, -26, 9);
 
-            _mm_store_si128((__m128i*)(dst), _mm256_castsi256_si128(d0));
-            _mm_store_si128((__m128i*)(dst + 1 * line), _mm256_extracti128_si256(d0, 1));
-            _mm_store_si128((__m128i*)(dst + 2 * line), _mm256_castsi256_si128(d1));
-            _mm_store_si128((__m128i*)(dst + 3 * line), _mm256_extracti128_si256(d1, 1));
-            _mm_store_si128((__m128i*)(dst + 4 * line), _mm256_castsi256_si128(d2));
-            _mm_store_si128((__m128i*)(dst + 5 * line), _mm256_extracti128_si256(d2, 1));
-            _mm_store_si128((__m128i*)(dst + 6 * line), _mm256_castsi256_si128(d3));
-            _mm_store_si128((__m128i*)(dst + 7 * line), _mm256_extracti128_si256(d3, 1));
+            _mm_storeu_si128((__m128i*)(dst), _mm256_castsi256_si128(d0));
+            _mm_storeu_si128((__m128i*)(dst + 1 * line), _mm256_extracti128_si256(d0, 1));
+            _mm_storeu_si128((__m128i*)(dst + 2 * line), _mm256_castsi256_si128(d1));
+            _mm_storeu_si128((__m128i*)(dst + 3 * line), _mm256_extracti128_si256(d1, 1));
+            _mm_storeu_si128((__m128i*)(dst + 4 * line), _mm256_castsi256_si128(d2));
+            _mm_storeu_si128((__m128i*)(dst + 5 * line), _mm256_extracti128_si256(d2, 1));
+            _mm_storeu_si128((__m128i*)(dst + 6 * line), _mm256_castsi256_si128(d3));
+            _mm_storeu_si128((__m128i*)(dst + 7 * line), _mm256_extracti128_si256(d3, 1));
 
             for (i = 0; i < 8; ++i)
             {
@@ -253,14 +253,14 @@ static void tx_pb16_avx(s16* src, s16* dst, int shift, int line)
             d2 = _mm256_permute4x64_epi64(d2, 0xd8);
             d3 = _mm256_permute4x64_epi64(d3, 0xd8);
 
-            _mm_store_si128((__m128i*)(dst + 8 * line), _mm256_castsi256_si128(d0));
-            _mm_store_si128((__m128i*)(dst + 9 * line), _mm256_extracti128_si256(d0, 1));
-            _mm_store_si128((__m128i*)(dst + 10 * line), _mm256_castsi256_si128(d1));
-            _mm_store_si128((__m128i*)(dst + 11 * line), _mm256_extracti128_si256(d1, 1));
-            _mm_store_si128((__m128i*)(dst + 12 * line), _mm256_castsi256_si128(d2));
-            _mm_store_si128((__m128i*)(dst + 13 * line), _mm256_extracti128_si256(d2, 1));
-            _mm_store_si128((__m128i*)(dst + 14 * line), _mm256_castsi256_si128(d3));
-            _mm_store_si128((__m128i*)(dst + 15 * line), _mm256_extracti128_si256(d3, 1));
+            _mm_storeu_si128((__m128i*)(dst + 8 * line), _mm256_castsi256_si128(d0));
+            _mm_storeu_si128((__m128i*)(dst + 9 * line), _mm256_extracti128_si256(d0, 1));
+            _mm_storeu_si128((__m128i*)(dst + 10 * line), _mm256_castsi256_si128(d1));
+            _mm_storeu_si128((__m128i*)(dst + 11 * line), _mm256_extracti128_si256(d1, 1));
+            _mm_storeu_si128((__m128i*)(dst + 12 * line), _mm256_castsi256_si128(d2));
+            _mm_storeu_si128((__m128i*)(dst + 13 * line), _mm256_extracti128_si256(d2, 1));
+            _mm_storeu_si128((__m128i*)(dst + 14 * line), _mm256_castsi256_si128(d3));
+            _mm_storeu_si128((__m128i*)(dst + 15 * line), _mm256_extracti128_si256(d3, 1));
 
             dst += 8;
         }
@@ -603,10 +603,10 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             d0 = _mm256_permute4x64_epi64(d0, 0xd8);
             d1 = _mm256_permute4x64_epi64(d1, 0xd8);
 
-            _mm_store_si128((__m128i*)dst, _mm256_castsi256_si128(d0));
-            _mm_store_si128((__m128i*)(dst + 8 * line), _mm256_castsi256_si128(d1));
-            _mm_store_si128((__m128i*)(dst + 16 * line), _mm256_extracti128_si256(d0, 1));
-            _mm_store_si128((__m128i*)(dst + 24 * line), _mm256_extracti128_si256(d1, 1));
+            _mm_storeu_si128((__m128i*)dst, _mm256_castsi256_si128(d0));
+            _mm_storeu_si128((__m128i*)(dst + 8 * line), _mm256_castsi256_si128(d1));
+            _mm_storeu_si128((__m128i*)(dst + 16 * line), _mm256_extracti128_si256(d0, 1));
+            _mm_storeu_si128((__m128i*)(dst + 24 * line), _mm256_extracti128_si256(d1, 1));
 
             v[0] = _mm256_mullo_epi32(eeo[0], coeffs[0]);
             v[1] = _mm256_mullo_epi32(eeo[1], coeffs[0]);
@@ -656,10 +656,10 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             d0 = _mm256_permute4x64_epi64(d0, 0xd8);
             d1 = _mm256_permute4x64_epi64(d1, 0xd8);
 
-            _mm_store_si128((__m128i*)(dst + 4 * line), _mm256_castsi256_si128(d0));
-            _mm_store_si128((__m128i*)(dst + 12 * line), _mm256_extracti128_si256(d0, 1));
-            _mm_store_si128((__m128i*)(dst + 20 * line), _mm256_castsi256_si128(d1));
-            _mm_store_si128((__m128i*)(dst + 28 * line), _mm256_extracti128_si256(d1, 1));
+            _mm_storeu_si128((__m128i*)(dst + 4 * line), _mm256_castsi256_si128(d0));
+            _mm_storeu_si128((__m128i*)(dst + 12 * line), _mm256_extracti128_si256(d0, 1));
+            _mm_storeu_si128((__m128i*)(dst + 20 * line), _mm256_castsi256_si128(d1));
+            _mm_storeu_si128((__m128i*)(dst + 28 * line), _mm256_extracti128_si256(d1, 1));
 
 #define _mm256_madd_epi32_xeve(a, b, c, d) \
         _mm256_hadd_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d))
@@ -691,14 +691,14 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             d2 = _mm256_permute4x64_epi64(d2, 0xd8);
             d3 = _mm256_permute4x64_epi64(d3, 0xd8);
 
-            _mm_store_si128((__m128i*)(dst + 2 * line), _mm256_castsi256_si128(d0));
-            _mm_store_si128((__m128i*)(dst + 6 * line), _mm256_extracti128_si256(d0, 1));
-            _mm_store_si128((__m128i*)(dst + 10 * line), _mm256_castsi256_si128(d1));
-            _mm_store_si128((__m128i*)(dst + 14 * line), _mm256_extracti128_si256(d1, 1));
-            _mm_store_si128((__m128i*)(dst + 18 * line), _mm256_castsi256_si128(d2));
-            _mm_store_si128((__m128i*)(dst + 22 * line), _mm256_extracti128_si256(d2, 1));
-            _mm_store_si128((__m128i*)(dst + 26 * line), _mm256_castsi256_si128(d3));
-            _mm_store_si128((__m128i*)(dst + 30 * line), _mm256_extracti128_si256(d3, 1));
+            _mm_storeu_si128((__m128i*)(dst + 2 * line), _mm256_castsi256_si128(d0));
+            _mm_storeu_si128((__m128i*)(dst + 6 * line), _mm256_extracti128_si256(d0, 1));
+            _mm_storeu_si128((__m128i*)(dst + 10 * line), _mm256_castsi256_si128(d1));
+            _mm_storeu_si128((__m128i*)(dst + 14 * line), _mm256_extracti128_si256(d1, 1));
+            _mm_storeu_si128((__m128i*)(dst + 18 * line), _mm256_castsi256_si128(d2));
+            _mm_storeu_si128((__m128i*)(dst + 22 * line), _mm256_extracti128_si256(d2, 1));
+            _mm_storeu_si128((__m128i*)(dst + 26 * line), _mm256_castsi256_si128(d3));
+            _mm_storeu_si128((__m128i*)(dst + 30 * line), _mm256_extracti128_si256(d3, 1));
 
 
 #define _mm256_madd1_epi32_xeve(a, b, c, d) \
@@ -740,14 +740,14 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             d2 = _mm256_permute4x64_epi64(d2, 0xd8);
             d3 = _mm256_permute4x64_epi64(d3, 0xd8);
 
-            _mm_store_si128((__m128i*)(dst + line), _mm256_castsi256_si128(d0));
-            _mm_store_si128((__m128i*)(dst + 3 * line), _mm256_extracti128_si256(d0, 1));
-            _mm_store_si128((__m128i*)(dst + 5 * line), _mm256_castsi256_si128(d1));
-            _mm_store_si128((__m128i*)(dst + 7 * line), _mm256_extracti128_si256(d1, 1));
-            _mm_store_si128((__m128i*)(dst + 9 * line), _mm256_castsi256_si128(d2));
-            _mm_store_si128((__m128i*)(dst + 11 * line), _mm256_extracti128_si256(d2, 1));
-            _mm_store_si128((__m128i*)(dst + 13 * line), _mm256_castsi256_si128(d3));
-            _mm_store_si128((__m128i*)(dst + 15 * line), _mm256_extracti128_si256(d3, 1));
+            _mm_storeu_si128((__m128i*)(dst + line), _mm256_castsi256_si128(d0));
+            _mm_storeu_si128((__m128i*)(dst + 3 * line), _mm256_extracti128_si256(d0, 1));
+            _mm_storeu_si128((__m128i*)(dst + 5 * line), _mm256_castsi256_si128(d1));
+            _mm_storeu_si128((__m128i*)(dst + 7 * line), _mm256_extracti128_si256(d1, 1));
+            _mm_storeu_si128((__m128i*)(dst + 9 * line), _mm256_castsi256_si128(d2));
+            _mm_storeu_si128((__m128i*)(dst + 11 * line), _mm256_extracti128_si256(d2, 1));
+            _mm_storeu_si128((__m128i*)(dst + 13 * line), _mm256_castsi256_si128(d3));
+            _mm_storeu_si128((__m128i*)(dst + 15 * line), _mm256_extracti128_si256(d3, 1));
 
             for (i = 8; i < 16; ++i)
             {
@@ -786,14 +786,14 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             d2 = _mm256_permute4x64_epi64(d2, 0xd8);
             d3 = _mm256_permute4x64_epi64(d3, 0xd8);
 
-            _mm_store_si128((__m128i*)(dst + 17 * line), _mm256_castsi256_si128(d0));
-            _mm_store_si128((__m128i*)(dst + 19 * line), _mm256_extracti128_si256(d0, 1));
-            _mm_store_si128((__m128i*)(dst + 21 * line), _mm256_castsi256_si128(d1));
-            _mm_store_si128((__m128i*)(dst + 23 * line), _mm256_extracti128_si256(d1, 1));
-            _mm_store_si128((__m128i*)(dst + 25 * line), _mm256_castsi256_si128(d2));
-            _mm_store_si128((__m128i*)(dst + 27 * line), _mm256_extracti128_si256(d2, 1));
-            _mm_store_si128((__m128i*)(dst + 29 * line), _mm256_castsi256_si128(d3));
-            _mm_store_si128((__m128i*)(dst + 31 * line), _mm256_extracti128_si256(d3, 1));
+            _mm_storeu_si128((__m128i*)(dst + 17 * line), _mm256_castsi256_si128(d0));
+            _mm_storeu_si128((__m128i*)(dst + 19 * line), _mm256_extracti128_si256(d0, 1));
+            _mm_storeu_si128((__m128i*)(dst + 21 * line), _mm256_castsi256_si128(d1));
+            _mm_storeu_si128((__m128i*)(dst + 23 * line), _mm256_extracti128_si256(d1, 1));
+            _mm_storeu_si128((__m128i*)(dst + 25 * line), _mm256_castsi256_si128(d2));
+            _mm_storeu_si128((__m128i*)(dst + 27 * line), _mm256_extracti128_si256(d2, 1));
+            _mm_storeu_si128((__m128i*)(dst + 29 * line), _mm256_castsi256_si128(d3));
+            _mm_storeu_si128((__m128i*)(dst + 31 * line), _mm256_extracti128_si256(d3, 1));
 
             dst += 8;
         }
