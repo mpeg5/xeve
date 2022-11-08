@@ -337,7 +337,7 @@ XEVE_ALF * xeve_alf_create_buf(int bit_depth);
 void       xeve_alf_delete_buf(XEVE_ALF * enc_alf);
 void       xeve_alf_set_reset_alf_buf_flag(XEVE_ALF * enc_anf, int flag);
 u8         xeve_alf_aps_get_current_alf_idx(XEVE_ALF * enc_anf);
-void       xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_anf, const double* lambdas, XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_ALF_SLICE_PARAM * input_alf_slice_param);
+int       xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_anf, const double* lambdas, XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_ALF_SLICE_PARAM * input_alf_slice_param);
 int        xeve_alf_create(XEVE_ALF * enc_alf, const int pic_width, const int pic_height, const int max_cu_width, const int max_cu_height, const int max_cu_depth, const int chroma_format_idc, int bit_depth);
 void       xeve_alf_destroy(XEVE_ALF * enc_alf);
 void       xeve_alf_process(XEVE_ALF * enc_alf, CODING_STRUCTURE * cs, const double *lambdas, ALF_SLICE_PARAM* alf_slice_param);

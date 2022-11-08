@@ -1745,14 +1745,11 @@ int xeve_ready(XEVE_CTX* ctx)
         xeve_assert_gv(ctx->pico_buf[i], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
         xeve_mset(ctx->pico_buf[i], 0, sizeof(XEVE_PICO));
 
-        XEVE_PICO *pico;
-        pico = ctx->pico_buf[i];
-
-        pico->spic = xeve_alloc_spic_l(ctx->w, ctx->h);
-        xeve_assert_g(pico->spic != NULL, ERR);
-
         if (ctx->param.use_fcst)
         {
+            ctx->pico_buf[i]->spic = xeve_alloc_spic_l(ctx->w, ctx->h);
+            xeve_assert_g(ctx->pico_buf[i]->spic != NULL, ERR);
+
             f_blk = ctx->fcst.f_blk;
             size = sizeof(u8) * f_blk;
             ctx->pico_buf[i]->sinfo.map_pdir = xeve_malloc(size);
@@ -1878,9 +1875,10 @@ ERR:
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_blk);
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_scu);
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.transfer_cost);
+            if (ctx->pico_buf[i] != NULL)
+                xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
         }
-        if(ctx->pico_buf[i] != NULL)
-            xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
+
         xeve_mfree_fast(ctx->pico_buf[i]);
     }
 
@@ -1965,8 +1963,8 @@ void xeve_flush(XEVE_CTX * ctx)
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_blk);
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.map_qp_scu);
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.transfer_cost);
+            xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
         }
-        xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
         xeve_mfree_fast(ctx->pico_buf[i]);
     }
     xeve_mfree_fast(ctx->map_tidx);
