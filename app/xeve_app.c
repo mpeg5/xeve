@@ -1196,12 +1196,12 @@ int main(int argc, const char **argv)
             }
             /* read original image */
             ret = imgb_read(fp_inp, ilist_t->imgb, param->w, param->h, is_y4m);
-            if ((ret < 0) || pic_icnt >= max_frames)
+            if ((ret < 0) || (is_max_frames && (pic_icnt >= max_frames)))
             {
                 if(ret < 0)
                     logv3("reached out the end of input file\n");
 
-                if (pic_icnt >= max_frames)
+                if (is_max_frames && (pic_icnt >= max_frames))
                     logv3("number of frames to be coded %d \n", max_frames);
 
                 state = STATE_BUMPING;
