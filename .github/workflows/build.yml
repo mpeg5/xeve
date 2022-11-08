@@ -21,27 +21,26 @@ jobs:
       - name: install dependencies
         run: |
           sudo apt-get update -qq && sudo apt-get -y install \
-          build-essential \
           cmake
-        
+
       - name: Build xeve baseline
         run: |
           mkdir build
           cd build
           cmake .. -DSET_PROF=BASE
           make
-          
+
       - name: 'Upload executable Artifact'
         uses: actions/upload-artifact@v3
         with:
-          name: xeveb_app-linux-artifact
+          name: xeveb_app-linux
           path: build/bin/xeveb_app
           retention-days: 5
-          
+
       - name: 'Upload library Artifact'
         uses: actions/upload-artifact@v3
         with:
-          name: libxeveb-linux-artifact
+          name: libxeveb-linux
           path: build/lib/
           retention-days: 5
 
@@ -51,34 +50,33 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      
+
       - name: install dependencies
         run: |
           sudo apt-get update -qq && sudo apt-get -y install \
-          build-essential \
           cmake
-          
+
       - name: Build xeve main
         run: |
           mkdir build
           cd build
           cmake ..
           make
-          
+
       - name: 'Upload executable Artifact'
         uses: actions/upload-artifact@v3
         with:
-          name: xeve_app-linux-artifact
+          name: xeve_app-linux
           path: build/bin/xeve_app
           retention-days: 5
-          
+
       - name: 'Upload library Artifact'
         uses: actions/upload-artifact@v3
         with:
-          name: libxeve-linux-artifact
+          name: libxeve-linux
           path: build/lib/
           retention-days: 5
-          
+
   build-baseline-windows:
     runs-on: windows-latest
     steps:
@@ -86,35 +84,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up MinGW
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x64
-          
-      - name: Get CMake
-        uses: jwlawson/actions-setup-cmake@v1.13.0
-        
       - name: Build xeve baseline
         run: |
           mkdir build
           cd build
           cmake .. -G "MinGW Makefiles" -DSET_PROF=BASE
           make
-          
-# TODO: need to check build paths on Windows          
-#       - name: 'Upload executable Artifact'
-#         uses: actions/upload-artifact@v3
-#         with:
-#           name: xeveb_app-windows-artifact
-#           path: build/bin/xeveb_app
-#           retention-days: 5
-          
-#       - name: 'Upload library Artifact'
-#         uses: actions/upload-artifact@v3
-#         with:
-#           name: libxeveb-windows-artifact
-#           path: build/lib/
-#           retention-days: 5
+
+      - name: 'Upload executable Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeveb_app-windows
+          path: build/bin/xeveb_app.exe
+          retention-days: 5
+
+      - name: 'Upload library Artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: libxeveb-windows
+          path: build/src_base/libxeveb.*
+          retention-days: 5
 
   build-main-windows:
     runs-on: windows-latest
@@ -122,33 +111,24 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          
-      - name: Set up MinGW
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x64
-          
-      - name: Get CMake
-        uses: jwlawson/actions-setup-cmake@v1.13.0
-      
+
       - name: Build xeve main
         run: |
           mkdir build
           cd build
           cmake .. -G "MinGW Makefiles"
           make
-          
-# TODO: need to check build paths on Windows          
-#       - name: 'Upload executable Artifact'
-#         uses: actions/upload-artifact@v3
-#         with:
-#           name: xeve_app-windows-artifact
-#           path: build/bin/xeve_app
-#           retention-days: 5
-          
-#       - name: 'Upload library Artifact'
-#         uses: actions/upload-artifact@v3
-#         with:
-#           name: libxeve-windows-artifact
-#           path: build/lib/
-#           retention-days: 5
+
+      - name: 'Upload executable Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve_app-windows
+          path: build/bin/xeve_app.exe
+          retention-days: 5
+
+      - name: 'Upload library Artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: libxeve-windows
+          path: build/src_main/libxeve.*
+          retention-days: 5
