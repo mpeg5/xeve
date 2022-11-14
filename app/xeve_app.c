@@ -124,7 +124,7 @@ ERR:
 
 static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
 {
-    int  ret, size, value;
+    int  ret, size;
 
     size = 4;
     ret = xeve_config(id, XEVE_CFG_SET_SEI_CMD, &args->info, &size);
@@ -151,7 +151,7 @@ static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
 static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
     int * preset, int *tune)
 {
-    int tprofile, tpreset, ttune, flag;
+    int tprofile, tpreset, ttune;
 
     if (strlen(args->profile) == 0) tprofile = XEVE_PROFILE_BASELINE; /* default */
     else if (!strcmp(args->profile, "baseline")) tprofile = XEVE_PROFILE_BASELINE;
@@ -191,8 +191,6 @@ static void print_stat_init(ARGS_PARSER * args)
 
 static void print_config(ARGS_PARSER * args, XEVE_PARAM * param)
 {
-    int s, v, flag;
-
     if(op_verbose < VERBOSE_FRAME) return;
 
     logv3_line("Configurations");
@@ -339,7 +337,7 @@ int setup_bumping(XEVE id)
     size = sizeof(int);
     if(XEVE_FAILED(xeve_config(id, XEVE_CFG_SET_FORCE_OUT, (void *)(&val), &size)))
     {
-        logerr("failed to fource output\n");
+        logerr("failed to force output\n");
         return -1;
     }
     return 0;
@@ -1198,9 +1196,14 @@ int main(int argc, const char **argv)
             }
             /* read original image */
             ret = imgb_read(fp_inp, ilist_t->imgb, param->w, param->h, is_y4m);
-            if ((ret < 0))
+            if ((ret < 0) || (is_max_frames && (pic_icnt >= max_frames)))
             {
-                logv3("reached out the end of input file\n");
+                if(ret < 0)
+                    logv3("reached out the end of input file\n");
+
+                if (is_max_frames && (pic_icnt >= max_frames))
+                    logv3("number of frames to be coded %d \n", max_frames);
+
                 state = STATE_BUMPING;
                 setup_bumping(id);
                 continue;

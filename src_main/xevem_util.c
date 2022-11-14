@@ -3588,38 +3588,31 @@ int xevem_ready(XEVE_CTX * ctx)
     ctx->log2_cudim = ctx->log2_culine << 1;
 
     ctx->param.framework_suco_max = XEVE_MIN(ctx->log2_max_cuwh, ctx->param.framework_suco_max);
-    mctx->enc_alf = xeve_alf_create_buf(ctx->param.codec_bit_depth);
-    xeve_alf_create(mctx->enc_alf, ctx->w, ctx->h, ctx->max_cuwh, ctx->max_cuwh, 5, ctx->param.chroma_format_idc, ctx->param.codec_bit_depth);
+
+    if (ctx->param.tool_alf)
+    {
+        mctx->enc_alf = xeve_alf_create_buf(ctx->param.codec_bit_depth);
+        xeve_alf_create(mctx->enc_alf, ctx->w, ctx->h, ctx->max_cuwh, ctx->max_cuwh, 5, ctx->param.chroma_format_idc, ctx->param.codec_bit_depth);
+    }
 
     if (xeve_ready(ctx) != XEVE_OK)
     {
         goto ERR;
     }
 
+    if (ctx->param.tool_alf)
+    {
+        size = sizeof(u8) * ctx->f_scu * N_C;
+        for (int i = 0; i < ctx->param.num_slice_in_pic; i++)
+        {
+            ctx->sh_array[i].alf_sh_param.alf_ctb_flag = (u8*)xeve_malloc(size);
+            xeve_assert_gv(ctx->sh_array[i].alf_sh_param.alf_ctb_flag, ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
+        }
+    }
+
     if (ctx->param.ibc_hash_search_flag)
     {
       mctx->ibc_hash = xeve_ibc_hash_create(ctx, ctx->w, ctx->h);
-    }
-
-    //initialize the threads to NULL
-    for (int i = 0; i < XEVE_MAX_THREADS; i++)
-    {
-        ctx->thread_pool[i] = 0;
-    }
-
-    //get the context synchronization handle
-    ctx->sync_block = get_synchronized_object();
-    xeve_assert_gv(ctx->sync_block != NULL, ret, XEVE_ERR_UNKNOWN, ERR);
-
-    if (ctx->param.threads >= 1)
-    {
-        ctx->tc = xeve_malloc(sizeof(THREAD_CONTROLLER));
-        init_thread_controller(ctx->tc, ctx->param.threads);
-        for (int i = 0; i < ctx->param.threads; i++)
-        {
-            ctx->thread_pool[i] = ctx->tc->create(ctx->tc, i);
-            xeve_assert_gv(ctx->thread_pool[i] != NULL, ret, XEVE_ERR_UNKNOWN, ERR);
-        }
     }
 
     if (mctx->map_affine == NULL)
@@ -3727,7 +3720,8 @@ ERR:
     xeve_mfree_fast(mctx->map_ats_mode_v);
     xeve_mfree_fast(mctx->map_ats_inter);
 
-    num_tiles = (ctx->param.tile_columns) * (ctx->param.tile_rows);
+    xeve_mfree(ctx->tile);
+
     for (int i = 0; i < ctx->param.threads; i++)
     {
         xeve_mfree_fast(mctx->ats_inter_pred_dist[i]);
@@ -3740,26 +3734,21 @@ ERR:
 
     if (ctx->param.tool_dra)
     {
-        if (mctx->dra_array)
-        {
-            xeve_mfree(mctx->dra_array);
-        }
+        xeve_mfree(mctx->dra_array);
     }
 
     if (ctx->param.tool_alf || ctx->param.tool_dra)
     {
-
         if (ctx->param.tool_alf)
         {
-            if (ctx->aps_gen_array[0].aps_data)
+            xeve_mfree(ctx->aps_gen_array[0].aps_data);
+
+            for (int i = 0; i < ctx->param.num_slice_in_pic; i++)
             {
-                xeve_mfree(ctx->aps_gen_array[0].aps_data);
+                xeve_mfree(ctx->sh_array[i].alf_sh_param.alf_ctb_flag);
             }
         }
-        if (ctx->aps_gen_array)
-        {
-            xeve_mfree(ctx->aps_gen_array);
-        }
+        xeve_mfree(ctx->aps_gen_array);
     }
 
     if (ctx->param.ibc_hash_search_flag && mctx->ibc_hash)
@@ -3784,6 +3773,13 @@ void xevem_flush(XEVE_CTX * ctx)
 
     xeve_assert(ctx);
 
+    //When ALF tool is enabled, free alf_ctb_flag mem inside sh_array before freeing sh_array
+    if (ctx->param.tool_alf)
+    {
+        for (int i = 0; i < ctx->param.num_slice_in_pic; i++)
+            xeve_mfree(ctx->sh_array[i].alf_sh_param.alf_ctb_flag);
+    }
+
     xeve_flush(ctx);
 
     xeve_mfree_fast(mctx->map_affine);
@@ -3804,10 +3800,7 @@ void xevem_flush(XEVE_CTX * ctx)
 
     if (ctx->param.tool_dra)
     {
-        if (mctx->dra_array)
-        {
-            xeve_mfree(mctx->dra_array);
-        }
+        xeve_mfree(mctx->dra_array);
     }
 
     if (ctx->param.tool_alf || ctx->param.tool_dra)
@@ -3815,15 +3808,9 @@ void xevem_flush(XEVE_CTX * ctx)
 
         if (ctx->param.tool_alf)
         {
-            if (ctx->aps_gen_array[0].aps_data)
-            {
-                xeve_mfree(ctx->aps_gen_array[0].aps_data);
-            }
+            xeve_mfree(ctx->aps_gen_array[0].aps_data);
         }
-        if (ctx->aps_gen_array)
-        {
-            xeve_mfree(ctx->aps_gen_array);
-        }
+        xeve_mfree(ctx->aps_gen_array);
     }
 
     if (ctx->param.ibc_hash_search_flag && mctx->ibc_hash)

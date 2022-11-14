@@ -307,11 +307,13 @@ int xeve_rc_set(XEVE_CTX * ctx)
 
     if (ctx->param.keyint == 0 && ctx->param.ref_pic_gap_length > 0) // LD Case
     {
-        rc->st_idx = XEVE_LOG2(ctx->param.ref_pic_gap_length) - 1;
+        // Table Index to be clipped to 0, if ctx->param.ref_pic_gap_length = 1
+        rc->st_idx = XEVE_MAX(0, XEVE_LOG2(ctx->param.ref_pic_gap_length) - 1);
     }
     else if (ctx->param.bframes > 0)
     {
-        rc->st_idx = XEVE_LOG2(ctx->param.gop_size) - 2;
+        // Table Index to be clipped to 0, if ctx->param.bframes = 1 and ctx->param.gop_size = 2
+        rc->st_idx = XEVE_MAX(0, XEVE_LOG2(ctx->param.gop_size) - 2);
     }
     else
     {

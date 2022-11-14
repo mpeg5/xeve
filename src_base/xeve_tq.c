@@ -689,25 +689,25 @@ static int xeve_quant_nnz(u8 qp, double lambda, int is_intra, s16 * coef, int lo
     }
     else
     {
-        s64 lev;
-        s64 offset;
+        s32 lev;
+        s32 offset;
         int sign;
         int i;
         int shift;
         int tr_shift;
-        int log2_size = (log2_cuw + log2_cuh) >> 1;
-        const int ns_shift = ((log2_cuw + log2_cuh) & 1) ? 7 : 0;
-        const int ns_scale = ((log2_cuw + log2_cuh) & 1) ? 181 : 1;
+        int log2cuwh_sum = log2_cuw + log2_cuh;
+        int log2_size = log2cuwh_sum >> 1;
+        int cuwh = (1 << (log2cuwh_sum));
 
-        tr_shift = MAX_TX_DYNAMIC_RANGE - bit_depth - log2_size + ns_shift;
+        tr_shift = MAX_TX_DYNAMIC_RANGE - bit_depth - log2_size;
         shift = QUANT_SHIFT + tr_shift + (qp / 6);
-        offset = (s64)((slice_type == SLICE_I) ? 171 : 85) << (s64)(shift - 9);
+        offset = (s32)((slice_type == SLICE_I) ? 171 : 85) << (s32)(shift - 9);
 
-        for(i = 0; i < (1 << (log2_cuw + log2_cuh)); i++)
+        for (i = 0; i < cuwh; i++)
         {
             sign = XEVE_SIGN_GET(coef[i]);
-            lev = (s64)XEVE_ABS(coef[i]) * (s64)scale;
-            lev = (s16)(((s64)lev * ns_scale + offset) >> shift);
+            lev = (s32)XEVE_ABS(coef[i]) * (s32)scale; // coeff is in 10 bit and scale is in 16 bit, so product should fit in 32 bit precision
+            lev = (s16)((lev + offset) >> shift);
             coef[i] = (s16)XEVE_SIGN_SET(lev, sign);
             nnz += !!(coef[i]);
         }

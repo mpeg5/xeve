@@ -1197,7 +1197,7 @@ XEVE_ALF * xeve_alf_create_buf(int bit_depth)
     return enc_alf;
 }
 
-void xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_ALF_SLICE_PARAM * input_alf_slice_param)
+int xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_ALF_SLICE_PARAM * input_alf_slice_param)
 {
     CODING_STRUCTURE cs;
     cs.ctx = (void*)ctx;
@@ -1241,8 +1241,10 @@ void xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEV
     }
 
     ALF_SLICE_PARAM alf_slice_param;
-    alf_slice_param.alf_ctb_flag = (u8 *)malloc(N_C * ctx->f_lcu * sizeof(u8));
-    input_alf_slice_param->alf_ctb_flag = (u8 *)malloc(N_C * ctx->f_lcu * sizeof(u8));
+    s32 size = sizeof(u8) * ctx->f_scu * N_C;
+    alf_slice_param.alf_ctb_flag = (u8 *)malloc(size);
+    if (alf_slice_param.alf_ctb_flag == NULL)
+        return XEVE_ERR;
     xeve_mset(alf_slice_param.alf_ctb_flag, 0, N_C * ctx->f_lcu * sizeof(u8));
     xeve_mset(input_alf_slice_param->alf_ctb_flag, 0, N_C * ctx->f_lcu * sizeof(u8));
     xeve_alf_process(enc_alf, &cs, lambdas, &alf_slice_param);
@@ -1300,6 +1302,9 @@ void xeve_alf_aps_enc_opt_process(XEVE_ALF * enc_alf, const double* lambdas, XEV
     input_alf_slice_param->temporal_alf_flag = (BOOL)alf_slice_param.temporal_alf_flag;
     input_alf_slice_param->reset_alf_buf_flag = (BOOL)alf_slice_param.reset_alf_buf_flag;
     input_alf_slice_param->store2_alf_buf_flag = (BOOL)alf_slice_param.store2_alf_buf_flag;
+    xeve_mfree(alf_slice_param.alf_ctb_flag);
+	
+	return XEVE_OK;
 }
 
 u8 xeve_alf_aps_get_current_alf_idx(XEVE_ALF * enc_alf)
@@ -4119,14 +4124,14 @@ int xevem_alf_aps(XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_SH* sh, XEVE_APS* aps)
 {
     XEVEM_CTX *mctx = (XEVEM_CTX *)ctx;
     XEVE_ALF  * enc_anf = (XEVE_ALF *)(mctx->enc_alf);
-
+    int ret = XEVE_OK;
     double lambdas[3];
     for (int i = 0; i < 3; i++)
         lambdas[i] = (ctx->lambda[i]) * ALF_LAMBDA_SCALE; //this is for appr match of different lambda sets
 
 
     xeve_alf_set_reset_alf_buf_flag(enc_anf, sh->slice_type == SLICE_I ? 1 : 0);
-    xeve_alf_aps_enc_opt_process(enc_anf, lambdas, ctx, pic, &(sh->alf_sh_param));
+    ret = xeve_alf_aps_enc_opt_process(enc_anf, lambdas, ctx, pic, &(sh->alf_sh_param));
 
     aps->alf_aps_param = sh->alf_sh_param;
     if (sh->alf_sh_param.reset_alf_buf_flag) // reset aps index counter (buffer) if ALF flag reset is present
@@ -4155,5 +4160,5 @@ int xevem_alf_aps(XEVE_CTX * ctx, XEVE_PIC * pic, XEVE_SH* sh, XEVE_APS* aps)
             sh->aps_signaled = aps->aps_id;
         }
     }
-    return XEVE_OK;
+    return ret;
 }
