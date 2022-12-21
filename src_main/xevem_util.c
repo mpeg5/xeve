@@ -3796,8 +3796,6 @@ void xevem_flush(XEVE_CTX * ctx)
         xeve_mfree_fast(mctx->ats_inter_num_pred[i]);
     }
 
-    xeve_mfree_fast(ctx->map_tidx);
-
     if (ctx->param.tool_dra)
     {
         xeve_mfree(mctx->dra_array);
