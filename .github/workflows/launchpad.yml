@@ -1,0 +1,25 @@
+# This is a basic workflow that is manually triggered
+
+name: Manual workflow
+
+on:
+  workflow_dispatch:
+
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "greet"
+  launchpad:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: init
+      run: |
+        sudo apt install dh-make
+        dh_make -c bsd -e maintainer@example.com --createorig -l
+
+    steps:
+    - name: test
+      run: |
+        echo "Setup"
+        dh_make
