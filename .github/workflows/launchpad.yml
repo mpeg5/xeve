@@ -12,6 +12,7 @@ jobs:
   launchpad:
     runs-on: ubuntu-latest
 
+    steps:
     - name: Fetch all Github Release Assets
       uses: dsaltares/fetch-gh-release-asset@1.1.0
       with:
@@ -19,15 +20,12 @@ jobs:
         file: "*"
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    steps:
     - name: Fetch Github Release Asset
       uses: dsaltares/fetch-gh-release-asset@1.1.0
       with:
         regex: true
         file: "*\\.tar.gz"
         token: ${{ secrets.GITHUB_TOKEN }}
-
-
 
     - name: init
       run: |
