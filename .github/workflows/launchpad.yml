@@ -1,28 +1,19 @@
-# This is a basic workflow that is manually triggered
+# This workfow will upload package to launchpad.net
 
 name: Launchpad
 
 on:
   workflow_dispatch:
 
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "greet"
   launchpad:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Fetch Github Release Asset
+    - name: Fetch sources from latest release
       run: |
-        # TODO: get latest release source tar.gz
-        # wget http://github.com/dariusz-f/xeve/archive/master.tar.gz
 
         # https://geraldonit.com/2019/01/15/how-to-download-the-latest-github-repo-release-via-command-line/
-        # LOCATION=$(curl -s https://api.github.com/repos/YOUR_ORGANIZTION/YOUR_REPO/releases/latest \
-        # | grep "tag_name" \
-        # | awk '{print "https://github.com/dariusz-f/xeve/archive/" substr($2, 2, length($2)-3) ".zip"}') \
-        # ; curl -L -o OUTPUT_FILE_NAME $LOCATION
 
         LOCATION=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest \
         | grep "tag_name" \
@@ -30,9 +21,12 @@ jobs:
         ; curl -L -o sources.tar.gz $LOCATION
 
         echo $LOCATION
+        ls -al
 
-    - name: init
+    - name: Prepare package
       run: |
         sudo apt install dh-make
-        dh_make -c bsd -e maintainer@example.com --createorig -l
+        ls -al
+        dh_make -f ../sources.tar.gz -c bsd -e maintainer@example.com --createorig -l
+
 
