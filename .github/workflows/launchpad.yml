@@ -16,7 +16,7 @@ jobs:
     - name: Fetch Github Release Asset
       run: |
         # TODO: get latest release source tar.gz
-        wget http://github.com/dariusz-f/xeve/archive/master.tar.gz
+        # wget http://github.com/dariusz-f/xeve/archive/master.tar.gz
 
         # https://geraldonit.com/2019/01/15/how-to-download-the-latest-github-repo-release-via-command-line/
         # LOCATION=$(curl -s https://api.github.com/repos/YOUR_ORGANIZTION/YOUR_REPO/releases/latest \
@@ -28,6 +28,8 @@ jobs:
         | grep "tag_name" \
         | awk '{print "https://github.com/dariusz-f/xeve/archive/" substr($2, 2, length($2)-3) ".tar.gz"}') \
         ; curl -L -o sources.tar.gz $LOCATION
+
+        echo $LOCATION
 
     - name: init
       run: |
