@@ -24,7 +24,7 @@ jobs:
         | awk '{print "https://github.com/dariusz-f/xeve/archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
         
         # #download file
-        curl -L -o sources-v0.4.3.tar.gz $LOCATION
+        curl -L -o sources-0.4.3.tar.gz $LOCATION
 
         echo $TAG
         echo $LOCATION
@@ -34,6 +34,6 @@ jobs:
       run: |
         sudo apt install dh-make
         ls -al
-        dh_make -f sources-$TAG.tar.gz -c bsd -e maintainer@example.com --createorig -l
+        dh_make -f sources-0.4.3.tar.gz -c bsd -e maintainer@example.com --createorig -l
 
 
