@@ -16,8 +16,7 @@ jobs:
         # https://geraldonit.com/2019/01/15/how-to-download-the-latest-github-repo-release-via-command-line/
 
         # get tag
-        TAG=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest \
-        | grep "tag_name" )
+        TAG=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest) | grep "tag_name"
         echo $TAG
 
         LOCATION=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest \
