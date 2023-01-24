@@ -19,12 +19,12 @@ jobs:
         TAG=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest | grep "tag_name" | awk -F- '{print $1}' | cut -c 16-)
 
         #get file location
-        LOCATION=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest \
-        | grep "tag_name" \
-        | awk '{print "https://github.com/dariusz-f/xeve/archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
+        # LOCATION=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest \
+        # | grep "tag_name" \
+        # | awk '{print "https://github.com/dariusz-f/xeve/archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
         
-        #download file
-        curl -L -o sources-$TAG.tar.gz $LOCATION
+        # #download file
+        # curl -L -o sources-$TAG.tar.gz $LOCATION
 
         ehco $TAG
         echo $LOCATION
