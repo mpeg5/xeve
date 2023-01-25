@@ -24,16 +24,18 @@ jobs:
         | awk '{print "https://github.com/dariusz-f/xeve/archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
         
         # #download file
-        curl -L -o xeve-0.4.3.tar.gz $LOCATION
+        curl -L -o xeve.tar.gz $LOCATION
 
         echo $TAG
         echo $LOCATION
+        mkdir xeve-$TAG
         ls -al
 
     - name: Prepare package
       run: |
         sudo apt install dh-make
         ls -al
-        dh_make -f ../xeve-0.4.3.tar.gz -c bsd -e maintainer@example.com --createorig -l
+        cd xeve-$TAG
+        dh_make -f ../xeve.tar.gz -c bsd -e maintainer@example.com --createorig -l
 
 
