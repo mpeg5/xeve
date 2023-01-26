@@ -16,7 +16,7 @@ jobs:
         # https://geraldonit.com/2019/01/15/how-to-download-the-latest-github-repo-release-via-command-line/
 
         # get tag
-        TAG=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest | grep "tag_name" | awk -F- '{print $1}' | cut -c 16-)
+        TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tag_name" | awk -F- '{print $1}' | cut -c 16-)
 
         #get file location
         LOCATION=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest \
@@ -44,14 +44,14 @@ jobs:
         echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
         echo "Tag name from github.ref_name: ${{  github.ref_name }}"
         #TODO: change below line
-        mkdir xeve-0.4.3
+        mkdir xeve-$GITHUB_REF_NAME
         ls -al
 
     - name: Prepare package
       run: |
         sudo apt install dh-make
         ls -al
-        cd xeve-0.4.3
-        dh_make -f ../xeve.tar.gz -c bsd -e maintainer@example.com --createorig -l
+        cd xeve-$GITHUB_REF_NAME
+        dh_make -f ../xeve.tar.gz -c bsd -e maintainer@example.com --createorig -l -y
 
 
