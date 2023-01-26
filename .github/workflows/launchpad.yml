@@ -26,16 +26,32 @@ jobs:
         # #download file
         curl -L -o xeve.tar.gz $LOCATION
 
-        echo $TAG
-        echo $LOCATION
-        mkdir xeve-$TAG
+        echo "TAG: $TAG"
+
+        echo "GITHUB_REF: $GITHUB_REF"
+        echo "GITHUB_REF_TYPE: $GITHUB_REF_TYPE"
+        echo "GITHUB_BASE_REF: $GITHUB_BASE_REF"
+        echo "GITHUB_ENV: $GITHUB_ENV"
+        echo "GITHUB_EVENT_PATH: $GITHUB_EVENT_PATH"
+        echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
+        echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+        echo "GITHUB_WORKFLOW: $GITHUB_WORKFLOW"
+        echo "GITHUB_WORKFLOW_REF: $GITHUB_WORKFLOW_REF"
+        echo "RUNNER_NAME: $RUNNER_NAME"
+
+
+
+        echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
+        echo "Tag name from github.ref_name: ${{  github.ref_name }}"
+        #TODO: change below line
+        mkdir xeve-0.4.3
         ls -al
 
     - name: Prepare package
       run: |
         sudo apt install dh-make
         ls -al
-        cd xeve-$TAG
+        cd xeve-0.4.3
         dh_make -f ../xeve.tar.gz -c bsd -e maintainer@example.com --createorig -l
 
 
