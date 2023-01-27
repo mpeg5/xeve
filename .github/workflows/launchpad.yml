@@ -36,7 +36,7 @@ jobs:
 
         echo "::warning title={TAG: }::$TAG"
 
-    -name: Install dependencies
+    - name: Install dependencies
       run: |
         sudo apt install packaging-dev gnupg fakeroot
 
@@ -47,7 +47,8 @@ jobs:
         dh_make -f ../xeve.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
 
     - name: Upload GPG key to launchpad.net
-      if: ${{ false }}  # this step is currently disabled
+      # this step is currently disabled
+      if: ${{ false }} 
       run:  gpg --keyserver "https://keyserver.ubuntu.com/#" --send-key ...ID...
 
     - name: Nex steps implementation TODO
