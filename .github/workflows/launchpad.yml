@@ -10,54 +10,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Fetch sources from latest release
+    - name: Set const values
+      run: |
+        echo "maintainer_mail=maintainer@example.com" >> $GITHUB_ENV
+
+        //TODO: check below lines is they working correctly in actions workflow
+        DEBEMAIL="${{ env.maintainer_mail }}"
+        DEBFULLNAME="MPEG-5 EVC"
+        export DEBEMAIL DEBFULLNAME
+
+    - name: Get sources
       id: vars
       run: |
+        #Get tag
+        TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest \
+        | grep "tag_name" | awk -F: '{print $2}' | cut -c 4- | cut -c -5)
+        echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
-        # https://geraldonit.com/2019/01/15/how-to-download-the-latest-github-repo-release-via-command-line/
-
-        # get tag
-        TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tag_name" | awk -F: '{print $2}' | cut -c 4- | cut -c -5)
-        #get file location
+        #Get sources (https://geraldonit.com/2019/01/15/how-to-download-the-latest-github-repo-release-via-command-line/)
         LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest \
-        | grep "tag_name" \
-        | awk '{print "https://github.com/${GITHUB_REPOSITORY}archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
-        
-        # #download file
+        | grep "tag_name" | awk '{print "https://github.com/${GITHUB_REPOSITORY}archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
+
+        #Download file
         curl -L -o xeve.tar.gz $LOCATION
 
-        echo "TAG: $TAG"
-        echo "TAG=$TAG" >> $GITHUB_OUTPUT
-        echo "-------------------------------------"
+        echo "::warning title={TAG: }::$TAG"
 
-        echo "GITHUB_REF: $GITHUB_REF"
-        echo "GITHUB_REF_TYPE: $GITHUB_REF_TYPE"
-        echo "GITHUB_BASE_REF: $GITHUB_BASE_REF"
-        echo "GITHUB_ENV: $GITHUB_ENV"
-        echo "GITHUB_EVENT_PATH: $GITHUB_EVENT_PATH"
-        echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
-        echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
-        echo "GITHUB_WORKFLOW: $GITHUB_WORKFLOW"
-        echo "GITHUB_WORKFLOW_REF: $GITHUB_WORKFLOW_REF"
-        echo "RUNNER_NAME: $RUNNER_NAME"
-
-
-        echo "-------------------------------------"
-        echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
-        echo "Tag name from github.ref_name: ${{  github.ref_name }}"
-        #TODO: change below line
-        mkdir xeve-$TAG
-        ls -al
-        pwd
+    -name: Install dependencies
+      run: |
+        sudo apt install packaging-dev gnupg fakeroot
 
     - name: Prepare package
       run: |
-        sudo apt install dh-make
-        ls -al
-        pwd
-        echo "-------------------------------------"
-        echo "TAG: ${{ steps.vars.outputs.TAG }}"
+        mkdir xeve-${{ steps.vars.outputs.TAG }}
         cd xeve-${{ steps.vars.outputs.TAG }}
-        dh_make -f ../xeve.tar.gz -c bsd -e maintainer@example.com --createorig -l -y
+        dh_make -f ../xeve.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
 
+    - name: Upload GPG key to launchpad.net
+      if: ${{ false }}  # this step is currently disabled
+      run:  gpg --keyserver "https://keyserver.ubuntu.com/#" --send-key ...ID...
+
+    - name: Nex steps implementation TODO
+      run: |
+        pwd
+        ls -al
+        echo ${{ env.maintainer_mail }}
+        echo ${{ steps.vars.outputs.TAG }}
+        echo $DEBEMAIL $DEBFULLNAME
+        
+        debuild -S -sa
 
