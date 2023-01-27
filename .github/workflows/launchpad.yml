@@ -19,14 +19,15 @@ jobs:
         TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tag_name" | awk -F- '{print $1}' | cut -c 16-)
 
         #get file location
-        LOCATION=$(curl -s https://api.github.com/repos/dariusz-f/xeve/releases/latest \
+        LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest \
         | grep "tag_name" \
-        | awk '{print "https://github.com/dariusz-f/xeve/archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
+        | awk '{print "https://github.com/${GITHUB_REPOSITORY}archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
         
         # #download file
         curl -L -o xeve.tar.gz $LOCATION
 
         echo "TAG: $TAG"
+        echo "-------------------------------------"
 
         echo "GITHUB_REF: $GITHUB_REF"
         echo "GITHUB_REF_TYPE: $GITHUB_REF_TYPE"
@@ -40,18 +41,22 @@ jobs:
         echo "RUNNER_NAME: $RUNNER_NAME"
 
 
-
+        echo "-------------------------------------"
         echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
         echo "Tag name from github.ref_name: ${{  github.ref_name }}"
         #TODO: change below line
-        mkdir xeve-$GITHUB_REF_NAME
+        mkdir xeve-$TAG
         ls -al
+        pwd
 
     - name: Prepare package
       run: |
         sudo apt install dh-make
         ls -al
-        cd xeve-$GITHUB_REF_NAME
+        pwd
+        echo "-------------------------------------"
+        echo "TAG: $TAG"
+        cd xeve-$TAG
         dh_make -f ../xeve.tar.gz -c bsd -e maintainer@example.com --createorig -l -y
 
 
