@@ -56,15 +56,18 @@ jobs:
     - name: Edit sources
       # Files from this step have to be later integrated with project repository
       run: |
-        cd xeve-${{ steps.vars.outputs.TAG }}
-        curl -o changelog.2 https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/changelog
-        curl -o control.2 https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/control
-        curl -o copyright.2 https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/copyright
-        curl -o rules.2 https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/rules
-        curl -o xeve-base-dev.install.2 https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/xeve-base-dev.install
-        curl -o xeve-base1.install.2 https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/xeve-base1.install
+        cd xeve-${{ steps.vars.outputs.TAG }}/debian
+        curl -o changelog https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/changelog
+        curl -o control https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/control
+        curl -o copyright https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/copyright
+        curl -o rules https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/rules
+        curl -o xeve-base-dev.install https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/xeve-base-dev.install
+        curl -o xeve-base1.install https://github.com/dkozinski/xeve/blob/debian-debian/debian/base/debian/xeve-base1.install
 
         ls -la
+        cat changelog
+        cat control
+        cat xeve-base1.install
 
     - name: Debuild
       run: |
