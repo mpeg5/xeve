@@ -64,9 +64,6 @@ jobs:
       run: |
         cd xeve-base-${{ steps.vars.outputs.TAG }}/debian
 
-        echo "Comapt: "
-        cat compat
-
         curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/changelog
         curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/compat
         curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/control
