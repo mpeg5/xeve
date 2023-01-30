@@ -14,8 +14,8 @@ jobs:
       run: |
         echo "maintainer_mail=maintainer@example.com" >> $GITHUB_ENV
 
-        echo "debmail=${{ env.maintainer_mail }}" >> $GITHUB_ENV
-        echo "debfullname=MPEG-5 EVC" >> $GITHUB_ENV
+        echo "debmail=maintainer@example.com" >> $GITHUB_ENV
+        echo "debfullname=MPEG-5_EVC" >> $GITHUB_ENV
 
     - name: Get sources
       id: vars
@@ -43,7 +43,7 @@ jobs:
         mkdir xeve-${{ steps.vars.outputs.TAG }}
         cd xeve-${{ steps.vars.outputs.TAG }}
 
-        echo "::warning ::{DEBMAIL ${{ env.debmail }}}"
+        echo "::warning ::${{ env.debmail }}"
         echo "Debfullname ${{ env.debfullname }}"
 
         DEBMAIL=${{ env.debmail }}
