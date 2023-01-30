@@ -89,7 +89,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: download
-        path: *
+        path: xeve*
         retention-days: 1
 
     - name: Debuild
