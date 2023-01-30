@@ -86,10 +86,18 @@ jobs:
         curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/xeve-main-dev.install
         curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/xeve-main1.install  
     
+    - name: 'Upload executable Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: download
+          path: xeve*
+          retention-days: 1
+
     - name: Debuild
       run: |
         pwd 
         ls -al
+        file xeve-base_0.4.3.orig.tar.gz
         
         cd xeve-base-${{ steps.vars.outputs.TAG }}
         pwd
