@@ -42,8 +42,11 @@ jobs:
 
     - name: Prepare package
       run: |
-        mkdir xeve-${{ steps.vars.outputs.TAG }}
-        cd xeve-${{ steps.vars.outputs.TAG }}
+        mkdir xeve-base-${{ steps.vars.outputs.TAG }}
+        cd xeve-base-${{ steps.vars.outputs.TAG }}
+
+        # mkdir xeve-main-${{ steps.vars.outputs.TAG }}
+        # cd xeve-main-${{ steps.vars.outputs.TAG }}
 
         DEBMAIL=${{ env.debmail }}
         DEBFULLNAME=${{ env.debfullname }}
@@ -59,7 +62,7 @@ jobs:
     - name: Edit sources (base)
       # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
       run: |
-        cd xeve-${{ steps.vars.outputs.TAG }}/debian
+        cd xeve-base-${{ steps.vars.outputs.TAG }}/debian
 
         curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/changelog
         curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/control
@@ -72,7 +75,7 @@ jobs:
       # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
       if: ${{ false }}
       run: |
-        cd xeve-${{ steps.vars.outputs.TAG }}/debian
+        cd xeve-main-${{ steps.vars.outputs.TAG }}/debian
 
         curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/changelog
         curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/control
@@ -83,7 +86,8 @@ jobs:
     
     - name: Debuild
       run: |
-        cd xeve-${{ steps.vars.outputs.TAG }}
+        cd xeve-base-${{ steps.vars.outputs.TAG }}
+        pwd
         ls -al
         debuild -S -sa
         ls -al
