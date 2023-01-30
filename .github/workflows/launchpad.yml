@@ -64,7 +64,11 @@ jobs:
       run: |
         cd xeve-base-${{ steps.vars.outputs.TAG }}/debian
 
+        echo "Comapt: "
+        cat compat
+
         curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/changelog
+        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/compat
         curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/control
         curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/copyright
         curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/rules
@@ -78,6 +82,7 @@ jobs:
         cd xeve-main-${{ steps.vars.outputs.TAG }}/debian
 
         curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/changelog
+        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/compat
         curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/control
         curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/copyright
         curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/rules
