@@ -1,4 +1,4 @@
-# This workfow will upload package to launchpad.net
+# This workfow is responsbile for creating deb package and upload it to launchpad.net
 
 name: Launchpad
 
@@ -14,10 +14,8 @@ jobs:
       run: |
         echo "maintainer_mail=maintainer@example.com" >> $GITHUB_ENV
 
-        #TODO: check below lines is they working correctly in actions workflow
-        DEBEMAIL="${{ env.maintainer_mail }}"
-        DEBFULLNAME="MPEG-5 EVC"
-        export DEBEMAIL DEBFULLNAME
+        echo "debmail=${{ env.maintainer_mail }}" >> $GITHUB_ENV
+        echo "debfullname=MPEG-5 EVC" >> $GITHUB_ENV
 
     - name: Get sources
       id: vars
@@ -44,6 +42,15 @@ jobs:
       run: |
         mkdir xeve-${{ steps.vars.outputs.TAG }}
         cd xeve-${{ steps.vars.outputs.TAG }}
+
+        echo "::warning ::{DEBMAIL ${{ env.debmail }}}"
+        echo "Debfullname ${{ env.debfullname }}"
+
+        DEBMAIL=${{ env.debmail }}
+        DEBFULLNAME=${{ env.debfullname }}
+        export DEBEMAIL DEBFULLNAME
+
+        # TODO: dh_make require two env to be set: DEBMAIL, DEBFULLNAME
         dh_make -f ../xeve.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
 
     - name: Upload GPG key to launchpad.net
@@ -51,11 +58,14 @@ jobs:
       if: ${{ false }} 
       run:  gpg --keyserver "https://keyserver.ubuntu.com/#" --send-key ...ID...
 
-    - name: Nex steps implementation TODO
+    - name: Next steps implementation TODO
       run: |
         pwd
         ls -al
         echo ${{ env.maintainer_mail }}
+        echo ${{ env.debmail }}
+        echo ${{ env.debfullname }}
+
         echo ${{ steps.vars.outputs.TAG }}
         echo $DEBEMAIL $DEBFULLNAME
 
