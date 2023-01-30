@@ -31,6 +31,8 @@ jobs:
 
         #Download file
         curl -L -o xeve.tar.gz $LOCATION
+        cp xeve.tar.gz xeve-base.tar.gz
+        # cp xeve.tar.gz xeve-main.tar.gz
 
         echo "::warning title={TAG: }::$TAG"
 
@@ -46,15 +48,16 @@ jobs:
         DEBMAIL=${{ env.debmail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
-        dh_make -f ../xeve.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
+        dh_make -f ../xeve-base.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
+        # dh_make -f ../xeve-main.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
 
     - name: Upload GPG key to launchpad.net
       # this step is currently disabled
       if: ${{ false }} 
       run:  gpg --keyserver "https://keyserver.ubuntu.com/#" --send-key ...ID...
 
-    - name: Edit sources
-      # Files from this step have to be later integrated with project repository
+    - name: Edit sources (base)
+      # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
       run: |
         cd xeve-${{ steps.vars.outputs.TAG }}/debian
 
@@ -64,16 +67,22 @@ jobs:
         curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/rules
         curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/xeve-base-dev.install
         curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/xeve-base1.install
+        
+    - name: Edit sources (main)
+      # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
+      if: ${{ false }}
+      run: |
+        cd xeve-${{ steps.vars.outputs.TAG }}/debian
 
-        ls -la
-        cat changelog
-        cat control
-        cat xeve-base1.install
-
+        curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/changelog
+        curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/control
+        curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/copyright
+        curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/rules
+        curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/xeve-main-dev.install
+        curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/xeve-main1.install  
+    
     - name: Debuild
       run: |
-        pwd
-        ls -al
         cd xeve-${{ steps.vars.outputs.TAG }}
         ls -al
         debuild -S -sa
