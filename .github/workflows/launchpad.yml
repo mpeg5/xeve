@@ -30,9 +30,8 @@ jobs:
         | grep "tag_name" | awk '{print "https://github.com/${GITHUB_REPOSITORY}archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
 
         #Download file
-        curl -L -o xeve.tar.gz $LOCATION
-        cp xeve.tar.gz xeve-base.tar.gz
-        # cp xeve.tar.gz xeve-main.tar.gz
+        curl -L -o xeve-base-$TAG.tar.gz $LOCATION
+        # curl -L -o xeve-main-$TAG.tar.gz $LOCATION
 
         echo "::warning title={TAG: }::$TAG"
 
@@ -51,7 +50,7 @@ jobs:
         DEBMAIL=${{ env.debmail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
-        dh_make -f ../xeve-base.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
+        dh_make -f ../xeve-base-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
         # dh_make -f ../xeve-main.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
 
     - name: Upload GPG key to launchpad.net
@@ -90,7 +89,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: download
-        path: xeve*
+        path: *
         retention-days: 1
 
     - name: Debuild
