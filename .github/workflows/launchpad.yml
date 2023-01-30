@@ -88,6 +88,9 @@ jobs:
     
     - name: Debuild
       run: |
+        pwd 
+        ls -al
+        
         cd xeve-base-${{ steps.vars.outputs.TAG }}
         pwd
         ls -al
