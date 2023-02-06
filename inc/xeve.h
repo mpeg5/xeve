@@ -185,8 +185,8 @@ typedef long long                        XEVE_MTIME; /* in 100-nanosec unit */
 #define XEVE_PROFILE_BASELINE            (0)
 #define XEVE_PROFILE_MAIN                (1)
 
-/*****************************************************************************
 #define XEVE_MAX_NUM_RPLS                       64
+/*****************************************************************************
  * image buffer format
  *
  *    baddr
