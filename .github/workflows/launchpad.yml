@@ -41,6 +41,7 @@ jobs:
         # curl -L -o xeve-main-$TAG.tar.gz $LOCATION
 
         echo "::notice title={TAG: }::$TAG"
+        echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
     - name: Install dependencies
       run: |
@@ -59,6 +60,9 @@ jobs:
         export DEBEMAIL DEBFULLNAME
         dh_make -f ../xeve-base-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
         # dh_make -f ../xeve-main.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
+
+        echo "Debmail in package: ${{ env.debmail }}  :email:" >> $GITHUB_STEP_SUMMARY
+        echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload GPG key to launchpad.net
       # this step is currently disabled
@@ -122,6 +126,7 @@ jobs:
       run: |
         echo "::notice title={Launchpad push: }::This will push to Launchpad
         # dput ppa:wellsakus/hello hello_1.0.0-1_source.changes"
+        #echo "Package placed on: PPA URL  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
 
 
