@@ -110,7 +110,7 @@ extern const u8 xevem_addb_clip_tbl[52][5];
 extern const int xevem_dra_chroma_qp_offset_tbl[NUM_CHROMA_QP_OFFSET_LOG];
 extern const int xevem_dra_exp_nom_v2[NUM_CHROMA_QP_SCALE_EXP];
 
-extern const s8 xevem_tbl_poc_gop_offset[5][15];
-extern const s8 xevem_tbl_slice_depth_orig[5][15];
+extern const s8 xevem_tbl_poc_gop_offset[9][31];
+extern const s8 xevem_tbl_slice_depth_orig[9][32];
 
 #endif /* _XEVE_TBL_H_ */

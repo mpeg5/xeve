@@ -1484,9 +1484,9 @@ void xeve_set_sh(XEVE_CTX *ctx, XEVE_SH *sh)
     int qp_l_i;
     int qp_c_i;
 
+    int gop_size_idx = ctx->param.gop_size == 32 ? 2 : ctx->param.gop_size == 16 ? 1 : 0;
     const QP_ADAPT_PARAM *qp_adapt_param = ctx->param.bframes == 0 ?
-        (ctx->param.keyint == 1 ? xeve_qp_adapt_param_ai : xeve_qp_adapt_param_ld) : xeve_qp_adapt_param_ra;
-
+        (ctx->param.keyint == 1 ? xeve_qp_adapt_param_ai : xeve_qp_adapt_param_ld) : xeve_qp_adapt_param_ra[gop_size_idx];
     sh->slice_type = ctx->slice_type;
     sh->no_output_of_prior_pics_flag = 0;
     sh->deblocking_filter_on = (ctx->param.use_deblock) ? 1 : 0;
@@ -2286,7 +2286,9 @@ int xeve_set_init_param(XEVE_CTX * ctx, XEVE_PARAM * param)
     {
         xeve_assert_rv(param->bframes == 0 || param->bframes == 1 || \
                        param->bframes == 3 || param->bframes == 7 || \
-                       param->bframes == 15, XEVE_ERR_INVALID_ARGUMENT);
+                       param->bframes == 15 || \
+                       (param->bframes == 31 && param->profile == XEVE_PROFILE_MAIN), XEVE_ERR_INVALID_ARGUMENT);
+
 
         if(param->bframes != 0)
         {

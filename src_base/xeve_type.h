@@ -80,8 +80,7 @@
 #define ME_LEV_QPEL              3
 
 /* maximum inbuf count */
-#define XEVE_MAX_INBUF_CNT   34
-
+#define XEVE_MAX_INBUF_CNT   70
 /* maximum cost value */
 #define MAX_COST                (1.7e+308)
 
