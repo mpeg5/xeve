@@ -33,10 +33,11 @@ jobs:
 
         tar -xvf xeve-base-$TAG.tar.gz
         rm xeve-base-$TAG.tar.gz
-        ls -al
         mv dariusz-f-xeve-bf119a8 xeve-base-$TAG
         tar -czf xeve-base-$TAG.tar.gz xeve-base-$TAG
 
+        pwd
+        ls -al
 
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
@@ -46,10 +47,11 @@ jobs:
 
     - name: Prepare package
       run: |
-        # mkdir xeve-base-${{ steps.vars.outputs.TAG }}
         cd xeve-base-${{ steps.vars.outputs.TAG }}
-
-        # mkdir xeve-main-${{ steps.vars.outputs.TAG }}
+        
+        pwd
+        ls -al
+        
         # cd xeve-main-${{ steps.vars.outputs.TAG }}
 
         DEBMAIL=${{ env.debmail }}
