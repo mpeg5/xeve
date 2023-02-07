@@ -9,21 +9,14 @@ jobs:
   launchpad:
     runs-on: ubuntu-latest
 
+    # Here golbal variables are set!
     env:
-      MY_NAME: "Mona The Octocat"
       maintainer_mail: "maintainer@example.com"
       debmail: "maintainer@example.com"
       debfullname: "MPEG-5_EVC"
 
     steps:
-    # Here golbal variables can be set!
-    - name: Set const values
-      if: ${{ false }}
-      run: |
-        echo "maintainer_mail=maintainer@example.com" >> $GITHUB_ENV
-        echo "debmail=maintainer@example.com" >> $GITHUB_ENV
-        echo "debfullname=MPEG-5_EVC" >> $GITHUB_ENV
-
+    
     - name: Get sources
       id: vars
       run: |
@@ -40,6 +33,14 @@ jobs:
         curl -L -o xeve-base-$TAG.tar.gz $LOCATION
         # curl -L -o xeve-main-$TAG.tar.gz $LOCATION
 
+        tar -xvf xeve-base-$TAG.tar.gz
+
+        echo "::group::DEBUG"
+        pwd
+        ls -al
+        file xeve-base-$TAG.tar.gz
+        echo "::endgroup::"
+
         echo "::notice title={TAG: }::$TAG"
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
@@ -49,7 +50,7 @@ jobs:
 
     - name: Prepare package
       run: |
-        mkdir xeve-base-${{ steps.vars.outputs.TAG }}
+        # mkdir xeve-base-${{ steps.vars.outputs.TAG }}
         cd xeve-base-${{ steps.vars.outputs.TAG }}
 
         # mkdir xeve-main-${{ steps.vars.outputs.TAG }}
