@@ -20,14 +20,7 @@ jobs:
     - name: Get sources
       id: vars
       run: |
-
-        echo "::group::DEBUG"
-        echo "github repository: ${GITHUB_REPOSITORY}"
-        echo "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
-        pwd
-        ls -al
-        echo "::endgroup::"
-
+      
         #Get tag
         TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest \
         | grep "tag_name" | awk -F: '{print $2}' | cut -c 4- | cut -c -5)
