@@ -27,8 +27,10 @@ jobs:
         echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
         #Get sources (https://geraldonit.com/2019/01/15/how-to-download-the-latest-github-repo-release-via-command-line/)
-        LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest \
-        | grep "tag_name" | awk '{print "https://github.com/${GITHUB_REPOSITORY}/archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
+        # LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest \
+        # | grep "tag_name" | awk '{print "https://github.com/${GITHUB_REPOSITORY}/archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
+
+        LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tarball_url" | awk -F\" '{print $4}')
 
         #Download file
         curl -L -o xeve-base-$TAG.tar.gz $LOCATION
