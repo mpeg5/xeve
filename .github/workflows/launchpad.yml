@@ -32,7 +32,10 @@ jobs:
         # curl -L -o xeve-main-$TAG.tar.gz $LOCATION
 
         tar -xvf xeve-base-$TAG.tar.gz
+        rm xeve-base-$TAG.tar.gz
         ls -al
+        mv dariusz-f-xeve-bf119a8 xeve-base-$TAG
+        tar -czf xeve-base-$TAG.tar.gz xeve-base-$TAG
 
 
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
