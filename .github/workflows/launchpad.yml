@@ -20,6 +20,14 @@ jobs:
     - name: Get sources
       id: vars
       run: |
+
+        echo "::group::DEBUG"
+        echo "github repository: ${GITHUB_REPOSITORY}"
+        echo "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
+        pwd
+        ls -al
+        echo "::endgroup::"
+
         #Get tag
         TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest \
         | grep "tag_name" | awk -F: '{print $2}' | cut -c 4- | cut -c -5)
@@ -27,7 +35,7 @@ jobs:
 
         #Get sources (https://geraldonit.com/2019/01/15/how-to-download-the-latest-github-repo-release-via-command-line/)
         LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest \
-        | grep "tag_name" | awk '{print "https://github.com/${GITHUB_REPOSITORY}archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
+        | grep "tag_name" | awk '{print "https://github.com/${GITHUB_REPOSITORY}/archive/" substr($2, 2, length($2)-3) ".tar.gz"}')
 
         #Download file
         curl -L -o xeve-base-$TAG.tar.gz $LOCATION
