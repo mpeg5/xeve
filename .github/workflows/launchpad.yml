@@ -36,6 +36,8 @@ jobs:
         tar -xvf xeve-base-$TAG.tar.gz
 
         echo "::group::DEBUG"
+        echo "github repository: ${GITHUB_REPOSITORY}"
+        echo "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
         pwd
         ls -al
         file xeve-base-$TAG.tar.gz
