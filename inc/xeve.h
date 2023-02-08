@@ -491,7 +491,7 @@ typedef struct _XEVE_PARAM
     int            arbitrary_slice_flag;
     char           num_remaining_tiles_in_slice_minus1[XEVE_MAX_NUM_TILES >> 1];
     int            rpl_extern;
-    /* max num of RPL is 64 after gop32 support */
+    /* max num of RPL is 64 */
     char           rpl0[XEVE_MAX_NUM_RPLS][256];
     char           rpl1[XEVE_MAX_NUM_RPLS][256];
     int            rpls_l0_cfg_num;
