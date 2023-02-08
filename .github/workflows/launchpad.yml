@@ -14,6 +14,7 @@ jobs:
       maintainer_mail: "maintainer@example.com"
       debmail: "maintainer@example.com"
       debfullname: "MPEG-5_EVC"
+      PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
 
     steps:
     
@@ -58,15 +59,6 @@ jobs:
         echo "Debmail in package: ${{ env.debmail }}  :email:" >> $GITHUB_STEP_SUMMARY
         echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
 
-    - name: Upload GPG key to launchpad.net
-      # this step is currently disabled
-      # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-      if: ${{ false }} 
-      env:
-        KEY_ID_SECRET: ${{ secrets.GPG_KEY }}
-      run:  gpg --keyserver "https://keyserver.ubuntu.com/#" --send-key $KEY_ID_SECRET
-
-
     - name: Edit sources (base)
       # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
       run: |
@@ -101,15 +93,23 @@ jobs:
         path: xeve*
         retention-days: 1
 
+    - name: Prepare gpg key
+      # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+      env:
+        KEY_ID_SECRET: ${{ secrets.GPG_KEY }}
+      run:  |
+        gpg --import $KEY_ID_SECRET
+        gpg --list-keys
+
     - name: Debuild
       run: |
         cd xeve-base-${{ steps.vars.outputs.TAG }}
         debuild -S -sa
 
     - name: Push package to launchpad
-      # if: ${{ false }}
+      if: ${{ false }}
       run: |
         echo "::notice title={Launchpad push: }::This will push to Launchpad
-        # dput ppa:wellsakus/hello hello_1.0.0-1_source.changes"
-        #echo "Package placed on: PPA URL  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
+        # dput ppa:mpeg5/xeve <source.changes>
+        echo "Package placed on: $PPA_URL  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
