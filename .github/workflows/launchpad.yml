@@ -33,11 +33,9 @@ jobs:
 
         tar -xvf xeve-base-$TAG.tar.gz
         rm xeve-base-$TAG.tar.gz
-        mv dariusz-f-xeve-bf119a8 xeve-base-$TAG
+        #TODO: change below line to mpeg5-xeve-*
+        mv *-xeve-* xeve-base-$TAG
         tar -czf xeve-base-$TAG.tar.gz xeve-base-$TAG
-
-        pwd
-        ls -al
 
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
@@ -48,9 +46,6 @@ jobs:
     - name: Prepare package
       run: |
         cd xeve-base-${{ steps.vars.outputs.TAG }}
-        
-        pwd
-        ls -al
         
         # cd xeve-main-${{ steps.vars.outputs.TAG }}
 
@@ -68,7 +63,7 @@ jobs:
       # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
       if: ${{ false }} 
       env:
-        KEY_ID_SECRET: ${{ secrets.SuperSecret }}
+        KEY_ID_SECRET: ${{ secrets.GPG_KEY }}
       run:  gpg --keyserver "https://keyserver.ubuntu.com/#" --send-key $KEY_ID_SECRET
 
 
@@ -108,17 +103,8 @@ jobs:
 
     - name: Debuild
       run: |
-        echo "::group::DEBUG"
-        pwd 
-        ls -al
-        file xeve-base_0.4.3.orig.tar.gz
-        echo "::endgroup::"
-        
         cd xeve-base-${{ steps.vars.outputs.TAG }}
-        pwd
-        ls -al
         debuild -S -sa
-        ls -al
 
     - name: Push package to launchpad
       # if: ${{ false }}
@@ -126,6 +112,4 @@ jobs:
         echo "::notice title={Launchpad push: }::This will push to Launchpad
         # dput ppa:wellsakus/hello hello_1.0.0-1_source.changes"
         #echo "Package placed on: PPA URL  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
-
-
 
