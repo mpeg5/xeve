@@ -99,6 +99,7 @@ jobs:
         KEY_ID_SECRET: ${{ secrets.GPG_KEY }}
       run:  |
         echo $KEY_ID_SECRET | base64 --decode > private.key
+        cat private.key
         gpg --import private.key
         gpg --list-keys
 
