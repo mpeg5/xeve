@@ -98,7 +98,9 @@ jobs:
       env:
         KEY_ID_SECRET: ${{ secrets.GPG_KEY }}
       run:  |
-        gpg --import $KEY_ID_SECRET
+        cat $KEY_ID_SECRET > private.key
+        base64 -d private.key
+        gpg --import private.key
         gpg --list-keys
 
     - name: Debuild
