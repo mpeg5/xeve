@@ -11,8 +11,8 @@ jobs:
 
     # Here golbal variables are set!
     env:
-      maintainer_mail: "maintainer@example.com"
-      debmail: "maintainer@example.com"
+      maintainer_mail: "dkozinsk@interia.pl"
+      debmail: "dkozinsk@interia.pl"
       debfullname: "MPEG-5_EVC"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
 
@@ -55,6 +55,9 @@ jobs:
         export DEBEMAIL DEBFULLNAME
         dh_make -f ../xeve-base-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
         # dh_make -f ../xeve-main.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
+
+        pwd
+        ls -la
 
         echo "Debmail in package: ${{ env.debmail }}  :email:" >> $GITHUB_STEP_SUMMARY
         echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
@@ -106,7 +109,8 @@ jobs:
     - name: Debuild
       run: |
         cd xeve-base-${{ steps.vars.outputs.TAG }}
-        #debuild -S -sa
+        pwd
+        ls -la
         debuild -S -sa -k"$GPG_KEY_ID"
 
 
