@@ -111,6 +111,10 @@ jobs:
         cd xeve-base-${{ steps.vars.outputs.TAG }}
         pwd
         ls -la
+        DEBMAIL=${{ env.debmail }}
+        DEBFULLNAME=${{ env.debfullname }}
+        export DEBEMAIL DEBFULLNAME
+
         debuild -S -sa -k"$GPG_KEY_ID"
 
 
