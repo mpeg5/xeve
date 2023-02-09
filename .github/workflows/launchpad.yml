@@ -96,15 +96,19 @@ jobs:
     - name: Prepare gpg key
       # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
       env:
-        KEY_ID_SECRET: ${{ secrets.GPG_KEY }}
+        GPG_KEY: ${{ secrets.GPG_KEY }}
+        GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+
       run:  |
-        echo -e "$KEY_ID_SECRET" | gpg --import
+        echo -e "$GPG_KEY" | gpg --import
         gpg --list-keys
 
     - name: Debuild
       run: |
         cd xeve-base-${{ steps.vars.outputs.TAG }}
-        debuild -S -sa
+        #debuild -S -sa
+        debuild -S -sa -k"$GPG_KEY_ID"
+
 
     - name: Push package to launchpad
       if: ${{ false }}
