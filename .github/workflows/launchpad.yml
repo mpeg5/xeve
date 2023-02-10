@@ -104,7 +104,14 @@ jobs:
 
         #debuild -S -sa -k"$GPG_KEY_ID"
         dpkg-buildpackage --build=source
-        debsign -k "$GPG_KEY_ID" ../xeve-base_0.4.3-1ubuntu1.dsc
+
+        echo "DEBUG-------------------------------"
+        pwd
+        ls -la
+        echo "DEBUG-------------------------------"
+
+
+        #debsign -k "$GPG_KEY_ID" ../xeve-base_0.4.3-1ubuntu1.dsc
 
 
     - name: Push package to launchpad
