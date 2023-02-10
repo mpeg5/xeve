@@ -106,12 +106,13 @@ jobs:
         dpkg-buildpackage --build=source --no-sign
 
         echo "DEBUG-------------------------------"
+
         pwd
-        ls -la
+        ls .. -la
         echo "DEBUG-------------------------------"
 
 
-        #debsign -k "$GPG_KEY_ID" ../xeve-base_0.4.3-1ubuntu1.dsc
+        debsign -k "$GPG_KEY_ID" ../xeve-base_0.4.3-1ubuntu1.dsc
 
 
     - name: Push package to launchpad
