@@ -11,8 +11,8 @@ jobs:
 
     # Here golbal variables are set!
     env:
-      maintainer_mail: "dkozinsk@interia.pl"
-      debemail: "dkozinsk@interia.pl"
+      maintainer_mail: "dariusz.frankiewicz@gmail.com"
+      debemail: "dariusz.frankiewicz@gmail.com"
       debfullname: "MPEG-5_EVC"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
 
@@ -103,7 +103,7 @@ jobs:
         export DEBEMAIL DEBFULLNAME
 
         #debuild -S -sa -k"$GPG_KEY_ID"
-        dpkg-buildpackage --build=source
+        dpkg-buildpackage --build=source --no-sign
 
         echo "DEBUG-------------------------------"
         pwd
