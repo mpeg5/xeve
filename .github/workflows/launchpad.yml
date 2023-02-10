@@ -12,7 +12,7 @@ jobs:
     # Here golbal variables are set!
     env:
       maintainer_mail: "dkozinsk@interia.pl"
-      debmail: "dkozinsk@interia.pl"
+      debemail: "dkozinsk@interia.pl"
       debfullname: "MPEG-5_EVC"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
 
@@ -30,7 +30,6 @@ jobs:
 
         #Download file
         curl -L -o xeve-base-$TAG.tar.gz $LOCATION
-        # curl -L -o xeve-main-$TAG.tar.gz $LOCATION
 
         tar -xvf xeve-base-$TAG.tar.gz
         rm xeve-base-$TAG.tar.gz
@@ -44,22 +43,16 @@ jobs:
       run: |
         sudo apt install packaging-dev gnupg
 
-    - name: Prepare package
+    - name: Prepare package (dh_make)
       run: |
         cd xeve-base-${{ steps.vars.outputs.TAG }}
-        
-        # cd xeve-main-${{ steps.vars.outputs.TAG }}
 
-        DEBMAIL=${{ env.debmail }}
+        DEBEMAIL=${{ env.debemail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
         dh_make -f ../xeve-base-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
-        # dh_make -f ../xeve-main.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
 
-        pwd
-        ls -la
-
-        echo "Debmail in package: ${{ env.debmail }}  :email:" >> $GITHUB_STEP_SUMMARY
+        echo "Debemail in package: ${{ env.debemail }}  :email:" >> $GITHUB_STEP_SUMMARY
         echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
 
     - name: Edit sources (base)
@@ -73,21 +66,11 @@ jobs:
         curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/copyright
         curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/rules
         curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/xeve-base-dev.install
-        curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/xeve-base1.install
-        
-    - name: Edit sources (main)
-      # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
-      if: ${{ false }}
-      run: |
-        cd xeve-main-${{ steps.vars.outputs.TAG }}/debian
+        curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/xeve-base1.install 
 
-        curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/changelog
-        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/compat
-        curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/control
-        curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/copyright
-        curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/rules
-        curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/xeve-main-dev.install
-        curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/main/debian/xeve-main1.install  
+        #Remove example and template files
+        rm -rf *.ex
+        ls -la
     
     - name: 'Upload executable Artifact'
       uses: actions/upload-artifact@v3
@@ -108,15 +91,18 @@ jobs:
 
     - name: Debuild
       run: |
-        cd xeve-base-${{ steps.vars.outputs.TAG }}
+
+        echo "DEBUG-------------------------------"
         pwd
         ls -la
-        DEBMAIL=${{ env.debmail }}
+        echo "DEBUG-------------------------------"
+
+        cd xeve-base-${{ steps.vars.outputs.TAG }}
+        DEBEMAIL=${{ env.debemail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
 
         debuild -S -sa -k"$GPG_KEY_ID"
-
 
     - name: Push package to launchpad
       if: ${{ false }}
