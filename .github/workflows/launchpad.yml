@@ -11,8 +11,8 @@ jobs:
 
     # Here golbal variables are set!
     env:
-      maintainer_mail: "dariusz.frankiewicz@gmail.com"
-      debemail: "dariusz.frankiewicz@gmail.com"
+      maintainer_mail: "dkozinsk@interia.pl"
+      debemail: "dkozinsk@interia.pl"
       debfullname: "MPEG-5_EVC"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
 
@@ -82,8 +82,8 @@ jobs:
     - name: Prepare gpg key
       # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
       env:
-        GPG_KEY: ${{ secrets.GPG_KEY }}
-        GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+        GPG_KEY: ${{ secrets.GPG_KEY_DK }}
+        GPG_KEY_ID: ${{ secrets.GPG_KEY_ID_DK }}
 
       run:  |
         echo -e "$GPG_KEY" | gpg --import
