@@ -85,7 +85,7 @@ jobs:
       # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
 
       run:  |
-        echo -e ${{ secrets.GPG_KEY }} | gpg --import
+        echo -e "${{ secrets.GPG_KEY }}" | gpg --import
         gpg --list-keys
 
     - name: Debuild
