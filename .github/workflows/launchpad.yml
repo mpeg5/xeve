@@ -102,7 +102,8 @@ jobs:
         echo "-------------------"
         cd ..
         ls -la
-        #rm xeve-base_${{ steps.vars.outputs.TAG }}.orig.tar.gz
+        rm xeve-base_${{ steps.vars.outputs.TAG }}.orig.tar.gz
+        ls -la
 
     - name: 'Upload Package files'
       if: ${{ false }}
@@ -116,7 +117,7 @@ jobs:
       run: |
         dput -v
 
-        dput -d -l -u -s ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
+        dput -d -l -p -s ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
 
         echo "::notice title={Launchpad push: }::Pushed to Launchpad.net
         echo "Package placed on: $PPA_URL  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
