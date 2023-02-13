@@ -15,8 +15,6 @@ jobs:
       debemail: "dariusz.frankiewicz@gmail.com"
       debfullname: "MPEG_5"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
-      # GPG_KEY: ${{ secrets.GPG_KEY }}
-      # GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
 
     steps:
     
@@ -89,7 +87,6 @@ jobs:
 
     - name: Debuild
       run: |
-
         cd xeve-base-${{ steps.vars.outputs.TAG }}
 
         DEBEMAIL=${{ env.debemail }}
@@ -99,7 +96,7 @@ jobs:
 
         # OR
         # dpkg-buildpackage --build=source --no-sign
-        # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve-base_0.4.3-1ubuntu1.dsc
+        # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1.dsc
 
         echo "-------------"
         cd ..
@@ -114,9 +111,9 @@ jobs:
         retention-days: 1
 
     - name: Push package to launchpad
-      if: ${{ false }}
       run: |
-        echo "::notice title={Launchpad push: }::This will push to Launchpad
-        # dput ppa:mpeg5/xeve <source.changes>
+        dput ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
+
+        echo "::notice title={Launchpad push: }::Pushed to Launchpad.net
         echo "Package placed on: $PPA_URL  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
