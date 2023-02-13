@@ -111,7 +111,7 @@ static const ARGS_OPT args_opt_table[] = \
     },
     {
         'b',  "bframes", ARGS_VAL_TYPE_INTEGER, 0, NULL,
-        "maximum number of B frames (1,3,7,15)"
+        "maximum number of B frames (1,3,7,15,31)"
     },
     {
         'm',  "threads", ARGS_VAL_TYPE_INTEGER, 0, NULL,

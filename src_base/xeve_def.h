@@ -822,7 +822,6 @@ typedef struct _XEVE_SBAC_CTX
 /* rpl structure */
 #define XEVE_MAX_NUM_REF_PICS                   21
 #define XEVE_MAX_NUM_ACTIVE_REF_FRAME           5
-#define XEVE_MAX_NUM_RPLS                       32
 
 typedef struct _XEVE_RPL
 {

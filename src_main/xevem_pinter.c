@@ -3719,6 +3719,10 @@ static double analyze_bi(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_
                 bi_start = refi[lidx_ref];
                 bi_end = refi[lidx_ref] + 1;
             }
+            else
+            {
+                bi_end = ctx->rpm.num_refp[lidx_ref];
+            }
 
             for(refi_cur = bi_start; refi_cur < bi_end; refi_cur++)
             {

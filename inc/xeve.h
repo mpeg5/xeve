@@ -185,7 +185,7 @@ typedef long long                        XEVE_MTIME; /* in 100-nanosec unit */
 #define XEVE_PROFILE_BASELINE            (0)
 #define XEVE_PROFILE_MAIN                (1)
 
-
+#define XEVE_MAX_NUM_RPLS                       64
 /*****************************************************************************
  * image buffer format
  *
@@ -491,9 +491,9 @@ typedef struct _XEVE_PARAM
     int            arbitrary_slice_flag;
     char           num_remaining_tiles_in_slice_minus1[XEVE_MAX_NUM_TILES >> 1];
     int            rpl_extern;
-    /* max num of RPL is 32 */
-    char           rpl0[32][256];
-    char           rpl1[32][256];
+    /* max num of RPL is 64 */
+    char           rpl0[XEVE_MAX_NUM_RPLS][256];
+    char           rpl1[XEVE_MAX_NUM_RPLS][256];
     int            rpls_l0_cfg_num;
     int            rpls_l1_cfg_num;
     /* preset parameter */
