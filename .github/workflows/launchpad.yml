@@ -98,7 +98,9 @@ jobs:
         # dpkg-buildpackage --build=source --no-sign
         # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1.dsc
 
-        rm xeve-base_${{ steps.vars.outputs.TAG }}.orig.tar.gz
+        echo "-------------------"
+        ls -la
+        #rm xeve-base_${{ steps.vars.outputs.TAG }}.orig.tar.gz
 
     - name: 'Upload Package files'
       uses: actions/upload-artifact@v3
