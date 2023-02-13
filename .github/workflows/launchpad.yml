@@ -11,9 +11,9 @@ jobs:
 
     # Here golbal variables are set!
     env:
-      maintainer_mail: "..."
-      debemail: "..."
-      debfullname: "..."
+      maintainer_mail: "dariusz.frankiewicz@gmail.com"
+      debemail: "dariusz.frankiewicz@gmail.com"
+      debfullname: "MPEG_5"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
 
     steps:
