@@ -11,9 +11,9 @@ jobs:
 
     # Here golbal variables are set!
     env:
-      maintainer_mail: "dkozinsk@interia.pl"
-      debemail: "dkozinsk@interia.pl"
-      debfullname: "MPEG-5_EVC"
+      maintainer_mail: "..."
+      debemail: "..."
+      debfullname: "..."
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
 
     steps:
@@ -102,6 +102,9 @@ jobs:
         
         dpkg-buildpackage --build=source --no-sign
         debsign -k "$GPG_KEY_ID" ../xeve-base_0.4.3-1ubuntu1.dsc
+
+        pwd
+        ls -la
 
 
     - name: Push package to launchpad
