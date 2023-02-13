@@ -101,10 +101,10 @@ jobs:
         # OR
         
         dpkg-buildpackage --build=source --no-sign
-        #debsign -k $GPG_KEY_ID ../xeve-base_0.4.3-1ubuntu1.dsc
-        debsign -k F7452E3AF567C114D7DAFA6B6247B0DFEC429606 ../xeve-base_0.4.3-1ubuntu1.dsc
+        debsign -k $GPG_KEY_ID ../xeve-base_0.4.3-1ubuntu1.dsc
         
         pwd
+        cd ..
         ls -la
 
 
