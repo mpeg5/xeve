@@ -82,8 +82,8 @@ jobs:
     - name: Prepare gpg key
       # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
       env:
-        GPG_KEY: ${{ secrets.GPG_KEY_DK }}
-        GPG_KEY_ID: ${{ secrets.GPG_KEY_ID_DK }}
+        GPG_KEY: ${{ secrets.GPG_KEY }}
+        GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
 
       run:  |
         echo -e "$GPG_KEY" | gpg --import
