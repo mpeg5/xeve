@@ -98,10 +98,7 @@ jobs:
         # dpkg-buildpackage --build=source --no-sign
         # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1.dsc
 
-        echo "-------------"
-        cd ..
-        pwd
-        ls -la
+        rm xeve-base_${{ steps.vars.outputs.TAG }}.orig.tar.gz
 
     - name: 'Upload Package files'
       uses: actions/upload-artifact@v3
@@ -112,7 +109,7 @@ jobs:
 
     - name: Push package to launchpad
       run: |
-        dput ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
+        dput -d -d --full-upload-log --simulate ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
 
         echo "::notice title={Launchpad push: }::Pushed to Launchpad.net
         echo "Package placed on: $PPA_URL  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
