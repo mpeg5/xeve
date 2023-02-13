@@ -97,16 +97,16 @@ jobs:
         # DEBFULLNAME=${{ env.debfullname }}
         # export DEBEMAIL DEBFULLNAME
 
-        #debuild -S -sa -k"$GPG_KEY_ID"
+        #debuild -S -sa -k ${{ env.GPG_KEY_ID }}
         # OR
         
         dpkg-buildpackage --build=source --no-sign
-        debsign -k $GPG_KEY_ID ../xeve-base_0.4.3-1ubuntu1.dsc
-        
-        pwd
-        cd ..
-        ls -la
+        debsign -k ${{ env.GPG_KEY_ID }} ../xeve-base_0.4.3-1ubuntu1.dsc
 
+        echo "-------------"
+        cd ..
+        pwd
+        ls -la
 
     - name: Push package to launchpad
       if: ${{ false }}
