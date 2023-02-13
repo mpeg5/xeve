@@ -15,6 +15,8 @@ jobs:
       debemail: "dariusz.frankiewicz@gmail.com"
       debfullname: "MPEG_5"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
+      GPG_KEY: ${{ secrets.GPG_KEY }}
+      GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
 
     steps:
     
@@ -81,13 +83,12 @@ jobs:
 
     - name: Prepare gpg key
       # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-      env:
-        GPG_KEY: ${{ secrets.GPG_KEY }}
-        GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
-
       run:  |
-        echo -e "$GPG_KEY" | gpg --import
+        echo -e ${{ env.GPG_KEY }} | gpg --import
         gpg --list-keys
+
+        echo -e "KEY : $GPG_KEY" | wc -l
+        echo -e "ID: $GPG_KEY_ID" | wc -l
 
     - name: Debuild
       run: |
@@ -100,6 +101,11 @@ jobs:
         #debuild -S -sa -k ${{ env.GPG_KEY_ID }}
         # OR
         
+        echo "-------------"
+        echo -e "KEY: ${{ env.GPG_KEY }}" | wc -l
+        echo -e "ID: ${{ env.GPG_KEY_ID }}" | wc -l
+        echo "-------------"
+
         dpkg-buildpackage --build=source --no-sign
         debsign -k ${{ env.GPG_KEY_ID }} ../xeve-base_0.4.3-1ubuntu1.dsc
 
