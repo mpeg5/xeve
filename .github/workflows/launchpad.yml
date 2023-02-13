@@ -77,13 +77,12 @@ jobs:
     - name: 'Upload executable Artifact'
       uses: actions/upload-artifact@v3
       with:
-        name: download
+        name: download-1
         path: xeve*
         retention-days: 1
 
     - name: Prepare gpg key
       # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-
       run:  |
         echo -e "${{ secrets.GPG_KEY }}" | gpg --import
         gpg --list-keys
@@ -96,16 +95,22 @@ jobs:
         # DEBFULLNAME=${{ env.debfullname }}
         # export DEBEMAIL DEBFULLNAME
 
-        #debuild -S -sa -k ${{ secrets.GPG_KEY_ID }}
+        debuild -S -sa -k ${{ secrets.GPG_KEY_ID }}
         # OR
-
-        dpkg-buildpackage --build=source --no-sign
-        debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve-base_0.4.3-1ubuntu1.dsc
+        # dpkg-buildpackage --build=source --no-sign
+        # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve-base_0.4.3-1ubuntu1.dsc
 
         echo "-------------"
         cd ..
         pwd
         ls -la
+
+    - name: 'Upload Package files'
+      uses: actions/upload-artifact@v3
+      with:
+        name: download-2
+        path: xeve*
+        retention-days: 1
 
     - name: Push package to launchpad
       if: ${{ false }}
