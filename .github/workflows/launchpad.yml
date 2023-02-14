@@ -3,6 +3,9 @@
 name: Launchpad
 
 on:
+  # TODO: this push is temporary
+  push:
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -116,21 +119,16 @@ jobs:
     - name: Push package to launchpad
       run: |
         echo -e "----------------------------------------"
-        echo '${{ github.path }}'
-        echo '${{ github.repository_id }}'
-        echo '${{ github.run_id }}'
-        echo '${{ github.sha }}'
-        echo '${{ github.workflow_sha }}'
-        echo '${{ github.workspace }}'
-
-        echo '${{ runner.temp }}'
-
-        echo '${{ github }}'
-        echo '${{ env }}'
-        echo '${{ vars }}'
+        echo 'path: ${{ github.path }}'
+        echo 'repository_id: ${{ github.repository_id }}'
+        echo 'run_id: ${{ github.run_id }}'
+        echo 'sha: ${{ github.sha }}'
+        echo 'workflow_sha: ${{ github.workflow_sha }}'
+        echo 'workspace: ${{ github.workspace }}'
+        echo 'runner_temp: ${{ runner.temp }}'
         echo -e "----------------------------------------"
 
-        dput -p
+        dput -v
         dput -d -l -s ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
 
         echo "::notice title={Launchpad push: }::Pushed to Launchpad.net
@@ -141,4 +139,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: Build failure logs
-        path: ${{ runner.temp }}/build_logs
+        path: ${{ runner.temp }}/*
