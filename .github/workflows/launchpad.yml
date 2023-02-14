@@ -115,10 +115,30 @@ jobs:
 
     - name: Push package to launchpad
       run: |
-        dput -v
+        echo -e "----------------------------------------"
+        echo '${{ github.path }}'
+        echo '${{ github.repository_id }}'
+        echo '${{ github.run_id }}'
+        echo '${{ github.sha }}'
+        echo '${{ github.workflow_sha }}'
+        echo '${{ github.workspace }}'
 
-        dput -d -l -p -s ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
+        echo '${{ runner.temp }}'
+
+        echo '${{ github }}'
+        echo '${{ env }}'
+        echo '${{ vars }}'
+        echo -e "----------------------------------------"
+
+        dput -p
+        dput -d -l -s ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
 
         echo "::notice title={Launchpad push: }::Pushed to Launchpad.net
         echo "Package placed on: $PPA_URL  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
+    - name: Upload logs on fail
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: Build failure logs
+        path: ${{ runner.temp }}/build_logs
