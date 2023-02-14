@@ -64,7 +64,6 @@ jobs:
         curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/compat
         curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/control
         curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/copyright
-        curl -o README.Debian https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/README.Debian
         curl -o README.source https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/README.source
         curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/rules
         curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/base/debian/xeve-base-dev.install
@@ -110,11 +109,7 @@ jobs:
 
     - name: Push package to launchpad
       run: |
-        gpg --verify xeve-base_0.4.3-1ubuntu1_source.changes
-        gpg --verify xeve-base_0.4.3-1ubuntu1.dsc
-
-        dput -l ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
-        echo "::notice title={Launchpad push: }::Pushed to Launchpad.net"
+        dput -u -s ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
         echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
