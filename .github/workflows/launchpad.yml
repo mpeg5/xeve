@@ -3,9 +3,6 @@
 name: Launchpad
 
 on:
-  # TODO: this push is temporary
-  push:
-    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -113,7 +110,7 @@ jobs:
     - name: Push package to launchpad
       run: |
         dput -d -l -s ppa:mpeg5/xeve xeve-base_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
-        echo "::notice title={Launchpad push: }::Pushed to Launchpad.net
+        echo "::notice title={Launchpad push: }::Pushed to Launchpad.net"
         echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
