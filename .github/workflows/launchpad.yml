@@ -34,6 +34,7 @@ jobs:
         LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tarball_url" | awk -F\" '{print $4}')
 
         #Download file
+        echo -e "location: $LOCATION"
         curl -L -o xeve-${{matrix.profile}}-$TAG.tar.gz $LOCATION
 
         tar -xvf xeve-${{matrix.profile}}-$TAG.tar.gz
