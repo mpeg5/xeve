@@ -9,6 +9,7 @@ jobs:
   launchpad:
 
     strategy:
+      max-parallel: 1
       matrix:
         profile: [base, main]
 
@@ -42,6 +43,8 @@ jobs:
         #TODO: change below line to mpeg5-xeve-*
         mv *-xeve-* xeve-${{matrix.profile}}-$TAG
         tar -czf xeve-${{matrix.profile}}-$TAG.tar.gz xeve-${{matrix.profile}}-$TAG
+
+        ls -la
 
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
