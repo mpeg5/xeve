@@ -8,11 +8,6 @@ on:
 jobs:
   launchpad:
 
-    strategy:
-      max-parallel: 1
-      matrix:
-        profile: [base, main]
-
     runs-on: ubuntu-latest
 
     # Here golbal variables are set!
@@ -35,16 +30,13 @@ jobs:
         LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tarball_url" | awk -F\" '{print $4}')
 
         #Download file
-        echo -e "location: $LOCATION"
-        curl -L -o xeve-${{matrix.profile}}-$TAG.tar.gz $LOCATION
+        curl -L -o xeve-$TAG.tar.gz $LOCATION
 
-        tar -xvf xeve-${{matrix.profile}}-$TAG.tar.gz
-        rm xeve-${{matrix.profile}}-$TAG.tar.gz
+        tar -xvf xeve-$TAG.tar.gz
+        rm xeve-$TAG.tar.gz
         #TODO: change below line to mpeg5-xeve-*
-        mv *-xeve-* xeve-${{matrix.profile}}-$TAG
-        tar -czf xeve-${{matrix.profile}}-$TAG.tar.gz xeve-${{matrix.profile}}-$TAG
-
-        ls -la
+        mv *-xeve-* xeve-$TAG
+        tar -czf xeve-$TAG.tar.gz xeve-$TAG
 
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
@@ -54,38 +46,48 @@ jobs:
 
     - name: Prepare package (dh_make)
       run: |
-        cd xeve-${{matrix.profile}}-${{ steps.vars.outputs.TAG }}
+        cd xeve-${{ steps.vars.outputs.TAG }}
 
         DEBEMAIL=${{ env.debemail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
-        dh_make -f ../xeve-${{matrix.profile}}-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
+        dh_make -f ../xeve-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
 
         echo "Debemail in package: ${{ env.debemail }}  :email:" >> $GITHUB_STEP_SUMMARY
         echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
 
-    - name: Edit sources (${{matrix.profile}})
+    - name: Edit sources
       # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
       run: |
-        cd xeve-${{matrix.profile}}-${{ steps.vars.outputs.TAG }}/debian
+        cd xeve-${{ steps.vars.outputs.TAG }}/debian
 
-        curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/${{matrix.profile}}/debian/changelog
-        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/${{matrix.profile}}/debian/compat
-        curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/${{matrix.profile}}/debian/control
-        curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/${{matrix.profile}}/debian/copyright
-        curl -o README.source https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/${{matrix.profile}}/debian/README.source
-        curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/${{matrix.profile}}/debian/rules
-        curl -o xeve-${{matrix.profile}}-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/${{matrix.profile}}/debian/xeve-${{matrix.profile}}-dev.install
-        curl -o xeve-${{matrix.profile}}1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/${{matrix.profile}}/debian/xeve-${{matrix.profile}}1.install 
+        curl -o README.Debian https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.Debian
+        curl -o README.source https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.source
+        curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/changelog
+        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/compat
+        curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/control
+        curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/copyright
+        curl -o files https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/files
+        curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/rules
+        curl -o xeve-base-dev.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.dirs
+        curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.install
+        curl -o xeve-base-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-docs.docs
+        curl -o xeve-base1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.dirs
+        curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.install
+        curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-dev.install
+        curl -o xeve-main-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-docs.docs
+        curl -o xeve-main1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.dirs
+        curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.install
+
 
         #Remove example and template files
         rm -rf *.ex
     
-    - name: 'Upload executable Artifact - ${{matrix.profile}}'
+    - name: 'Upload executable Artifact'
       if: ${{ false }}
       uses: actions/upload-artifact@v3
       with:
-        name: download-1-${{matrix.profile}}
+        name: download-1
         path: xeve*
         retention-days: 1
 
@@ -97,7 +99,7 @@ jobs:
 
     - name: Debuild
       run: |
-        cd xeve-${{matrix.profile}}-${{ steps.vars.outputs.TAG }}
+        cd xeve-${{ steps.vars.outputs.TAG }}
 
         DEBEMAIL=${{ env.debemail }}
         DEBFULLNAME=${{ env.debfullname }}
@@ -106,20 +108,21 @@ jobs:
 
         # OR
         # dpkg-buildpackage --build=source --no-sign
-        # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve-${{matrix.profile}}_${{ steps.vars.outputs.TAG }}-1ubuntu1.dsc
+        # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1.dsc
 
-    - name: 'Upload Package files - ${{matrix.profile}}'
+    - name: 'Upload Package files'
       if: ${{ false }}
       uses: actions/upload-artifact@v3
       with:
-        name: download-2-${{matrix.profile}}
+        name: download-2
         path: xeve*
         retention-days: 1
 
     - name: Push package to launchpad
       run: |
-        dput -u -s ppa:mpeg5/xeve xeve-${{matrix.profile}}_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
-        echo "Package - ${{matrix.profile}}, placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
+        #TODO: remove -s option in final version!
+        dput -u -s ppa:mpeg5/xeve xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
+        echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
       if: ${{ failure() }}
