@@ -12,9 +12,9 @@ jobs:
 
     # Here golbal variables are set!
     env:
-      maintainer_mail: "dariusz.frankiewicz@gmail.com"
-      debemail: "dariusz.frankiewicz@gmail.com"
-      debfullname: "MPEG_5"
+      maintainer_mail: "mpeg5@lists.launchpad.net"
+      debemail: "mpeg5@lists.launchpad.net"
+      debfullname: "MPEG5"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
 
     steps:
@@ -79,10 +79,10 @@ jobs:
         curl -o xeve-main1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.dirs
         curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.install
 
+        # Create version.txt file for build outside GitHub.
         cd ${{ github.workspace }}
         touch version.txt
         echo -e "${{ steps.vars.outputs.TAG }}" > version.txt
-        cat version.txt
 
         #Remove example and template files
         rm -rf *.ex
@@ -124,8 +124,7 @@ jobs:
 
     - name: Push package to launchpad
       run: |
-        #TODO: remove -s option in final version!
-        dput -u -s ppa:mpeg5/xeve xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
+        dput -u ppa:mpeg5/xeve xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
         echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
