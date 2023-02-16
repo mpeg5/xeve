@@ -79,6 +79,10 @@ jobs:
         curl -o xeve-main1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.dirs
         curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.install
 
+        cd ${{ github.workspace }}
+        touch version.txt
+        echo -e "${{ steps.vars.outputs.TAG }}" > version.txt
+        cat version.txt
 
         #Remove example and template files
         rm -rf *.ex
