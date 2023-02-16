@@ -24,7 +24,7 @@ jobs:
       run: |
       
         #Get tag
-        TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tag_name" | awk -F\" '{print $4}' | cut -c2-)
+        TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tag_name" | awk -F\" '{print $4}' | cut -c2- | awk -F\- '{print $1}')
         echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
         LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tarball_url" | awk -F\" '{print $4}')
