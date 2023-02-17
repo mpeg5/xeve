@@ -38,11 +38,14 @@ jobs:
         mv *-xeve-* xeve-$TAG
 
         # Create version.txt file for build outside GitHub.
-        echo -e "v$TAG" > version.txt
+        echo -e "v$TAG" > xeve-$TAG/version.txt
 
         tar -czf xeve-$TAG.tar.gz xeve-$TAG
 
         echo -------------------------
+        pwd
+        ls -al
+        cd xeve-$TAG
         pwd
         ls -al
 
