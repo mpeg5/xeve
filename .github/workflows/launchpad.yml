@@ -42,12 +42,8 @@ jobs:
 
         tar -czf xeve-$TAG.tar.gz xeve-$TAG
 
-        echo -------------------------
-        pwd
-        ls -al
-        cd xeve-$TAG
-        pwd
-        ls -al
+        #TODO: check below line
+        #rm -rf xeve-$TAG
 
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
@@ -130,7 +126,7 @@ jobs:
 
     - name: Push package to launchpad
       run: |
-        dput -u -s ppa:mpeg5/xeve xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
+        dput -u ppa:mpeg5/xeve xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
         echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
