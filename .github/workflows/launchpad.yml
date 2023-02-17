@@ -82,13 +82,14 @@ jobs:
         # Create version.txt file for build outside GitHub.
         cd ${{ github.workspace }}
         touch version.txt
-        echo -e "${{ steps.vars.outputs.TAG }}" > version.txt
+        echo -e "v${{ steps.vars.outputs.TAG }}" > version.txt
+        cat version.txt
 
         #Remove example and template files
         rm -rf *.ex
     
     - name: 'Upload executable Artifact'
-      # if: ${{ false }}
+      if: ${{ false }}
       uses: actions/upload-artifact@v3
       with:
         name: download-1
