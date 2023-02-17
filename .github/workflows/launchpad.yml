@@ -33,14 +33,10 @@ jobs:
         curl -L -o xeve-$TAG.tar.gz $LOCATION
 
         tar -xvf xeve-$TAG.tar.gz
-        echo ------------------
-        ls -la
         rm xeve-$TAG.tar.gz
         #TODO: change below line to mpeg5-xeve-*
         mv *-xeve-* xeve-$TAG
         tar -czf xeve-$TAG.tar.gz xeve-$TAG
-        echo ------------------
-        ls -la
 
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
@@ -59,9 +55,6 @@ jobs:
 
         echo "Debemail in package: ${{ env.debemail }}  :email:" >> $GITHUB_STEP_SUMMARY
         echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
-
-        echo ------------------
-        ls -la
 
     - name: Edit sources
       # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
@@ -93,9 +86,6 @@ jobs:
 
         #Remove example and template files
         rm -rf *.ex
-
-        echo ------------------
-        ls -la
     
     - name: 'Upload executable Artifact'
       # if: ${{ false }}
@@ -123,9 +113,6 @@ jobs:
         # OR
         # dpkg-buildpackage --build=source --no-sign
         # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1.dsc
-
-        echo ------------------
-        ls -la
 
     - name: 'Upload Package files'
       # if: ${{ false }}
