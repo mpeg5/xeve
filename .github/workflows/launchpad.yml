@@ -50,8 +50,6 @@ jobs:
 
         tar -czf xeve-$TAG.tar.gz xeve-$TAG
 
-        rm -rf xeve-$TAG
-
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
     - name: Install dependencies
