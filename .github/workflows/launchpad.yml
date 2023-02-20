@@ -4,6 +4,10 @@ name: Launchpad
 
 on:
   workflow_dispatch:
+    inputs:
+      distribution:
+        required: true
+        type: string
 
 jobs:
   launchpad:
@@ -40,10 +44,13 @@ jobs:
         # Create version.txt file for build outside GitHub.
         echo -e "v$TAG" > xeve-$TAG/version.txt
 
+        # Remove git related files
+        rm -rf xeve-$TAG/.git
+        rm -rf xeve-$TAG/.github
+
         tar -czf xeve-$TAG.tar.gz xeve-$TAG
 
-        #TODO: check below line
-        #rm -rf xeve-$TAG
+        rm -rf xeve-$TAG
 
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
@@ -66,25 +73,29 @@ jobs:
     - name: Edit sources
       # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
       run: |
+        BRANCH=${{ inputs.distributiont }}
+        # BRANCH=$debian-bionic
+        # BRANCH=$$debian-debian
+
         cd xeve-${{ steps.vars.outputs.TAG }}/debian
 
-        curl -o README.Debian https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.Debian
-        curl -o README.source https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.source
-        curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/changelog
-        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/compat
-        curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/control
-        curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/copyright
-        curl -o files https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/files
-        curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/rules
-        curl -o xeve-base-dev.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.dirs
-        curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.install
-        curl -o xeve-base-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-docs.docs
-        curl -o xeve-base1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.dirs
-        curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.install
-        curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-dev.install
-        curl -o xeve-main-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-docs.docs
-        curl -o xeve-main1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.dirs
-        curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.install
+        curl -o README.Debian https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/README.Debian
+        curl -o README.source https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/README.source
+        curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/changelog
+        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/compat
+        curl -o control https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/control
+        curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/copyright
+        curl -o files https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/files
+        curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/rules
+        curl -o xeve-base-dev.dirs https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/xeve-base-dev.dirs
+        curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/xeve-base-dev.install
+        curl -o xeve-base-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/xeve-base-docs.docs
+        curl -o xeve-base1.dirs https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/xeve-base1.dirs
+        curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/xeve-base1.install
+        curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/xeve-main-dev.install
+        curl -o xeve-main-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/xeve-main-docs.docs
+        curl -o xeve-main1.dirs https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/xeve-main1.dirs
+        curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/$BRANCH/debian/xeve-main1.install
 
         #Remove example and template files
         rm -rf *.ex
@@ -117,7 +128,7 @@ jobs:
         # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1.dsc
 
     - name: 'Upload Package files'
-      # if: ${{ false }}
+      if: ${{ false }}
       uses: actions/upload-artifact@v3
       with:
         name: download-2
@@ -126,7 +137,8 @@ jobs:
 
     - name: Push package to launchpad
       run: |
-        dput -u ppa:mpeg5/xeve xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1_source.changes
+        FILE=$(find ./ -maxdepth 1 -iname "*source.changes" -printf "%f\n")
+        dput -u -s ppa:mpeg5/xeve $FILE
         echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
