@@ -115,7 +115,7 @@ jobs:
         fi
     
     - name: 'Upload executable Artifact'
-      if: ${{ false }}
+      # if: ${{ false }}
       uses: actions/upload-artifact@v3
       with:
         name: download-1
