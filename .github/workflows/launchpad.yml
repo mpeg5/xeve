@@ -8,10 +8,8 @@ on:
       distribution:
         required: true
         type: choice
-        description: Target distribution
-        options: 
-        - debian-bionic
-        - debian-debian
+        description: Target Ubuntu distribution
+        options:
         - bionic
         - focal
         - jammy
@@ -81,26 +79,40 @@ jobs:
       run: |
         cd xeve-${{ steps.vars.outputs.TAG }}/debian
 
-        curl -o README.Debian https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/README.Debian
-        curl -o README.source https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/README.source
-        curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/changelog
-        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/compat
-        curl -o control https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/control
-        curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/copyright
-        curl -o files https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/files
-        curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/rules
-        curl -o xeve-base-dev.dirs https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/xeve-base-dev.dirs
-        curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/xeve-base-dev.install
-        curl -o xeve-base-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/xeve-base-docs.docs
-        curl -o xeve-base1.dirs https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/xeve-base1.dirs
-        curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/xeve-base1.install
-        curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/xeve-main-dev.install
-        curl -o xeve-main-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/xeve-main-docs.docs
-        curl -o xeve-main1.dirs https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/xeve-main1.dirs
-        curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/${{ inputs.distribution }}/debian/xeve-main1.install
+        curl -o README.Debian https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.Debian
+        curl -o README.source https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.source
+        curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/changelog
+        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/compat
+        curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/control
+        curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/copyright
+        curl -o files https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/files
+        curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/rules
+        curl -o xeve-base-dev.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.dirs
+        curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.install
+        curl -o xeve-base-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-docs.docs
+        curl -o xeve-base1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.dirs
+        curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.install
+        curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-dev.install
+        curl -o xeve-main-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-docs.docs
+        curl -o xeve-main1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.dirs
+        curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.install
 
         #Remove example and template files
         rm -rf *.ex
+
+        # Prepare changelog for specific Ubuntu distribution
+        if [ ${{ inputs.distribution }} = 'bionic' ]; then
+          sed -ibak 's/ubuntu*[0-9]*.*[0-9]) bionic\|focal\|jammy/ubuntu18.04) bionic/g' changelog
+          echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
+        elif [ ${{ inputs.distribution }} = 'focal' ]; then
+          sed -ibak 's/ubuntu*[0-9]*.*[0-9]) bionic\|focal\|jammy/ubuntu20.04) focal/g' changelog
+          echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
+        elif [ ${{ inputs.distribution }} = 'jammy' ]; then
+          sed -ibak 's/ubuntu*[0-9]*.*[0-9]) bionic\|focal\|jammy/ubuntu22.04) jammy/g' changelog
+          echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Not supported Ubuntu distribution :exclamation:" >> $GITHUB_STEP_SUMMARY
+        fi
     
     - name: 'Upload executable Artifact'
       if: ${{ false }}
@@ -123,7 +135,7 @@ jobs:
         DEBEMAIL=${{ env.debemail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
-        debuild -S -sa -k${{secrets.GPG_KEY_ID}}
+        debuild -S -si -k${{secrets.GPG_KEY_ID}}
 
         # OR
         # dpkg-buildpackage --build=source --no-sign
