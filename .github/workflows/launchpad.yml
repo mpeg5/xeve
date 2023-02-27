@@ -152,7 +152,7 @@ jobs:
     - name: Push package to launchpad
       run: |
         FILE=$(find ./ -maxdepth 1 -iname "*source.changes" -printf "%f\n")
-        dput -u -s ppa:mpeg5/xeve $FILE
+        dput -u ppa:mpeg5/xeve $FILE
         echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
