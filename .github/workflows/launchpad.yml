@@ -13,6 +13,14 @@ on:
         - bionic
         - focal
         - jammy
+      orig:
+        required: true
+        type: choice
+        description: Include orig file?
+        options:
+        - yes
+        - no
+
 
 jobs:
   launchpad:
@@ -135,11 +143,18 @@ jobs:
         DEBEMAIL=${{ env.debemail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
-        debuild -S -si -k${{secrets.GPG_KEY_ID}}
 
-        # OR
-        # dpkg-buildpackage --build=source --no-sign
-        # debsign -k ${{ secrets.GPG_KEY_ID }} ../xeve_${{ steps.vars.outputs.TAG }}-1ubuntu1.dsc
+        # Choose if attach .orig file or not
+        # https://help.launchpad.net/Packaging/PPA/BuildingASourcePackage#Options_when_building
+        if [ ${{ inputs.orig }} = 'yes' ]; then
+          debuild -S -sa -k${{secrets.GPG_KEY_ID}}
+          echo "Orig included" >> $GITHUB_STEP_SUMMARY
+        elif [ ${{ inputs.orig }} = 'no' ]; then
+          debuild -S -sd -k${{secrets.GPG_KEY_ID}}
+          echo "Orig not included" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Not supported option :exclamation:" >> $GITHUB_STEP_SUMMARY
+        fi
 
     - name: 'Upload Package files'
       if: ${{ false }}
