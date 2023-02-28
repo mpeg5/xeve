@@ -1,10 +1,17 @@
 # This workfow is responsbile for creating deb package and upload it to launchpad.net
+#
+#   Prerequisities:
+#     - Add GPG key and it's ID used for signing package to GitHub Secrets
+#     - Upload Public GPG key to launchpad keyserver: gpg --keyserver "https://keyserver.ubuntu.com/#" --send-key ${{ secrets.KEY_ID }}
+#     - add cmake backports dependency (required for Bionic 18.04 build) on xeve ppa -> https://launchpad.net/~rsjtaylor/+archive/ubuntu/cmake-backports
+#
 
 name: Launchpad
 
 on:
   workflow_dispatch:
     inputs:
+
       distribution:
         required: true
         type: choice
@@ -13,13 +20,15 @@ on:
         - bionic
         - focal
         - jammy
+      
+      # https://help.launchpad.net/Packaging/PPA/BuildingASourcePackage#Options_when_building
       orig:
         required: true
         type: choice
-        description: Include orig file?
+        description: Build options
         options:
-        - yes
-        - no
+        - brand_new
+        - alternate_version
 
 
 jobs:
@@ -146,12 +155,12 @@ jobs:
 
         # Choose if attach .orig file or not
         # https://help.launchpad.net/Packaging/PPA/BuildingASourcePackage#Options_when_building
-        if [ ${{ inputs.orig }} = 'yes' ]; then
+        if [ ${{ inputs.orig }} = 'brand_new' ]; then
           debuild -S -sa -k${{secrets.GPG_KEY_ID}}
-          echo "Orig included" >> $GITHUB_STEP_SUMMARY
-        elif [ ${{ inputs.orig }} = 'no' ]; then
+          echo "Brand new package with no existing version in Ubuntu's repositories (will be uploaded with the .orig.tar.gz file)" >> $GITHUB_STEP_SUMMARY
+        elif [ ${{ inputs.orig }} = 'alternate_version' ]; then
           debuild -S -sd -k${{secrets.GPG_KEY_ID}}
-          echo "Orig not included" >> $GITHUB_STEP_SUMMARY
+          echo "Alternative version of an existing package (will be uploaded without the .orig.tar.gz file)" >> $GITHUB_STEP_SUMMARY
         else
           echo "Not supported option :exclamation:" >> $GITHUB_STEP_SUMMARY
         fi
