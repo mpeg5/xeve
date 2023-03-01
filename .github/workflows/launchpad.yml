@@ -119,13 +119,13 @@ jobs:
 
         # Prepare changelog for specific Ubuntu distribution
         if [ ${{ inputs.distribution }} = 'bionic' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\118.04\4 bionic; \6/g" changelog
+          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~18.04\4 bionic; \6/g" changelog
           echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
         elif [ ${{ inputs.distribution }} = 'focal' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\120.04\4 focal; \6/g" changelog
+          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~20.04\4 focal; \6/g" changelog
           echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
         elif [ ${{ inputs.distribution }} = 'jammy' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\122.04\4 jammy; \6/g" changelog
+          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~22.04\4 jammy; \6/g" changelog
           echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
         else
           echo "Not supported Ubuntu distribution :exclamation:" >> $GITHUB_STEP_SUMMARY
