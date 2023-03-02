@@ -122,20 +122,20 @@ jobs:
           sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~18.04\4 bionic; \6/g" changelog
           echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
         elif [ ${{ inputs.distribution }} = 'focal' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~20.04\4 focal; \6/g" changelog
+          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\12~20.04\4 focal; \6/g" changelog
           echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
         elif [ ${{ inputs.distribution }} = 'jammy' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~22.04\4 jammy; \6/g" changelog
+          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\13~22.04\4 jammy; \6/g" changelog
           echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
         else
           echo "Not supported Ubuntu distribution :exclamation:" >> $GITHUB_STEP_SUMMARY
         fi
 
-        head -n1 changelog
-        ls -la
+        GITHUB_STEP_SUMMARY = $(head -n1 changelog)
+        
     
     - name: 'Upload executable Artifact'
-      if: ${{ false }}
+      # if: ${{ false }}
       uses: actions/upload-artifact@v3
       with:
         name: download-1
@@ -169,7 +169,7 @@ jobs:
         fi
 
     - name: 'Upload Package files'
-      if: ${{ false }}
+      # if: ${{ false }}
       uses: actions/upload-artifact@v3
       with:
         name: download-2
@@ -179,7 +179,7 @@ jobs:
     - name: Push package to launchpad
       run: |
         FILE=$(find ./ -maxdepth 1 -iname "*source.changes" -printf "%f\n")
-        dput -u -s ppa:mpeg5/xeve $FILE
+        dput -u ppa:mpeg5/xeve $FILE
         echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
