@@ -130,9 +130,6 @@ jobs:
         else
           echo "Not supported Ubuntu distribution :exclamation:" >> $GITHUB_STEP_SUMMARY
         fi
-
-        GITHUB_STEP_SUMMARY = $(head -n1 changelog)
-        
     
     - name: 'Upload executable Artifact'
       # if: ${{ false }}
