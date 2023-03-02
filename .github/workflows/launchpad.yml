@@ -130,9 +130,12 @@ jobs:
         else
           echo "Not supported Ubuntu distribution :exclamation:" >> $GITHUB_STEP_SUMMARY
         fi
+
+        head -n1 changelog
+        ls -la
     
     - name: 'Upload executable Artifact'
-      # if: ${{ false }}
+      if: ${{ false }}
       uses: actions/upload-artifact@v3
       with:
         name: download-1
@@ -176,7 +179,7 @@ jobs:
     - name: Push package to launchpad
       run: |
         FILE=$(find ./ -maxdepth 1 -iname "*source.changes" -printf "%f\n")
-        dput -u ppa:mpeg5/xeve $FILE
+        dput -u -s ppa:mpeg5/xeve $FILE
         echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
