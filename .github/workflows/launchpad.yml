@@ -49,7 +49,9 @@ jobs:
         rm -rf xeve-$TAG/.git
         rm -rf xeve-$TAG/.github
 
-        tar -czf xeve-$TAG.tar.gz xeve-$TAG
+        tar -czf xeve-$TAG.tar.gz xeve-$
+        
+        echo "repo_tag=$TAG" >> $GITHUB_ENV
 
         echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
@@ -93,8 +95,14 @@ jobs:
         curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.install
 
         #Remove example and template files
-        rm -rf *.ex
-
+        rm -rf *.
+        
+      - name: Archive files
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve
+          path: *
+          retention-days: 1
 
   build-deploy:
     needs: prepare
@@ -111,6 +119,11 @@ jobs:
 
     steps:
 
+    - name: Download a single artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: xeve
+
     - name: Prepare gpg key
       # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
       run:  |
@@ -119,6 +132,9 @@ jobs:
 
     - name: Debuild
       run: |
+
+        echo "${{ env.repo_tag }}"
+
         cd xeve-${{ steps.vars.outputs.TAG }}
 
         # Prepare changelog for specific Ubuntu distribution
