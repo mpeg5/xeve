@@ -21,7 +21,6 @@ jobs:
       maintainer_mail: "mpeg5@lists.launchpad.net"
       debemail: "mpeg5@lists.launchpad.net"
       debfullname: "MPEG5"
-      PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
 
     steps:
     
@@ -65,7 +64,7 @@ jobs:
         DEBEMAIL=${{ env.debemail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
-        dh_make -f ../xeve-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintiner_mail }} -l -y
+        dh_make -f ../xeve-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} -l -y
 
         echo "Debemail in package: ${{ env.debemail }}  :email:" >> $GITHUB_STEP_SUMMARY
         echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
@@ -106,7 +105,6 @@ jobs:
 
     # Here golbal variables are set!
     env:
-      maintainer_mail: "mpeg5@lists.launchpad.net"
       debemail: "mpeg5@lists.launchpad.net"
       debfullname: "MPEG5"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
