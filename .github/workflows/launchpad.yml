@@ -10,30 +10,10 @@ name: Launchpad
 
 on:
   workflow_dispatch:
-    inputs:
-
-      distribution:
-        required: true
-        type: choice
-        description: Target Ubuntu distribution
-        options:
-        - bionic
-        - focal
-        - jammy
-      
-      # https://help.launchpad.net/Packaging/PPA/BuildingASourcePackage#Options_when_building
-      orig:
-        required: true
-        type: choice
-        description: Build options
-        options:
-        - brand_new
-        - alternate_version
-
 
 jobs:
-  launchpad:
 
+  prepare:
     runs-on: ubuntu-latest
 
     # Here golbal variables are set!
@@ -85,8 +65,7 @@ jobs:
         DEBEMAIL=${{ env.debemail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
-        #dh_make -f ../xeve-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} --createorig -l -y
-        dh_make -f ../xeve-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} -l -y
+        dh_make -f ../xeve-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintiner_maial }} -l -y
 
         echo "Debemail in package: ${{ env.debemail }}  :email:" >> $GITHUB_STEP_SUMMARY
         echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
@@ -117,27 +96,22 @@ jobs:
         #Remove example and template files
         rm -rf *.ex
 
-        # Prepare changelog for specific Ubuntu distribution
-        if [ ${{ inputs.distribution }} = 'bionic' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~18.04\4 bionic; \6/g" changelog
-          echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
-        elif [ ${{ inputs.distribution }} = 'focal' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\12~20.04\4 focal; \6/g" changelog
-          echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
-        elif [ ${{ inputs.distribution }} = 'jammy' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\13~22.04\4 jammy; \6/g" changelog
-          echo "Packages for Ubuntu: ${{ inputs.distribution }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "Not supported Ubuntu distribution :exclamation:" >> $GITHUB_STEP_SUMMARY
-        fi
-    
-    - name: 'Upload executable Artifact'
-      # if: ${{ false }}
-      uses: actions/upload-artifact@v3
-      with:
-        name: download-1
-        path: xeve*
-        retention-days: 1
+
+  build-deploy:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ubuntu: [bionic, focal, jammy]
+
+    # Here golbal variables are set!
+    env:
+      maintainer_mail: "mpeg5@lists.launchpad.net"
+      debemail: "mpeg5@lists.launchpad.net"
+      debfullname: "MPEG5"
+      PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
+
+    steps:
 
     - name: Prepare gpg key
       # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
@@ -149,21 +123,26 @@ jobs:
       run: |
         cd xeve-${{ steps.vars.outputs.TAG }}
 
+        # Prepare changelog for specific Ubuntu distribution
+        if [ ${{ matrix.ubuntu }} = 'bionic' ]; then
+          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~18.04\4 bionic; \6/g" debian/changelog
+          echo "Packages for Ubuntu: ${{ matrix.ubuntu }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
+        elif [ ${{ matrix.ubuntu }} = 'focal' ]; then
+          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~20.04\4 focal; \6/g" debian/changelog
+          echo "Packages for Ubuntu: ${{ matrix.ubuntu }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
+        elif [ ${{ matrix.ubuntu }} = 'jammy' ]; then
+          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~22.04\4 jammy; \6/g" debian/changelog
+          echo "Packages for Ubuntu: ${{ matrix.ubuntu }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Not supported Ubuntu distribution :exclamation:" >> $GITHUB_STEP_SUMMARY
+        fi
+
         DEBEMAIL=${{ env.debemail }}
         DEBFULLNAME=${{ env.debfullname }}
         export DEBEMAIL DEBFULLNAME
 
-        # Choose if attach .orig file or not
-        # https://help.launchpad.net/Packaging/PPA/BuildingASourcePackage#Options_when_building
-        if [ ${{ inputs.orig }} = 'brand_new' ]; then
-          debuild -S -sa -k${{secrets.GPG_KEY_ID}}
-          echo "Brand new package with no existing version in Ubuntu's repositories (will be uploaded with the .orig.tar.gz file)" >> $GITHUB_STEP_SUMMARY
-        elif [ ${{ inputs.orig }} = 'alternate_version' ]; then
-          debuild -S -sd -k${{secrets.GPG_KEY_ID}}
-          echo "Alternative version of an existing package (will be uploaded without the .orig.tar.gz file)" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "Not supported option :exclamation:" >> $GITHUB_STEP_SUMMARY
-        fi
+        debuild -S -si -k${{secrets.GPG_KEY_ID}}
+
 
     - name: 'Upload Package files'
       # if: ${{ false }}
@@ -176,7 +155,7 @@ jobs:
     - name: Push package to launchpad
       run: |
         FILE=$(find ./ -maxdepth 1 -iname "*source.changes" -printf "%f\n")
-        dput -u ppa:mpeg5/xeve $FILE
+        dput -u -s ppa:mpeg5/xeve $FILE
         echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload logs on fail
