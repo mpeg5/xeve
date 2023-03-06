@@ -37,6 +37,10 @@ jobs:
         #Download file
         curl -L -o xeve-$TAG.tar.gz $LOCATION
 
+        echo $TAG
+        pwd
+        ls -al
+
         tar -xvf xeve-$TAG.tar.gz
         rm xeve-$TAG.tar.gz
         #TODO: change below line to mpeg5-xeve-*
