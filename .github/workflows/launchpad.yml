@@ -96,13 +96,16 @@ jobs:
 
         #Remove example and template files
         rm -rf *.
+
+        pwd
+        ls -al
         
-      - name: Archive files
-        uses: actions/upload-artifact@v3
-        with:
-          name: xeve
-          path: *
-          retention-days: 1
+    - name: Archive files
+      uses: actions/upload-artifact@v3
+      with:
+        name: xeve
+        path: *
+        retention-days: 1
 
   build-deploy:
     needs: prepare
