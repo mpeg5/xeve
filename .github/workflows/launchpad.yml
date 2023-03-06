@@ -136,11 +136,12 @@ jobs:
           echo -e "${{ secrets.GPG_KEY }}" | gpg --import
           gpg --list-keys
 
+      - name: Install dependencies
+        run: |
+          sudo apt install packaging-dev gnupg
+
       - name: Debuild
         run: |
-          echo "${{needs.prepare.outputs.output_TAG}}"
-          echo "$JOB1_TAG"
-
           cd xeve-$JOB1_TAG
 
           # Prepare changelog for specific Ubuntu distribution
