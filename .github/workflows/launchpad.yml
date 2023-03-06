@@ -96,7 +96,7 @@ jobs:
           curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.install
 
           #Remove example and template files
-          rm -rf *.
+          rm -rf *.ex
 
           pwd
           ls -al
