@@ -53,7 +53,7 @@ jobs:
         rm -rf xeve-$TAG/.git
         rm -rf xeve-$TAG/.github
 
-        tar -czf xeve-$TAG.tar.gz xeve-$
+        tar -czf xeve-$TAG.tar.gz xeve-$TAG
         
         echo "repo_tag=$TAG" >> $GITHUB_ENV
 
