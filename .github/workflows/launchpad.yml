@@ -104,7 +104,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: xeve
-        path: *
+        path: xeve*
         retention-days: 1
 
   build-deploy:
