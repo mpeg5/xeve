@@ -120,7 +120,7 @@ jobs:
       debemail: "mpeg5@lists.launchpad.net"
       debfullname: "MPEG5"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
-      JOB1_TAG: ${{needs.prepare.outputs.output_TAG}}
+      # JOB1_TAG: ${{needs.prepare.outputs.output_TAG}}
 
     steps:
 
@@ -137,9 +137,9 @@ jobs:
 
       - name: Debuild
         run: |
-          echo "$JOB1_TAG"
-          
-          cd xeve-$JOB1_TAG
+          echo ${{needs.prepare.outputs.output_TAG}}
+
+          cd xeve-${{needs.prepare.outputs.output_TAG}}
 
           # Prepare changelog for specific Ubuntu distribution
           if [ ${{ matrix.ubuntu }} = 'bionic' ]; then
