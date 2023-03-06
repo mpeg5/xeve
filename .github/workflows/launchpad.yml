@@ -22,96 +22,91 @@ jobs:
       debemail: "mpeg5@lists.launchpad.net"
       debfullname: "MPEG5"
 
+    outputs:
+      output_TAG: ${{ steps.Get_sources.outputs.TAG }}
+
     steps:
     
-    - name: Get sources
-      id: vars
-      run: |
-      
-        #Get tag
-        TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tag_name" | awk -F\" '{print $4}' | cut -c2- | awk -F\- '{print $1}')
-        echo "TAG=$TAG" >> $GITHUB_OUTPUT
-
-        LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tarball_url" | awk -F\" '{print $4}')
-
-        echo $LOCATION
-
-        #Download file
-        curl -L -o xeve-$TAG.tar.gz $LOCATION
-
-        echo $TAG
-        pwd
-        ls -al
-
-        tar -xvf xeve-$TAG.tar.gz
-        rm xeve-$TAG.tar.gz
-        #TODO: change below line to mpeg5-xeve-*
-        mv *-xeve-* xeve-$TAG
-
-        # Create version.txt file for build outside GitHub.
-        echo -e "v$TAG" > xeve-$TAG/version.txt
-
-        # Remove git related files
-        rm -rf xeve-$TAG/.git
-        rm -rf xeve-$TAG/.github
-
-        tar -czf xeve-$TAG.tar.gz xeve-$TAG
+      - name: Get_sources
+        id: vars
+        run: |
         
-        echo "repo_tag=$TAG" >> $GITHUB_ENV
+          #Get tag
+          TAG=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tag_name" | awk -F\" '{print $4}' | cut -c2- | awk -F\- '{print $1}')
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
-        echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
+          LOCATION=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest | grep "tarball_url" | awk -F\" '{print $4}')
 
-    - name: Install dependencies
-      run: |
-        sudo apt install packaging-dev gnupg
+          #Download file
+          curl -L -o xeve-$TAG.tar.gz $LOCATION
 
-    - name: Prepare package (dh_make)
-      run: |
-        cd xeve-${{ steps.vars.outputs.TAG }}
+          tar -xvf xeve-$TAG.tar.gz
+          rm xeve-$TAG.tar.gz
+          #TODO: change below line to mpeg5-xeve-*
+          mv *-xeve-* xeve-$TAG
 
-        DEBEMAIL=${{ env.debemail }}
-        DEBFULLNAME=${{ env.debfullname }}
-        export DEBEMAIL DEBFULLNAME
-        dh_make -f ../xeve-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} -l -y
+          # Create version.txt file for build outside GitHub.
+          echo -e "v$TAG" > xeve-$TAG/version.txt
 
-        echo "Debemail in package: ${{ env.debemail }}  :email:" >> $GITHUB_STEP_SUMMARY
-        echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
+          # Remove git related files
+          rm -rf xeve-$TAG/.git
+          rm -rf xeve-$TAG/.github
 
-    - name: Edit sources
-      # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
-      run: |
-        cd xeve-${{ steps.vars.outputs.TAG }}/debian
+          tar -czf xeve-$TAG.tar.gz xeve-$TAG
 
-        curl -o README.Debian https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.Debian
-        curl -o README.source https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.source
-        curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/changelog
-        curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/compat
-        curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/control
-        curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/copyright
-        curl -o files https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/files
-        curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/rules
-        curl -o xeve-base-dev.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.dirs
-        curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.install
-        curl -o xeve-base-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-docs.docs
-        curl -o xeve-base1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.dirs
-        curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.install
-        curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-dev.install
-        curl -o xeve-main-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-docs.docs
-        curl -o xeve-main1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.dirs
-        curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.install
+          echo "Package created form TAG: $TAG :bookmark:" >> $GITHUB_STEP_SUMMARY
 
-        #Remove example and template files
-        rm -rf *.
+      - name: Install dependencies
+        run: |
+          sudo apt install packaging-dev gnupg
 
-        pwd
-        ls -al
-        
-    - name: Archive files
-      uses: actions/upload-artifact@v3
-      with:
-        name: xeve
-        path: xeve*
-        retention-days: 1
+      - name: Prepare package (dh_make)
+        run: |
+          cd xeve-${{ steps.vars.outputs.TAG }}
+
+          DEBEMAIL=${{ env.debemail }}
+          DEBFULLNAME=${{ env.debfullname }}
+          export DEBEMAIL DEBFULLNAME
+          dh_make -f ../xeve-${{ steps.vars.outputs.TAG }}.tar.gz -c bsd -e ${{ env.maintainer_mail }} -l -y
+
+          echo "Debemail in package: ${{ env.debemail }}  :email:" >> $GITHUB_STEP_SUMMARY
+          echo "Debfullname in package: ${{ env.debfullname }}  :speech_balloon:" >> $GITHUB_STEP_SUMMARY
+
+      - name: Edit sources
+        # TODO: Files from this step have to be later integrated with project repository, they shouldn't be fetched from external repo
+        run: |
+          cd xeve-${{ steps.vars.outputs.TAG }}/debian
+
+          curl -o README.Debian https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.Debian
+          curl -o README.source https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/README.source
+          curl -o changelog https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/changelog
+          curl -o compat https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/compat
+          curl -o control https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/control
+          curl -o copyright https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/copyright
+          curl -o files https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/files
+          curl -o rules https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/rules
+          curl -o xeve-base-dev.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.dirs
+          curl -o xeve-base-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-dev.install
+          curl -o xeve-base-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base-docs.docs
+          curl -o xeve-base1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.dirs
+          curl -o xeve-base1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-base1.install
+          curl -o xeve-main-dev.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-dev.install
+          curl -o xeve-main-docs.docs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main-docs.docs
+          curl -o xeve-main1.dirs https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.dirs
+          curl -o xeve-main1.install https://raw.githubusercontent.com/dkozinski/xeve/debian-debian/debian/xeve-main1.install
+
+          #Remove example and template files
+          rm -rf *.
+
+          pwd
+          ls -al
+          
+      - name: Archive files
+        uses: actions/upload-artifact@v3
+        with:
+          name: xeve
+          path: xeve*
+          retention-days: 1
 
   build-deploy:
     needs: prepare
@@ -125,65 +120,65 @@ jobs:
       debemail: "mpeg5@lists.launchpad.net"
       debfullname: "MPEG5"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
+      JOB1_TAG: ${{needs.prepare.outputs.output_TAG}}
 
     steps:
 
-    - name: Download a single artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: xeve
+      - name: Download a single artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: xeve
 
-    - name: Prepare gpg key
-      # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
-      run:  |
-        echo -e "${{ secrets.GPG_KEY }}" | gpg --import
-        gpg --list-keys
+      - name: Prepare gpg key
+        # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
+        run:  |
+          echo -e "${{ secrets.GPG_KEY }}" | gpg --import
+          gpg --list-keys
 
-    - name: Debuild
-      run: |
+      - name: Debuild
+        run: |
+          echo "$JOB1_TAG"
+          
+          cd xeve-$JOB1_TAG
 
-        echo "${{ env.repo_tag }}"
+          # Prepare changelog for specific Ubuntu distribution
+          if [ ${{ matrix.ubuntu }} = 'bionic' ]; then
+            sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~18.04\4 bionic; \6/g" debian/changelog
+            echo "Packages for Ubuntu: ${{ matrix.ubuntu }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
+          elif [ ${{ matrix.ubuntu }} = 'focal' ]; then
+            sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~20.04\4 focal; \6/g" debian/changelog
+            echo "Packages for Ubuntu: ${{ matrix.ubuntu }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
+          elif [ ${{ matrix.ubuntu }} = 'jammy' ]; then
+            sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~22.04\4 jammy; \6/g" debian/changelog
+            echo "Packages for Ubuntu: ${{ matrix.ubuntu }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Not supported Ubuntu distribution :exclamation:" >> $GITHUB_STEP_SUMMARY
+          fi
 
-        cd xeve-${{ steps.vars.outputs.TAG }}
+          DEBEMAIL=${{ env.debemail }}
+          DEBFULLNAME=${{ env.debfullname }}
+          export DEBEMAIL DEBFULLNAME
 
-        # Prepare changelog for specific Ubuntu distribution
-        if [ ${{ matrix.ubuntu }} = 'bionic' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~18.04\4 bionic; \6/g" debian/changelog
-          echo "Packages for Ubuntu: ${{ matrix.ubuntu }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
-        elif [ ${{ matrix.ubuntu }} = 'focal' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~20.04\4 focal; \6/g" debian/changelog
-          echo "Packages for Ubuntu: ${{ matrix.ubuntu }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
-        elif [ ${{ matrix.ubuntu }} = 'jammy' ]; then
-          sed -i -E -e "s/(ubuntu)([0-9]{1,2}(.[0-9]{1,2}){0,1})(\)) (bionic|focal|jammy); (urgency=.*)/\11~22.04\4 jammy; \6/g" debian/changelog
-          echo "Packages for Ubuntu: ${{ matrix.ubuntu }} :heavy_check_mark:" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "Not supported Ubuntu distribution :exclamation:" >> $GITHUB_STEP_SUMMARY
-        fi
-
-        DEBEMAIL=${{ env.debemail }}
-        DEBFULLNAME=${{ env.debfullname }}
-        export DEBEMAIL DEBFULLNAME
-
-        debuild -S -si -k${{secrets.GPG_KEY_ID}}
+          debuild -S -si -k${{secrets.GPG_KEY_ID}}
 
 
-    - name: 'Upload Package files'
-      # if: ${{ false }}
-      uses: actions/upload-artifact@v3
-      with:
-        name: download-2
-        path: xeve*
-        retention-days: 1
+      - name: 'Upload Package files'
+        # if: ${{ false }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: download-2
+          path: xeve*
+          retention-days: 1
 
-    - name: Push package to launchpad
-      run: |
-        FILE=$(find ./ -maxdepth 1 -iname "*source.changes" -printf "%f\n")
-        dput -u -s ppa:mpeg5/xeve $FILE
-        echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
+      - name: Push package to launchpad
+        run: |
+          FILE=$(find ./ -maxdepth 1 -iname "*source.changes" -printf "%f\n")
+          dput -u -s ppa:mpeg5/xeve $FILE
+          echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
-    - name: Upload logs on fail
-      if: ${{ failure() }}
-      uses: actions/upload-artifact@v3
-      with:
-        name: Build failure logs
-        path: ${{ runner.temp }}/*
+      - name: Upload logs on fail
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: Build failure logs
+          path: ${{ runner.temp }}/*
