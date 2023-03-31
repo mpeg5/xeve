@@ -1,9 +1,13 @@
-# This workfow is responsbile for creating deb package and upload it to launchpad.net
+# This workfow is used for deploying deb packages on launchpad.net
+# It can be run maually when new version have to be deployed.
+#
+# Supported Ubuntu distributions are listed in matrix job parameters.
+# Target PPA repository is listed in job globals env.
 #
 #   Prerequisities:
 #     - Add GPG key and it's ID used for signing package to GitHub Secrets
-#     - Upload Public GPG key to launchpad keyserver: gpg --keyserver "https://keyserver.ubuntu.com/#" --send-key ${{ secrets.KEY_ID }}
-#     - add cmake backports dependency (required for Bionic 18.04 build) on xeve ppa -> https://launchpad.net/~rsjtaylor/+archive/ubuntu/cmake-backports
+#     - Upload Public GPG key to launchpad keyserver: gpg --keyserver "https://keyserver.ubuntu.com/#" --send-key <KEY_ID>
+#     - Add cmake backports dependency (required for Bionic 18.04 build) on xeve ppa -> https://launchpad.net/~rsjtaylor/+archive/ubuntu/cmake-backports
 #
 
 name: Launchpad
@@ -13,20 +17,22 @@ on:
 
 jobs:
 
+  #Job 1
   prepare:
     runs-on: ubuntu-latest
 
-    # Here golbal variables are set!
+    # Here golbal variables are set for job "prepare"!
     env:
       maintainer_mail: "mpeg5@lists.launchpad.net"
       debemail: "mpeg5@lists.launchpad.net"
       debfullname: "MPEG5"
 
+    # Job outputs
     outputs:
       output_TAG: ${{ steps.vars.outputs.TAG }}
 
     steps:
-    
+
       - name: Get_sources
         id: vars
         run: |
@@ -97,9 +103,6 @@ jobs:
 
           #Remove example and template files
           rm -rf *.ex
-
-          pwd
-          ls -al
           
       - name: Archive files
         uses: actions/upload-artifact@v3
@@ -108,6 +111,7 @@ jobs:
           path: xeve*
           retention-days: 1
 
+  #Job 2
   build-deploy:
     needs: prepare
     runs-on: ubuntu-latest
@@ -116,10 +120,11 @@ jobs:
       matrix:
         ubuntu: [bionic, focal, jammy]
 
-    # Here golbal variables are set!
+    # Here golbal variables are set for job "build-deploy"!
     env:
       debemail: "mpeg5@lists.launchpad.net"
       debfullname: "MPEG5"
+      PPA: "ppa:mpeg5/xeve"
       PPA_URL: "https://launchpad.net/~mpeg5/+archive/ubuntu/xeve"
       JOB1_TAG: ${{needs.prepare.outputs.output_TAG}}
 
@@ -164,19 +169,12 @@ jobs:
 
           debuild -S -si -k${{secrets.GPG_KEY_ID}}
 
-
-      - name: 'Upload Package files'
-        # if: ${{ false }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: download-2
-          path: xeve*
-          retention-days: 1
-
+      # This step will upload package to launchpad.net. 
+      # You can simulate this process by passing -s option to dput command.
       - name: Push package to launchpad
         run: |
           FILE=$(find ./ -maxdepth 1 -iname "*source.changes" -printf "%f\n")
-          dput -u ppa:mpeg5/xeve $FILE
+          dput -u ${{ env.PPA }} $FILE
           echo "Package placed on: ${{ env.PPA_URL }}  :globe_with_meridians:" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload logs on fail
