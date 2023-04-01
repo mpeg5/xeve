@@ -1514,10 +1514,10 @@ enum TQC_RUN {
 #include "xeve_ipred.h"
 #include "xeve_picman.h"
 #include "xeve_mc.h"
-#ifndef ARM
+#if defined(__AVX2__)
 #include "xeve_mc_sse.h"
 #include "xeve_mc_avx.h"
-#else
+#elif defined(ARM)
 #include "xeve_mc_neon.h"
 #endif
 #include "xeve_type.h"
