@@ -34,10 +34,10 @@
 #include "xeve_def.h"
 #include "xeve_bsw.h"
 #include "xeve_sad.h"
-#if defined(__AVX2__)
+#ifndef ARM
 #include "xeve_sad_sse.h"
 #include "xeve_sad_avx.h"
-#elif defined(ARM)
+#else
 #include "xeve_sad_neon.h"
 #endif
 
@@ -1017,11 +1017,11 @@ typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 #include "xeve_tbl.h"
 #include "xeve_itdq.h"
 
-#if defined(__AVX2__)
+#ifndef ARM
 #include "xeve_itdq_sse.h"
 #include "xeve_itdq_avx.h"
 #include "xeve_tq_avx.h"
-#elif defined(ARM)
+#else
 #include "xeve_itdq_neon.h"
 #endif
 #include "xeve_enc.h"
