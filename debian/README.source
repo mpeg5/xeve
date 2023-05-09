@@ -1,0 +1,16 @@
+# XEVE
+
+The eXtra-fast Essential Video Encoder (XEVE) is an opensource and fast MPEG-5 EVC video encoder.
+
+## Sources
+
+The source code for XEVE is available on GitHub at https://github.com/mpeg5/xeve.
+
+## Build requirements
+
+Detailed information about system requirements and software dependencies can be found on the project's GitHub page.
+
+## Building and Installation
+
+Instructions on how to build and install XEVE can be found on the project's GitHub page, as well as on the project's Wiki at https://github.com/mpeg5/xeve/wiki/Xeve-Compilation-guide.
+

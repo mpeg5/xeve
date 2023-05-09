@@ -1,0 +1,253 @@
+xeve (0.4.3-0ubuntu20.04) focal; urgency=medium
+
+  [ mpeg5 ]
+  * Initial commit
+  * Update README.md
+
+  [ Kwang Pyo Choi ]
+  * adding README
+
+  [ mpeg5 ]
+  * remove blank line
+  * initial commit
+  * adding cmakefile
+  * added information about how to build main profile
+  * refactoring README
+  * Supporting the latest EVC draft (compatible with ETM 7.0) and bugfixes
+  * refactoring code and document
+  * support AVX instruction and Rate control feature
+  * committing missing file
+
+  [ Minsoo Park ]
+  * Change type of input profile
+
+  [ Jamaika1 ]
+  * Fix for ENABLE_IBC_CHROMA_REFINE
+
+  [ Minsoo Park ]
+  * fix description
+
+  [ mpeg5 ]
+  * added rate control method and adaptive quantization using lookahead coding algorithm
+
+  [ motbob ]
+  * Additional documentation
+  * style consistency, typo
+
+  [ mpeg5 ]
+  * improve coding gain and refactoring
+
+  [ Kwang Pyo Choi ]
+  * refactoring and align with ETM7.3
+  * added API for default parameters
+  * improved rate control algorithm and changed argument parsing system
+
+  [ MInsoo Park ]
+  * optimization and cleanup
+  * update RC
+  * Modification of input parameter * Add parameter " --ref " to change the number of references * Change default number of references in zerolatency to 1
+  * Change slice type B to P in zerolatency
+  * modification
+
+  [ Dawid Kozinski ]
+  * Exposed access to the bitrate parameter of the xeve codec
+  * Added xeve prefixes to function names to prevent symbol duplications issue (collisions with symbols from libxevd library)
+  * Scope of __cpuid and __xgetbv functions have been limited to xeve_util object file to prevent symbol duplications issue  (collisions with symbols from libxevd library)
+
+  [ pchirag ]
+  * Non multiple of 8 input support for yuv420 and yuv400 inputs
+
+  [ Kwang Pyo Choi ]
+  * compilation hot-fix
+  * hotfix for wrong name
+
+  [ MInsoo Park ]
+  * clean-up wrong name
+
+  [ Kwang Pyo Choi ]
+  * hotfix for app
+
+  [ ashish.wankhade ]
+  * tx itx AVX integration
+
+  [ pchirag ]
+  * Support for configuring VUI parameters through cmd line. Running encoder with no arguments shall show all the options
+
+  [ Dawid Kozinski ]
+  * Provided stdin input support for xeve_app
+
+  [ Jamaika1 ]
+  * Added extern
+  * Added extern
+  * Added extern
+
+  [ pyohub ]
+  * Update CMakeLists.txt
+
+  [ MInsoo Park ]
+  * bugfix to compile
+
+  [ Dawid Kozinski ]
+  * Changed stdin from text mode to binary mode under windows
+
+  [ pchirag ]
+  * Added, VUI parameter value checking code for valid values. Also added condition to check if any valid (non-default) vui parameters are passed. VUI parameters are only written to bit-stream if any valid parameters are passed
+
+  [ MPEG-5 ]
+  * Revert "Xeve vui support"
+
+  [ Kwang Pyo Choi ]
+  * fix nal_unit_length parsing
+  * refactoring files - working same
+  * refactoring files - working same
+  * refactoring files - working same
+  * refactoring files - working same
+  * refactoring files - working same
+
+  [ Mamatha N Hosmane/AI Visual Processing /SRI-Bangalore/Staff Engineer/Samsung Electronics ]
+  * Added sei support to embed command line info to bitstream, vui params…
+  * Added sei support to embed command line info to bitstream, vui params as string
+  * SEI messages modification based on review
+
+  [ MInsoo Park ]
+  * update DTS
+
+  [ khjj07 ]
+  * neon initial
+
+  [ Dariusz Frankiewicz ]
+  * Create build workflow for Github actions
+  * Update build.yml
+  * Update README.md
+
+  [ Dawid Kozinski ]
+  * Fixed bug causing build error
+
+  [ MInsoo Park ]
+  * Add meaning of TS index
+
+  [ Kwang Pyo Choi ]
+  * fixed setting for qp_max and qp_min value
+
+  [ khjj07 ]
+  * itdq_neon and sse2neon for neon porting
+  * conflict clear
+  * clean line
+  * neon itdq added
+  * align and clean up
+  * trim unnecessary line
+  * clean up
+  * fix build err
+  * break line
+
+  [ MInsoo Park ]
+  * modification to support closed GOP
+
+  [ Dawid Kozinski ]
+  * Removed trailing whitespaces from xeve_app.c file
+  * Configured NSIS and DEB generators for binary windows installer and deb packages
+  * Changes following code review
+  * Added to README.md file instruction on generating Windows installer and DEB packages for XEVE
+  * Added instruction on how to generate RPM packages for Linux and ZIP file archive
+  * Further changes following code review
+  * Added to CMakeLists.txt reading from file and parsing xeve version string
+  * The type of message reported during project configuration if the version sring has incorrct format has been changed from WARNING to FATAL_ERROR
+  * Added missing version.txt file
+
+  [ Dariusz Frankiewicz ]
+  * Create update_version.yml
+  * Add GitHub Actions workflow for preparing packages
+
+  [ Mamatha N Hosmane/AI Video Processing /SRI-Bangalore/Staff Engineer/Samsung Electronics ]
+  * valid right nbr access modification, max_coding_delay and fps support added
+
+  [ khjj07 ]
+  * itdq 8pt,16pt
+
+  [ washish ]
+  * ITX PBXX NEON Code
+  * bugfix
+  * neon code for sad, ssd and diff module
+  * indentation fixes
+  * Revert "indentation fixes"
+  * indentations
+  * tabs-spaces fix
+  * Typo corrected
+
+  [ Dawid Kozinski ]
+  * Changes in CMakeLists.txt files needed to build a project for Windows in the MinGW environment using the MSVC compiler
+  * Changes following code review
+  * Moved check_conf function from xeve_app implementation to xeve API
+  * Changes following code review
+
+  [ GitHub Actions Bot ]
+  * Updated version file
+
+  [ Mamatha N Hosmane/AI Video Processing /SRI-Bangalore/Staff Engineer/Samsung Electronics ]
+  * xeve satd neon intrinsics
+  * satd neon intrinsics header declaration added
+  * Build issues fixed, code compliant with satd c reference
+
+  [ khjj07 ]
+  * xeve_mc_neon added
+
+  [ washish ]
+  * Neon code for XEVE baseline MC modules
+
+  [ Mamatha N Hosmane/AI Video Processing /SRI-Bangalore/Staff Engineer/Samsung Electronics ]
+  * Code clean up and fix added to support bframes 1, 3, 7 with rc enabled and lookahead frames
+
+  [ kpchoi ]
+  * Update README.md
+
+  [ Dariusz Frankiewicz ]
+  * Update prepare_packages.yml
+  * Update prepare_packages.yml
+  * Update prepare_packages.yml
+  * Update prepare_packages.yml
+
+  [ WGNW_gangdodan ]
+  * added xeve_tq_neon
+
+  [ Dawid Kozinski ]
+  * Extended public API
+  * Changes following code review
+  * Removed doxygen comments from the public header for consistency with current documenting conventions
+
+  [ GitHub Actions Bot ]
+  * Updated version file
+
+  [ Dawid Kozinski ]
+  * Provided implementation of xeve_param_parse for main profile
+
+  [ GitHub Actions Bot ]
+  * Updated version file
+
+  [ Dawid Kozinski ]
+  * Provided new git-tag based way of versioning
+  * Minor update of message string in CMakeLists.txt
+  * Fixed issue related to pointer arithmetic and causing compilation errors for MSVC compiler (v143)
+  * Hotfix preventing configuration error for MSVC
+  * Hotfix in CMakeLists.txt to handle git tag format containing commit short hash string postfix (i.e. v1.2.3-9e4d0fb1)
+
+  [ Dariusz Frankiewicz ]
+  * Changes in build action workflow
+  * Add releasing packages action
+
+  [ Dawid Kozinski ]
+  * Added Doxygen documentation for public API
+  * Hotfix in CMakeLists.txt related to git tag fitering
+  * Changes following code review; Fixed typos
+
+  [ Mamatha N Hosmane/AI Video Processing /SRI-Bangalore/Staff Engineer/Samsung Electronics ]
+  * Modifications to xeve based on stabilization testing across plaforms
+  * Stabilization fixes based on valgrind analysis
+  * Modification to encode only exact number of frames, when --frame option is present, encode till end of file otherwise
+
+  [ Dariusz Frankiewicz ]
+  * Update GitHub actions workflows
+
+  [ Mamatha N Hosmane/AI Video Processing /SRI-Bangalore/Staff Engineer/Samsung Electronics ]
+  * right nbr access fix, valgrind analysis cleanup
+
+ -- Dawid Kozinski <dkozinsk@interia.pl>  Mon, 23 Jan 2023 09:24:56 +0100

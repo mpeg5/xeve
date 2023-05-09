@@ -1,0 +1,37 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+export DH_OPTIONS = -v
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	mkdir -p build_base build_main
+	cd build_base && cmake .. -DCMAKE_BUILD_TYPE=Release -DSET_PROF=BASE -DCMAKE_INSTALL_PREFIX=/usr
+	cd build_main && cmake .. -DCMAKE_BUILD_TYPE=Release -DSET_PROF=MAIN -DCMAKE_INSTALL_PREFIX=/usr
+
+override_dh_auto_build:
+	cd build_base && make
+	cd build_main && make
+
+override_dh_auto_install:
+	#dh_install --sourcedir=$(CURDIR)/debian/tmp1
+	#dh_install --sourcedir=$(CURDIR)/debian/tmp2
+	cd build_base && make install DESTDIR=$(CURDIR)/debian/tmp1
+	#install -d $(CURDIR)/debian/tmp2
+	cd build_main && make install DESTDIR=$(CURDIR)/debian/tmp2
+
+override_dh_auto_clean:
+	rm -rf build_base build2
+
+#override_dh_auto_test:
+#	cd build_base && make test
+#	cd build_main && make test
+
+#override_dh_auto_build-indep:
+
+#override_dh_auto_build-arch:
+#	dpkg-deb --build debian/tmp1
+#	mv debian/tmp1.deb debian/libmylibrary1.deb
+#	dpkg-deb --build debian/tmp2
+#	mv debian/tmp2.deb debian/libmylibrary2.deb

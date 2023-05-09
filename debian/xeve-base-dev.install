@@ -1,0 +1,5 @@
+debian/tmp1/usr/include/xeveb/* /usr/include/xeveb/
+debian/tmp1/usr/lib/*/lib*.so	/usr/lib/
+debian/tmp1/usr/lib/*/xeveb/* /usr/lib/xeveb/
+debian/tmp1/usr/lib/*/pkgconfig/* /usr/lib/pkgconfig/
+

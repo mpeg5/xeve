@@ -1,0 +1,31 @@
+xeve for Debian
+-------------------
+
+XEVE is a software library for video coding.
+This package provides a version of the library for Debian.
+It is built from the sources available in the upstream Git repository.
+
+For more information on XEVE and its features, please visit the project's website at:
+
+    https://github.com/mpeg5/xeve
+
+System Requirements:
+---------------------
+
+Please see the project's website for the system requirements for building and running XEVE.
+
+Building the package:
+----------------------
+
+To build the package, please follow the instructions provided on the project's website:
+
+    https://github.com/mpeg5/xeve/wiki/Xeve-Compilation-guide
+
+Contact:
+--------
+
+If you have any questions or issues related to this package, please contact the XEVE development team at:
+
+    https://github.com/mpeg5/xeve/issues
+
+ -- Dawid Kozinski <dkozinsk@interia.pl>  Mon, 23 Jan 2023 08:54:35 +0100

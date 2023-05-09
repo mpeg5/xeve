@@ -1,0 +1,2 @@
+debian/tmp2/usr/lib/*/lib*.so.* /usr/lib/
+debian/tmp2/usr/bin/xeve_app /usr/bin/
