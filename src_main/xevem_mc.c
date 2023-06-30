@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -102,7 +102,7 @@ const s16 xevem_tbl_mc_c_coeff[32][4] =
 
 static int aff_mv_dev_bb2_125[5] = {128, 256, 544, 1120, 2272};
 
-const s16 tbl_bl_mc_l_coeff[16][2] =
+const s16 xeve_tbl_bl_mc_l_coeff[16][2] =
 {
     { 64,  0 },
     { 60,  4 },
@@ -291,7 +291,7 @@ void xeve_bl_mc_l_n0(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel 
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_BL_N0(tbl_bl_mc_l_coeff[dx], ref[j], ref[j + 1]);
+            pt = MAC_BL_N0(xeve_tbl_bl_mc_l_coeff[dx], ref[j], ref[j + 1]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         ref += s_ref;
@@ -311,7 +311,7 @@ void xeve_bl_mc_l_0n(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel 
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_BL_0N(tbl_bl_mc_l_coeff[dy], ref[j], ref[s_ref + j]);
+            pt = MAC_BL_0N(xeve_tbl_bl_mc_l_coeff[dy], ref[j], ref[s_ref + j]);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         ref += s_ref;
@@ -340,7 +340,7 @@ void xeve_bl_mc_l_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 
     {
         for(j = 0; j < w; j++)
         {
-            b[j] = MAC_BL_NN_S1(tbl_bl_mc_l_coeff[dx], ref[j], ref[j + 1], offset1, shift1);
+            b[j] = MAC_BL_NN_S1(xeve_tbl_bl_mc_l_coeff[dx], ref[j], ref[j + 1], offset1, shift1);
         }
         ref += s_ref;
         b += w;
@@ -351,7 +351,7 @@ void xeve_bl_mc_l_nn(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 
     {
         for(j = 0; j < w; j++)
         {
-            pt = MAC_BL_NN_S2(tbl_bl_mc_l_coeff[dy], b[j], b[j + w], offset2, shift2);
+            pt = MAC_BL_NN_S2(xeve_tbl_bl_mc_l_coeff[dy], b[j], b[j + w], offset2, shift2);
             pred[j] = XEVE_CLIP3(0, (1 << bit_depth) - 1, pt);
         }
         pred += s_pred;
@@ -697,7 +697,7 @@ void xeve_sub_pel_err_srfc(int *sad_buf, int *delta_mv)
     return;
 }
 
-void copy_buffer(pel *src, int src_stride, pel *dst, int dst_stride, int width, int height)
+static void copy_buffer(pel *src, int src_stride, pel *dst, int dst_stride, int width, int height)
 {
     int num_bytes = width * sizeof(pel);
     for(int i = 0; i < height; i++)
@@ -706,7 +706,7 @@ void copy_buffer(pel *src, int src_stride, pel *dst, int dst_stride, int width, 
     }
 }
 
-void padding(pel *ptr, int stride, int width, int height, int pad_left_size, int pad_right_size, int pad_top_size, int pad_bottom_size)
+static void padding(pel *ptr, int stride, int width, int height, int pad_left_size, int pad_right_size, int pad_top_size, int pad_bottom_size)
 {
     /*left padding*/
     pel *ptr_temp = ptr;
@@ -745,7 +745,7 @@ void padding(pel *ptr, int stride, int width, int height, int pad_left_size, int
     }
 }
 
-void prefetch_for_mc(int x, int y, int pu_x, int pu_y, int pu_w, int pu_h
+static void prefetch_for_mc(int x, int y, int pu_x, int pu_y, int pu_w, int pu_h
                    , int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM]
                    , int iteration, pel dmvr_padding_buf[REFP_NUM][N_C][PAD_BUFFER_STRIDE * PAD_BUFFER_STRIDE], int chroma_format_idc)
 {
@@ -893,7 +893,7 @@ void padded_mc_dmvr(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[RE
     }
 }
 
-void processDMVR(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int poc_c, pel *dmvr_current_template
+static void processDMVR(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int poc_c, pel *dmvr_current_template
                , pel dmvr_ref_pred_interpolated[REFP_NUM][(MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT)) * (MAX_CU_SIZE + ((DMVR_NEW_VERSION_ITER_COUNT + 1) * REF_PRED_EXTENTION_PEL_COUNT))]
                , pel dmvr_half_pred_interpolated[REFP_NUM][(MAX_CU_SIZE + 1) * (MAX_CU_SIZE + 1)], int iteration
                , pel dmvr_padding_buf[REFP_NUM][N_C][PAD_BUFFER_STRIDE * PAD_BUFFER_STRIDE], s16 dmvr_mv[MAX_CU_CNT_IN_LCU][REFP_NUM][MV_D]
@@ -1278,7 +1278,7 @@ void xeve_eif_mc(int block_width, int block_height, int x, int y, int mv_scale_h
                , int hor_max, int ver_max, int hor_min, int ver_min, pel* p_ref, int ref_stride, pel *p_dst, int dst_stride, pel* p_tmp_buf, char affine_mv_prec, s8 comp, int bit_depth
                , int chroma_format_idc);
 
-void eif_derive_mv_clip_range(int x, int y, int cuw, int cuh, int dmv_hor[MV_D], int dmv_ver[MV_D], int mv_scale[MV_D],
+static void eif_derive_mv_clip_range(int x, int y, int cuw, int cuh, int dmv_hor[MV_D], int dmv_ver[MV_D], int mv_scale[MV_D],
                               int pic_w, int pic_h, BOOL range_clip, int max_mv[MV_D], int min_mv[MV_D])
 {
     int max_mv_pic[MV_D] = {(pic_w + MAX_CU_SIZE - x - cuw - 1) << 5, (pic_h + MAX_CU_SIZE - y - cuh - 1) << 5};             //1 for bilinear interpolation
@@ -1533,7 +1533,7 @@ void xeve_affine_mc_lc(int x, int y, int pic_w, int pic_h, int cuw, int cuh, s16
     }
 }
 
-BOOL can_mv_clipping_occurs(int block_width, int block_height, int mv0[MV_D], int d_x[MV_D], int d_y[MV_D], int mv_max[MV_D], int mv_min[MV_D])
+static BOOL can_mv_clipping_occurs(int block_width, int block_height, int mv0[MV_D], int d_x[MV_D], int d_y[MV_D], int mv_max[MV_D], int mv_min[MV_D])
 {
     int mv_corners[2][2][MV_D];
     BOOL mv_clip_occurs[MV_D] = {FALSE, FALSE};
@@ -1627,9 +1627,9 @@ void xeve_eif_bilinear_clip(int block_width, int block_height, int mv0[MV_D], in
             pel* r = p_ref + yInt * ref_stride + xInt;
 
 #if EIF_MV_PRECISION_BILINEAR == 4
-            pel s1 = MAC_BL_NN_S1(tbl_bl_mc_l_coeff[xFrac], r[0], r[1], offset1, shift1);
-            pel s2 = MAC_BL_NN_S1(tbl_bl_mc_l_coeff[xFrac], r[ref_stride], r[ref_stride + 1], offset1, shift1);
-            p_buf[x + 1] = MAC_BL_NN_S2(tbl_bl_mc_l_coeff[yFrac], s1, s2, offset2, shift2);
+            pel s1 = MAC_BL_NN_S1(xeve_tbl_bl_mc_l_coeff[xFrac], r[0], r[1], offset1, shift1);
+            pel s2 = MAC_BL_NN_S1(xeve_tbl_bl_mc_l_coeff[xFrac], r[ref_stride], r[ref_stride + 1], offset1, shift1);
+            p_buf[x + 1] = MAC_BL_NN_S2(xeve_tbl_bl_mc_l_coeff[yFrac], s1, s2, offset2, shift2);
 #elif  EIF_MV_PRECISION_BILINEAR == 5
             pel s1 = MAC_BL_NN_S1(tbl_bl_eif_32_phases_mc_l_coeff[xFrac], r[0], r[1], offset1, shift1);
             pel s2 = MAC_BL_NN_S1(tbl_bl_eif_32_phases_mc_l_coeff[xFrac], r[ref_stride], r[ref_stride + 1], offset1, shift1);
@@ -1677,9 +1677,9 @@ void xeve_eif_bilinear_no_clip(int block_width, int block_height, int mv0[MV_D],
             pel* r = p_ref + yInt * ref_stride + xInt;
 
 #if EIF_MV_PRECISION_BILINEAR == 4
-            pel s1 = MAC_BL_NN_S1(tbl_bl_mc_l_coeff[xFrac], r[0], r[1], offset1, shift1);
-            pel s2 = MAC_BL_NN_S1(tbl_bl_mc_l_coeff[xFrac], r[ref_stride], r[ref_stride + 1], offset1, shift1);
-            p_buf[x + 1] = MAC_BL_NN_S2(tbl_bl_mc_l_coeff[yFrac], s1, s2, offset2, shift2);
+            pel s1 = MAC_BL_NN_S1(xeve_tbl_bl_mc_l_coeff[xFrac], r[0], r[1], offset1, shift1);
+            pel s2 = MAC_BL_NN_S1(xeve_tbl_bl_mc_l_coeff[xFrac], r[ref_stride], r[ref_stride + 1], offset1, shift1);
+            p_buf[x + 1] = MAC_BL_NN_S2(xeve_tbl_bl_mc_l_coeff[yFrac], s1, s2, offset2, shift2);
 #elif  EIF_MV_PRECISION_BILINEAR == 5
             pel s1 = MAC_BL_NN_S1(tbl_bl_eif_32_phases_mc_l_coeff[xFrac], r[0], r[1], offset1, shift1);
             pel s2 = MAC_BL_NN_S1(tbl_bl_eif_32_phases_mc_l_coeff[xFrac], r[ref_stride], r[ref_stride + 1], offset1, shift1);

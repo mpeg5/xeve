@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -125,16 +125,16 @@ void xeve_recon_w_ats(s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s
 
 #define HTDF_LUT_QP_NUM                                   5   // num of LUTs
 #define HTDF_LUT_SIZE_LOG2                                4   // table size in bits
-#define HTDF_LUT_MIN_QP                                   20  // LUT min QP 
+#define HTDF_LUT_MIN_QP                                   20  // LUT min QP
 #define HTDF_LUT_STEP_QP_LOG2                             3   // LUT QP step
 #define HTDF_FAST_TBL                                     1   // bit mask check & abs operations, SW friendly implementation
 #define HTDF_BIT_RND4                                     2
 #define HTDF_CNT_SCALE                                    2
 #define HTDF_CNT_SCALE_RND                                (1 << (HTDF_CNT_SCALE - 1))
 
-u8 HTDF_table_thr_log2[HTDF_LUT_QP_NUM] = { 6, 7, 7, 8, 8 };
+static u8 HTDF_table_thr_log2[HTDF_LUT_QP_NUM] = { 6, 7, 7, 8, 8 };
 
-static const 
+static const
 u8 HTDF_table[HTDF_LUT_QP_NUM][1 << HTDF_LUT_SIZE_LOG2] = {
 { 0, 0, 2,  6, 10, 14, 19, 23, 28, 32,  36,  41,  45,  49,  53,  57, },
 { 0, 0, 5, 12, 20, 29, 38, 47, 56, 65,  73,  82,  90,  98, 107, 115, },
@@ -148,7 +148,7 @@ __inline static int read_table(const int z, const u8 *tbl, const int thr, const 
 #if HTDF_FAST_TBL
     const unsigned Shift = sizeof(int) * 8 - 1;
     const int sg0 = z >> Shift;                                   // sign(z)
-    const int v0 = (z + sg0) ^ sg0;                               // abs(z) 
+    const int v0 = (z + sg0) ^ sg0;                               // abs(z)
     const int r0 = v0 << 0;                                       // scaled abs(z)
     const int idx = ((v0 + table_round)&thr) >> table_shift;
     const int w0 = r0 + ((tbl[idx] - r0)&((v0 - thr) >> Shift));  // tbl(abs(z))
@@ -228,7 +228,7 @@ void xeve_htdf_filter_block(pel *block, pel *acc_block, const u8 *tbl, int strid
     }
 }
 
-void filter_block_luma(pel *block, const u8 HTDF_table[HTDF_LUT_QP_NUM][1 << HTDF_LUT_SIZE_LOG2], int width, int height, int stride, int qp, int bit_depth)
+static void filter_block_luma(pel *block, const u8 HTDF_table[HTDF_LUT_QP_NUM][1 << HTDF_LUT_SIZE_LOG2], int width, int height, int stride, int qp, int bit_depth)
 {
     pel acc_block[(MAX_CU_SIZE + 2)*(MAX_CU_SIZE + 2)];
 

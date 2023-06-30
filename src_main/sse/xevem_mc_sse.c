@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -782,7 +782,7 @@ void xeve_bl_mc_l_n0_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, 
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_bilin_horz_sse(ref, s_ref, pred, s_pred, tbl_bl_mc_l_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0, 1);
+    mc_filter_bilin_horz_sse(ref, s_ref, pred, s_pred, xeve_tbl_bl_mc_l_coeff[dx], w, h, min, max, MAC_ADD_N0, MAC_SFT_N0, 1);
 }
 
 void xeve_bl_mc_l_0n_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth)
@@ -793,7 +793,7 @@ void xeve_bl_mc_l_0n_sse(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, 
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_bilin_vert_sse(ref, s_ref, pred, s_pred, tbl_bl_mc_l_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N, 1);
+    mc_filter_bilin_vert_sse(ref, s_ref, pred, s_pred, xeve_tbl_bl_mc_l_coeff[dy], w, h, min, max, MAC_ADD_0N, MAC_SFT_0N, 1);
 }
 
 void xeve_bl_mc_l_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth)
@@ -813,8 +813,8 @@ void xeve_bl_mc_l_nn_sse(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, 
     int max = ((1 << bit_depth) - 1);
     int min = 0;
 
-    mc_filter_bilin_horz_sse(ref, s_ref, buf, w, tbl_bl_mc_l_coeff[dx], w, (h + 1), min, max, offset1, shift1, 0);
-    mc_filter_bilin_vert_sse(buf, w, pred, s_pred, tbl_bl_mc_l_coeff[dy], w, h, min, max, offset2, shift2, 1);
+    mc_filter_bilin_horz_sse(ref, s_ref, buf, w, xeve_tbl_bl_mc_l_coeff[dx], w, (h + 1), min, max, offset1, shift1, 0);
+    mc_filter_bilin_vert_sse(buf, w, pred, s_pred, xeve_tbl_bl_mc_l_coeff[dy], w, h, min, max, offset2, shift2, 1);
 }
 
 /****************************************************************************
