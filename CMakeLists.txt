@@ -79,7 +79,7 @@ cmake_policy(SET CMP0048 NEW)
 set(CMAKE_C_STANDARD 99)
 
 # Maps to a solution file (XEVE.sln).
-project (XEVE VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+project (XEVE VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH} LANGUAGES C)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Set compiler flags and options.
