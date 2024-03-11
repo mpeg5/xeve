@@ -14,7 +14,7 @@ jobs:
   build-baseline-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -31,14 +31,14 @@ jobs:
           make
 
       - name: 'Upload executable Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: xeveb_app-linux
           path: build/bin/xeveb_app
           retention-days: 5
 
       - name: 'Upload library Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: libxeveb-linux
           path: build/lib/
@@ -47,7 +47,7 @@ jobs:
   build-main-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -64,14 +64,14 @@ jobs:
           make
 
       - name: 'Upload executable Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: xeve_app-linux
           path: build/bin/xeve_app
           retention-days: 5
 
       - name: 'Upload library Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: libxeve-linux
           path: build/lib/
@@ -80,7 +80,7 @@ jobs:
   build-baseline-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -92,14 +92,14 @@ jobs:
           make
 
       - name: 'Upload executable Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: xeveb_app-windows
           path: build/bin/xeveb_app.exe
           retention-days: 5
 
       - name: 'Upload library Artifacts'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: libxeveb-windows
           path: build/src_base/libxeveb.*
@@ -108,7 +108,7 @@ jobs:
   build-main-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -120,14 +120,14 @@ jobs:
           make
 
       - name: 'Upload executable Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: xeve_app-windows
           path: build/bin/xeve_app.exe
           retention-days: 5
 
       - name: 'Upload library Artifacts'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: libxeve-windows
           path: build/src_main/libxeve.*
