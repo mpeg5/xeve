@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include "xeve_thread_pool.h"
 #if defined(WIN32) || defined(WIN64)
-#include <Windows.h>
+#include <windows.h>
 #include <process.h>
 #else
 #include <pthread.h>
