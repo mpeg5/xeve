@@ -132,3 +132,69 @@ jobs:
           name: libxeve-windows
           path: build/src_main/libxeve.*
           retention-days: 5
+  
+  build-baseline-arm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: install dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get -y install \
+          cmake gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+      - name: Build xeve baseline
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DSET_PROF=BASE -DARM=TRUE
+          make
+
+      - name: 'Upload executable Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: xeveb_app-arm
+          path: build/bin/xeveb_app
+          retention-days: 5
+
+      - name: 'Upload library Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: libxeveb-arm
+          path: build/lib/
+          retention-days: 5
+
+  build-main-arm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: install dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get -y install \
+          cmake gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+      - name: Build xeve main
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM=TRUE
+          make
+
+      - name: 'Upload executable Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: xeve_app-arm
+          path: build/bin/xeve_app
+          retention-days: 5
+
+      - name: 'Upload library Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: libxeve-arm
+          path: build/lib/
+          retention-days: 5
