@@ -532,33 +532,34 @@ static const ARGS_OPT args_opt_table[] = \
     },
     {
         ARGS_NO_KEY,  "videoformat", ARGS_VAL_TYPE_STRING, 0, NULL,
-        " 0-component, 1-pal, 2-ntsc, 3-secam, 4-mac. 5-unspecified"
+        "0-component, 1-pal, 2-ntsc, 3-secam, 4-mac. 5-unknown"
     },
     {
         ARGS_NO_KEY,  "range", ARGS_VAL_TYPE_STRING, 0, NULL,
-        "black level and range of luma and chroma signals as 1- full or 0- limited"
+        "black level and range of luma and chroma signals as 1-full or 0-limited"
     },
     {
         ARGS_NO_KEY,  "colorprim", ARGS_VAL_TYPE_STRING, 0, NULL,
-        "1- bt709, 2-unspecified, 3- reserved, 4- bt470m, 5- bt470bg, 6- smpte170m,\
-         7- smpte240m, 8- Generic film, 9- bt2020, 10-smpte428, 11-smpte431, 12-smpte432, \
-         22-EBU Tech. 3213 Default 2-unspecified"
+        "1-bt709, 2-unknown, 3-reserved, 4-bt470m, 5-bt470bg, 6-smpte170m,\n"
+        "      7-smpte240m, 8-Generic film, 9-bt2020, 10-smpte428, 11-smpte431, 12-smpte432,\n"
+        "      22-EBU Tech. 3213 Default 2-unknown"
     },
     {
         ARGS_NO_KEY,  "transfer", ARGS_VAL_TYPE_STRING, 0, NULL,
-        "1- transfer characteristics from bt709, 2-unspecified, 3-reserved, 4-bt470m, 5-bt470bg, 6-smpte170m,\
-         7-smpte240m, 8-linear, 9-log100, 10-log316, 11-iec61966-2-4, 12-bt1361e, 13-iec61966-2-1,\
-         14-bt2020-10, 15-bt2020-12, 16-smpte2084, 17-smpte428, 198-arib-std-b67. Default 2-unspecified"
+        "1-transfer characteristics from bt709, 2-unknown, 3-reserved, 4-bt470m, 5-bt470bg, 6-smpte170m,\n"
+        "      7-smpte240m, 8-linear, 9-log100, 10-log316, 11-iec61966-2-4, 12-bt1361e, 13-iec61966-2-1,\n"
+        "      14-bt2020-10, 15-bt2020-12, 16-smpte2084, 17-smpte428, 198-arib-std-b67. Default 2-unknown"
     },
     {
         ARGS_NO_KEY,  "matrix-coefficients", ARGS_VAL_TYPE_STRING, 0, NULL,
-        "0-gbr, 1-bt709, 2-unspecified, 3-reserved, 4-fcc, 5-bt470bg, 6-smpte170m, 7-smpte240m, \
-          8-ycgco, 9-bt2020nc, 10-bt2020c, 11-smpte2085, 12-chroma-derived-nc, 13-chroma-derived-c, 14-ictcp, 15-255 reserved}; "
+        "0-gbr, 1-bt709, 2-unknown, 3-reserved, 4-fcc, 5-bt470bg, 6-smpte170m, 7-smpte240m,\n"
+        "      8-ycgco, 9-bt2020nc, 10-bt2020c, 11-smpte2085, 12-chroma-derived-nc, 13-chroma-derived-c, 14-ictcp,\n"
+        "      15-255 reserved"
     },
     {
         ARGS_NO_KEY,  "master-display", ARGS_VAL_TYPE_STRING, 0, NULL,
-        "SMPTE ST 2086 master display color volume info SEI (HDR)\
-          format: G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)"
+        "SMPTE ST 2086 master display color volume info SEI (HDR)\n"
+        "      format: G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)"
     },
     {
         ARGS_NO_KEY,  "max-cll", ARGS_VAL_TYPE_STRING, 0, NULL,
@@ -618,13 +619,13 @@ static const ARGS_OPT args_opt_table[] = \
     },
     {
         ARGS_NO_KEY,  "num-reorder-pics", ARGS_VAL_TYPE_INTEGER, 0, NULL,
-        "# of reorder pics, valid range 0 to max_dec_pic_buffering \
-         default = max_dec_pic_buffering"
+        "# of reorder pics, valid range 0 to max_dec_pic_buffering\n"
+        "      default = max_dec_pic_buffering"
     },
     {
         ARGS_NO_KEY,  "max-dec-pic-buffering", ARGS_VAL_TYPE_INTEGER, 0, NULL,
-        "max picture buffering in decoder, valid range 0 to num-reorder-pic \
-         default num-reorder-pic"
+        "max picture buffering in decoder, valid range 0 to num-reorder-pic\n"
+        "      default num-reorder-pic"
     },
     {ARGS_END_KEY, "", ARGS_VAL_TYPE_NONE, 0, NULL, ""} /* termination */
 };
@@ -1006,7 +1007,7 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "recon", args->fname_rec);
     args_set_variable_by_key_long(opts, "frames", &args->frames);
     args->info = 1;
-    args_set_variable_by_key_long(opts, "info", &args->info); 
+    args_set_variable_by_key_long(opts, "info", &args->info);
     args_set_variable_by_key_long(opts, "hash", &args->hash);
     args_set_variable_by_key_long(opts, "verbose", &op_verbose);
     op_verbose = VERBOSE_SIMPLE; /* default */
