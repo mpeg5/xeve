@@ -249,7 +249,7 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             break;
         case XEVE_CFG_GET_FPS:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = ctx->param.fps;
+            *((int *)buf) = (int)ctx->param.fps;
             break;
         case XEVE_CFG_GET_BPS:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
