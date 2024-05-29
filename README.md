@@ -52,7 +52,8 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   - Output Location
     - Executable application (xeve_app) can be found under build/bin/.
     - Library files (libxeve.so and libxexe.a) can be found under build/lib/.
-  - Application and libraries built with Main Profile can also support Baseline Profile operation.
+  
+  Application and libraries built with Main Profile can also support Baseline Profile operation.
 
 
 ### Windows (64-bit)
@@ -95,7 +96,40 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     $make
     ```
     You can change '-G' option with proper version of Visual Studio.
-  - Application and libraries built with Main Profile can also support Baseline Profile operation.
+  
+  Application and libraries built with Main Profile can also support Baseline Profile operation.
+
+### ARM (64-bit)
+- Build Requirements
+  - CMake 3.12 or later (download from [https://cmake.org/](https://cmake.org/))
+  - gcc-aarch64-linux-gnu 
+  - binutils-aarch64-linux-gnu
+
+- Build Instructions for **Baseline Profile**
+  ```
+  $mkdir build-arm
+  $cd build-arm
+  $cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM=TRUE -DSET_PROF=BASE 
+  $make
+  $sudo make install
+  ```
+  - Output Location
+    - Executable application (xeveb_app) can be found under build-arm/bin/.
+    - Library files (libxeveb.so and libxexeb.a) can be found under build-arm/lib/.
+
+- Build Instructions for **Main Profile**
+  ```
+  $mkdir build-arm
+  $cd build-arm
+  $cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM=TRUE
+  $make
+  $sudo make install
+  ```
+  - Output Location
+    - Executable application (xeve_app) can be found under build-arm/bin/.
+    - Library files (libxeve.so and libxexe.a) can be found under build-arm/lib/.
+  
+  Application and libraries built with Main Profile can also support Baseline Profile operation.
 
 ## How to generate installer
 
