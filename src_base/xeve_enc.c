@@ -2618,7 +2618,7 @@ void xeve_param2string(XEVE_PARAM * param, char * sei_buf, int padx, int pady)
     sei_buf += snprintf(sei_buf, max_n, "profile=%d", param->profile);
     sei_buf += snprintf(sei_buf, max_n, " threads=%d", param->threads);
     sei_buf += snprintf(sei_buf, max_n, " input-res=%dx%d", param->w - padx, param->h - pady);
-    sei_buf += snprintf(sei_buf, max_n, " fps=%u", param->fps);
+    sei_buf += snprintf(sei_buf, max_n, " fps=%u", param->fps_n/ param->fps_d);
     sei_buf += snprintf(sei_buf, max_n, " keyint=%d", param->keyint);
     sei_buf += snprintf(sei_buf, max_n, " color-space=%d", param->cs);
     sei_buf += snprintf(sei_buf, max_n, " rc-type=%s", (param->rc_type == XEVE_RC_ABR) ? "ABR" : (param->rc_type == XEVE_RC_CRF) ? "CRF" : "CQP");

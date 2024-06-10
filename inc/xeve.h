@@ -340,7 +340,8 @@ typedef struct _XEVE_PARAM
     /* height of input frame */
     int            h;
     /* frame rate (Hz) */
-    int            fps;
+    int            fps_n;
+    int            fps_d;
     /* MAX I-frame period in frames.
     - 0: only one I-frame at the first time.
     - 1: every frame is coded in I-frame
