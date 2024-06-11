@@ -79,8 +79,7 @@ typedef struct _Y4M_PARAMS
 {
     int w;
     int h;
-    int fps_n;
-    int fps_d;
+    XEVE_RATIONAL fps;
     int color_format;
     int bit_depth;
 }Y4M_INFO;
@@ -217,7 +216,7 @@ static void print_config(ARGS_PARSER * args, XEVE_PARAM * param)
     }
     logv2("\twidth                    = %d\n", param->w);
     logv2("\theight                   = %d\n", param->h);
-    logv2("\tFPS                      = %.2f\n", (float)param->fps_n/ param->fps_d);
+    logv2("\tFPS                      = %.2f\n", (float)param->fps.num/ param->fps.den);
     logv2("\tintra picture period     = %d\n", param->keyint);
     if (param->rc_type == XEVE_RC_CRF)
     {
@@ -405,7 +404,7 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
         }
         case 'F':
         {
-            if (sscanf(p + 1, "%d:%d", &y4m->fps_n, &y4m->fps_d) != 2) return XEVE_ERR;
+            if (sscanf(p + 1, "%d:%d", &y4m->fps.num, &y4m->fps.den) != 2) return XEVE_ERR;
             break;
         }
         case 'I':
@@ -541,7 +540,7 @@ static void y4m_update_param(ARGS_PARSER * args, Y4M_INFO * y4m, XEVE_PARAM * pa
     args->set_int(args, "width", y4m->w);
     args->set_int(args, "height", y4m->h);
     char tmp_fps[256];
-    sprintf(tmp_fps, "%d/%d", y4m->fps_n, y4m->fps_d);
+    sprintf(tmp_fps, "%d/%d", y4m->fps.num, y4m->fps.den);
     args->set_str(args, "fps", tmp_fps);
     args->set_int(args, "input-depth", y4m->bit_depth);
 }
@@ -577,19 +576,19 @@ static int update_fps_param(ARGS_PARSER* args, XEVE_PARAM* param)
 {
   if (strpbrk(args->fps, "/") != NULL)
   {
-    sscanf(args->fps, "%d/%d", &param->fps_n, &param->fps_d);
+    sscanf(args->fps, "%d/%d", &param->fps.num, &param->fps.den);
   }
   else if (strpbrk(args->fps, ".") != NULL)
   {
     float tmp_fps = 0;
     sscanf(args->fps, "%f", &tmp_fps);
-    param->fps_n = tmp_fps * 10000;
-    param->fps_d = 10000;
+    param->fps.num = tmp_fps * 10000;
+    param->fps.den = 10000;
   }
   else
   {
-    sscanf(args->fps, "%d", &param->fps_n);
-    param->fps_d = 1;
+    sscanf(args->fps, "%d", &param->fps.num);
+    param->fps.den = 1;
   }
   return XEVE_OK;
 }
@@ -798,7 +797,7 @@ static int vui_param_check(XEVE_PARAM * param)
     else if (param->num_units_in_tick == 0)
     {
         /*If num_units_in_tick is not present, set to fps, to propagate the coded fps */
-        param->num_units_in_tick = param->fps_n / param->fps_d;
+        param->num_units_in_tick = param->fps.num / param->fps.den;
         param->timing_info_present_flag = param->timing_info_present_flag || 0;
     }
     else
@@ -1345,7 +1344,7 @@ int main(int argc, const char **argv)
                 total_time = total_time % 60;
                 int s = total_time;
                 double curr_bitrate = bitrate;
-                curr_bitrate *= ((double)param->fps_n/param->fps_d * 8);
+                curr_bitrate *= ((double)param->fps.num/param->fps.den * 8);
                 curr_bitrate /= (encod_frames + 1);
                 curr_bitrate /= 1000;
                 logv2("[ %d / %d frames ] [ %.2f frame/sec ] [ %.4f kbps ] [ %2dh %2dm %2ds ] \r"
@@ -1413,7 +1412,7 @@ int main(int argc, const char **argv)
     logv3("  PSNR U(dB)       : %-5.4f\n", psnr_avg[1]);
     logv3("  PSNR V(dB)       : %-5.4f\n", psnr_avg[2]);
     logv3("  Total bits(bits) : %.0f\n", bitrate * 8);
-    bitrate *= ((double)param->fps_n/ param->fps_d * 8);
+    bitrate *= ((double)param->fps.num/ param->fps.den * 8);
     bitrate /= pic_ocnt;
     bitrate /= 1000;
 
