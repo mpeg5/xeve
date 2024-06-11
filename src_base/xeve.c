@@ -183,10 +183,23 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             ctx->param.qp = t0;
             break;
         case XEVE_CFG_SET_FPS:
-            xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            t0 = *((int *)buf);
-            xeve_assert_rv(t0 > 0, XEVE_ERR_INVALID_ARGUMENT);
-            ctx->param.fps = t0;
+            xeve_assert_rv(*size == sizeof(char*), XEVE_ERR_INVALID_ARGUMENT);
+            if (strpbrk((char*)buf, "/") != NULL)
+            {
+              sscanf((char*)buf, "%d/%d", &ctx->param.fps_n, &ctx->param.fps_d);
+            }
+            else if (strpbrk((char*)buf, ".") != NULL)
+            {
+              float tmp_fps = 0;
+              sscanf((char*)buf, "%f", &tmp_fps);
+              ctx->param.fps_n = tmp_fps * 10000;
+              ctx->param.fps_d = 10000;
+            }
+            else
+            {
+              sscanf((char*)buf, "%d", &ctx->param.fps_n);
+              ctx->param.fps_d = 1;
+            }
             break;
         case XEVE_CFG_SET_BPS:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
@@ -249,7 +262,7 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             break;
         case XEVE_CFG_GET_FPS:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            *((int *)buf) = ctx->param.fps;
+            sprintf((char*)buf, "%d/%d", ctx->param.fps_n, ctx->param.fps_d);
             break;
         case XEVE_CFG_GET_BPS:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
