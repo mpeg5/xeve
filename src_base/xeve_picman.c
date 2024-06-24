@@ -209,7 +209,7 @@ static void picman_set_pic_to_pb(XEVE_PM * pm, XEVE_PIC * pic,
 
     if(pos >= 0)
     {
-        xeve_assert(pm->pic[pos] == NULL);
+        xeve_assert(pm->pic[pos] == NULL || pm->pic[pos]->is_ref == 0);
         pm->pic[pos] = pic;
     }
     else /* pos < 0 */

@@ -326,6 +326,17 @@ typedef struct _XEVE_BITB
 #define XEVE_RC_ABR                             1
 #define XEVE_RC_CRF                             2
 
+ /*****************************************************************************
+  * coding parameters
+  *****************************************************************************/
+typedef struct _XEVE_RATIONAL
+{
+  /* Numerator */
+  int num;
+  /* Denominator */
+  int den;
+} XEVE_RATIONAL;
+
 /*****************************************************************************
  * coding parameters
  *****************************************************************************/
@@ -340,7 +351,7 @@ typedef struct _XEVE_PARAM
     /* height of input frame */
     int            h;
     /* frame rate (Hz) */
-    int            fps;
+    XEVE_RATIONAL fps;
     /* MAX I-frame period in frames.
     - 0: only one I-frame at the first time.
     - 1: every frame is coded in I-frame

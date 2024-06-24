@@ -176,7 +176,7 @@ void xeve_init_rc_bpf_tbl(XEVE_CTX * ctx)
 
     int ld_struct = ctx->param.ref_pic_gap_length;
     int fnum_in_sec[10];
-    int ngop_in_sec = (ctx->param.fps + ld_struct - 1) / ld_struct;
+    int ngop_in_sec = ((int)((float)ctx->param.fps.num/ ctx->param.fps.den + 0.5) + ld_struct - 1) / ld_struct;
 
     for (int i = ld_struct; i > 0; i = i >> 1)
     {
@@ -296,7 +296,7 @@ int xeve_rc_set(XEVE_CTX * ctx)
 
     /* set default value */
     rc->param        = &tbl_rc_param;
-    rc->fps          = ctx->param.fps;
+    rc->fps          = (double)ctx->param.fps.num/ ctx->param.fps.den;
     rc->bitrate      = (double)(ctx->param.bitrate * 1000);
     rc->fps_idx      = (((int)rc->fps + (ctx->param.gop_size >> 1)) / ctx->param.gop_size) - 1;
     rc->prev_bpf     = 0;
@@ -531,7 +531,7 @@ double get_qfactor_clip(XEVE_CTX *ctx, XEVE_RCORE * rcore, double qf)
         if (ctx->param.lookahead >= 24)
         {
             /* when encount scene change just after IDR, raise up qp to bits */
-            t0 = ctx->param.fps >> 3;
+            t0 = (int)((float)ctx->param.fps.num/ ctx->param.fps.den + 0.5) >> 3;
             t1 = i_period >> 3;
 
             thd_distance = XEVE_MIN(t0, t1);
@@ -559,7 +559,7 @@ double get_qfactor_clip(XEVE_CTX *ctx, XEVE_RCORE * rcore, double qf)
         if (rcore->scene_type == SCENE_HIGH)
         {
             /* when encount scene change just before IDR, raise up qp to bits */
-            t0 = ctx->param.fps >> 3;
+            t0 = (int)((float)ctx->param.fps.num / ctx->param.fps.den + 0.5) >> 3;
             t1 = i_period >> 3;
 
             thd_distance = XEVE_MIN(t0, t1);

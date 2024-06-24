@@ -102,7 +102,7 @@ static const ARGS_OPT args_opt_table[] = \
         "QP value (0~51)"
     },
     {
-        'z',  "fps", ARGS_VAL_TYPE_INTEGER | ARGS_VAL_TYPE_MANDATORY, 0, NULL,
+        'z',  "fps", ARGS_VAL_TYPE_STRING | ARGS_VAL_TYPE_MANDATORY, 0, NULL,
         "frame rate (frame per second)"
     },
     {
@@ -637,6 +637,7 @@ struct _ARGS_PARSER
     int (*parse)(ARGS_PARSER * args, int argc, const char* argv[], char ** errstr);
     int (*get_help)(ARGS_PARSER * args, int idx, char * help);
     int (*get_str)(ARGS_PARSER * args, char * keyl, char * str, int *flag);
+    int (*set_str)(ARGS_PARSER* args, char* keyl, char * str);
     int (*get_int)(ARGS_PARSER * args, char * keyl, int * val, int *flag);
     int (*set_int)(ARGS_PARSER * args, char * keyl, int val);
     int (*set_flag)(ARGS_PARSER * args, char * keyl, int flag);
@@ -663,6 +664,7 @@ struct _ARGS_PARSER
     char tune[32];
     char bitrate[64];
     char vbv_bufsize[64];
+    char fps[256];
 
     /* VUI options*/
     char  sar[64];
@@ -1024,6 +1026,8 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     args_set_variable_by_key_long(opts, "bitrate", args->bitrate);
     strcpy(args->vbv_bufsize, ""); /* default */
     args_set_variable_by_key_long(opts, "vbv-bufsize", args->vbv_bufsize);
+    strcpy(args->fps, "30"); /* default */
+    args_set_variable_by_key_long(opts, "fps", args->fps);
 
     strcpy(args->sar, ""); /* default */
     args_set_variable_by_key_long(opts, "sar", args->sar);
@@ -1080,7 +1084,6 @@ static int args_init(ARGS_PARSER * args, XEVE_PARAM* param)
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, qp);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, crf);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, aq_mode);
-    ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, fps);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, keyint);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, bframes);
     ARGS_SET_PARAM_VAR_KEY_LONG(opts, param, threads);
@@ -1249,6 +1252,23 @@ static int args_get(ARGS_PARSER * args, char * keyl, void ** val, int * flag)
         if(flag) *flag = 0; /* no set */
         return -1;
     }
+}
+
+static int args_set_str(ARGS_PARSER* args, char* keyl, char * str)
+{
+  int idx;
+
+  idx = args_search_long_key(args->opts, keyl);
+  if (idx >= 0)
+  {
+    sprintf((char*)(args->opts[idx].val), "%s", str);
+    args->opts[idx].flag = 1;
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
 }
 
 static int args_set_int(ARGS_PARSER * args, char * keyl, int val)
@@ -1439,6 +1459,7 @@ static ARGS_PARSER * args_create(void)
     args->parse = args_parse;
     args->get_help = args_get_help;
     args->get_str = args_get_str;
+    args->set_str = args_set_str;
     args->get_int = args_get_int;
     args->set_int = args_set_int;
     args->set_flag = args_set_flag;
