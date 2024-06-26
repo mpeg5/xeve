@@ -1,5 +1,9 @@
 cmake_minimum_required (VERSION 3.12)
 
+########################################
+# Project versioning
+########################################
+
 function(get_versions versionstring VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
     string(REGEX REPLACE "^([vV])([0-9]*)([.][0-9]*[.][0-9]*-?.*)$" "\\2" numbers ${versionstring} )
     set(VERSION_MAJOR ${numbers} PARENT_SCOPE)
@@ -16,14 +20,12 @@ execute_process(
     OUTPUT_VARIABLE OUTPUT)
 
 if(NOT RESULT EQUAL 0)
-
   find_program(GIT_COMMAND "git")
   if(GIT_COMMAND)
     message(WARNING "There is no valid git repository in your working directory \"${CMAKE_SOURCE_DIR}\" .")
   else()
     message(WARNING "You have no git tool installed.")
   endif()
-
   if(NOT EXISTS "${CMAKE_SOURCE_DIR}/version.txt")
     message(FATAL_ERROR
 	    "version.txt file doesn't exist!\n"
@@ -32,10 +34,8 @@ if(NOT RESULT EQUAL 0)
 	    "To get the information on version of the downloaded library please follow the link below:\n\t https://github.com/mpeg5/xeve"
 	    )
   endif()
-
   message("Version string has been taken from version.txt file.")
   file(STRINGS "version.txt" VERSION_STRING)
-
 else()
   message("Version string has been taken from git tag.")
   set(VERSION_STRING ${OUTPUT})
@@ -52,21 +52,22 @@ if(VERSION_MAJOR STREQUAL ${VERSION_STRING})
 endif()
 message("XEVE VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
-add_definitions(-Dxeve_dynamic_EXPORTS)
+project (XEVE VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH} LANGUAGES C)
 
-# Check input arguments.
+########################################
+# Input arguments.
+########################################
+
+# To build in debug provide in command line: -DCMAKE_BUILD_TYPE=Debug
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release") # Default build type
+endif()
+message("CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
+
+# To set profile from command line: -DSET_PROF=BASE
 if(NOT SET_PROF)
-  set(SET_PROF "MAIN")
+  set(SET_PROF "MAIN") # Default profile
 endif()
-
-if(NOT ARM)
-  set(ARM "FALSE")
-else()
-  add_definitions(-DARM=1)
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flax-vector-conversions")
-  set(CMAKE_EXE_LINKER_FLAGS "-static")
-endif()
-message("ARM=${ARM}")
 
 if(("${SET_PROF}" STREQUAL "MAIN") OR ("${SET_PROF}" STREQUAL "BASE"))
   message("SET_PROF=${SET_PROF}")
@@ -75,26 +76,33 @@ else()
   return()
 endif()
 
-cmake_policy(SET CMP0048 NEW)
-set(CMAKE_C_STANDARD 99)
+# To build for arm provide in command line: -DARM=TRUE
+if(NOT ARM)
+  set(ARM "FALSE")
+else()
+  add_definitions(-DARM=1)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flax-vector-conversions")
+  set(CMAKE_EXE_LINKER_FLAGS "-static")
+endif()
+message("ARM=${ARM}")
 
-# Maps to a solution file (XEVE.sln).
-project (XEVE VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH} LANGUAGES C)
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+message("Compiler ID: ${CMAKE_C_COMPILER_ID}")
+message("Compiler version: ${CMAKE_C_COMPILER_VERSION}")
+
+########################################
+# Compilation flags
+########################################
 
 # Set compiler flags and options.
 if( MSVC )
+    message("Using MSVC compiler")
     add_compile_options(
         $<$<CONFIG:>:/MD> #---------|
         $<$<CONFIG:Debug>:/MDd> #---|-- Dynamically link the runtime libraries
         $<$<CONFIG:Release>:/MD> #--|
     )
-elseif( UNIX OR MINGW )
-    if(NOT CMAKE_BUILD_TYPE)
-        set(CMAKE_BUILD_TYPE "Release")
-    endif()
-    message("CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
-
+elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+    message("Using LLVM Clang compiler")
     if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
         set(OPT_LV "O0")
         set(OPT_DBG "-g")
@@ -103,14 +111,40 @@ elseif( UNIX OR MINGW )
         set(OPT_DBG "-DNDEBUG") # disable assert
     endif()
 
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -Wall -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -Wno-attributes -Werror -Wno-strict-overflow -Wno-unknown-pragmas -Wno-stringop-overflow -std=c99")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pointer-sign -pthread -Wno-pointer-to-int-cast -Wno-maybe-uninitialized")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -pthread -std=c99")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pointer-sign -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
+elseif( UNIX OR MINGW )
+    message("Using unix type compiler (gcc or mingw)")
+    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(OPT_LV "O0")
+        set(OPT_DBG "-g")
+    else()
+        set(OPT_LV "O3")
+        set(OPT_DBG "-DNDEBUG") # disable assert
+    endif()
+
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -pthread -std=c99")
+    #TODO: fix suppressed problems
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-pointer-sign -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -Wno-attributes -Wno-strict-overflow -Wno-unknown-pragmas -Wno-stringop-overflow -Wno-pointer-to-int-cast -Wno-maybe-uninitialized")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
+else()
+    message("Unknown compiler")
 endif()
 
 # Command to output information to the console
 message ("c Flags: " ${CMAKE_C_FLAGS})
 message ("linker Flags: " ${CMAKE_EXE_LINKER_FLAGS})
+
+
+########################################
+# Configuration
+########################################
+
+set(CMAKE_C_STANDARD 99)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+add_definitions(-Dxeve_dynamic_EXPORTS)
+cmake_policy(SET CMP0048 NEW)
 
 # Sub-directories where more CMakeLists.txt exist
 set( LIB_NAME xeve)
@@ -136,7 +170,7 @@ if(NOT TARGET uninstall)
 endif()
 
 ########################################
-# add CPack to project
+# CPack project packaging
 ########################################
 
 if( MSVC )
