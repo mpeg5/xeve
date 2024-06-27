@@ -2022,7 +2022,6 @@ void xeve_get_affine_motion_scaling(int poc, int scup, int lidx, s8 cur_refi, in
             mvp[cnt_tmp][1][MV_Y] = 0;
             mvp[cnt_tmp][2][MV_X] = 0;
             mvp[cnt_tmp][2][MV_Y] = 0;
-            cnt_tmp++;
         }
     }
 }
