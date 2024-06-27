@@ -101,21 +101,7 @@ if( MSVC )
         $<$<CONFIG:Debug>:/MDd> #---|-- Dynamically link the runtime libraries
         $<$<CONFIG:Release>:/MD> #--|
     )
-elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
-    message("Using LLVM Clang compiler")
-    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(OPT_LV "O0")
-        set(OPT_DBG "-g")
-    else()
-        set(OPT_LV "O3")
-        set(OPT_DBG "-DNDEBUG") # disable assert
-    endif()
-
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -pthread -std=c99")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pointer-sign -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
-elseif( UNIX OR MINGW )
-    message("Using unix type compiler (gcc or mingw)")
+else()
     if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
         set(OPT_LV "O0")
         set(OPT_DBG "-g")
@@ -126,10 +112,20 @@ elseif( UNIX OR MINGW )
 
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -pthread -std=c99")
     #TODO: fix suppressed problems
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-pointer-sign -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -Wno-attributes -Wno-strict-overflow -Wno-unknown-pragmas -Wno-stringop-overflow -Wno-pointer-to-int-cast -Wno-maybe-uninitialized")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -Wall -Werror -Wno-pointer-sign -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -Wno-attributes -Wno-strict-overflow -Wno-unknown-pragmas -Wno-pointer-to-int-cast")
+    function(append_supported_c_flag flag)
+      string(MAKE_C_IDENTIFIER ${flag} ESCAPED_FLAG)
+      include(CheckCCompilerFlag)
+      check_c_compiler_flag(${flag} flag_${ESCAPED_FLAG}_supported)
+      if(flag_${ESCAPED_FLAG}_supported)
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flag}" PARENT_SCOPE)
+      endif()
+      # unset(supported CACHE) # Subsequent calls can't reuse the cached value
+    endfunction()
+    append_supported_c_flag(-Wno-stringop-overflow)
+    append_supported_c_flag(-Wno-maybe-uninitialized)
+    append_supported_c_flag(-Wno-parentheses-equality)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
-else()
-    message("Unknown compiler")
 endif()
 
 # Command to output information to the console
