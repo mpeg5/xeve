@@ -118,7 +118,7 @@ static int op_verbose = VERBOSE_SIMPLE;
 #define XEVE_CLK_MAX         ((XEVE_CLK)(-1))
 #define xeve_clk_get()       GetTickCount()
 
-#elif __linux__ || __CYGWIN__
+#elif __linux__ || __CYGWIN__ || __APPLE__
 #include <time.h>
 #include <sys/time.h>
 #define XEVE_CLK             unsigned long
