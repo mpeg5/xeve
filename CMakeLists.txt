@@ -111,7 +111,7 @@ elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
         set(OPT_DBG "-DNDEBUG") # disable assert
     endif()
 
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -pthread -std=c99")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -pthread -std=c11")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pointer-sign -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
 elseif( UNIX OR MINGW )
@@ -124,7 +124,7 @@ elseif( UNIX OR MINGW )
         set(OPT_DBG "-DNDEBUG") # disable assert
     endif()
 
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -pthread -std=c99")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -pthread -std=c11")
     #TODO: fix suppressed problems
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-pointer-sign -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable -Wno-attributes -Wno-strict-overflow -Wno-unknown-pragmas -Wno-stringop-overflow -Wno-pointer-to-int-cast -Wno-maybe-uninitialized")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
@@ -141,7 +141,7 @@ message ("linker Flags: " ${CMAKE_EXE_LINKER_FLAGS})
 # Configuration
 ########################################
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_definitions(-Dxeve_dynamic_EXPORTS)
 cmake_policy(SET CMP0048 NEW)
