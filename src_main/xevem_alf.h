@@ -179,7 +179,7 @@ static const int pattern_to_large_filter7[13] =
   10,11,12,13
 };
 
-typedef struct _ALF_FILTER_SHAPE
+struct _ALF_FILTER_SHAPE
 {
     int filter_type;
     int filterLength;
@@ -190,7 +190,7 @@ typedef struct _ALF_FILTER_SHAPE
     int golombIdx[14];
     int pattern_to_large_filter[13];
 
-} ALF_FILTER_SHAPE;
+};
 
 struct _ALF_SLICE_PARAM
 {
