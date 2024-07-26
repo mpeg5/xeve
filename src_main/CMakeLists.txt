@@ -100,6 +100,7 @@ elseif( UNIX OR MINGW )
     endif()
 
     set_target_properties(${LIB_NAME}_dynamic PROPERTIES FOLDER lib LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    target_link_libraries(${LIB_NAME}_dynamic m)
 
     target_compile_definitions( ${LIB_NAME} PUBLIC ANY LINUX )
     target_link_libraries(${LIB_NAME} m)
