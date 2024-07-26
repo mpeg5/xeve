@@ -114,7 +114,7 @@ elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
     endif()
 
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_DBG} -${OPT_LV} -fomit-frame-pointer -pthread -std=c99")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pointer-sign -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-variable")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-pointer-sign -Wno-unused-function -Wno-unused-variable")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lm")
 elseif( UNIX OR MINGW )
     message("Using unix type compiler (gcc or mingw)")

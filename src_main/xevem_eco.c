@@ -41,8 +41,6 @@
 #if GRAB_STAT
 #include "xevem_stat.h"
 #endif
-#pragma warning(disable:4018)
-
 
 static void sbac_write_unary_sym_ep(u32 sym, XEVE_SBAC *sbac, XEVE_BSW *bs, u32 max_val)
 {
@@ -2437,7 +2435,7 @@ int xevem_eco_unit(XEVE_CTX * ctx, XEVE_CORE * core, int x, int y, int cup, int 
                             xevem_eco_mmvd_flag(bs, cu_data->pred_mode[cup] == MODE_DIR_MMVD);
                         }
 
-                        if((cu_data->pred_mode[cup] == MODE_DIR_MMVD))
+                        if(cu_data->pred_mode[cup] == MODE_DIR_MMVD)
                         {
                             xevem_eco_mmvd_info(bs, cu_data->mmvd_idx[cup], ctx->sh->mmvd_group_enable_flag && !(cuw*cuh <= NUM_SAMPLES_BLOCK));
                         }

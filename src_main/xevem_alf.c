@@ -978,11 +978,11 @@ int  alf_get_protect_idx_from_list(ADAPTIVE_LOOP_FILTER * alf, int idx)
     }
 
     // check if current idx is protected (e.g. idr filter idx)
-    if ((alf->ac_alf_line_buf[idx].filter_poc == alf->ac_alf_line_buf[idx].max_idr_poc))
+    if (alf->ac_alf_line_buf[idx].filter_poc == alf->ac_alf_line_buf[idx].max_idr_poc)
     {
         protect_entry = 1; // previent overwrite of the protected ALF id (e.g. id of IDR pic)
     }
-    if ((alf->curr_poc > alf->ac_alf_line_buf[idx].max_idr_poc + alf->i_period))
+    if (alf->curr_poc > alf->ac_alf_line_buf[idx].max_idr_poc + alf->i_period)
     {
         protect_entry = 0;
     }

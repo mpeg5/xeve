@@ -32,8 +32,6 @@
 #include <limits.h>
 #include <math.h>
 
-#pragma warning(disable:4018)
-
 int xeve_eco_nal_unit_len(void * buf, int size)
 {
     int i;
@@ -1330,7 +1328,7 @@ int cu_init(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int cup, int cuw, int 
     {
         xeve_assert(xeve_check_luma(core->tree_cons));
 
-        if((cu_data->pred_mode[cup] == MODE_SKIP))
+        if(cu_data->pred_mode[cup] == MODE_SKIP)
         {
             core->skip_flag = 1;
         }
