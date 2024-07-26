@@ -323,7 +323,7 @@ void xeve_rdo_bit_cnt_cu_inter_main(XEVE_CTX * ctx, XEVE_CORE * core, s32 slice_
                 xevem_eco_mmvd_flag(&core->bs_temp, pidx == PRED_DIR_MMVD);
             }
 
-            if((pidx == PRED_DIR_MMVD))
+            if(pidx == PRED_DIR_MMVD)
             {
                 xevem_eco_mmvd_info(&core->bs_temp, pi->mmvd_idx[pidx], ctx->sh->mmvd_group_enable_flag && !((1 << core->log2_cuw)*(1 << core->log2_cuh) <= NUM_SAMPLES_BLOCK));
             }

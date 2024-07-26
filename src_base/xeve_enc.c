@@ -2139,7 +2139,7 @@ static void parse_chroma_qp_mapping_table(XEVE_CHROMA_TABLE* chroma_qp_table, XE
                     break;
                 chroma_qp_table->delta_qp_in_val_minus1[0][j++] = atoi(val);
             } while (1);
-            if (chroma_qp_table->num_points_in_qp_table_minus1[0] + 1 == j);
+            // if (chroma_qp_table->num_points_in_qp_table_minus1[0] + 1 == j);
 
             chroma_qp_table->delta_qp_in_val_minus1[1][0] = atoi(strtok(param->chroma_qp_delta_in_val_cr, " "));
             j = 1;
