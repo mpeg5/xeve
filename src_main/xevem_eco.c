@@ -642,13 +642,13 @@ int xevem_eco_sh(XEVE_BSW * bs, XEVE_SPS * sps, XEVE_PPS * pps, XEVE_SH * sh, in
 
     if(sh->deblocking_filter_on && sps->tool_addb)
     {
-        xeve_bsw_write_se(bs, sh->sh_deblock_alpha_offset);
-        xeve_bsw_write_se(bs, sh->sh_deblock_beta_offset);
+        xeve_bsw_write_se(bs, (u32)sh->sh_deblock_alpha_offset);
+        xeve_bsw_write_se(bs, (u32)sh->sh_deblock_beta_offset);
     }
 
     xeve_bsw_write(bs, sh->qp, 6);
-    xeve_bsw_write_se(bs, sh->qp_u_offset);
-    xeve_bsw_write_se(bs, sh->qp_v_offset);
+    xeve_bsw_write_se(bs, (u32)sh->qp_u_offset);
+    xeve_bsw_write_se(bs, (u32)sh->qp_v_offset);
 
     if (!sh->single_tile_in_slice_flag)
     {
