@@ -240,7 +240,7 @@ void xeve_bsw_write_ue(XEVE_BSW * bs, u32 val)
     xeve_bsw_write(bs, code, len_c);
 }
 
-void xeve_bsw_write_se(XEVE_BSW * bs, int val)
+void xeve_bsw_write_se(XEVE_BSW * bs, u32 val)
 {
     xeve_bsw_write_ue(bs, val <= 0 ? (-val * 2) : (val * 2 - 1));
 }
