@@ -483,12 +483,14 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
 
 int y4m_header_parser(FILE * ip_y4m, Y4M_INFO * y4m)
 {
-    char buffer[90] = { 0 };
+    const size_t y4mheadersize = 256;
+
+    char buffer[256] = { 0 };
     int ret;
     int i;
 
-    /*Read until newline, or 90 cols, whichever happens first.*/
-    for (i = 0; i < 89; i++)
+    /*Read until newline, or 256 cols, whichever happens first.*/
+    for (i = 0; i < y4mheadersize-1; i++)
     {
 
         if (!fread(buffer + i, 1, 1, ip_y4m)) return -1;
@@ -496,7 +498,7 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_INFO * y4m)
         if (buffer[i] == '\n') break;
     }
     /*We skipped too much header data.*/
-   if (i == 89) {
+   if (i == y4mheadersize-1) {
         logerr("Error parsing header; not a YUV2MPEG2 file?\n");
         return -1;
     }
