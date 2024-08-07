@@ -485,7 +485,7 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_INFO * y4m)
 {
     const size_t y4mheadersize = 256;
 
-    char buffer[256] = { 0 };
+    char buffer[y4mheadersize];
     int ret;
     int i;
 
