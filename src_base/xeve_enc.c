@@ -2394,6 +2394,7 @@ int xeve_param_init(XEVE_PARAM* param)
 
     param->max_dec_pic_buffering      = 21;
     param->num_reorder_pics           = 21;
+    param->level_idc                  = 40;
     return XEVE_OK;
 }
 
