@@ -137,7 +137,9 @@ static const ARGS_OPT args_opt_table[] = \
     },
     {
         ARGS_NO_KEY,  "level-idc", ARGS_VAL_TYPE_INTEGER, 0, NULL,
-        "level setting "
+        "level setting (10, 20, 21, 30, 31, 40, 41, 50, 51, 52, 60, 61, 62)\n"
+        "      input of level is integer with level times 10 (ex> 1 -> 10, 2.1 -> 21)\n"
+        "      Annex A levels[1, 2, 2.1, 3, 3.1, 4, 4.1, 5, 5.1, 5.2, 6, 6.1, 6.2]"
     },
     {
         ARGS_NO_KEY,  "preset", ARGS_VAL_TYPE_STRING, 0, NULL,

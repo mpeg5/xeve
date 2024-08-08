@@ -907,7 +907,24 @@ static int vui_param_check(XEVE_PARAM * param)
         param->bitstream_restriction_flag = 1;
     }
 
-
+    if (param->level_idc != 40)
+    {
+        int level_idc_check[13] = { 10, 20, 21, 30, 31, 40, 41, 50, 51, 52, 60, 61, 62 };
+        int check = 0;
+        for (int i = 0; i < 13; i++)
+        {
+            if (param->level_idc == level_idc_check[i])
+            {
+                check = 1;
+                break;
+            }
+        }
+        if (check == 0)
+        {
+            ret = 1;
+            logerr("level_idc is wrong value");
+        }
+    }
 
     return ret;
 }
