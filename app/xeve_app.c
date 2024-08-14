@@ -1424,6 +1424,8 @@ int main(int argc, const char **argv)
         logv3("number of input(=%d) and output(=%d) is not matched\n", (int)pic_icnt, (int)pic_ocnt);
     }
 
+    ret = XEVE_OK;
+
     logv2_line("Summary");
     psnr_avg[0] /= pic_ocnt;
     psnr_avg[1] /= pic_ocnt;
@@ -1456,8 +1458,6 @@ int main(int argc, const char **argv)
     {
         logv3("Wrong frames count: should be %d was %d\n", max_frames, (int)pic_ocnt);
     }
-
-    return XEVE_OK;
 
 ERR:
     if(id) xeve_delete(id);
