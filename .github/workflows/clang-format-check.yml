@@ -1,0 +1,19 @@
+name: Clang Format Check
+
+on: [pull_request]
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install clang-format
+        run: sudo apt-get install clang-format
+
+      - name: Check code format
+        run: |
+          # Sprawdź, czy pliki są zgodne z clang-format
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '\.(cpp|h)$' | xargs clang-format --dry-run --Werror
