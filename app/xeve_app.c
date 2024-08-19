@@ -131,7 +131,7 @@ static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
     if (XEVE_FAILED(ret))
     {
         logerr("failed to set config for sei command info messages\n");
-        return XEVE_ERR;
+        return -1;
     }
 
     if(args->hash)
@@ -141,11 +141,11 @@ static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
         if(XEVE_FAILED(ret))
         {
             logerr("failed to set config for picture signature\n");
-            return XEVE_ERR;
+            return -1;
         }
     }
 
-    return XEVE_OK;
+    return 0;
 }
 
 static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
@@ -156,25 +156,25 @@ static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
     if (strlen(args->profile) == 0) tprofile = XEVE_PROFILE_BASELINE; /* default */
     else if (!strcmp(args->profile, "baseline")) tprofile = XEVE_PROFILE_BASELINE;
     else if (!strcmp(args->profile, "main")) tprofile = XEVE_PROFILE_MAIN;
-    else return XEVE_ERR_INVALID_ARGUMENT;
+    else return -1;
 
     if (strlen(args->preset) == 0) tpreset = XEVE_PRESET_MEDIUM; /* default */
     else if (!strcmp(args->preset, "fast")) tpreset = XEVE_PRESET_FAST;
     else if (!strcmp(args->preset, "medium")) tpreset = XEVE_PRESET_MEDIUM;
     else if (!strcmp(args->preset, "slow")) tpreset = XEVE_PRESET_SLOW;
     else if (!strcmp(args->preset, "placebo")) tpreset = XEVE_PRESET_PLACEBO;
-    else return XEVE_ERR_INVALID_ARGUMENT;
+    else return -1;
 
     if (strlen(args->tune) == 0) ttune = XEVE_TUNE_NONE;
     else if (!strcmp(args->tune, "zerolatency")) ttune = XEVE_TUNE_ZEROLATENCY;
     else if (!strcmp(args->tune, "psnr")) ttune = XEVE_TUNE_PSNR;
-    else return XEVE_ERR_INVALID_ARGUMENT;
+    else return -1;
 
     *profile = tprofile;
     *preset = tpreset;
     *tune = ttune;
 
-    return XEVE_OK;
+    return 0;
 }
 
 
@@ -277,10 +277,10 @@ static int remove_file_contents(char * filename)
     if(fp == NULL)
     {
         logerr("cannot remove file (%s)\n", filename);
-        return XEVE_ERR;
+        return -1;
     }
     fclose(fp);
-    return XEVE_OK;
+    return 0;
 }
 
 void print_psnr(XEVE_STAT * stat, double * psnr, int bitrate, XEVE_CLK clk_end)
@@ -338,9 +338,9 @@ int setup_bumping(XEVE id)
     if(XEVE_FAILED(xeve_config(id, XEVE_CFG_SET_FORCE_OUT, (void *)(&val), &size)))
     {
         logerr("failed to force output\n");
-        return XEVE_ERR;
+        return -1;
     }
-    return XEVE_OK;
+    return 0;
 }
 
 static int y4m_test(FILE * fp)
@@ -392,19 +392,19 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
         {
         case 'W':
         {
-            if (sscanf(p + 1, "%d", &y4m->w) != 1) return XEVE_ERR;
+            if (sscanf(p + 1, "%d", &y4m->w) != 1) return -1;
             found_w = 1;
             break;
         }
         case 'H':
         {
-            if (sscanf(p + 1, "%d", &y4m->h) != 1) return XEVE_ERR;
+            if (sscanf(p + 1, "%d", &y4m->h) != 1) return -1;
             found_h = 1;
             break;
         }
         case 'F':
         {
-            if (sscanf(p + 1, "%d:%d", &y4m->fps.num, &y4m->fps.den) != 2) return XEVE_ERR;
+            if (sscanf(p + 1, "%d:%d", &y4m->fps.num, &y4m->fps.den) != 2) return -1;
             break;
         }
         case 'I':
@@ -414,12 +414,12 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
         }
         case 'A':
         {
-            if (sscanf(p + 1, "%d:%d", &pix_ratio_n, & pix_ratio_d) != 2) return XEVE_ERR;
+            if (sscanf(p + 1, "%d:%d", &pix_ratio_n, & pix_ratio_d) != 2) return -1;
             break;
         }
         case 'C':
         {
-            if (q - p > 16) return XEVE_ERR;
+            if (q - p > 16) return -1;
             memcpy(t_buff, p + 1, q - p - 1);
             t_buff[q - p - 1] = '\0';
             found_cf = 1;
@@ -432,7 +432,7 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
     if (!(found_w == 1 && found_h == 1))
     {
         logerr("Mandatory arugments are not found in y4m header");
-        return XEVE_ERR;
+        return -1;
     }
     /* Setting default colorspace to yuv420 and input_bd to 8 if header info. is NA */
     if (!found_cf)
@@ -477,7 +477,7 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
         y4m->color_format = XEVE_CF_YCBCR400;
         y4m->bit_depth  = 8;
     }
-    return XEVE_OK;
+    return 0;
 }
 
 
@@ -502,7 +502,7 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_INFO * y4m)
     /*We skipped too much header data.*/
    if (i == y4mheadersize-1) {
         logerr("Error parsing header; not a YUV2MPEG2 file?\n");
-        return XEVE_ERR;
+        return -1;
     }
     buffer[i] = '\0';
 
@@ -511,7 +511,7 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_INFO * y4m)
         if (memcmp(buffer, "YUV4MPEG", 8))
         {
             logerr("Incomplete magic for YUV4MPEG file. (%s)\n", buffer);
-            return XEVE_ERR;
+            return -1;
         }
         if (buffer[8] != '2')
         {
@@ -536,7 +536,7 @@ int y4m_header_parser(FILE * ip_y4m, Y4M_INFO * y4m)
         }
     }
 
-    return XEVE_OK;
+    return 0;
 }
 
 static void y4m_update_param(ARGS_PARSER * args, Y4M_INFO * y4m, XEVE_PARAM * param)
@@ -554,8 +554,9 @@ static int parse_str_to_int(const char* arg, const char* const* names)
     for (int i = 0; names[i]; i++)
         if (!strcmp(arg, names[i]))
             return i;
-    return XEVE_ERR;
+    return -1;
 }
+
 static int kbps_str_to_int(char * str)
 {
     int kbps = 0;
@@ -594,7 +595,7 @@ static int update_fps_param(ARGS_PARSER* args, XEVE_PARAM* param)
     sscanf(args->fps, "%d", &param->fps.num);
     param->fps.den = 1;
   }
-  return XEVE_OK;
+  return 0;
 }
 
 static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
@@ -607,7 +608,7 @@ static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
     {
         param->vbv_bufsize = kbps_str_to_int(args->vbv_bufsize);
     }
-    return XEVE_OK;
+    return 0;
 }
 
 static int update_vui_param(ARGS_PARSER * args, XEVE_PARAM * param)
@@ -642,7 +643,7 @@ static int update_vui_param(ARGS_PARSER * args, XEVE_PARAM * param)
         param->matrix_coefficients = parse_str_to_int(args->matrix_coefficients, xeve_colmatrix_names);
         if (XEVE_ERR == param->matrix_coefficients) return param->matrix_coefficients;
     }
-    return XEVE_OK;
+    return 0;
 }
 
 static int update_sei_param(ARGS_PARSER * args, XEVE_PARAM * param)
@@ -655,7 +656,7 @@ static int update_sei_param(ARGS_PARSER * args, XEVE_PARAM * param)
     {
         sscanf(args->max_cll, "%u,%u", &param->max_cll, &param->max_fall);
     }
-    return XEVE_OK;
+    return 0;
 }
 
 static int vui_param_check(XEVE_PARAM * param)
@@ -974,7 +975,7 @@ int main(int argc, const char **argv)
     if(argc < 2 || !strcmp(argv[1], "--help"))
     {
         print_usage(argv);
-        return XEVE_OK;
+        return 0;
     }
 
     /* set default parameters */
@@ -984,7 +985,7 @@ int main(int argc, const char **argv)
     if (XEVE_FAILED(ret))
     {
         logerr("cannot set default parameter\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     /* parse command line */
@@ -992,23 +993,23 @@ int main(int argc, const char **argv)
     if (args == NULL)
     {
         logerr("cannot create argument parser\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     if (args->init(args, param))
     {
         logerr("cannot initialize argument parser\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     if (args->parse(args, argc, argv, &errstr))
     {
         logerr("command parsing error (%s)\n", errstr);
-        ret = XEVE_ERR_INVALID_ARGUMENT; goto ERR;
+        ret = -1; goto ERR;
     }
     /* try to open input file */
     if (args->get_str(args, "input", fname_inp, NULL))
     {
         logerr("input file should be set\n");
-        ret = XEVE_ERR_INVALID_ARGUMENT; goto ERR;
+        ret = -1; goto ERR;
     }
 
     if( !strcmp( fname_inp, "stdin" ) ) {
@@ -1019,7 +1020,7 @@ int main(int argc, const char **argv)
         int result = _setmode( _fileno( fp_inp ), _O_BINARY );
         if( result == -1 ) {
             logerr( "Cannot set binary mode for 'stdin'\n" );
-            ret = XEVE_ERR; goto ERR;
+            ret = -1; goto ERR;
         }
 #endif
     }
@@ -1030,7 +1031,7 @@ int main(int argc, const char **argv)
     if(fp_inp == NULL)
     {
         logerr("cannot open input file (%s)\n", fname_inp);
-        ret = XEVE_ERR_MALFORMED_BITSTREAM; goto ERR;
+        ret = -1; goto ERR;
     }
 
     /* y4m header parsing  */
@@ -1040,7 +1041,7 @@ int main(int argc, const char **argv)
         if (y4m_header_parser(fp_inp, &y4m))
         {
             logerr("This y4m is not supported (%s)\n", fname_inp);
-            ret = XEVE_ERR_MALFORMED_BITSTREAM; goto ERR;
+            ret = -1; goto ERR;
         }
         y4m_update_param(args, &y4m, param);
         color_format = y4m.color_format;
@@ -1051,7 +1052,7 @@ int main(int argc, const char **argv)
         if (args->get_int(args, "input-csp", &csp, NULL))
         {
             logerr("cannot get input-csp value");
-            ret = XEVE_ERR; goto ERR;
+            ret = -1; goto ERR;
         }
         color_format = (csp == 0 ? XEVE_CF_YCBCR400 : \
             (csp == 1 ? XEVE_CF_YCBCR420 : \
@@ -1060,7 +1061,7 @@ int main(int argc, const char **argv)
         if (color_format == XEVE_CF_UNKNOWN)
         {
             logerr("Unknow color format\n");
-            ret = XEVE_ERR_UNSUPPORTED_COLORSPACE; goto ERR;
+            ret = -1; goto ERR;
         }
     }
     /* coding color space should follow codec internal bit depth */
@@ -1070,52 +1071,52 @@ int main(int argc, const char **argv)
     if (update_fps_param(args, param))
     {
       logerr("fps is not proper\n");
-      ret = XEVE_ERR; goto ERR;
+      ret = -1; goto ERR;
     }
 
     /* update rate controller parameters */
     if (update_rc_param(args, param))
     {
         logerr("parameters for rate control is not proper\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     /* update vui parameters */
     if (update_vui_param(args, param))
     {
         logerr("vui parameters is not proper\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     /* update sei parameters */
     if (update_sei_param(args, param))
     {
         logerr("sei parameters is not proper\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     /* VUI parameter Range Checking*/
     if (vui_param_check(param))
     {
         logerr("VUI Parameter out of range\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     /* check mandatory parameters */
     if (args->check_mandatory(args, &err_arg))
     {
         logerr("[%s] argument should be set\n", err_arg);
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     /* apply preset and tune parameters */
     if (get_profile_preset_tune(args, &profile, &preset, &tune))
     {
         logerr("wrong profile, preset, tune value\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     ret = xeve_param_ppt(param, profile, preset, tune);
     if (XEVE_FAILED(ret))
     {
         logerr("cannot set profile, preset, tune to parameter\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     cdsc.max_bs_buf_size = MAX_BS_BUF; /* maximum bitstream buffer size */
@@ -1123,13 +1124,13 @@ int main(int argc, const char **argv)
     if (xeve_param_check(param))
     {
         logerr("invalid configuration\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     if (args->get_str(args, "output", fname_out, &is_out))
     {
         logerr("cannot get 'output' option\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     if (is_out)
     {
@@ -1138,7 +1139,7 @@ int main(int argc, const char **argv)
     if (args->get_str(args, "recon", fname_rec, &is_rec))
     {
         logerr("cannot get 'recon' option\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     if (is_rec)
     {
@@ -1147,12 +1148,12 @@ int main(int argc, const char **argv)
     if (args->get_int(args, "frames", &max_frames, &is_max_frames))
     {
         logerr("cannot get 'frames' option\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     if (args->get_int(args, "seek", &skip_frames, &is_skip_frames))
     {
         logerr("cannot get 'seek' option\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     /* allocate bitstream buffer */
@@ -1160,7 +1161,7 @@ int main(int argc, const char **argv)
     if(bs_buf == NULL)
     {
         logerr("cannot allocate bitstream buffer, size=%d", MAX_BS_BUF);
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     /* create encoder */
@@ -1168,13 +1169,13 @@ int main(int argc, const char **argv)
     if (id == NULL)
     {
         logerr("cannot create XEVE encoder\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     if (set_extra_config(id, args, param))
     {
         logerr("cannot set extra configurations\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     width = (param->w + 7) & 0xFFF8;
@@ -1183,12 +1184,12 @@ int main(int argc, const char **argv)
     if(imgb_list_alloc(ilist_org, width, height, args->input_depth, color_format))
     {
         logerr("cannot allocate image list for input pictures\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     if(imgb_list_alloc(ilist_rec, width, height, param->codec_bit_depth, color_format))
     {
         logerr("cannot allocate image list for reconstructed pictures\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     print_config(args, param);
@@ -1219,12 +1220,12 @@ int main(int argc, const char **argv)
                 if(ilist_t == NULL)
                 {
                     logerr("cannot get empty orignal buffer\n");
-                    ret = XEVE_ERR; goto ERR;
+                    ret = -1; goto ERR;
                 }
                 if(imgb_read(fp_inp, ilist_t->imgb, param->w, param->h, is_y4m))
                 {
                     logv3("reached end of original file (or reading error)\n");
-                    ret = XEVE_ERR; goto ERR;
+                    ret = -1; goto ERR;
                 }
             }
             else
@@ -1242,7 +1243,7 @@ int main(int argc, const char **argv)
             if(ilist_t == NULL)
             {
                 logerr("cannot get empty orignal buffer\n");
-                ret = XEVE_ERR; goto ERR;
+                ret = -1; goto ERR;
             }
             /* read original image */
             ret = imgb_read(fp_inp, ilist_t->imgb, param->w, param->h, is_y4m);
@@ -1265,7 +1266,7 @@ int main(int argc, const char **argv)
             if(XEVE_FAILED(ret))
             {
                 logerr("xeve_push() failed\n");
-                ret = XEVE_ERR; goto ERR;
+                ret = -1; goto ERR;
             }
             pic_icnt++;
         }
@@ -1276,7 +1277,7 @@ int main(int argc, const char **argv)
         if(XEVE_FAILED(ret))
         {
             logerr("xeve_encode() failed. ret=%d\n", ret);
-            ret = XEVE_ERR; goto ERR;
+            ret = -1; goto ERR;
         }
 
         clk_end = xeve_clk_from(clk_beg);
@@ -1295,7 +1296,7 @@ int main(int argc, const char **argv)
                 if(write_data(fname_out, bs_buf, stat.write))
                 {
                     logerr("cannot write bitstream\n");
-                    ret = XEVE_ERR; goto ERR;
+                    ret = -1; goto ERR;
                 }
             }
 
@@ -1305,7 +1306,7 @@ int main(int argc, const char **argv)
             if(XEVE_FAILED(ret))
             {
                 logerr("failed to get reconstruction image\n");
-                ret = XEVE_ERR; goto ERR;
+                ret = -1; goto ERR;
             }
 
             /* store reconstructed image to list */
@@ -1313,7 +1314,7 @@ int main(int argc, const char **argv)
             if(ilist_t == NULL)
             {
                 logerr("cannot put reconstructed image to list\n");
-                ret = XEVE_ERR; goto ERR;
+                ret = -1; goto ERR;
             }
 
             /* calculate PSNR */
@@ -1323,7 +1324,7 @@ int main(int argc, const char **argv)
                     args->input_depth, param->codec_bit_depth, psnr))
                 {
                     logerr("cannot calculate PSNR\n");
-                    ret = XEVE_ERR; goto ERR;
+                    ret = -1; goto ERR;
                 }
                 if (is_first_enc)
                 {
@@ -1348,7 +1349,7 @@ int main(int argc, const char **argv)
                     if(imgb_write(args->fname_rec, ilist_t->imgb, param->w, param->h))
                     {
                         logerr("cannot write reconstruction image\n");
-                        ret = XEVE_ERR; goto ERR;
+                        ret = -1; goto ERR;
                     }
                 }
                 imgb_list_make_unused(ilist_t);
@@ -1389,7 +1390,7 @@ int main(int argc, const char **argv)
         else
         {
             logv2("invaild return value (%d)\n", ret);
-            return XEVE_ERR;
+            return -1;
         }
 
         if(is_max_frames && pic_icnt >= max_frames
@@ -1412,7 +1413,7 @@ int main(int argc, const char **argv)
                 if(imgb_write(args->fname_rec, ilist_t->imgb, param->w, param->h))
                 {
                     logerr("cannot write reconstruction image\n");
-                    ret = XEVE_ERR; goto ERR;
+                    ret = -1; goto ERR;
                 }
             }
             imgb_list_make_unused(ilist_t);
@@ -1424,7 +1425,7 @@ int main(int argc, const char **argv)
         logv3("number of input(=%d) and output(=%d) is not matched\n", (int)pic_icnt, (int)pic_ocnt);
     }
 
-    ret = XEVE_OK;
+    ret = 0;
 
     logv2_line("Summary");
     psnr_avg[0] /= pic_ocnt;
