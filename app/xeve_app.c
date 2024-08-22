@@ -131,7 +131,7 @@ static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
     if (XEVE_FAILED(ret))
     {
         logerr("failed to set config for sei command info messages\n");
-        return XEVE_ERR;
+        return -1;
     }
 
     if(args->hash)
@@ -141,11 +141,11 @@ static int set_extra_config(XEVE id, ARGS_PARSER * args, XEVE_PARAM * param)
         if(XEVE_FAILED(ret))
         {
             logerr("failed to set config for picture signature\n");
-            return XEVE_ERR;
+            return -1;
         }
     }
 
-    return XEVE_OK;
+    return 0;
 }
 
 static int get_profile_preset_tune(ARGS_PARSER * args, int * profile,
@@ -359,9 +359,9 @@ static int y4m_test(FILE * fp)
     buffer[8] = '\0';
     if (memcmp(buffer, "YUV4MPEG", 8))
     {
-        return 0;
+        return 0;   // not y4m file
     }
-    return 1;
+    return 1;   // is y4m file
 }
 
 static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
@@ -392,19 +392,19 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
         {
         case 'W':
         {
-            if (sscanf(p + 1, "%d", &y4m->w) != 1) return XEVE_ERR;
+            if (sscanf(p + 1, "%d", &y4m->w) != 1) return -1;
             found_w = 1;
             break;
         }
         case 'H':
         {
-            if (sscanf(p + 1, "%d", &y4m->h) != 1) return XEVE_ERR;
+            if (sscanf(p + 1, "%d", &y4m->h) != 1) return -1;
             found_h = 1;
             break;
         }
         case 'F':
         {
-            if (sscanf(p + 1, "%d:%d", &y4m->fps.num, &y4m->fps.den) != 2) return XEVE_ERR;
+            if (sscanf(p + 1, "%d:%d", &y4m->fps.num, &y4m->fps.den) != 2) return -1;
             break;
         }
         case 'I':
@@ -414,12 +414,12 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
         }
         case 'A':
         {
-            if (sscanf(p + 1, "%d:%d", &pix_ratio_n, & pix_ratio_d) != 2) return XEVE_ERR;
+            if (sscanf(p + 1, "%d:%d", &pix_ratio_n, & pix_ratio_d) != 2) return -1;
             break;
         }
         case 'C':
         {
-            if (q - p > 16) return XEVE_ERR;
+            if (q - p > 16) return -1;
             memcpy(t_buff, p + 1, q - p - 1);
             t_buff[q - p - 1] = '\0';
             found_cf = 1;
@@ -432,7 +432,7 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
     if (!(found_w == 1 && found_h == 1))
     {
         logerr("Mandatory arugments are not found in y4m header");
-        return XEVE_ERR;
+        return -1;
     }
     /* Setting default colorspace to yuv420 and input_bd to 8 if header info. is NA */
     if (!found_cf)
@@ -477,7 +477,7 @@ static int y4m_parse_tags(Y4M_INFO * y4m, char * tags)
         y4m->color_format = XEVE_CF_YCBCR400;
         y4m->bit_depth  = 8;
     }
-    return XEVE_OK;
+    return 0;
 }
 
 
@@ -554,8 +554,9 @@ static int parse_str_to_int(const char* arg, const char* const* names)
     for (int i = 0; names[i]; i++)
         if (!strcmp(arg, names[i]))
             return i;
-    return XEVE_ERR;
+    return -1;
 }
+
 static int kbps_str_to_int(char * str)
 {
     int kbps = 0;
@@ -594,7 +595,7 @@ static int update_fps_param(ARGS_PARSER* args, XEVE_PARAM* param)
     sscanf(args->fps, "%d", &param->fps.num);
     param->fps.den = 1;
   }
-  return XEVE_OK;
+  return 0;
 }
 
 static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
@@ -607,7 +608,7 @@ static int update_rc_param(ARGS_PARSER * args, XEVE_PARAM * param)
     {
         param->vbv_bufsize = kbps_str_to_int(args->vbv_bufsize);
     }
-    return XEVE_OK;
+    return 0;
 }
 
 static int update_vui_param(ARGS_PARSER * args, XEVE_PARAM * param)
@@ -642,7 +643,7 @@ static int update_vui_param(ARGS_PARSER * args, XEVE_PARAM * param)
         param->matrix_coefficients = parse_str_to_int(args->matrix_coefficients, xeve_colmatrix_names);
         if (XEVE_ERR == param->matrix_coefficients) return param->matrix_coefficients;
     }
-    return XEVE_OK;
+    return 0;
 }
 
 static int update_sei_param(ARGS_PARSER * args, XEVE_PARAM * param)
@@ -655,7 +656,7 @@ static int update_sei_param(ARGS_PARSER * args, XEVE_PARAM * param)
     {
         sscanf(args->max_cll, "%u,%u", &param->max_cll, &param->max_fall);
     }
-    return XEVE_OK;
+    return 0;
 }
 
 static int vui_param_check(XEVE_PARAM * param)
@@ -1070,33 +1071,33 @@ int main(int argc, const char **argv)
     if (update_fps_param(args, param))
     {
       logerr("fps is not proper\n");
-      ret = XEVE_ERR; goto ERR;
+      ret = -1; goto ERR;
     }
 
     /* update rate controller parameters */
     if (update_rc_param(args, param))
     {
         logerr("parameters for rate control is not proper\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     /* update vui parameters */
     if (update_vui_param(args, param))
     {
         logerr("vui parameters is not proper\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
     /* update sei parameters */
     if (update_sei_param(args, param))
     {
         logerr("sei parameters is not proper\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     /* VUI parameter Range Checking*/
     if (vui_param_check(param))
     {
         logerr("VUI Parameter out of range\n");
-        ret = XEVE_ERR; goto ERR;
+        ret = -1; goto ERR;
     }
 
     /* check mandatory parameters */
@@ -1423,6 +1424,8 @@ int main(int argc, const char **argv)
     {
         logv3("number of input(=%d) and output(=%d) is not matched\n", (int)pic_icnt, (int)pic_ocnt);
     }
+
+    ret = 0;
 
     logv2_line("Summary");
     psnr_avg[0] /= pic_ocnt;
