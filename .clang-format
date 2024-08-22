@@ -34,7 +34,7 @@ SpaceBeforeParensOptions:
   AfterFunctionDefinitionName: false
 
 SpaceAfterCStyleCast: true
-#SpaceBeforeCStyleCast: true
+SpaceBeforeCStyleCast: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
 
