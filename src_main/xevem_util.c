@@ -1335,7 +1335,7 @@ static void calculate_bounding_box_size( int w, int h, s16 ac_mv[VER_NUM][MV_D],
 
 static BOOL check_eif_num_fetched_lines_restrictions( s16 ac_mv[VER_NUM][MV_D], int d_hor[MV_D], int d_ver[MV_D], int mv_precision )
 {
-  if ( d_ver[MV_Y] < -1 << mv_precision )
+  if ( d_ver[MV_Y] < -(1 << mv_precision) )
     return FALSE;
 
   if( ( XEVE_MAX( 0, d_ver[MV_Y] ) + abs( d_hor[MV_Y] ) ) * ( 1 + EIF_SUBBLOCK_SIZE ) > ( EIF_NUM_ALLOWED_FETCHED_LINES_FOR_THE_FIRST_LINE - 2 ) << mv_precision )
