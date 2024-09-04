@@ -262,7 +262,7 @@ Use comments to explain complex logic, especially within blocks of code.
 Use // to comment out a single line.
 
 ```c
-/ This is a single-line comment
+// This is a single-line comment
 int x = 5; // Initialize x to 5
 ```
 ### Multi-line Comments 
