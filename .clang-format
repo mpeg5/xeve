@@ -7,6 +7,9 @@ BasedOnStyle: Google
 IndentWidth: 4
 UseTab: Never
 
+# Language:
+Language: Cpp
+
 # Alignment settings
 AlignConsecutiveDeclarations: true
 AlignConsecutiveAssignments: true
@@ -44,3 +47,31 @@ SortIncludes: false
 
 # Other settings
 ColumnLimit: 0  # Disable column limit
+
+AlignArrayOfStructures: None
+
+AllowShortBlocksOnASingleLine: true
+
+# Case blocks
+IndentCaseBlocks: true
+IndentCaseLabels: true
+
+
+# Pointer Alignment
+PointerAlignment: Left
+
+# Spaces
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: false
+  AfterFunctionDefinitionName: false
+
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpacesInConditionalStatement: true
+SpacesInParentheses: true
+SpacesInSquareBrackets: false
+
