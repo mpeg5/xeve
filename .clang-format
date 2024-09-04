@@ -30,17 +30,6 @@ AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 
-# Space settings
-SpaceBeforeParens: Custom
-SpaceBeforeParensOptions:
-  AfterControlStatements: false
-  AfterFunctionDefinitionName: false
-
-SpaceAfterCStyleCast: true
-SpaceBeforeCStyleCast: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-
 # Comment settings
 CommentPragmas: Preserve
 SortIncludes: false
@@ -60,7 +49,7 @@ IndentCaseLabels: true
 # Pointer Alignment
 PointerAlignment: Left
 
-# Spaces
+# Space settings
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true
 
@@ -71,7 +60,9 @@ SpaceBeforeParensOptions:
 
 SpaceBeforeSquareBrackets: false
 SpaceInEmptyBlock: false
-SpacesInConditionalStatement: true
-SpacesInParentheses: true
+SpacesInConditionalStatement: false
+SpacesInParentheses: false
 SpacesInSquareBrackets: false
+
+
 
