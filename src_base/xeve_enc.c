@@ -1150,7 +1150,7 @@ static void decide_slice_type(XEVE_CTX * ctx)
                 decide_normal_gop(ctx, pic_imcnt);
 
                 if(ctx->poc.poc_val <= (int)ctx->pic_ticnt &&
-                   (ctx->param.keyint == 0 || ctx->poc.poc_val < (int)ctx->param.keyint * (ctx->ip_cnt)))
+                   (ctx->param.keyint == 0 || ctx->poc.poc_val < ctx->param.keyint * (int)(ctx->ip_cnt)))
                 {
                     break;
                 }
@@ -1166,7 +1166,7 @@ static void decide_slice_type(XEVE_CTX * ctx)
 
                 decide_normal_gop(ctx, pic_imcnt);
 
-                if (ctx->poc.poc_val < (int)ctx->param.keyint * (ctx->ip_cnt) &&
+                if (ctx->poc.poc_val < ctx->param.keyint * (int)(ctx->ip_cnt) &&
                     ctx->poc.poc_val == ctx->pico->pic.imgb->ts[0])
                 {
                     break;
