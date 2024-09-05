@@ -683,7 +683,7 @@ int xeve_push_frm(XEVE_CTX * ctx, XEVE_IMGB * img)
         {
             ctx->ts.frame_first_pts = pic->imgb->ts[XEVE_TS_PTS];
         }
-        else if (ctx->pic_icnt == ctx->ts.frame_delay)
+        else if (ctx->pic_icnt == (u32)ctx->ts.frame_delay)
         {
             ctx->ts.frame_dealy_time = ctx->ts.frame_first_pts - pic->imgb->ts[XEVE_TS_PTS];
         }
@@ -1123,7 +1123,7 @@ static void decide_slice_type(XEVE_CTX * ctx)
     }
     else /* include B Picture (gop_size = 2 or 4 or 8 or 16) */
     {
-        if(pic_icnt == gop_size - 1) /* special case when sequence start */
+        if(pic_icnt == (u32)(gop_size - 1)) /* special case when sequence start */
         {
             ctx->slice_type = SLICE_I;
             ctx->slice_depth = FRM_DEPTH_0;
@@ -1324,7 +1324,7 @@ int xeve_pic_finish(XEVE_CTX *ctx, XEVE_BITB *bitb, XEVE_STAT *stat)
     imgb_c->ts[XEVE_TS_PTS] = bitb->ts[XEVE_TS_PTS] = imgb_o->ts[XEVE_TS_PTS];
     if (ctx->ts.frame_delay > 0)
     {
-        if (ctx->pic_cnt < ctx->ts.frame_delay)
+        if (ctx->pic_cnt < (u32)ctx->ts.frame_delay)
         {
             imgb_c->ts[XEVE_TS_DTS] = bitb->ts[XEVE_TS_DTS] = ctx->ts.frame_ts[ctx->pic_cnt % XEVE_MAX_INBUF_CNT] + ctx->ts.frame_dealy_time;
         }
