@@ -465,7 +465,7 @@ static int check_refpic_available(int currentPOC, XEVE_PM *pm, XEVE_RPL *rpl)
         int isExistInDPB = 0;
         for (int j = 0; !isExistInDPB && j < MAX_PB_SIZE; j++)
         {
-            if (pm->pic[j] && pm->pic[j]->is_ref && pm->pic[j]->poc == (currentPOC - rpl->ref_pics[i]))
+            if (pm->pic[j] && pm->pic[j]->is_ref && pm->pic[j]->poc == (u32)(currentPOC - rpl->ref_pics[i]))
                 isExistInDPB = 1;
         }
         if (!isExistInDPB) //Found one ref pic missing return 1
@@ -495,7 +495,7 @@ static int create_explicit_rpl(XEVE_PM *pm, XEVE_SH *sh, int poc_val)
         for (int jj = 0; !isAvailable && jj < pm->cur_num_ref_pics; jj++)
         {
             pic = pm->pic[jj];
-            if (pic && pic->is_ref && pic->poc == (poc_val - rpl0->ref_pics[ii]))
+            if (pic && pic->is_ref && pic->poc == (u32)(poc_val - rpl0->ref_pics[ii]))
                 isAvailable = 1;
             pic = NULL;
         }
@@ -519,7 +519,7 @@ static int create_explicit_rpl(XEVE_PM *pm, XEVE_SH *sh, int poc_val)
         for (int jj = 0; !isAvailable && jj < pm->cur_num_ref_pics; jj++)
         {
             pic = pm->pic[jj];
-            if (pic && pic->is_ref && pic->poc == (poc_val - rpl1->ref_pics[ii]))
+            if (pic && pic->is_ref && pic->poc == (u32)(poc_val - rpl1->ref_pics[ii]))
                 isAvailable = 1;
             pic = NULL;
         }
@@ -614,10 +614,10 @@ int xeve_picman_refp_rpl_based_init(XEVE_PM *pm, XEVE_SH *sh, int poc_val, XEVE_
         int refPicPoc = poc_val - sh->rpl_l0.ref_pics[i];
         //Find the ref pic in the DPB
         int j = 0;
-        while (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc != refPicPoc) j++;
+        while (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc != (u32)refPicPoc) j++;
 
         //If the ref pic is found, set it to RPL0
-        if (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc == refPicPoc)
+        if (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc == (u32)refPicPoc)
         {
             xeve_set_refp(&refp[i][REFP_0], pm->pic_ref[j]);
             pm->num_refp[REFP_0] = pm->num_refp[REFP_0] + 1;
@@ -634,10 +634,10 @@ int xeve_picman_refp_rpl_based_init(XEVE_PM *pm, XEVE_SH *sh, int poc_val, XEVE_
         int refPicPoc = poc_val - sh->rpl_l1.ref_pics[i];
         //Find the ref pic in the DPB
         int j = 0;
-        while (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc != refPicPoc) j++;
+        while (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc != (u32)refPicPoc) j++;
 
         //If the ref pic is found, set it to RPL1
-        if (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc == refPicPoc)
+        if (j < pm->cur_num_ref_pics && pm->pic_ref[j]->poc == (u32)refPicPoc)
         {
             xeve_set_refp(&refp[i][REFP_1], pm->pic_ref[j]);
             pm->num_refp[REFP_1] = pm->num_refp[REFP_1] + 1;
@@ -668,7 +668,7 @@ int xeve_picman_refpic_marking(XEVE_PM *pm, XEVE_SH *sh, int poc_val)
             int j = 0;
             while (!isIncludedInRPL && j < sh->rpl_l0.ref_pic_num)
             {
-                if (pic->poc == (poc_val - sh->rpl_l0.ref_pics[j]))  //NOTE: we need to put POC also in XEVE_PIC
+                if (pic->poc == (u32)(poc_val - sh->rpl_l0.ref_pics[j]))  //NOTE: we need to put POC also in XEVE_PIC
                 {
                     isIncludedInRPL = 1;
                 }
@@ -678,7 +678,7 @@ int xeve_picman_refpic_marking(XEVE_PM *pm, XEVE_SH *sh, int poc_val)
             j = 0;
             while (!isIncludedInRPL && j < sh->rpl_l1.ref_pic_num)
             {
-                if (pic->poc == (poc_val - sh->rpl_l1.ref_pics[j]))
+                if (pic->poc == (u32)(poc_val - sh->rpl_l1.ref_pics[j]))
                 {
                     isIncludedInRPL = 1;
                 }
