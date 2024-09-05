@@ -18,10 +18,13 @@ AlignTrailingComments: true
 # Break settings
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterEnum: true
-  AfterStruct: false
-  SplitEmptyFunction: false
+  AfterControlStatement: false
   AfterFunction: true
+  AfterNamespace: false
+  AfterClass: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterEnum: false
   BeforeElse: true
 
 AllowShortBlocksOnASingleLine: false
@@ -63,6 +66,4 @@ SpaceInEmptyBlock: false
 SpacesInConditionalStatement: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
-
-
 
