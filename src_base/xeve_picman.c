@@ -118,7 +118,7 @@ static void picman_flush_pb(XEVE_PM * pm)
 
     for (i = 0; i < MAX_PB_SIZE; i++)
     {
-        if (pm->pic[i] && pm->pic[i]->need_for_out && pm->pic[i]->poc != 0 && pm->pic[i]->poc > max_poc)
+        if (pm->pic[i] && pm->pic[i]->need_for_out && pm->pic[i]->poc != 0 && pm->pic[i]->poc > (u32)max_poc)
         {
             max_poc = pm->pic[i]->poc;
         }
@@ -134,7 +134,7 @@ static void picman_flush_pb(XEVE_PM * pm)
         {
             SET_REF_UNMARK(pm->pic[i]);
             pm->pic[i]->poc -= max_poc;
-            if (pm->pic[i]->poc < reordered_min_poc)
+            if (pm->pic[i]->poc < (u32)reordered_min_poc)
             {
                 reordered_min_poc = pm->pic[i]->poc;
             }
