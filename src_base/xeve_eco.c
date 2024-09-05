@@ -328,7 +328,7 @@ int xeve_eco_signature(XEVE_CTX * ctx, XEVE_BSW * bs)
 
         for (int i = 0; i < ctx->pic[0]->imgb->np; ++i)
         {
-            for (int j = 0; j < payload_size; j++)
+            for (int j = 0; j < (int)payload_size; j++)
             {
                 xeve_bsw_write(bs, pic_sign[i][j], 8);
             }
@@ -656,7 +656,7 @@ void xeve_sbac_reset(XEVE_SBAC *sbac, u8 slice_type, u8 slice_qp, int sps_cm_ini
     xeve_mset(sbac_ctx, 0x00, sizeof(*sbac_ctx));
 
     SBAC_CTX_MODEL* tmp = (SBAC_CTX_MODEL*)sbac_ctx;
-    for (int i = 0; i < sizeof(*sbac_ctx) / 2; ++i) {
+    for (int i = 0; i < (int)sizeof(*sbac_ctx) / 2; ++i) {
         *tmp = PROB_INIT;
         tmp++;
     }
