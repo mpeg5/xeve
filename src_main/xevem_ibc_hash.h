@@ -36,6 +36,8 @@
 #ifndef __XEVE_IBC_HASH__
 #define __XEVE_IBC_HASH__
 
+// clang-format off
+
 #include <stdint.h>
 #include "xeve_def.h"
 #include "xevem_type.h"
@@ -89,5 +91,7 @@ int               xeve_ibc_hash_hit_ratio(XEVE_CTX* ctx, XEVE_IBC_HASH* p, int c
 HASH_KEY_NODE  *  xeve_ibc_hash_get_key_node(XEVE_IBC_HASH * ibc_hash, u32 key);
 u32               xeve_ibc_hash_calc_block_key(const pel* pel, const int stride, const int width, const int height, unsigned int crc);
 u32               xeve_ibc_hash_crc32_16bit(u32 crc, const pel pel);
+
+// clang-format on
 
 #endif // __XEVE_IBC_HASH__

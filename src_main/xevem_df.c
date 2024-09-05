@@ -35,6 +35,8 @@
 
 #include "xevem_df.h"
 
+// clang-format off
+
 #define DEFAULT_INTRA_TC_OFFSET             2
 #define MAX_QP                              51
 #define TCOFFSETDIV2                        0
@@ -52,6 +54,7 @@ static const u8 sm_beta_table[MAX_QP + 1] =
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,7,8,9,10,11,12,13,14,15,16,17,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64
 };
 
+// clang-format on
 
 static const u8 compare_mvs(const int mv0[2], const int mv1[2])
 {

@@ -295,6 +295,8 @@ __m256i _mm256_setr_epi32(int16_t e7, int16_t e6, int16_t e5, int16_t e4, int16_
     _mm256_set_m128i(_mm_loadu_si128(hiaddr), _mm_loadu_si128(loaddr))
 #endif 
 
+// clang-format off
+
 ALIGNED_32(static s16 tab_dct2_2nd_shuffle_256i[][16]) = {
     // 16bit: 0-7, 3-0 7-4
     { 0x0100, 0x0302, 0x0504, 0x0706, 0x0908, 0x0B0A, 0x0D0C, 0x0F0E, 0x0706, 0x0504, 0x0302, 0x0100, 0x0F0E, 0x0D0C, 0x0B0A, 0x0908 },  // 0
@@ -316,6 +318,7 @@ ALIGNED_32(static s16 tab_dct2_1st_shuffle_256i[][16]) = {
     { 0x0100, 0x0706, 0x0302, 0x0504, 0x0908, 0x0F0E, 0x0B0A, 0x0D0C, 0x0100, 0x0706, 0x0302, 0x0504, 0x0908, 0x0F0E, 0x0B0A, 0x0D0C }
 };
 
+// clang-format on
 
 static void tx_pb8b_neon(void* src_, void* dst_, int shift, int line, int step)
 {

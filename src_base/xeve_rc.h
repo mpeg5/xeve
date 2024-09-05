@@ -34,6 +34,8 @@
 #ifndef _XEVE_RC_H_
 #define _XEVE_RC_H_
 
+// clang-format off
+
 /*****************************************************************************
 * rate control structure for RC parameter
 *****************************************************************************/
@@ -219,6 +221,8 @@ enum RC_TYPE
 /* Max. and min. QP for Rate control clipping */
 #define RC_QP_MAX                   (MAX_QUANT - 1)
 #define RC_QP_MIN                   (MIN_QUANT + 1)
+
+// clang-format on
 
 int  xeve_rc_create(XEVE_CTX * ctx);
 int  xeve_rc_delete(XEVE_CTX * ctx);

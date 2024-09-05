@@ -39,6 +39,8 @@
 #include "xeve_def.h"
 #include <stdlib.h>
 
+// clang-format off
+
 #define DRA_SCALE_NUMFBITS              9   // # frac. bits for scale (Y/Cb/Cr)
 #define DRA_INVSCALE_NUMFBITS           9   // # frac. bits for inv. scale (Y/Cb/Cr)
 #define DRA_OFFSET_NUMFBITS             7   // # frac. bits for offset (Y/Cb/Cr)
@@ -125,6 +127,8 @@ typedef struct _DRA_CONTROL
     int    global_end;
 
 } DRA_CONTROL;
+
+// clang-format on
 
 void xeve_init_dra(DRA_CONTROL *dra_mapping, int total_change_points, int *luma_change_points, int* qps, int bit_depth);
 int  xeve_analyze_input_pic(XEVE_CTX * ctx, DRA_CONTROL *dra_mapping, int bit_depth);

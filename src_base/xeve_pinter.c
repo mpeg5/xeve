@@ -31,6 +31,7 @@
 #include "xeve_type.h"
 #include <math.h>
 
+// clang-format off
 const XEVE_PRED_INTER_COMP tbl_inter_pred_comp[2] =
 {
     { 12,                 16,  8, 8, 1, 1, 1, 1, 1, 2, 1, 1, 2 },
@@ -67,6 +68,8 @@ static s8 tbl_search_pattern_hpel_partial[8][2] =
 {
     {-2, 0}, {-2, 2}, {0, 2}, {2, 2}, {2, 0}, {2, -2}, {0, -2}, {-2, -2}
 };
+
+// clang-format on
 
 __inline static u32 get_exp_golomb_bits(u32 abs_mvd)
 {

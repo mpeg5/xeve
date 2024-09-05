@@ -38,11 +38,15 @@
 
 const XEVE_ITX(*xeve_func_itx)[MAX_TR_LOG2];
 
+// clang-format off
+
 const XEVE_INV_TRANS xeve_itrans_map_tbl[16][5] =
 {
     { NULL, xeve_itrans_ats_intra_DCT8_B4, xeve_itrans_ats_intra_DCT8_B8, xeve_itrans_ats_intra_DCT8_B16, xeve_itrans_ats_intra_DCT8_B32 },
     { NULL, xeve_itrans_ats_intra_DST7_B4, xeve_itrans_ats_intra_DST7_B8, xeve_itrans_ats_intra_DST7_B16, xeve_itrans_ats_intra_DST7_B32 },
 };
+
+// clang-format on
 
 const XEVE_INV_TRANS (*xeve_func_itrans)[5];
 

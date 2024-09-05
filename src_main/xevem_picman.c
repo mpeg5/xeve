@@ -35,6 +35,7 @@
 
 #include "xevem_picman.h"
 
+// clang-format off
 
 const XEVE_RPL pre_define_rpls[2][4][2][XEVE_MAX_NUM_RPLS] =
 {
@@ -360,6 +361,7 @@ const XEVE_RPL pre_define_rpls[2][4][2][XEVE_MAX_NUM_RPLS] =
     },
 
 };
+// clang-format on
 
 
 //Implementation for selecting and assigning RPL0 & RPL1 candidates in the SPS to SH

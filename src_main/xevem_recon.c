@@ -132,6 +132,8 @@ void xeve_recon_w_ats(s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s
 #define HTDF_CNT_SCALE                                    2
 #define HTDF_CNT_SCALE_RND                                (1 << (HTDF_CNT_SCALE - 1))
 
+// clang-format off
+
 static u8 HTDF_table_thr_log2[HTDF_LUT_QP_NUM] = { 6, 7, 7, 8, 8 };
 
 static const
@@ -165,6 +167,8 @@ typedef struct
 }tHtdfOffset;
 
 static tHtdfOffset Scan[4] = { { 0,0 },{ 0,1 },{ 1,0 },{ 1,1 } };
+
+// clang-format on
 
 void xeve_htdf_filter_block(pel *block, pel *acc_block, const u8 *tbl, int stride_block, int stride_acc, int width, int height, int tbl_thr_log2, int bit_depth)
 {

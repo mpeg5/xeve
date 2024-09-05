@@ -105,6 +105,8 @@ static int sad_16b_avx_16nx2n(int w, int h, void * src1, void * src2, int s_src1
     return (sad >> (bit_depth - 8));
 }
 
+// clang-format off
+
 /* index: [log2 of width][log2 of height] */
 const XEVE_FN_SAD xeve_tbl_sad_16b_avx[8][8] =
 {
@@ -197,5 +199,6 @@ const XEVE_FN_SAD xeve_tbl_sad_16b_avx[8][8] =
         sad_16b_avx_16nx2n,  /* height == 128 */
     }
 };
+// clang-format on
 
 #endif

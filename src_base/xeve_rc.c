@@ -33,6 +33,8 @@
 #include "xeve_fcst.h"
 #include <math.h>
 
+// clang-format off
+
 #define XEVE_VBV_MSEC_DEFAULT 2000 /* msec */
 
 const static XEVE_RC_PARAM tbl_rc_param =
@@ -84,6 +86,8 @@ const static s32 tbl_ref_gop[4][32][2] =
         { 0,  0 },{ 0,  0 },{ 0,  0 },{ 0,  0 }
     }
 };
+
+// clang-format on
 
 __inline static double estimate_frame_bits(XEVE_RCBE  * bit_est, double qf, s32 cpx)
 {

@@ -33,6 +33,8 @@
 #include "xevem_itdq.h"
 #include "xevem_tq_avx.h"
 
+// clang-format off
+
 #ifndef _mm256_set_m128i
 #define _mm256_set_m128i(/* __m128i */ hi, /* __m128i */ lo) \
     _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
@@ -90,6 +92,8 @@
 
 #define set_vals(a,b) b, a, b, a, b, a, b, a, b, a, b, a, b, a, b, a
 #define set_vals1(a,b) b, a, b, a, b, a, b, a
+
+// clang-format on
 
 static inline void itx_pb2_avx(s16* src, s16* dst, int shift, int line)
 {
@@ -897,6 +901,7 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
                 const __m256i T_00_06 = _mm256_set_m128i(ss14, ss06);       // [ ]
                 const __m256i T_00_07 = _mm256_set_m128i(ss15, ss07);       //
 
+// clang-format off
 #define COMPUTE_ROW(c0103, c0507, c0911, c1315, c1719, c2123, c2527, c2931, row) \
     T00 = _mm256_add_epi32(_mm256_madd_epi16(T_00_00, c0103), _mm256_madd_epi16(T_00_01, c0507)); \
     T01 = _mm256_add_epi32(_mm256_madd_epi16(T_00_02, c0911), _mm256_madd_epi16(T_00_03, c1315)); \
@@ -921,6 +926,7 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
                     COMPUTE_ROW(n39_p13, n78_p61, n90_p88, n73_p85, n30_p54, p22_p04, p67_n47, p90_n82, O14)
                     COMPUTE_ROW(n13_p04, n30_p22, n47_p39, n61_p54, n73_p67, n82_p78, n88_p85, n90_p90, O15)
 #undef COMPUTE_ROW
+// clang-format on
             }
 
             in00 = _mm_loadu_si128((const __m128i*) & src[0 * line + i]);
@@ -968,6 +974,7 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
                 const __m256i T_00_14 = _mm256_set_m128i(ss14, ss06);
                 const __m256i T_00_15 = _mm256_set_m128i(ss15, ss07);
 
+// clang-format off
 #define COMPUTE_ROW(c0206, c1014, c1822, c2630, row) \
     T00 = _mm256_add_epi32(_mm256_madd_epi16(T_00_08, c0206), _mm256_madd_epi16(T_00_09, c1014)); \
     T01 = _mm256_add_epi32(_mm256_madd_epi16(T_00_10, c1822), _mm256_madd_epi16(T_00_11, c2630)); \
@@ -982,7 +989,7 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
                     COMPUTE_ROW(n26_p09, n57_p43, n80_p70, n90_p87, EO7)
 
 #undef COMPUTE_ROW
-
+// clang-format on
                 {
                     const __m256i EEO0 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p75_p89), _mm256_madd_epi16(T_00_13, p18_p50));
                     const __m256i EEO1 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n18_p75), _mm256_madd_epi16(T_00_13, n50_n89));
@@ -1555,6 +1562,7 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                 __m256i EO00, EO01, EO02, EO03, EO04, EO05, EO06, EO07, EO08, EO09, EO10, EO11, EO12, EO13, EO14, EO15;
                 {
                     __m256i T1, T2, T3, T4;
+// clang-format off
 #define COMPUTE_ROW(c0103, c0507, c0911, c1315, c1719, c2123, c2527, c2931, row) \
     T1 = _mm256_add_epi32(_mm256_madd_epi16(T_00_00, c0103), _mm256_madd_epi16(T_00_01, c0507)); \
     T2 = _mm256_add_epi32(_mm256_madd_epi16(T_00_02, c0911), _mm256_madd_epi16(T_00_03, c1315)); \
@@ -1599,6 +1607,7 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
 
 
 #undef COMPUTE_ROW
+// clang-format on
                 }
 
                 in00 = _mm_loadu_si128((const __m128i*) & src[0 * i_src + i]);
@@ -1646,7 +1655,7 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                     const __m256i T_00_13 = _mm256_set_m128i(ss13, ss05);
                     const __m256i T_00_14 = _mm256_set_m128i(ss14, ss06);
                     const __m256i T_00_15 = _mm256_set_m128i(ss15, ss07);
-
+// clang-format off
 #define COMPUTE_ROW(c0206, c1014, c1822, c2630, row) \
     T1 = _mm256_add_epi32(_mm256_madd_epi16(T_00_08, c0206), _mm256_madd_epi16(T_00_09, c1014)); \
     T2 = _mm256_add_epi32(_mm256_madd_epi16(T_00_10, c1822), _mm256_madd_epi16(T_00_11, c2630)); \
@@ -1672,7 +1681,7 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
 
 
 #undef COMPUTE_ROW
-
+// clang-format on
                     {
                         // EEO[8]
                         const __m256i EEO0 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p87_p90), _mm256_madd_epi16(T_00_13, p70_p80));

@@ -42,6 +42,7 @@
 #endif
 #include <math.h>
 
+// clang-format off
 
 /* Define the Search Range for int-pel */
 #define SEARCH_RANGE_IPEL_RA               384
@@ -73,6 +74,8 @@ static s8 tbl_search_pattern_hpel_partial[8][2] =
 {
     {-2, 0}, {-2, 2}, {0, 2}, {2, 2}, {2, 0}, {2, -2}, {0, -2}, {-2, -2}
 };
+
+// clang-format on
 
 
 static int pinter_init_mt(XEVE_CTX *ctx, int tile_idx)

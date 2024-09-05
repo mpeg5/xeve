@@ -63,6 +63,8 @@ int sad_16b(int w, int h, void *src1, void *src2, int s_src1, int s_src2, int bi
     return (sad >> (bit_depth - 8));
 }
 
+// clang-format off
+
 /* index: [log2 of width][log2 of height] */
 const XEVE_FN_SAD xeve_tbl_sad_16b[8][8] =
 {
@@ -155,6 +157,7 @@ const XEVE_FN_SAD xeve_tbl_sad_16b[8][8] =
         sad_16b, /* height == 128 */
     }
 };
+// clang-format on
 
 /* DIFF **********************************************************************/
 void diff_16b(int w, int h, void *src1, void *src2, int s_src1, int s_src2, int s_diff, s16 * diff, int bit_depth)
@@ -179,6 +182,7 @@ void diff_16b(int w, int h, void *src1, void *src2, int s_src1, int s_src2, int 
     }
 }
 
+// clang-format off
 const XEVE_FN_DIFF xeve_tbl_diff_16b[8][8] =
 {
     /* width == 1 */
@@ -270,6 +274,7 @@ const XEVE_FN_DIFF xeve_tbl_diff_16b[8][8] =
         diff_16b, /* height == 128 */
     }
 };
+// clang-format on
 
 /* SSD ***********************************************************************/
 s64 ssd_16b(int w, int h, void *src1, void *src2, int s_src1, int s_src2, int bit_depth)
@@ -298,6 +303,7 @@ s64 ssd_16b(int w, int h, void *src1, void *src2, int s_src1, int s_src2, int bi
     return ssd;
 }
 
+// clang-format off
 const XEVE_FN_SSD xeve_tbl_ssd_16b[8][8] =
 {
     /* width == 1 */
@@ -389,6 +395,7 @@ const XEVE_FN_SSD xeve_tbl_ssd_16b[8][8] =
         ssd_16b, /* height == 128 */
     }
 };
+// clang-format on
 
 /* SATD **********************************************************************/
 int xeve_had_2x2(pel *org, pel *cur, int s_org, int s_cur, int step)

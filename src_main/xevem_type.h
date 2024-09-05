@@ -36,6 +36,8 @@
 #ifndef _XEVEM_TYPE_H_
 #define _XEVEM_TYPE_H_
 
+// clang-format off
+
 #include "xeve_type.h"
 #include "xevem_dra.h"
 
@@ -175,4 +177,7 @@ typedef struct _XEVEM_CTX
 #if GRAB_STAT
 #include "xevem_stat.h"
 #endif
+
+// clang-format on
+
 #endif /* _XEVE_TYPE_H_ */

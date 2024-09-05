@@ -32,6 +32,8 @@
 #include "xeve_def.h"
 #include "xeve_tbl.h"
 
+// clang-format off
+
 #define MAX_TX_DYNAMIC_RANGE_32               31
 #define MAX_TX_VAL_32                       2147483647
 #define MIN_TX_VAL_32                      (-2147483647-1)
@@ -1615,7 +1617,6 @@ dst = _mm_add_epi32(t[0], t[1]);
                 }
 #undef XEVE_ITX64_EEEO
 
-
                 eeeeo[0] = _mm_madd_epi16(a[16], coef[0][16]);
                 eeeeo[1] = _mm_madd_epi16(a[16], coef[1][16]);
                 eeeee[0] = _mm_madd_epi16(a[0], coef[0][0]);
@@ -1749,7 +1750,7 @@ dst = _mm_add_epi32(t[0], t[1]);
                 v[61] = _mm_sub_epi32(e[ 2], o[ 2]);
                 v[62] = _mm_sub_epi32(e[ 1], o[ 1]);
                 v[63] = _mm_sub_epi32(e[ 0], o[ 0]);
- 
+
                 for (int i = 0; i < 64; i++)
                 {
                     XEVE_ITX_CLIP_SSE(v[i], min_val, max_val);
@@ -2353,3 +2354,4 @@ const XEVE_ITXB xeve_tbl_itxb_sse[MAX_TR_LOG2] =
     xeve_itx_pb32b_sse,
     xeve_itx_pb64b_sse
 };
+// clang-format on

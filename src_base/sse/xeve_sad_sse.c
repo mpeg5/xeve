@@ -255,6 +255,8 @@ int sad_16b_sse_16nx1n(int w, int h, void * src1, void * src2, int s_src1, int s
     return (sad >> (bit_depth - 8));
 }
 
+// clang-format off
+
 /* index: [log2 of width][log2 of height] */
 const XEVE_FN_SAD xeve_tbl_sad_16b_sse[8][8] =
 {
@@ -361,6 +363,8 @@ const XEVE_FN_SAD xeve_tbl_sad_16b_sse[8][8] =
     m01 = _mm_loadu_si128((__m128i*)(src2)); \
     m02 = _mm_sub_epi16(m00, m01); \
     _mm_storeu_si128((__m128i*)(diff), m02);
+
+// clang-format on
 
 static void diff_16b_sse_4x2(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int s_diff, s16 * diff, int bit_depth)
 {
@@ -508,6 +512,7 @@ static void diff_16b_sse_32nx4n(int w, int h, void * src1, void * src2, int s_sr
     }
 }
 
+// clang-format off
 const XEVE_FN_DIFF xeve_tbl_diff_16b_sse[8][8] =
 {
     /* width == 1 */
@@ -626,6 +631,8 @@ const XEVE_FN_DIFF xeve_tbl_diff_16b_sse[8][8] =
     s01 = _mm_srli_epi32(s01, shift); \
     s00a = _mm_add_epi32(s00a, s00); \
     s00a = _mm_add_epi32(s00a, s01);
+
+// clang-format on
 
 static s64 ssd_16b_sse_4x2(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth)
 {
@@ -991,6 +998,7 @@ static s64 ssd_16b_sse_8nx8n(int w, int h, void * src1, void * src2, int s_src1,
     return ssd;
 }
 
+// clang-format off
 const XEVE_FN_SSD xeve_tbl_ssd_16b_sse[8][8] =
 {
     /* width == 1 */
@@ -1082,6 +1090,7 @@ const XEVE_FN_SSD xeve_tbl_ssd_16b_sse[8][8] =
         ssd_16b_sse_8nx8n, /* height == 128 */
     }
 };
+// clang-format on
 
 /* SATD **********************************************************************/
 int xeve_had_4x4_sse(pel *org, pel *cur, int s_org, int s_cur, int step, int bit_depth)

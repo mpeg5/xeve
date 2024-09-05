@@ -27,6 +27,7 @@
        ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
        POSSIBILITY OF SUCH DAMAGE.
    */
+// clang-format off
 
 #ifndef _XEVE_TQ_AVX_H_
 #define _XEVE_TQ_AVX_H_
@@ -119,3 +120,5 @@ extern const XEVE_TXB xeve_tbl_txb_avx[MAX_TR_LOG2];
     d7 = _mm256_srai_epi32(d7, shift)
 
 #endif /* _XEVE_TQ_AVX_H_  */
+
+// clang-format on
