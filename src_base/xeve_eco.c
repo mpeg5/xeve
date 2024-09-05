@@ -359,7 +359,7 @@ static void write_sei_userdata_unregistered(XEVE_SEI_PAYLOAD * sei_userdata, XEV
     {
         xeve_bsw_write(bs, m_uuid_iso_iec_11578[i], 8);
     }
-    for (u32 i = 0; i < sei_userdata->payload_size; i++)
+    for (u32 i = 0; i < (u32)sei_userdata->payload_size; i++)
     {
         xeve_bsw_write(bs, sei_userdata->payload[i], 8);
     }
