@@ -590,7 +590,7 @@ int xeve_rdoq_run_length_cc(u8 qp, double d_lambda, u8 is_intra, s16 *src_coef, 
         int ctx_level = ctx_run;
 
         level = get_coded_level_rl(&d64_uncoded_cost, &d64_coded_cost, tmp_level_double[blk_pos], XEVE_ABS(tmp_coef[blk_pos]), run, ctx_run, ctx_level, q_bits, err_scale, lambda,  core);
-        tmp_dst_coef[blk_pos] = tmp_coef[blk_pos] < 0 ? -(s32)(level) : level;
+        tmp_dst_coef[blk_pos] = tmp_coef[blk_pos] < 0 ? (s16)(-(level)) : (s16)level;
         d64_base_cost -= d64_uncoded_cost;
         d64_base_cost += d64_coded_cost;
 
