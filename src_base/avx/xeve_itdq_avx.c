@@ -32,6 +32,8 @@
 #include "xeve_def.h"
 #include "xeve_tbl.h"
 
+// clang-format off
+
 #define MAX_TX_DYNAMIC_RANGE_32               31
 #define MAX_TX_VAL_32                       2147483647
 #define MIN_TX_VAL_32                      (-2147483647-1)
@@ -49,6 +51,8 @@ dst = _mm256_add_epi32( dst, offset);\
 dst = _mm256_srai_epi32(dst, shift);\
 dst = _mm256_max_epi32( dst, min);\
 dst = _mm256_min_epi32( dst, max);
+
+// clang-format on
 
 static void itx_pb4b_avx(void *src, void *dst, int shift, int line, int step)
 {
@@ -634,6 +638,7 @@ static void itx_pb16b_avx(void *src, void *dst, int shift, int line, int step)
                 v5 = _mm256_set_m128i(b5, a5);
                 v7 = _mm256_set_m128i(b7, a7);
 
+// clang-format off
 #define XEVE_ITX16_O(dst, idx) \
 t1 = _mm256_madd_epi16(v1, coef[idx][1]);\
 t3 = _mm256_madd_epi16(v3, coef[idx][3]);\
@@ -642,6 +647,7 @@ t7 = _mm256_madd_epi16(v7, coef[idx][7]);\
 d0 = _mm256_add_epi32(t1, t3);\
 d1 = _mm256_add_epi32(t5, t7);\
 dst = _mm256_add_epi32(d0, d1);
+// clang-format on
 
                 t1 = _mm256_madd_epi16(v1, coef[0][1]);
                 t3 = _mm256_madd_epi16(v3, coef[0][3]);
@@ -669,10 +675,12 @@ dst = _mm256_add_epi32(d0, d1);
                 v2 = _mm256_set_m128i(b2, a2);
                 v6 = _mm256_set_m128i(b6, a6);
 
+// clang-format off
 #define XEVE_ITX16_EO(dst, idx) \
 t2  = _mm256_madd_epi16(v2, coef[idx][2]);\
 t6  = _mm256_madd_epi16(v6, coef[idx][6]);\
 dst = _mm256_add_epi32(t2, t6);
+// clang-format on
 
                 t2  = _mm256_madd_epi16(v2, coef[0][2]);
                 t6  = _mm256_madd_epi16(v6, coef[0][6]);
@@ -896,7 +904,7 @@ dst = _mm256_add_epi32(t2, t6);
                 a7 = _mm256_unpacklo_epi32(r7, r15);
                 b7 = _mm256_unpackhi_epi32(r7, r15);
 
-
+// clang-format off
 #define XEVE_ITX16_0_32B(dst, idx)\
 t0 = _mm256_mullo_epi32(a1, coef[idx][1]);\
 t1 = _mm256_mullo_epi32(b1, coef[idx][1]);\
@@ -913,6 +921,7 @@ v3 = _mm256_hadd_epi32(t0, t1);\
 t0 = _mm256_add_epi32(v0, v1);\
 t1 = _mm256_add_epi32(v2, v3);\
 dst = _mm256_add_epi32(t0, t1);
+// clang-format on
 
                 XEVE_ITX16_0_32B(o0, 0);
                 XEVE_ITX16_0_32B(o1, 1);
@@ -929,6 +938,7 @@ dst = _mm256_add_epi32(t0, t1);
                 a6 = _mm256_unpacklo_epi32(r6, r14);
                 b6 = _mm256_unpackhi_epi32(r6, r14);
 
+// clang-format off
 #define XEVE_ITX16_EO_32B(dst, idx)\
 t0 = _mm256_mullo_epi32(a2, coef[idx][2]);\
 t1 = _mm256_mullo_epi32(b2, coef[idx][2]);\
@@ -937,6 +947,7 @@ t0 = _mm256_mullo_epi32(a6, coef[idx][6]);\
 t1 = _mm256_mullo_epi32(b6, coef[idx][6]);\
 v1 = _mm256_hadd_epi32(t0, t1);\
 dst = _mm256_add_epi32(v0, v1);
+// clang-format on
 
                 t0 = _mm256_mullo_epi32(a2, coef[0][2]);
                 t1 = _mm256_mullo_epi32(b2, coef[0][2]);
@@ -1130,6 +1141,7 @@ static void itx_pb32b_avx(void *src, void *dst, int shift, int line, int step)
                     v[i] = _mm256_set_m128i(b[i], a[i]);
                 }
 
+// clang-format off
 #define XEVE_ITX32_O(dst, idx) \
 t[ 1] = _mm256_madd_epi16(v[ 1], coef[idx][ 1]);\
 t[ 3] = _mm256_madd_epi16(v[ 3], coef[idx][ 3]);\
@@ -1146,6 +1158,7 @@ d[3] = _mm256_add_epi32(t[13], t[15]);\
 t[0] = _mm256_add_epi32(d[0], d[1]);\
 t[1] = _mm256_add_epi32(d[2], d[3]);\
 dst = _mm256_add_epi32(t[0], t[1]);
+// clang-format on
 
                 for (int i = 0; i < 16; i++)
                 {
@@ -1154,6 +1167,7 @@ dst = _mm256_add_epi32(t[0], t[1]);
 #undef XEVE_ITX32_O
 
 
+// clang-format off
 #define XEVE_ITX32_EO(dst, idx) \
 t[ 2] = _mm256_madd_epi16(v[ 2], coef[idx][ 2]);\
 t[ 6] = _mm256_madd_epi16(v[ 6], coef[idx][ 6]);\
@@ -1162,6 +1176,7 @@ t[14] = _mm256_madd_epi16(v[14], coef[idx][14]);\
 d[0] = _mm256_add_epi32(t[ 2], t[ 6]);\
 d[1] = _mm256_add_epi32(t[10], t[14]);\
 dst = _mm256_add_epi32(d[0], d[1]);
+// clang-format on
 
                 for (int i = 0; i < 8; i++)
                 {
@@ -1169,10 +1184,12 @@ dst = _mm256_add_epi32(d[0], d[1]);
                 }
 #undef XEVE_ITX32_EO
 
+// clang-format off
 #define XEVE_ITX32_EEO(dst, idx) \
 t[ 4] = _mm256_madd_epi16(v[ 4], coef[idx][ 4]);\
 t[12] = _mm256_madd_epi16(v[12], coef[idx][12]);\
 dst = _mm256_add_epi32(t[4], t[12]);
+// clang-format on
 
 
                 for (int i = 0; i < 4; i++)
@@ -1256,6 +1273,7 @@ dst = _mm256_add_epi32(t[4], t[12]);
                     XEVE_ITX_CLIP(v[i], min_val, max_val);
                 }
 
+// clang-format off
 #define XEVE_ITX_32B_TRANSPOS_8x8(s0, s1, s2, s3,  s4, s5, s6, s7, d0, d1, d2, d3, d4, d5, d6, d7)\
 t[0] = _mm256_unpacklo_epi32(v[s0], v[s1]);\
 t[1] = _mm256_unpacklo_epi32(v[s2], v[s3]);\
@@ -1283,6 +1301,7 @@ d[d4] = _mm256_permute2f128_si256(v[0], v[1], 0x31);\
 d[d5] = _mm256_permute2f128_si256(v[4], v[5], 0x31);\
 d[d6] = _mm256_permute2f128_si256(v[2], v[3], 0x31);\
 d[d7] = _mm256_permute2f128_si256(v[6], v[7], 0x31);
+// clang-format on
 
                 t[0] = _mm256_unpacklo_epi32(v[0], v[1]);
                 t[1] = _mm256_unpacklo_epi32(v[2], v[3]);
@@ -1373,6 +1392,7 @@ d[d7] = _mm256_permute2f128_si256(v[6], v[7], 0x31);
                     b[i] = _mm256_unpackhi_epi32(r[i], r[i + 16]);
                 }
 
+// clang-format off
 #define XEVE_ITX_MADD(dst, r_idx, c_idx)\
 t[0] = _mm256_mullo_epi32(a[r_idx], coef[c_idx][r_idx]);\
 t[1] = _mm256_mullo_epi32(b[r_idx], coef[c_idx][r_idx]);\
@@ -1394,6 +1414,7 @@ t[3] = _mm256_add_epi32(v[6], v[7]);\
 v[0] = _mm256_add_epi32(t[0], t[1]);\
 v[1] = _mm256_add_epi32(t[2], t[3]);\
 dst = _mm256_add_epi32(v[0], v[1]);
+// clang-format on
 
                 for (i = 0; i < 16; i++)
                 {
@@ -1401,6 +1422,7 @@ dst = _mm256_add_epi32(v[0], v[1]);
                 }
 #undef XEVE_ITX32_0_32B
 
+// clang-format off
 #define XEVE_ITX32_E0_32B(dst, idx)\
 XEVE_ITX_MADD(v[0],   2, idx)\
 XEVE_ITX_MADD(v[1],   6, idx)\
@@ -1409,6 +1431,7 @@ XEVE_ITX_MADD(v[3],  14, idx)\
 t[0] = _mm256_add_epi32(v[0], v[1]);\
 t[1] = _mm256_add_epi32(v[2], v[3]);\
 dst = _mm256_add_epi32(t[0], t[1]);
+// clang-format on
 
                 for (i = 0; i < 8; i++)
                 {
@@ -1416,10 +1439,12 @@ dst = _mm256_add_epi32(t[0], t[1]);
                 }
 #undef XEVE_ITX32_E0_32B
 
+// clang-format off
 #define XEVE_ITX32_EEO_32B(dst, idx)\
 XEVE_ITX_MADD(v[0],   4, idx)\
 XEVE_ITX_MADD(v[1],  12, idx)\
 dst = _mm256_add_epi32(v[0], v[1]);
+// clang-format on
 
                 for (i = 0; i < 4; i++)
                 {
@@ -1681,6 +1706,7 @@ static void itx_pb64b_avx(void *src, void *dst, int shift, int line, int step)
                 }
 
 
+// clang-format off
 #define XEVE_ITX64_O(dst, idx) \
 t[ 0] = _mm256_madd_epi16(v[ 1], coef[idx][ 1]);\
 t[ 1] = _mm256_madd_epi16(v[ 3], coef[idx][ 3]);\
@@ -1713,6 +1739,7 @@ t[3] = _mm256_add_epi32(d[6], d[7]);\
 d[0] = _mm256_add_epi32(t[0], t[1]);\
 d[1] = _mm256_add_epi32(t[2], t[3]);\
 dst = _mm256_add_epi32(d[0], d[1]);
+// clang-format on
 
                 for (int i = 0; i < 32; i++)
                 {
@@ -1721,6 +1748,7 @@ dst = _mm256_add_epi32(d[0], d[1]);
 #undef XEVE_ITX64_O
 
 
+// clang-format off
 #define XEVE_ITX64_EO(dst, idx) \
 t[0] = _mm256_madd_epi16(v[ 2], coef[idx][ 2]);\
 t[1] = _mm256_madd_epi16(v[ 6], coef[idx][ 6]);\
@@ -1737,6 +1765,7 @@ d[3] = _mm256_add_epi32(t[ 6], t[ 7]);\
 t[0] = _mm256_add_epi32(d[0], d[1]);\
 t[1] = _mm256_add_epi32(d[2], d[3]);\
 dst = _mm256_add_epi32(t[0], t[1]);
+// clang-format on
 
                 for (int i = 0; i < 16; i++)
                 {
@@ -1745,6 +1774,7 @@ dst = _mm256_add_epi32(t[0], t[1]);
 #undef XEVE_ITX64_EO
 
 
+// clang-format off
 #define XEVE_ITX64_EEO(dst, idx) \
 t[0] = _mm256_madd_epi16(v[ 4], coef[idx][ 4]);\
 t[1] = _mm256_madd_epi16(v[12], coef[idx][12]);\
@@ -1753,6 +1783,7 @@ t[3] = _mm256_madd_epi16(v[28], coef[idx][28]);\
 d[0] = _mm256_add_epi32(t[ 0], t[ 1]);\
 d[1] = _mm256_add_epi32(t[ 2], t[ 3]);\
 dst = _mm256_add_epi32(d[0], d[1]);
+// clang-format on
 
                 for (int i = 0; i < 8; i++)
                 {
@@ -1760,11 +1791,12 @@ dst = _mm256_add_epi32(d[0], d[1]);
                 }
 #undef XEVE_ITX64_EEO
 
+// clang-format off
 #define XEVE_ITX64_EEEO(dst, idx) \
 t[0] = _mm256_madd_epi16(v[ 8], coef[idx][ 8]);\
 t[1] = _mm256_madd_epi16(v[24], coef[idx][24]);\
 dst = _mm256_add_epi32(t[0], t[1]);
-
+// clang-format on
 
                 for (int i = 0; i < 4; i++)
                 {
@@ -1912,6 +1944,7 @@ dst = _mm256_add_epi32(t[0], t[1]);
                     XEVE_ITX_CLIP(v[i], min_val, max_val);
                 }
 
+// clang-format off
 #define XEVE_ITX_32B_TRANSPOS_8x8(s0, s1, s2, s3,  s4, s5, s6, s7, d0, d1, d2, d3, d4, d5, d6, d7)\
 t[0] = _mm256_unpacklo_epi32(v[s0], v[s1]);\
 t[1] = _mm256_unpacklo_epi32(v[s2], v[s3]);\
@@ -1939,6 +1972,7 @@ d[d4] = _mm256_permute2f128_si256(v[0], v[1], 0x31);\
 d[d5] = _mm256_permute2f128_si256(v[4], v[5], 0x31);\
 d[d6] = _mm256_permute2f128_si256(v[2], v[3], 0x31);\
 d[d7] = _mm256_permute2f128_si256(v[6], v[7], 0x31);
+// clang-format on
 
                 XEVE_ITX_32B_TRANSPOS_8x8( 0,  1,  2,  3,  4,  5,  6,  7, 0,  8, 16, 24, 32, 40, 48, 56);
                 XEVE_ITX_32B_TRANSPOS_8x8( 8,  9, 10, 11, 12, 13, 14, 15, 1,  9, 17, 25, 33, 41, 49, 57);
@@ -2001,6 +2035,7 @@ d[d7] = _mm256_permute2f128_si256(v[6], v[7], 0x31);
                     b[i] = _mm256_unpackhi_epi32(r[i], r[i + 32]);
                 }
 
+// clang-format off
 #define XEVE_ITX_MADD(dst, r_idx, c_idx)\
 t[0] = _mm256_mullo_epi32(a[r_idx], coef[c_idx][r_idx]);\
 t[1] = _mm256_mullo_epi32(b[r_idx], coef[c_idx][r_idx]);\
@@ -2041,7 +2076,7 @@ t[0] = _mm256_add_epi32(v[0], v[1]);\
 t[1] = _mm256_add_epi32(v[2], v[3]);\
 \
 dst = _mm256_add_epi32(t[0], t[1]);
-
+// clang-format on
 
                 for (i = 0; i < 32; i++)
                 {
@@ -2049,6 +2084,7 @@ dst = _mm256_add_epi32(t[0], t[1]);
                 }
 #undef XEVE_ITX64_0_32B
 
+// clang-format off
 #define XEVE_ITX64_E0_32B(dst, idx)\
 XEVE_ITX_MADD(v[0],  2, idx)\
 XEVE_ITX_MADD(v[1],  6, idx)\
@@ -2067,6 +2103,7 @@ v[0] = _mm256_add_epi32(t[0], t[1]);\
 v[1] = _mm256_add_epi32(t[2], t[3]);\
 \
 dst = _mm256_add_epi32(v[0], v[1]);
+// clang-format on
 
                 for (i = 0; i < 16; i++)
                 {
@@ -2074,6 +2111,7 @@ dst = _mm256_add_epi32(v[0], v[1]);
                 }
 #undef XEVE_ITX64_E0_32B
 
+// clang-format off
 #define XEVE_ITX64_EE0_32B(dst, idx)\
 XEVE_ITX_MADD(v[0],  4, idx)\
 XEVE_ITX_MADD(v[1], 12, idx)\
@@ -2082,6 +2120,7 @@ XEVE_ITX_MADD(v[3], 28, idx)\
 t[0] = _mm256_add_epi32(v[0], v[1]);\
 t[1] = _mm256_add_epi32(v[2], v[3]);\
 dst = _mm256_add_epi32(t[0], t[1]);
+// clang-format on
 
                 for (i = 0; i < 8; i++)
                 {
@@ -2089,10 +2128,12 @@ dst = _mm256_add_epi32(t[0], t[1]);
                 }
 #undef XEVE_ITX64_EE0_32B
 
+// clang-format off
 #define XEVE_ITX64_EEEO_32B(dst, idx)\
 XEVE_ITX_MADD(v[0],   8, idx)\
 XEVE_ITX_MADD(v[1],  24, idx)\
 dst = _mm256_add_epi32(v[0], v[1]);
+// clang-format on
 
                 for (i = 0; i < 4; i++)
                 {
