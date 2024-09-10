@@ -13,22 +13,13 @@ Language: Cpp
 # Alignment settings
 AlignConsecutiveDeclarations: true
 AlignConsecutiveAssignments: true
-AlignTrailingComments: true
 
 # Break settings
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterControlStatement: false
   AfterFunction: true
-  AfterNamespace: false
-  AfterClass: false
-  AfterStruct: false
-  AfterUnion: false
-  AfterEnum: false
   BeforeElse: true
 
-AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
@@ -37,33 +28,13 @@ AllowShortLoopsOnASingleLine: false
 CommentPragmas: Preserve
 SortIncludes: false
 
-# Other settings
-ColumnLimit: 0  # Disable column limit
-
-AlignArrayOfStructures: None
-
-AllowShortBlocksOnASingleLine: true
-
 # Case blocks
 IndentCaseBlocks: true
-IndentCaseLabels: true
-
-
-# Pointer Alignment
-PointerAlignment: Left
 
 # Space settings
-SpaceAfterCStyleCast: false
-SpaceBeforeAssignmentOperators: true
-
 SpaceBeforeParens: Custom
 SpaceBeforeParensOptions:
   AfterControlStatements: false
-  AfterFunctionDefinitionName: false
 
-SpaceBeforeSquareBrackets: false
-SpaceInEmptyBlock: false
-SpacesInConditionalStatement: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-
+# Other settings
+ColumnLimit: 0  # Disable column limit
