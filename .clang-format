@@ -37,4 +37,11 @@ SpaceBeforeParensOptions:
   AfterControlStatements: false
 
 # Other settings
-ColumnLimit: 0  # Disable column limit
+ColumnLimit: 160  # Disable column limit
+
+# Put each one of the finction paremeters on its own line.
+BinPackParameters: false
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# Function call’s arguments will have one line each.
+BinPackArguments: false
