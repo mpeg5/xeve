@@ -39,7 +39,7 @@ SpaceBeforeParensOptions:
 # Other settings
 ColumnLimit: 160  # Disable column limit
 
-# Put each one of the finction paremeters on its own line.
+# Put each one of the function paremeters on its own line.
 BinPackParameters: false
 AllowAllParametersOfDeclarationOnNextLine: false
 
