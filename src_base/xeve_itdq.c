@@ -70,6 +70,7 @@ void xeve_itx_pb4b(void *src, void *dst, int shift, int line, int step)
     s64 E[2], O[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
 
+// clang-format off
 #define RUN_ITX_PB4(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -95,6 +96,7 @@ void xeve_itx_pb4b(void *src, void *dst, int shift, int line, int step)
             *((type_dst * )dst + j * 4 + 3) = ITX_CLIP((E[0] - O[0] + add) >> shift);\
         }\
     }
+// clang-format on
 
     if (step == 0)
     {
@@ -112,6 +114,8 @@ void xeve_itx_pb8b(void *src, void *dst, int shift, int line, int step)
     s64 E[4], O[4];
     s64 EE[2], EO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
+// clang-format off    
 #define RUN_ITX_PB8(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -150,6 +154,7 @@ void xeve_itx_pb8b(void *src, void *dst, int shift, int line, int step)
             }\
         }\
     }
+// clang-format on
 
     if (step == 0)
     {
@@ -168,6 +173,8 @@ void xeve_itx_pb16b(void *src, void *dst, int shift, int line, int step)
     s64 EE[4], EO[4];
     s64 EEE[2], EEO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
+// clang-format off    
 #define RUN_ITX_PB16(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -219,6 +226,7 @@ void xeve_itx_pb16b(void *src, void *dst, int shift, int line, int step)
             }\
         }\
     }
+// clang-format on
 
     if (step == 0)
     {
@@ -238,6 +246,8 @@ void xeve_itx_pb32b(void *src, void *dst, int shift, int line, int step)
     s64 EEE[4], EEO[4];
     s64 EEEE[2], EEEO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
+// clang-format off    
 #define RUN_ITX_PB32(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++)\
     {\
@@ -317,6 +327,7 @@ void xeve_itx_pb32b(void *src, void *dst, int shift, int line, int step)
             }\
         }\
     }
+// clang-format on
 
     if (step == 0)
     {
@@ -339,6 +350,8 @@ void xeve_itx_pb64b(void *src, void *dst, int shift, int line, int step)
     s64 EEEE[4], EEEO[4];
     s64 EEEEE[2], EEEEO[2];
     int add = shift == 0 ? 0 : 1 << (shift - 1);
+
+// clang-format off    
 #define RUN_ITX_PB64(src, dst, type_src, type_dst) \
     for (j = 0; j < line; j++) \
     { \
@@ -431,6 +444,7 @@ void xeve_itx_pb64b(void *src, void *dst, int shift, int line, int step)
         src = (type_src * )src + 1;\
         dst = (type_dst * )dst + tx_size;\
     }
+// clang-format on
 
     if (step == 0)
     {

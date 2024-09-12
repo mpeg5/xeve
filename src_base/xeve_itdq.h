@@ -33,6 +33,8 @@
 
 #include "xeve_def.h"
 
+// clang-format off
+
 #define ITX_SHIFT1                            (7)                     /* shift after 1st IT stage */
 #define ITX_SHIFT2(bit_depth)                 (12 - (bit_depth - 8))  /* shift after 2nd IT stage */
 
@@ -44,6 +46,8 @@
 #define MIN_TX_VAL_32                      (-2147483647-1)
 #define ITX_CLIP_32(x) \
     (s32)(((x)<=MIN_TX_VAL_32)? MIN_TX_VAL_32: (((x)>=MAX_TX_VAL_32)? MAX_TX_VAL_32: (x)))
+
+// clang-format on
 
 void xeve_itdq(XEVE_CTX* ctx, XEVE_CORE* core, s16 coef[N_C][MAX_CU_DIM], int nnz_sub[N_C][MAX_SUB_TB_NUM]);
 void xeve_itx_pb2b (void * src, void * dst, int shift, int line, int step);

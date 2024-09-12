@@ -27,6 +27,7 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE.
 */
+// clang-format off
 
 #ifndef _XEVE_DEF_H_
 #define _XEVE_DEF_H_
@@ -1524,3 +1525,5 @@ enum TQC_RUN {
 
 
 #endif /* _XEVE_DEF_H_ */
+
+// clang-format on

@@ -37,6 +37,8 @@
 #include <string.h>
 #include <stddef.h>
 
+// clang-format off
+
 #define PARAMS_END_KEY                      (0)
 #define PARAM_STR_MAX_LEN                   (256)
 
@@ -252,6 +254,8 @@ static const XEVE_PARAM_METADATA xeve_params_metadata[] = {
     /* termination */
     { .name = PARAMS_END_KEY }
 };
+
+// clang-format on
 
 static int xeve_param_search_name(const char * name)
 {

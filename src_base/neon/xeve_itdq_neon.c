@@ -31,6 +31,8 @@
 #include "xeve_def.h"
 #include "xeve_tbl.h"
 
+// clang-format off
+
 #define MAX_TX_DYNAMIC_RANGE_32               31
 #define MAX_TX_VAL_32                       2147483647
 #define MIN_TX_VAL_32                      (-2147483647-1)
@@ -55,6 +57,7 @@ t2 = vpaddq_s32(t0, t1);
 #define vmadd_s16(a, coef)\
     vpaddq_s32(vmull_s16(a.val[0], vget_low_s16(coef)), vmull_s16(a.val[1], vget_high_s16(coef)));
 
+// clang-format on
 
 void xeve_itx_pb4b_neon(void* src, void* dst, int shift, int line, int step)
 {

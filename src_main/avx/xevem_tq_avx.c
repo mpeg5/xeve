@@ -32,6 +32,8 @@
 #include "xevem_tq_avx.h"
 #include "xevem_tq.h"
 
+// clang-format off
+
 #ifndef _mm256_set_m128i
 #define _mm256_set_m128i(/* __m128i */ hi, /* __m128i */ lo) \
     _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
@@ -64,6 +66,7 @@ ALIGNED_32(static const s16 tab_dct2_1st_shuffle_256i[][16]) = {
     // 16bit: 0, 3, 1, 2, 4, 7, 5, 6, 0, 3, 1, 2, 4, 7, 5, 6
     { 0x0100, 0x0706, 0x0302, 0x0504, 0x0908, 0x0F0E, 0x0B0A, 0x0D0C, 0x0100, 0x0706, 0x0302, 0x0504, 0x0908, 0x0F0E, 0x0B0A, 0x0D0C }
 };
+// clang-format on
 
 static void tx_pb8_avx(s16* src, s16* dst, int shift, int line)
 {
@@ -661,6 +664,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             _mm_storeu_si128((__m128i*)(dst + 20 * line), _mm256_castsi256_si128(d1));
             _mm_storeu_si128((__m128i*)(dst + 28 * line), _mm256_extracti128_si256(d1, 1));
 
+// clang-format off
 #define _mm256_madd_epi32_xeve(a, b, c, d) \
         _mm256_hadd_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d))
 
@@ -681,6 +685,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             }
 
 #undef _mm256_madd_epi32_xeve
+// clang-format on
 
             d0 = _mm256_packs_epi32(dst_reg[0], dst_reg[1]);
             d1 = _mm256_packs_epi32(dst_reg[2], dst_reg[3]);
@@ -700,7 +705,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             _mm_storeu_si128((__m128i*)(dst + 26 * line), _mm256_castsi256_si128(d3));
             _mm_storeu_si128((__m128i*)(dst + 30 * line), _mm256_extracti128_si256(d3, 1));
 
-
+// clang-format off
 #define _mm256_madd1_epi32_xeve(a, b, c, d) \
         _mm256_add_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d))
 
@@ -776,6 +781,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
             }
 
 #undef _mm256_madd1_epi32_xeve
+// clang-format on
 
             d0 = _mm256_packs_epi32(dst_reg[0], dst_reg[1]);
             d1 = _mm256_packs_epi32(dst_reg[2], dst_reg[3]);
@@ -981,6 +987,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         _mm_storel_epi64((__m128i*)(dst + 20 * line), m2);
         _mm_storel_epi64((__m128i*)(dst + 28 * line), m3);
 
+// clang-format off
 #define _mm256_madd_epi32_xeve(a, b, c, d) \
         _mm256_hadd_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d)); \
 
@@ -1005,6 +1012,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         d3 = _mm256_permute4x64_epi64(d6, 0xd8);
 
 #undef _mm256_madd_epi32_xeve
+// clang-format on
 
         d0 = _mm256_add_epi32(d0, add);
         d1 = _mm256_add_epi32(d1, add);
@@ -1037,6 +1045,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         _mm_storel_epi64((__m128i*)(dst + 26 * line), m6);
         _mm_storel_epi64((__m128i*)(dst + 30 * line), m7);
 
+// clang-format off
 #define _mm256_madd1_epi32_xeve(a, b, c, d) \
         _mm256_add_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d))                    
 
@@ -1111,6 +1120,7 @@ static void tx_pb32_avx(s16* src, s16* dst, int shift, int line)
         }
 
 #undef _mm256_madd1_epi32_xeve
+// clang-format on
 
         PERFORM_OP;
 
@@ -1308,14 +1318,17 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
             _mm_storel_epi64((__m128i*)(dst + 16 * line), m1);
             _mm_storel_epi64((__m128i*)(dst + 24 * line), m3);
 
+// clang-format off
 #define _mm256_madd_epi32_xeve(a, b, c, d) \
         _mm256_hadd_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d)); \
+// clang-format on
 
-
+// clang-format off
 #define CALCU_EEO(coeff0, coeff1, dst) \
         v[0] = _mm256_madd_epi32_xeve(eeo[0], coeff0, eeo[1], coeff1); \
         v[2] = _mm256_madd_epi32_xeve(eeo[2], coeff0, eeo[3], coeff1); \
         dst = _mm256_hadd_epi32(v[0], v[2])
+// clang-format on
 
             CALCU_EEO(coeffs[2], coeffs[3], d0);
             CALCU_EEO(coeffs[4], coeffs[5], d1);
@@ -1349,8 +1362,10 @@ static void tx_pb64_avx(s16* src, s16* dst, int shift, int line)
             _mm_storel_epi64((__m128i*)(dst + 20 * line), m2);
             _mm_storel_epi64((__m128i*)(dst + 28 * line), m3);
 
+// clang-format off
 #define _mm256_madd1_epi32_xeve(a, b, c, d) \
         _mm256_add_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(c, d))
+// clang-format on
 
             // EO
             for (i = 0; i < 8; ++i)

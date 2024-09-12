@@ -38,6 +38,8 @@
 
 #include "xeve_def.h"
 
+// clang-format off
+
 #define XEVE_IPRED_CHK_CONV(mode)\
     ((mode) == IPD_VER || (mode) == IPD_HOR || (mode) == IPD_DC || (mode) == IPD_BI)
     
@@ -54,6 +56,8 @@
     }\
     else \
         (chk) = 0;
+
+// clang-format on
 
 void xevem_get_nbr(int x, int y, int cuw, int cuh, pel *src, int s_src, u16 avail_cu, pel nb[N_C][N_REF][MAX_CU_SIZE * 3], int scup, u32 *map_scu
                  , int w_scu, int h_scu, int ch_type, int constrained_intra_pred, u8 * map_tidx, int bit_depth, int chroma_format_idc);  

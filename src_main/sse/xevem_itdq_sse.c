@@ -36,6 +36,7 @@
 #include <math.h>
 #include "xevem_type.h"
 
+// clang-format off
 #if X86_SSE
 #define MAC_8PEL_MEM(src1, src2, m01, m02, m03, m04, mac) \
     m01 = _mm_loadu_si128((__m128i*)(src1)); \
@@ -143,6 +144,7 @@ const XEVE_INV_TRANS xeve_itrans_map_tbl_sse[16][5] =
     { NULL, xeve_itrans_ats_intra_DCT8_B4, xeve_itrans_ats_intra_DCT8_B8_sse, xeve_itrans_ats_intra_DCT8_B16_sse, xeve_itrans_ats_intra_DCT8_B32_sse },
     { NULL, xeve_itrans_ats_intra_DST7_B4, xeve_itrans_ats_intra_DST7_B8_sse, xeve_itrans_ats_intra_DST7_B16_sse, xeve_itrans_ats_intra_DST7_B32_sse },
 };
+// clang-format on
 
 
 void xeve_itrans_ats_intra_DST7_B8_sse(s16 *coef, s16 *block, int shift, int line, int skip_line, int skip_line_2)

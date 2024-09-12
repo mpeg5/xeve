@@ -465,6 +465,8 @@ static void diff_16b_neon_32nx4n(int w, int h, void * src1, void * src2, int s_s
     }
 }
 
+// clang-format off
+
 const XEVE_FN_DIFF xeve_tbl_diff_16b_neon[8][8] =
 {
     /* width == 1 */
@@ -580,6 +582,8 @@ const XEVE_FN_DIFF xeve_tbl_diff_16b_neon[8][8] =
     s00b = vshrq_n_s32(s00b, 4); \
     ssd += vaddvq_s32(s00a); \
     ssd += vaddvq_s32(s00b); \
+
+// clang-format on
 
 static s64 ssd_16b_neon_4x2(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth)
 {
@@ -899,6 +903,8 @@ static s64 ssd_16b_neon_8nx8n(int w, int h, void * src1, void * src2, int s_src1
     return ssd;
 }
 
+// clang-format off
+
 const XEVE_FN_SSD xeve_tbl_ssd_16b_neon[8][8] =
 {
     /* width == 1 */
@@ -990,6 +996,8 @@ const XEVE_FN_SSD xeve_tbl_ssd_16b_neon[8][8] =
         ssd_16b_neon_8nx8n, /* height == 128 */
     }
 };
+
+// clang-format on
 
 /* SATD **********************************************************************/
 int xeve_had_4x4_neon(pel* org, pel* cur, int s_org, int s_cur, int step, int bit_depth)

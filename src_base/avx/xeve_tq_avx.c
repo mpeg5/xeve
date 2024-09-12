@@ -43,7 +43,7 @@
 #endif 
 
 
-
+// clang-format off
 ALIGNED_32(static const s16 tab_dct2_2nd_shuffle_256i[][16]) = {
     // 16bit: 0-7, 3-0 7-4
     { 0x0100, 0x0302, 0x0504, 0x0706, 0x0908, 0x0B0A, 0x0D0C, 0x0F0E, 0x0706, 0x0504, 0x0302, 0x0100, 0x0F0E, 0x0D0C, 0x0B0A, 0x0908 },  // 0
@@ -64,7 +64,7 @@ ALIGNED_32(static const s16 tab_dct2_1st_shuffle_256i[][16]) = {
     // 16bit: 0, 3, 1, 2, 4, 7, 5, 6, 0, 3, 1, 2, 4, 7, 5, 6
     { 0x0100, 0x0706, 0x0302, 0x0504, 0x0908, 0x0F0E, 0x0B0A, 0x0D0C, 0x0100, 0x0706, 0x0302, 0x0504, 0x0908, 0x0F0E, 0x0B0A, 0x0D0C }
 };
-
+// clang-format on
 
 static void tx_pb8b_avx(void* src_, void* dst_, int shift, int line, int step)
 {
@@ -78,6 +78,8 @@ static void tx_pb8b_avx(void* src_, void* dst_, int shift, int line, int step)
         s32* dst = (s32*)dst_;
         __m256i v0, v1, v2, v3, v4, v5, v6, v7;
         __m256i d0, d1, d2, d3;
+
+        // clang-format off
         const __m256i coeff0 = _mm256_set1_epi16(64);    
         const __m256i coeff1 = _mm256_set_epi16(64, -64, -64, 64, 64, -64, -64, 64, 64, -64, -64, 64, 64, -64, -64, 64);
         const __m256i coeff2 = _mm256_set_epi16(84, 35, -35, -84, -84, -35, 35, 84, 84, 35, -35, -84, -84, -35, 35, 84);    
@@ -86,6 +88,8 @@ static void tx_pb8b_avx(void* src_, void* dst_, int shift, int line, int step)
         const __m256i coeff5 = _mm256_set_epi16(-75, 18, 89, 50, -50, -89, -18, 75, -75, 18, 89, 50, -50, -89, -18, 75);
         const __m256i coeff6 = _mm256_set_epi16(-50, 89, -18, -75, 75, 18, -89, 50, -50, 89, -18, -75, 75, 18, -89, 50);
         const __m256i coeff7 = _mm256_set_epi16(-18, 50, -75, 89, -89, 75, -50, 18, -18, 50, -75, 89, -89, 75, -50, 18);
+        // clang-format on
+        
         __m256i add = _mm256_set1_epi32(shift == 0 ? 0 : 1 << (shift - 1));
 
         if (line > 4)
@@ -96,11 +100,12 @@ static void tx_pb8b_avx(void* src_, void* dst_, int shift, int line, int step)
 
             for (j = 0; j < line; j += 8)
             {
+                // clang-format off
                 s0 = _mm256_loadu2_m128i((const __m128i*) & src[4 * 8], (const __m128i*) & src[0]);    
                 s1 = _mm256_loadu2_m128i((const __m128i*) & src[5 * 8], (const __m128i*) & src[8]);    
                 s2 = _mm256_loadu2_m128i((const __m128i*) & src[6 * 8], (const __m128i*) & src[16]);
                 s3 = _mm256_loadu2_m128i((const __m128i*) & src[7 * 8], (const __m128i*) & src[24]);
-
+                
                 src += 8 * 8;
 
                 CALCU_2x8(coeff0, coeff4, d0, d1);
@@ -122,6 +127,7 @@ static void tx_pb8b_avx(void* src_, void* dst_, int shift, int line, int step)
                 _mm256_storeu_si256((__m256i*)(dst + 7 * line), (d3));
 
                 dst += 8;
+                // clang-format on
             }
         }
     }

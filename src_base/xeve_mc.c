@@ -35,6 +35,7 @@ const XEVE_MC_L (*xeve_func_mc_l)[2];
 const XEVE_MC_C (*xeve_func_mc_c)[2];
 XEVE_AVG_NO_CLIP xeve_func_average_no_clip;
 
+// clang-format off
 const s16 xeve_tbl_mc_l_coeff[16][8] =
 {
     {  0, 0,   0, 64,  0,   0,  0,  0 },
@@ -90,6 +91,7 @@ const s16 xeve_tbl_mc_c_coeff[32][4] =
     {  0,  0,  0,  0 },
     {  0,  0,  0,  0 },
 };
+// clang-format on
 
 /****************************************************************************
  * motion compensation for luma

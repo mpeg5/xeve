@@ -1,0 +1,47 @@
+# .clang-format
+
+# Base style to use
+BasedOnStyle: Google
+
+# Indentation settings
+IndentWidth: 4
+UseTab: Never
+
+# Language:
+Language: Cpp
+
+# Alignment settings
+AlignConsecutiveDeclarations: true
+AlignConsecutiveAssignments: true
+
+# Break settings
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  BeforeElse: true
+
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+# Comment settings
+CommentPragmas: Preserve
+SortIncludes: false
+
+# Case blocks
+IndentCaseBlocks: true
+
+# Space settings
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: false
+
+# Other settings
+ColumnLimit: 160  # Disable column limit
+
+# Put each one of the function paremeters on its own line.
+BinPackParameters: false
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# Function call’s arguments will have one line each.
+BinPackArguments: false

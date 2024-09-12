@@ -35,6 +35,8 @@
 
 #include "xevem_type.h"
 
+// clang-format off
+
 #define NA 255 //never split
 #define NB 14  //not reach in current setting of max AR 1:4
 #define NC 15  //not reach in current setting of max AR 1:4
@@ -813,3 +815,4 @@ const s8 xevem_tbl_slice_depth_orig[9][32] =
     },
 };
 
+// clang-format on

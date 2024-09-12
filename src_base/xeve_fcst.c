@@ -33,6 +33,8 @@
 #include "xeve_fcst.h"
 #include <math.h>
 
+// clang-format off
+
 static const s8 tbl_small_dia_search[4][3] =
 {
     { 0, -1, 3 },{ 1, 0, 0 },{ 0, 1, 1 },{ -1, 0, 2 }
@@ -99,6 +101,7 @@ static const u16 tbl_inv_qscale[41]=
     15, 14, 13, 13, 12, 11, 11, 10, 10, 9, 8, 8, 8, 7, 7, 6, 6, 6, 5, 5
 };
 
+// clang-format on
 
 s32 xeve_fcst_get_scene_type(XEVE_CTX * ctx, XEVE_PICO * pico)
 {

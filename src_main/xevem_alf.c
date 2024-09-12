@@ -186,6 +186,7 @@ int alf_get_max_golomb_idx( ALF_FILTER_TYPE filter_type )
   return filter_type == ALF_FILTER_5 ? 2 : 3;
 }
 
+// clang-format off
 const int alf_fixed_filter_coef[FIXED_FILTER_NUM][13] =
 {
   {   0,   2,   7, -12,  -4, -11,  -2,  31,  -9,   6,  -4,  30, 444 - (1 << (NUM_BITS - 1)) },
@@ -281,6 +282,7 @@ const int alf_class_to_filter_mapping[MAX_NUM_ALF_CLASSES][ALF_FIXED_FILTER_NUM]
   { 8,  13,  36,  42,  45,  46,  51,  53,  54,  57,  58,  59,  60,  61,  62,  63 },
   { 8,  13,  20,  27,  36,  38,  42,  46,  52,  53,  56,  57,  59,  61,  62,  63 },
 };
+// clang-format on
 
 void alf_recon_coef(ADAPTIVE_LOOP_FILTER * alf, ALF_SLICE_PARAM* alf_slice_param, int channel, const BOOL is_rdo, const BOOL is_re_do)
 {
@@ -718,12 +720,14 @@ void alf_filter_blk_7(ALF_CLASSIFIER** classifier, pel * rec_dst, const int dst_
             trans_idx = cl & 0x03;
             coef = filter_set + ((cl >> 2) & 0x1F) * MAX_NUM_ALF_LUMA_COEFF;
 
+// clang-format off
             const int l[4][MAX_NUM_ALF_LUMA_COEFF] = {
                 { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 },
                 { 9, 4, 10, 8, 1, 5, 11, 7, 3, 0, 2, 6, 12 },
                 { 0, 3, 2, 1, 8, 7, 6, 5, 4, 9, 10, 11, 12 },
                 { 9, 8, 10, 4, 3, 7, 11, 5, 1, 0, 2, 6, 12 }
             };
+// clang-format on
 
             for (int i = 0; i < MAX_NUM_ALF_LUMA_COEFF; i++)
             {

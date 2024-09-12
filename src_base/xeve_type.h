@@ -31,6 +31,8 @@
 #ifndef _XEVE_TYPE_H_
 #define _XEVE_TYPE_H_
 
+// clang-format off
+
 #include "xeve_def.h"
 #include "xeve_bsw.h"
 #include "xeve_sad.h"
@@ -1025,5 +1027,7 @@ typedef struct _ALF_SLICE_PARAM ALF_SLICE_PARAM;
 #include "xeve_tq_neon.h"
 #endif
 #include "xeve_enc.h"
+
+// clang-format on
 
 #endif /* _XEVE_TYPE_H_ */
