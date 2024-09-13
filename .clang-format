@@ -13,6 +13,8 @@ Language: Cpp
 # Alignment settings
 AlignConsecutiveDeclarations: true
 AlignConsecutiveAssignments: true
+AlignConsecutiveMacros: true
+AlignTrailingComments: true
 
 # Break settings
 BreakBeforeBraces: Custom
