@@ -224,11 +224,11 @@ enum RC_TYPE
 
 // clang-format on
 
-int  xeve_rc_create(XEVE_CTX * ctx);
-int  xeve_rc_delete(XEVE_CTX * ctx);
+int  xeve_rc_create(XEVE_CTX *ctx);
+int  xeve_rc_delete(XEVE_CTX *ctx);
 s32  xeve_rc_set(XEVE_CTX *ctx);
-s32  xeve_rc_rcore_set(XEVE_CTX * ctx);
-void xeve_rc_update_frame(XEVE_CTX *ctx, XEVE_RC * rc, XEVE_RCORE * rcore);
+s32  xeve_rc_rcore_set(XEVE_CTX *ctx);
+void xeve_rc_update_frame(XEVE_CTX *ctx, XEVE_RC *rc, XEVE_RCORE *rcore);
 s32  xeve_rc_get_frame_qp(XEVE_CTX *ctx);
 int  xeve_rc_get_qp(XEVE_CTX *ctx);
 #endif

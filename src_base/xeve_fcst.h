@@ -34,32 +34,27 @@
 #include "xeve_def.h"
 #include "xeve_type.h"
 
-#define LOG2_AQ_BLK_SIZE               4
+#define LOG2_AQ_BLK_SIZE  4
 
 /* constant for AQ strength */
-#define AQ_STR_CONST                   0.75
-#define AQ_STRENGTH                    0.5
+#define AQ_STR_CONST      0.75
+#define AQ_STRENGTH       0.5
 /* blk-tree strength */
-#define LCU_STRENGTH                   0.75
+#define LCU_STRENGTH      0.75
 
-#define SEARCH_RANGE_IPEL            64
-#define INIT_SDS_PTS                 4
+#define SEARCH_RANGE_IPEL 64
+#define INIT_SDS_PTS      4
 /* initial direction of diamond searhc pattern */
-#define RC_INIT_QP                   28
+#define RC_INIT_QP        28
 
 /* foracast calculation unit depth
 0: same as lcu (depth 0)
 1: 1/4 size of lcu (depth 1)
 */
 
-enum PREV_PIC
-{
-    PREV0,
-    PREV1
-};
+enum PREV_PIC { PREV0, PREV1 };
 
-enum PRED_TYPE
-{
+enum PRED_TYPE {
     INTRA,
     INTER_UNI0,
     INTER_UNI1,
@@ -69,29 +64,26 @@ enum PRED_TYPE
     INTER_BI = 3,
 };
 
-enum SCENE_TYPE
-{
+enum SCENE_TYPE {
     SCENE_NORMAL,
     SCENE_HIGH,
     SCENE_LOW,
     SCENE_EX_LOW,
 };
 
-enum QPA_TYPE
-{
+enum QPA_TYPE {
     QPA_OFF,
     QPA_AQ_TREE, /* turn on adaptive qantization  + block tree */
     QPA_AQ,      /* turn on adaptive qantization only */
     QPA_TREE,    /* turn on block tree only */
 };
 
-
 /* check whether B picture could be exist or not */
-#define B_PIC_ENABLED(ctx)           (ctx->param.bframes > 0)
+#define B_PIC_ENABLED(ctx) (ctx->param.bframes > 0)
 /* complexity threthold */
 
 int  xeve_forecast_fixed_gop(XEVE_CTX* ctx);
 void xeve_gen_subpic(pel* src_y, pel* dst_y, int w, int h, int s_s, int d_s, int bit_depth);
-s32  xeve_fcst_get_scene_type(XEVE_CTX * ctx, XEVE_PICO * pico);
+s32  xeve_fcst_get_scene_type(XEVE_CTX* ctx, XEVE_PICO* pico);
 
 #endif /* _XEVE_FCST_H_ */

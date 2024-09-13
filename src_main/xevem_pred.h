@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -39,19 +39,30 @@
 #include "xevem_type.h"
 
 /* Intra prediction */
-int xevem_pintra_create(XEVE_CTX * ctx, int complexity);
+int xevem_pintra_create(XEVE_CTX *ctx, int complexity);
 
 /* Inter prediction */
-int xevem_pinter_create(XEVE_CTX * ctx, int complexity);
+int xevem_pinter_create(XEVE_CTX *ctx, int complexity);
 
 /* IBC prediction */
-#define GET_BV_COST(ctx, mv_bits)  ((u32)(core->sqrt_lambda[0] * mv_bits / 65536.0))
+#define GET_BV_COST(ctx, mv_bits) ((u32)(core->sqrt_lambda[0] * mv_bits / 65536.0))
 
-u32 get_bv_cost_bits(int mv_x, int mv_y);
-int xevem_pibc_create(XEVE_CTX * ctx, int complexity);
+u32  get_bv_cost_bits(int mv_x, int mv_y);
+int  xevem_pibc_create(XEVE_CTX *ctx, int complexity);
 
-void reset_ibc_search_range(XEVE_CTX *ctx, int cu_x, int cu_y, int log2_cuw, int log2_cuh, XEVE_CORE * core);
-int is_bv_valid(XEVE_CTX *ctx, int x, int y, int width, int height, int log2_cuw, int log2_cuh
-                , int pic_width, int pic_height, int x_bv, int y_bv, int ctu_size, XEVE_CORE * core);
+void reset_ibc_search_range(XEVE_CTX *ctx, int cu_x, int cu_y, int log2_cuw, int log2_cuh, XEVE_CORE *core);
+int  is_bv_valid(XEVE_CTX  *ctx,
+                 int        x,
+                 int        y,
+                 int        width,
+                 int        height,
+                 int        log2_cuw,
+                 int        log2_cuh,
+                 int        pic_width,
+                 int        pic_height,
+                 int        x_bv,
+                 int        y_bv,
+                 int        ctu_size,
+                 XEVE_CORE *core);
 
 #endif /* _XEVEM_PRED_H_ */
