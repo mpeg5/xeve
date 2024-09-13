@@ -1,4 +1,7 @@
-# .clang-format
+# .clang-format 
+
+# Recommended clang-format version: 19 or higher.
+# Please note that alignment settings may not work correctly in versions below 19.
 
 # Base style to use
 BasedOnStyle: Google
@@ -11,9 +14,21 @@ UseTab: Never
 Language: Cpp
 
 # Alignment settings
-AlignConsecutiveDeclarations: true
-AlignConsecutiveAssignments: true
-AlignConsecutiveMacros: true
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+
 AlignTrailingComments: true
 
 # Break settings
@@ -21,6 +36,7 @@ BreakBeforeBraces: Custom
 BraceWrapping:
   AfterFunction: true
   BeforeElse: true
+  AfterExternBlock: true
 
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
@@ -39,7 +55,7 @@ SpaceBeforeParensOptions:
   AfterControlStatements: false
 
 # Other settings
-ColumnLimit: 160  # Disable column limit
+ColumnLimit: 120
 
 # Put each one of the function paremeters on its own line.
 BinPackParameters: false
