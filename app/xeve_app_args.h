@@ -60,6 +60,8 @@ typedef struct _ARGS_OPT
     char   desc[512]; /* description of option */
 } ARGS_OPT;
 
+// clang-format off
+
 /* Define various command line options as a table */
 static const ARGS_OPT args_opt_table[] = \
 {
@@ -630,6 +632,7 @@ static const ARGS_OPT args_opt_table[] = \
     },
     {ARGS_END_KEY, "", ARGS_VAL_TYPE_NONE, 0, NULL, ""} /* termination */
 };
+// clang-format on
 
 typedef struct _ARGS_PARSER ARGS_PARSER;
 struct _ARGS_PARSER
