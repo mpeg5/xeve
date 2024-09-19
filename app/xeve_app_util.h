@@ -75,7 +75,7 @@ static void log_line(char *pre)
     }
     str[i] = '\0';
 
-    len    = (pre == NULL) ? 0 : (int)strlen(pre);
+    len = (pre == NULL) ? 0 : (int)strlen(pre);
     if(len > 0) {
         sprintf(str + 3, " %s ", pre);
         len = (int)strlen(str);
@@ -197,7 +197,7 @@ static int imgb_read(FILE *fp, XEVE_IMGB *img, int width, int height, int is_y4m
     unsigned char *p8;
 
     /* handling Y4M frame header */
-    char           t_buf[10];
+    char t_buf[10];
     if(is_y4m) {
         if(6 != fread(t_buf, 1, 6, fp))
             return -1;
@@ -242,7 +242,7 @@ static int imgb_read(FILE *fp, XEVE_IMGB *img, int width, int height, int is_y4m
         f_w = f_w >> w_shift;
         f_h = f_h >> h_shift;
 
-        p8  = (unsigned char *)img->a[1];
+        p8 = (unsigned char *)img->a[1];
         for(int j = 0; j < f_h; j++) {
             if(fread(p8, 1, f_w, fp) != (unsigned)f_w) {
                 return -1;
@@ -269,11 +269,11 @@ static int imgb_write(char *fname, XEVE_IMGB *imgb, int width, int height)
     int            cs_w_off, cs_h_off;
     FILE          *fp;
 
-    int            chroma_format = XEVE_CS_GET_FORMAT(imgb->cs);
-    int            bit_depth     = XEVE_CS_GET_BIT_DEPTH(imgb->cs);
-    int            w_shift       = (chroma_format == XEVE_CF_YCBCR420) || (chroma_format == XEVE_CF_YCBCR422) ? 1 : 0;
-    int            h_shift       = chroma_format == XEVE_CF_YCBCR420 ? 1 : 0;
-    fp                           = fopen(fname, "ab");
+    int chroma_format = XEVE_CS_GET_FORMAT(imgb->cs);
+    int bit_depth     = XEVE_CS_GET_BIT_DEPTH(imgb->cs);
+    int w_shift       = (chroma_format == XEVE_CF_YCBCR420) || (chroma_format == XEVE_CF_YCBCR422) ? 1 : 0;
+    int h_shift       = chroma_format == XEVE_CF_YCBCR420 ? 1 : 0;
+    fp                = fopen(fname, "ab");
     if(fp == NULL) {
         logerr("cannot open file = %s\n", fname);
         return -1;
@@ -333,7 +333,7 @@ static void imgb_cpy_plane(XEVE_IMGB *dst, XEVE_IMGB *src)
 
 static void imgb_cpy_shift_left_8b(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
 {
-    int            i, j, k;
+    int i, j, k;
 
     unsigned char *s;
     short         *d;
@@ -354,7 +354,7 @@ static void imgb_cpy_shift_left_8b(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
 
 static void imgb_cpy_shift_right_8b(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
 {
-    int            i, j, k, t0, add;
+    int i, j, k, t0, add;
 
     short         *s;
     unsigned char *d;
@@ -381,7 +381,7 @@ static void imgb_cpy_shift_right_8b(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
 
 static void imgb_cpy_shift_left(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
 {
-    int             i, j, k;
+    int i, j, k;
 
     unsigned short *s;
     unsigned short *d;
@@ -402,10 +402,10 @@ static void imgb_cpy_shift_left(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
 
 static void imgb_cpy_shift_right(XEVE_IMGB *dst, XEVE_IMGB *src, int shift)
 {
-    int             i, j, k, t0, add;
+    int i, j, k, t0, add;
 
-    int             clip_min = 0;
-    int             clip_max = 0;
+    int clip_min = 0;
+    int clip_max = 0;
 
     unsigned short *s;
     unsigned short *d;
@@ -488,7 +488,7 @@ XEVE_IMGB *imgb_alloc(int w, int h, int cs)
         goto ERR;
     memset(imgb, 0, sizeof(XEVE_IMGB));
 
-    bd         = XEVE_CS_GET_BYTE_DEPTH(cs); /* byte unit */
+    bd = XEVE_CS_GET_BYTE_DEPTH(cs); /* byte unit */
 
     imgb->w[0] = w;
     imgb->h[0] = h;

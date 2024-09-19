@@ -33,14 +33,14 @@
 
 #include "xeve_def.h"
 
-extern const u8  xeve_tbl_mpm[6][6][5];
-extern const u8  xeve_tbl_log2[257];
-extern const s8  xeve_tbl_tm2[2][2];
-extern const s8  xeve_tbl_tm4[4][4];
-extern const s8  xeve_tbl_tm8[8][8];
-extern const s8  xeve_tbl_tm16[16][16];
-extern const s8  xeve_tbl_tm32[32][32];
-extern const s8  xeve_tbl_tm64[64][64];
+extern const u8 xeve_tbl_mpm[6][6][5];
+extern const u8 xeve_tbl_log2[257];
+extern const s8 xeve_tbl_tm2[2][2];
+extern const s8 xeve_tbl_tm4[4][4];
+extern const s8 xeve_tbl_tm8[8][8];
+extern const s8 xeve_tbl_tm16[16][16];
+extern const s8 xeve_tbl_tm32[32][32];
+extern const s8 xeve_tbl_tm64[64][64];
 
 extern const int xeve_tbl_dq_scale_b[6];
 extern const u8  xeve_tbl_df_st[4][52];
@@ -64,5 +64,5 @@ extern const QP_ADAPT_PARAM xeve_qp_adapt_param_ra[3][8];
 extern const QP_ADAPT_PARAM xeve_qp_adapt_param_ld[8];
 extern const QP_ADAPT_PARAM xeve_qp_adapt_param_ai[8];
 
-extern const u16            xeve_tbl_scan[MAX_TR_LOG2][MAX_TR_LOG2][MAX_TR_DIM];
+extern const u16 xeve_tbl_scan[MAX_TR_LOG2][MAX_TR_LOG2][MAX_TR_DIM];
 #endif /* _XEVE_TBL_H_ */

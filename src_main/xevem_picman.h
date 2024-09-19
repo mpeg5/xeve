@@ -40,7 +40,7 @@
 
 extern const XEVE_RPL pre_define_rpls[2][4][2][XEVE_MAX_NUM_RPLS]; /* [Reordering] [GOP size 4, 8, 16] [List 0, 1]  */
 
-void                  select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh);
-int                   xeve_picman_rpl_refp_init(XEVE_CTX *ctx, XEVE_SH *sh);
+void select_assign_rpl_for_sh(XEVE_CTX *ctx, XEVE_SH *sh);
+int  xeve_picman_rpl_refp_init(XEVE_CTX *ctx, XEVE_SH *sh);
 
 #endif /* _XEVEM_PICMAN_H_ */

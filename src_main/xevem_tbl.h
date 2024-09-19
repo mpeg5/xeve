@@ -99,18 +99,18 @@ extern const s16 xevem_init_ats_cu_inter_pos_flag[2][NUM_CTX_ATS_INTER_POS_FLAG]
 extern const int xevem_tbl_tr_subset_intra[4];
 
 /* Range of intra ATS is 4 to 32 */
-extern const s8  xevem_tbl_tr[NUM_TRANS_TYPE][4][1024];
-extern const s8  xevem_tbl_inv_tr[NUM_TRANS_TYPE][4][1024];
+extern const s8 xevem_tbl_tr[NUM_TRANS_TYPE][4][1024];
+extern const s8 xevem_tbl_inv_tr[NUM_TRANS_TYPE][4][1024];
 
-extern const u8  xevem_addb_alpha_tbl[52];
-extern const u8  xevem_addb_beta_tbl[52];
-extern const u8  xevem_addb_clip_tbl[52][5];
+extern const u8 xevem_addb_alpha_tbl[52];
+extern const u8 xevem_addb_beta_tbl[52];
+extern const u8 xevem_addb_clip_tbl[52][5];
 
 /* HDR */
 extern const int xevem_dra_chroma_qp_offset_tbl[NUM_CHROMA_QP_OFFSET_LOG];
 extern const int xevem_dra_exp_nom_v2[NUM_CHROMA_QP_SCALE_EXP];
 
-extern const s8  xevem_tbl_poc_gop_offset[9][31];
-extern const s8  xevem_tbl_slice_depth_orig[9][32];
+extern const s8 xevem_tbl_poc_gop_offset[9][31];
+extern const s8 xevem_tbl_slice_depth_orig[9][32];
 
 #endif /* _XEVE_TBL_H_ */

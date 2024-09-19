@@ -651,56 +651,56 @@ struct _ARGS_PARSER {
     int       num_option;
 
     /* variables for options */
-    char      fname_cfg[256];
-    char      fname_inp[256];
-    char      fname_out[256];
-    char      fname_rec[256];
-    int       frames;
-    int       info;
-    int       hash;
-    int       input_depth;
-    int       input_csp;
-    int       seek;
-    char      profile[32];
-    char      preset[32];
-    char      tune[32];
-    char      bitrate[64];
-    char      vbv_bufsize[64];
-    char      fps[256];
+    char fname_cfg[256];
+    char fname_inp[256];
+    char fname_out[256];
+    char fname_rec[256];
+    int  frames;
+    int  info;
+    int  hash;
+    int  input_depth;
+    int  input_csp;
+    int  seek;
+    char profile[32];
+    char preset[32];
+    char tune[32];
+    char bitrate[64];
+    char vbv_bufsize[64];
+    char fps[256];
 
     /* VUI options*/
-    char      sar[64];
-    int       sar_width, sar_height;
-    char      videoformat[64];
-    char      range[64];
-    char      colorprim[64];
-    char      transfer[64];
-    char      master_display[64];
-    char      max_cll[64];
-    char      matrix_coefficients[64];
-    int       overscan_info_present_flag;
-    int       overscan_appropriate_flag;
-    int       chroma_loc_info_present_flag;
-    int       chroma_sample_loc_type_top_field;
-    int       chroma_sample_loc_type_bottom_field;
-    int       neutral_chroma_indication_flag;
-    int       field_seq_flag;
-    int       timing_info_present_flag;
-    int       num_units_in_tick;
-    int       time_scale;
-    int       fixed_pic_rate_flag;
-    int       nal_hrd_parameters_present_flag;
-    int       vcl_hrd_parameters_present_flag;
-    int       low_delay_hrd_flag;
-    int       pic_struct_present_flag;
-    int       bitstream_restriction_flag;
-    int       motion_vectors_over_pic_boundaries_flag;
-    int       max_bytes_per_pic_denom;
-    int       max_bits_per_mb_denom;
-    int       log2_max_mv_length_horizontal;
-    int       log2_max_mv_length_vertical;
-    int       num_reorder_pics;
-    int       max_dec_pic_buffering;
+    char sar[64];
+    int  sar_width, sar_height;
+    char videoformat[64];
+    char range[64];
+    char colorprim[64];
+    char transfer[64];
+    char master_display[64];
+    char max_cll[64];
+    char matrix_coefficients[64];
+    int  overscan_info_present_flag;
+    int  overscan_appropriate_flag;
+    int  chroma_loc_info_present_flag;
+    int  chroma_sample_loc_type_top_field;
+    int  chroma_sample_loc_type_bottom_field;
+    int  neutral_chroma_indication_flag;
+    int  field_seq_flag;
+    int  timing_info_present_flag;
+    int  num_units_in_tick;
+    int  time_scale;
+    int  fixed_pic_rate_flag;
+    int  nal_hrd_parameters_present_flag;
+    int  vcl_hrd_parameters_present_flag;
+    int  low_delay_hrd_flag;
+    int  pic_struct_present_flag;
+    int  bitstream_restriction_flag;
+    int  motion_vectors_over_pic_boundaries_flag;
+    int  max_bytes_per_pic_denom;
+    int  max_bits_per_mb_denom;
+    int  log2_max_mv_length_horizontal;
+    int  log2_max_mv_length_vertical;
+    int  num_reorder_pics;
+    int  max_dec_pic_buffering;
 };
 
 static int args_search_long_key(ARGS_OPT* opts, const char* key)
@@ -830,8 +830,8 @@ static int args_parse_int_x_int(char* str, int* num0, int* num1)
     strncpy(str0_t, str0, cnt0);
     str0_t[cnt0] = '\0';
 
-    *num0        = atoi(str0_t);
-    *num1        = atoi(str1);
+    *num0 = atoi(str0_t);
+    *num1 = atoi(str1);
 
     return 0;
 }
@@ -1308,8 +1308,8 @@ static int args_parse(ARGS_PARSER* args, int argc, const char* argv[], char** er
     const char* fname_cfg = NULL;
     FILE*       fp;
 
-    int         num_configs = 0;
-    int         pos_conf_files[ARGS_MAX_NUM_CONF_FILES];
+    int num_configs = 0;
+    int pos_conf_files[ARGS_MAX_NUM_CONF_FILES];
     memset(&pos_conf_files, -1, sizeof(int) * ARGS_MAX_NUM_CONF_FILES);
 
     /* config file parsing */
@@ -1425,7 +1425,7 @@ static ARGS_PARSER* args_create(void)
     ARGS_PARSER* args = NULL;
     ARGS_OPT*    opts = NULL;
 
-    args              = malloc(sizeof(ARGS_PARSER));
+    args = malloc(sizeof(ARGS_PARSER));
     if(args == NULL)
         goto ERR;
     memset(args, 0, sizeof(ARGS_PARSER));
@@ -1434,7 +1434,7 @@ static ARGS_PARSER* args_create(void)
     if(opts == NULL)
         goto ERR;
     memcpy(opts, args_opt_table, sizeof(args_opt_table));
-    args->opts            = opts;
+    args->opts = opts;
 
     args->init            = args_init;
     args->release         = args_release;
@@ -1447,7 +1447,7 @@ static ARGS_PARSER* args_create(void)
     args->set_flag        = args_set_flag;
     args->check_mandatory = args_check_mandatory;
 
-    args->num_option      = ((int)(sizeof(args_opt_table) / sizeof(args_opt_table[0])) - 1);
+    args->num_option = ((int)(sizeof(args_opt_table) / sizeof(args_opt_table[0])) - 1);
 
     return args;
 

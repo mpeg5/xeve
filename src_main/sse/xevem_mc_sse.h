@@ -41,26 +41,26 @@ extern const XEVEM_MC xeve_tbl_dmvr_mc_l_sse[2][2];
 extern const XEVEM_MC xeve_tbl_dmvr_mc_c_sse[2][2];
 extern const XEVEM_MC xeve_tbl_bl_mc_l_sse[2][2];
 
-void                  xevem_scaled_horizontal_sobel_filter_sse(pel *pred,
-                                                               int  pred_stride,
-                                                               int *derivate,
-                                                               int  derivate_buf_stride,
-                                                               int  width,
-                                                               int  height);
-void                  xevem_scaled_vertical_sobel_filter_sse(pel *pred,
-                                                             int  pred_stride,
-                                                             int *derivate,
-                                                             int  derivate_buf_stride,
-                                                             int  width,
-                                                             int  height);
-void                  xevem_equal_coeff_computer_sse(pel  *residue,
-                                                     int   residue_stride,
-                                                     int **derivate,
-                                                     int   derivate_buf_stride,
-                                                     s64 (*equal_coeff)[7],
-                                                     int width,
-                                                     int height,
-                                                     int vertex_num);
+void xevem_scaled_horizontal_sobel_filter_sse(pel *pred,
+                                              int  pred_stride,
+                                              int *derivate,
+                                              int  derivate_buf_stride,
+                                              int  width,
+                                              int  height);
+void xevem_scaled_vertical_sobel_filter_sse(pel *pred,
+                                            int  pred_stride,
+                                            int *derivate,
+                                            int  derivate_buf_stride,
+                                            int  width,
+                                            int  height);
+void xevem_equal_coeff_computer_sse(pel  *residue,
+                                    int   residue_stride,
+                                    int **derivate,
+                                    int   derivate_buf_stride,
+                                    s64 (*equal_coeff)[7],
+                                    int width,
+                                    int height,
+                                    int vertex_num);
 #endif /* X86_SSE */
 
 #endif /* _XEVEM_MC_SSE_H_ */

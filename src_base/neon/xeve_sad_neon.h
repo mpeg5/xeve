@@ -40,7 +40,7 @@ extern const XEVE_FN_SSD  xeve_tbl_ssd_16b_neon[8][8];
 extern const XEVE_FN_DIFF xeve_tbl_diff_16b_neon[8][8];
 extern const XEVE_FN_SATD xeve_tbl_satd_16b_neon[1];
 
-int                       sad_16b_neon_4x2(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);
+int sad_16b_neon_4x2(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);
 int sad_16b_neon_4x2n(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);
 int sad_16b_neon_4x4(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);
 int sad_16b_neon_8x2n(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);

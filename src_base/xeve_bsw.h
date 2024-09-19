@@ -84,10 +84,10 @@ void xeve_bsw_write_ue_trace(XEVE_BSW* bs, u32 val, char* name);
 #define xeve_bsw_write_se(A, B) xeve_bsw_write_se_trace(A, B, #B)
 void xeve_bsw_write_se_trace(XEVE_BSW* bs, int val, char* name);
 #else
-int  xeve_bsw_write1(XEVE_BSW *bs, int val);
-int  xeve_bsw_write(XEVE_BSW *bs, u32 val, int len);
-void xeve_bsw_write_ue(XEVE_BSW *bs, u32 val);
-void xeve_bsw_write_se(XEVE_BSW *bs, int val);
+int  xeve_bsw_write1(XEVE_BSW* bs, int val);
+int  xeve_bsw_write(XEVE_BSW* bs, u32 val, int len);
+void xeve_bsw_write_ue(XEVE_BSW* bs, u32 val);
+void xeve_bsw_write_se(XEVE_BSW* bs, int val);
 #endif
 
 #endif /* _XEVE_BSW_H_ */

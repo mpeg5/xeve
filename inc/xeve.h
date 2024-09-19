@@ -225,50 +225,50 @@ extern "C"
 
     typedef struct _XEVE_IMGB XEVE_IMGB;
     struct _XEVE_IMGB {
-        int        cs; /* color space */
-        int        np; /* number of plane */
+        int   cs; /* color space */
+        int   np; /* number of plane */
         /* width (in unit of pixel) */
-        int        w[XEVE_IMGB_MAX_PLANE];
+        int   w[XEVE_IMGB_MAX_PLANE];
         /* height (in unit of pixel) */
-        int        h[XEVE_IMGB_MAX_PLANE];
+        int   h[XEVE_IMGB_MAX_PLANE];
         /* X position of left top (in unit of pixel) */
-        int        x[XEVE_IMGB_MAX_PLANE];
+        int   x[XEVE_IMGB_MAX_PLANE];
         /* Y postion of left top (in unit of pixel) */
-        int        y[XEVE_IMGB_MAX_PLANE];
+        int   y[XEVE_IMGB_MAX_PLANE];
         /* buffer stride (in unit of byte) */
-        int        s[XEVE_IMGB_MAX_PLANE];
+        int   s[XEVE_IMGB_MAX_PLANE];
         /* buffer elevation (in unit of byte) */
-        int        e[XEVE_IMGB_MAX_PLANE];
+        int   e[XEVE_IMGB_MAX_PLANE];
         /* address of each plane */
-        void*      a[XEVE_IMGB_MAX_PLANE];
+        void* a[XEVE_IMGB_MAX_PLANE];
 
         /* time-stamps */
         XEVE_MTIME ts[XEVE_TS_NUM];
 
-        int        ndata[4]; /* arbitrary data, if needs */
-        void*      pdata[4]; /* arbitrary adedress if needs */
+        int   ndata[4]; /* arbitrary data, if needs */
+        void* pdata[4]; /* arbitrary adedress if needs */
 
         /* aligned width (in unit of pixel) */
-        int        aw[XEVE_IMGB_MAX_PLANE];
+        int aw[XEVE_IMGB_MAX_PLANE];
         /* aligned height (in unit of pixel) */
-        int        ah[XEVE_IMGB_MAX_PLANE];
+        int ah[XEVE_IMGB_MAX_PLANE];
 
         /* left padding size (in unit of pixel) */
-        int        padl[XEVE_IMGB_MAX_PLANE];
+        int padl[XEVE_IMGB_MAX_PLANE];
         /* right padding size (in unit of pixel) */
-        int        padr[XEVE_IMGB_MAX_PLANE];
+        int padr[XEVE_IMGB_MAX_PLANE];
         /* up padding size (in unit of pixel) */
-        int        padu[XEVE_IMGB_MAX_PLANE];
+        int padu[XEVE_IMGB_MAX_PLANE];
         /* bottom padding size (in unit of pixel) */
-        int        padb[XEVE_IMGB_MAX_PLANE];
+        int padb[XEVE_IMGB_MAX_PLANE];
 
         /* address of actual allocated buffer */
-        void*      baddr[XEVE_IMGB_MAX_PLANE];
+        void* baddr[XEVE_IMGB_MAX_PLANE];
         /* actual allocated buffer size */
-        int        bsize[XEVE_IMGB_MAX_PLANE];
+        int   bsize[XEVE_IMGB_MAX_PLANE];
 
         /* life cycle management */
-        int        refcnt;
+        int refcnt;
         int (*addref)(XEVE_IMGB* imgb);
         int (*getref)(XEVE_IMGB* imgb);
         int (*release)(XEVE_IMGB* imgb);
@@ -440,111 +440,111 @@ extern "C"
         /*****************************************************************************
          * Main Profile Parameters
          *****************************************************************************/
-        int           ibc_flag;
-        int           ibc_search_range_x;
-        int           ibc_search_range_y;
-        int           ibc_hash_search_flag;
-        int           ibc_hash_search_max_cand;
-        int           ibc_hash_search_range_4smallblk;
-        int           ibc_fast_method;
-        int           toolset_idc_h;
-        int           toolset_idc_l;
-        int           btt;
-        int           suco;
-        int           framework_cb_max;
-        int           framework_cb_min;
-        int           framework_cu14_max;
-        int           framework_tris_max;
-        int           framework_tris_min;
-        int           framework_suco_max;
-        int           framework_suco_min;
-        int           tool_amvr;
-        int           tool_mmvd;
-        int           tool_affine;
-        int           tool_dmvr;
-        int           tool_addb;
-        int           tool_alf;
-        int           tool_htdf;
-        int           tool_admvp;
-        int           tool_hmvp;
-        int           tool_eipd;
-        int           tool_iqt;
-        int           tool_cm_init;
-        int           tool_adcc;
-        int           tool_rpl;
-        int           tool_pocs;
-        int           cu_qp_delta_area;
-        int           tool_ats;
-        int           deblock_alpha_offset;
-        int           deblock_beta_offset;
-        int           loop_filter_across_tiles_enabled_flag;
-        int           tool_dra;
-        int           dra_enable_flag;
-        int           dra_number_ranges;
-        char          dra_range[256];
-        char          dra_scale[256];
-        char          dra_chroma_qp_scale[256];
-        char          dra_chroma_qp_offset[256];
-        char          dra_chroma_cb_scale[256];
-        char          dra_chroma_cr_scale[256];
-        char          dra_hist_norm[256];
-        int           tile_uniform_spacing_flag;
-        int           tile_columns;
-        int           tile_rows;
-        char          tile_column_width_array[XEVE_MAX_NUM_TILE_WIDTH];
-        char          tile_row_height_array[XEVE_MAX_NUM_TILE_HEIGHT];
-        int           num_slice_in_pic;
-        char          tile_array_in_slice[XEVE_MAX_NUM_TILES];
-        int           arbitrary_slice_flag;
-        char          num_remaining_tiles_in_slice_minus1[XEVE_MAX_NUM_TILES >> 1];
-        int           rpl_extern;
+        int  ibc_flag;
+        int  ibc_search_range_x;
+        int  ibc_search_range_y;
+        int  ibc_hash_search_flag;
+        int  ibc_hash_search_max_cand;
+        int  ibc_hash_search_range_4smallblk;
+        int  ibc_fast_method;
+        int  toolset_idc_h;
+        int  toolset_idc_l;
+        int  btt;
+        int  suco;
+        int  framework_cb_max;
+        int  framework_cb_min;
+        int  framework_cu14_max;
+        int  framework_tris_max;
+        int  framework_tris_min;
+        int  framework_suco_max;
+        int  framework_suco_min;
+        int  tool_amvr;
+        int  tool_mmvd;
+        int  tool_affine;
+        int  tool_dmvr;
+        int  tool_addb;
+        int  tool_alf;
+        int  tool_htdf;
+        int  tool_admvp;
+        int  tool_hmvp;
+        int  tool_eipd;
+        int  tool_iqt;
+        int  tool_cm_init;
+        int  tool_adcc;
+        int  tool_rpl;
+        int  tool_pocs;
+        int  cu_qp_delta_area;
+        int  tool_ats;
+        int  deblock_alpha_offset;
+        int  deblock_beta_offset;
+        int  loop_filter_across_tiles_enabled_flag;
+        int  tool_dra;
+        int  dra_enable_flag;
+        int  dra_number_ranges;
+        char dra_range[256];
+        char dra_scale[256];
+        char dra_chroma_qp_scale[256];
+        char dra_chroma_qp_offset[256];
+        char dra_chroma_cb_scale[256];
+        char dra_chroma_cr_scale[256];
+        char dra_hist_norm[256];
+        int  tile_uniform_spacing_flag;
+        int  tile_columns;
+        int  tile_rows;
+        char tile_column_width_array[XEVE_MAX_NUM_TILE_WIDTH];
+        char tile_row_height_array[XEVE_MAX_NUM_TILE_HEIGHT];
+        int  num_slice_in_pic;
+        char tile_array_in_slice[XEVE_MAX_NUM_TILES];
+        int  arbitrary_slice_flag;
+        char num_remaining_tiles_in_slice_minus1[XEVE_MAX_NUM_TILES >> 1];
+        int  rpl_extern;
         /* max num of RPL is 64 */
-        char          rpl0[XEVE_MAX_NUM_RPLS][256];
-        char          rpl1[XEVE_MAX_NUM_RPLS][256];
-        int           rpls_l0_cfg_num;
-        int           rpls_l1_cfg_num;
+        char rpl0[XEVE_MAX_NUM_RPLS][256];
+        char rpl1[XEVE_MAX_NUM_RPLS][256];
+        int  rpls_l0_cfg_num;
+        int  rpls_l1_cfg_num;
         /* preset parameter */
-        int           ats_intra_fast;
-        int           me_fast;
+        int  ats_intra_fast;
+        int  me_fast;
         /* VUI options*/
-        int           sar;
-        int           sar_width, sar_height;
-        int           videoformat;
-        int           range;
-        int           colorprim;
-        int           transfer;
-        int           matrix_coefficients;
-        int           overscan_info_present_flag;
-        int           overscan_appropriate_flag;
-        int           chroma_loc_info_present_flag;
-        int           chroma_sample_loc_type_top_field;
-        int           chroma_sample_loc_type_bottom_field;
-        int           neutral_chroma_indication_flag;
-        int           field_seq_flag;
-        int           timing_info_present_flag;
-        int           num_units_in_tick;
-        int           time_scale;
-        int           fixed_pic_rate_flag;
-        int           nal_hrd_parameters_present_flag;
-        int           vcl_hrd_parameters_present_flag;
-        int           low_delay_hrd_flag;
-        int           pic_struct_present_flag;
-        int           bitstream_restriction_flag;
-        int           motion_vectors_over_pic_boundaries_flag;
-        int           max_bytes_per_pic_denom;
-        int           max_bits_per_mb_denom;
-        int           log2_max_mv_length_horizontal;
-        int           log2_max_mv_length_vertical;
-        int           num_reorder_pics;
-        int           max_dec_pic_buffering;
-        int           aspect_ratio_info_present_flag;
-        int           video_signal_type_present_flag;
-        int           colour_description_present_flag;
+        int  sar;
+        int  sar_width, sar_height;
+        int  videoformat;
+        int  range;
+        int  colorprim;
+        int  transfer;
+        int  matrix_coefficients;
+        int  overscan_info_present_flag;
+        int  overscan_appropriate_flag;
+        int  chroma_loc_info_present_flag;
+        int  chroma_sample_loc_type_top_field;
+        int  chroma_sample_loc_type_bottom_field;
+        int  neutral_chroma_indication_flag;
+        int  field_seq_flag;
+        int  timing_info_present_flag;
+        int  num_units_in_tick;
+        int  time_scale;
+        int  fixed_pic_rate_flag;
+        int  nal_hrd_parameters_present_flag;
+        int  vcl_hrd_parameters_present_flag;
+        int  low_delay_hrd_flag;
+        int  pic_struct_present_flag;
+        int  bitstream_restriction_flag;
+        int  motion_vectors_over_pic_boundaries_flag;
+        int  max_bytes_per_pic_denom;
+        int  max_bits_per_mb_denom;
+        int  log2_max_mv_length_horizontal;
+        int  log2_max_mv_length_vertical;
+        int  num_reorder_pics;
+        int  max_dec_pic_buffering;
+        int  aspect_ratio_info_present_flag;
+        int  video_signal_type_present_flag;
+        int  colour_description_present_flag;
 
         /* SEI options*/
-        int           master_display;
-        int           max_cll;
-        int           max_fall;
+        int master_display;
+        int max_cll;
+        int max_fall;
     } XEVE_PARAM;
 
     /*****************************************************************************
@@ -588,7 +588,7 @@ extern "C"
      * API for XEVE
      *****************************************************************************/
 
-    typedef void*    XEVE; /* XEVE instance identifier */
+    typedef void* XEVE; /* XEVE instance identifier */
 
     /**
      * @brief Create encoder object
@@ -613,7 +613,7 @@ extern "C"
      * @param[in] imgb input frame
      * @return XEVE_OK on success
      */
-    int XEVE_EXPORT  xeve_push(XEVE id, XEVE_IMGB* imgb);
+    int XEVE_EXPORT xeve_push(XEVE id, XEVE_IMGB* imgb);
 
     /**
      * @brief Encode pushed data
@@ -623,7 +623,7 @@ extern "C"
      * @param[out] stat encoding status information
      * @return XEVE_OK on success
      */
-    int XEVE_EXPORT  xeve_encode(XEVE id, XEVE_BITB* bitb, XEVE_STAT* stat);
+    int XEVE_EXPORT xeve_encode(XEVE id, XEVE_BITB* bitb, XEVE_STAT* stat);
 
     /**
      * @brief Set or get encoder parameter using constant value
@@ -637,7 +637,7 @@ extern "C"
      * @param size size of the input or output buffer depending on the cfg param
      * @return XEVE_OK on success, otherwise XEVE_ERR
      */
-    int XEVE_EXPORT  xeve_config(XEVE id, int cfg, void* buf, int* size);
+    int XEVE_EXPORT xeve_config(XEVE id, int cfg, void* buf, int* size);
 
     /**
      * @brief Initialize xeve encoder with default parameters
@@ -645,7 +645,7 @@ extern "C"
      * @param[in] param encoding parameters
      * @return XEVE_OK on success, otherwise XEVE_ERR
      */
-    int XEVE_EXPORT  xeve_param_default(XEVE_PARAM* param);
+    int XEVE_EXPORT xeve_param_default(XEVE_PARAM* param);
 
     /**
      * @brief Set profile, preset and tune parameters
@@ -657,7 +657,7 @@ extern "C"
      * @param[in] tune tuning parameter for special purpose operation (from 0 to 2) [0:none, 1: zerolatency, 2:psnr]
      * @return XEVE_OK on success, otherwise XEVE_ERR
      */
-    int XEVE_EXPORT  xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune);
+    int XEVE_EXPORT xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune);
 
     /**
      * @brief Check the correctness of coding parameters
@@ -665,7 +665,7 @@ extern "C"
      * @param[in] param encoding parameters
      * @return XEVE_OK on success, otherwise XEVE_ERR
      */
-    int XEVE_EXPORT  xeve_param_check(const XEVE_PARAM* param);
+    int XEVE_EXPORT xeve_param_check(const XEVE_PARAM* param);
 
     /**
      * @brief Set encoder parameter by name
@@ -677,7 +677,7 @@ extern "C"
      * @retval XEVE_ERR_INVALID_ARGUMENT
      * @retval XEVE_ERR
      */
-    int XEVE_EXPORT  xeve_param_parse(XEVE_PARAM* param, const char* name, const char* value);
+    int XEVE_EXPORT xeve_param_parse(XEVE_PARAM* param, const char* name, const char* value);
 
 #ifdef __cplusplus
 } /* extern "C" */

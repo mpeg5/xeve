@@ -147,7 +147,7 @@ void xeve_apply_dra_from_array(XEVE_CTX      *ctx,
                                int            dra_id,
                                int            backward_map);
 
-int  xevem_set_active_dra_info(XEVE_CTX *ctx);
+int xevem_set_active_dra_info(XEVE_CTX *ctx);
 
 #endif
 /* _XEVE_DRA_H_ */

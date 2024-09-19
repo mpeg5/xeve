@@ -247,22 +247,22 @@ typedef struct _XEVE_MD5 {
 } XEVE_MD5;
 
 /* MD5 Functions */
-void      xeve_md5_init(XEVE_MD5 *md5);
-void      xeve_md5_update(XEVE_MD5 *md5, void *buf, u32 len);
-void      xeve_md5_update_16(XEVE_MD5 *md5, void *buf, u32 len);
-void      xeve_md5_finish(XEVE_MD5 *md5, u8 digest[16]);
-int       xeve_md5_imgb(XEVE_IMGB *imgb, u8 digest[N_C][16]);
-int       xeve_picbuf_signature(XEVE_PIC *pic, u8 md5_out[N_C][16]);
-int       xeve_atomic_inc(volatile int *pcnt);
-int       xeve_atomic_dec(volatile int *pcnt);
-void      xeve_init_scan_sr(int *scan, int size_x, int size_y, int width, int height, int scan_type);
-void      xeve_init_inverse_scan_sr(u16 *scan_inv, u16 *scan_orig, int width, int height, int scan_type);
+void xeve_md5_init(XEVE_MD5 *md5);
+void xeve_md5_update(XEVE_MD5 *md5, void *buf, u32 len);
+void xeve_md5_update_16(XEVE_MD5 *md5, void *buf, u32 len);
+void xeve_md5_finish(XEVE_MD5 *md5, u8 digest[16]);
+int  xeve_md5_imgb(XEVE_IMGB *imgb, u8 digest[N_C][16]);
+int  xeve_picbuf_signature(XEVE_PIC *pic, u8 md5_out[N_C][16]);
+int  xeve_atomic_inc(volatile int *pcnt);
+int  xeve_atomic_dec(volatile int *pcnt);
+void xeve_init_scan_sr(int *scan, int size_x, int size_y, int width, int height, int scan_type);
+void xeve_init_inverse_scan_sr(u16 *scan_inv, u16 *scan_orig, int width, int height, int scan_type);
 
-int       xeve_get_transform_shift(int log2_size, int type, int bit_depth);
+int xeve_get_transform_shift(int log2_size, int type, int bit_depth);
 
-BOOL      check_bi_applicability(int slice_type, int cuw, int cuh, int is_sps_admvp);
-void      xeve_block_copy(s16 *src, int src_stride, s16 *dst, int dst_stride, int log2_copy_w, int log2_copy_h);
-int       xeve_get_luma_cup(int x_scu, int y_scu, int cu_w_scu, int cu_h_scu, int w_scu);
+BOOL check_bi_applicability(int slice_type, int cuw, int cuh, int is_sps_admvp);
+void xeve_block_copy(s16 *src, int src_stride, s16 *dst, int dst_stride, int log2_copy_w, int log2_copy_h);
+int  xeve_get_luma_cup(int x_scu, int y_scu, int cu_w_scu, int cu_h_scu, int w_scu);
 
 u8        xeve_check_luma(TREE_CONS tree_cons);
 u8        xeve_check_chroma(TREE_CONS tree_cons);
@@ -292,7 +292,7 @@ void       xeve_imgb_garbage_free(XEVE_IMGB *imgb);
 #define XEVE_CPU_INFO_AVX     0x5C  // ((2 << 5) | 28)
 #define XEVE_CPU_INFO_AVX2    0x25  // ((1 << 5) |  5)
 
-int  xeve_check_cpu_info();
+int xeve_check_cpu_info();
 
 void xeve_copy_chroma_qp_mapping_params(XEVE_CHROMA_TABLE *dst, XEVE_CHROMA_TABLE *src);
 void xeve_update_core_loc_param(XEVE_CTX *ctx, XEVE_CORE *core);

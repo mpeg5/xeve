@@ -32,10 +32,13 @@
 #include "xeve_port.h"
 
 #if XEVE_TRACE
-void xeve_trace0(char * filename, int line, const char *fmt, ...)
+void xeve_trace0(char *filename, int line, const char *fmt, ...)
 {
-    char str[1024]={'\0',};
-    if(filename != NULL && line >= 0) sprintf(str, "[%s:%d] ", filename, line);
+    char str[1024] = {
+        '\0',
+    };
+    if(filename != NULL && line >= 0)
+        sprintf(str, "[%s:%d] ", filename, line);
     va_list args;
     va_start(args, fmt);
     vsprintf(str + strlen(str), fmt, args);
@@ -43,17 +46,20 @@ void xeve_trace0(char * filename, int line, const char *fmt, ...)
     printf("%s", str);
 }
 
-void xeve_trace_line(char * pre)
+void xeve_trace_line(char *pre)
 {
-    char str[128]={'\0',};
+    char str[128] = {
+        '\0',
+    };
     const int chars = 80;
-    int len = (pre == NULL)? 0: (int)strlen(pre);
-    if(len > 0)
-    {
+    int       len   = (pre == NULL) ? 0 : (int)strlen(pre);
+    if(len > 0) {
         sprintf(str, "%s ", pre);
         len = (int)strlen(str);
     }
-    for(int i = len ; i< chars; i++) {str[i] = '=';}
+    for(int i = len; i < chars; i++) {
+        str[i] = '=';
+    }
     str[chars] = '\0';
     printf("%s\n", str);
 }
