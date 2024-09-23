@@ -139,7 +139,7 @@ void xevem_sbac_reset(XEVE_SBAC *sbac, u8 slice_type, u8 slice_qp, int sps_cm_in
     {
         int here = 0;
         SBAC_CTX_MODEL* tmp = (SBAC_CTX_MODEL *) sbac_ctx;
-        for (int i = 0; i < sizeof(*sbac_ctx ) / 2; ++i) {
+        for (int i = 0; i < (int)sizeof(*sbac_ctx ) / 2; ++i) {
             *tmp = PROB_INIT;
             tmp++;
         }
