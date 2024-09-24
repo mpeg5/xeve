@@ -594,7 +594,7 @@ int xeve_rdoq_run_length_cc(u8         qp,
         int ctx_run   = core->ctx->fn_rdoq_set_ctx_cc(core, ch_type, prev_level);
         int ctx_level = ctx_run;
 
-        level                 = get_coded_level_rl(&d64_uncoded_cost,
+        level = get_coded_level_rl(&d64_uncoded_cost,
                                    &d64_coded_cost,
                                    tmp_level_double[blk_pos],
                                    XEVE_ABS(tmp_coef[blk_pos]),
