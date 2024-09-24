@@ -257,15 +257,13 @@ static const XEVE_PARAM_METADATA xeve_params_metadata[] = {
 
 // clang-format on
 
-static int xeve_param_search_name(const char * name)
+static int xeve_param_search_name(const char* name)
 {
-    int idx = 0;
+    int                        idx        = 0;
     const XEVE_PARAM_METADATA* param_meta = xeve_params_metadata;
 
-    while(param_meta->name != PARAMS_END_KEY)
-    {
-        if(!strcmp(name, param_meta->name))
-        {
+    while(param_meta->name != PARAMS_END_KEY) {
+        if(!strcmp(name, param_meta->name)) {
             return idx;
         }
         idx++;
@@ -274,24 +272,23 @@ static int xeve_param_search_name(const char * name)
     return XEVE_ERR;
 }
 
-int xeve_param_set_val(XEVE_PARAM* params, const char* name,  const char* value)
+int xeve_param_set_val(XEVE_PARAM* params, const char* name, const char* value)
 {
-    int ival;
-    double dval;
-    char *endptr;
+    int                        ival;
+    double                     dval;
+    char*                      endptr;
     const XEVE_PARAM_METADATA* param_meta = xeve_params_metadata;
 
     int idx = xeve_param_search_name(name);
-    if( idx < 0 )
+    if(idx < 0)
         return XEVE_ERR_INVALID_ARGUMENT;
 
     param_meta = xeve_params_metadata + idx;
 
-    switch(param_meta->type)
-    {
+    switch(param_meta->type) {
         case DT_INTEGER:
             ival = strtol(value, &endptr, 10);
-            if (*endptr != '\0')
+            if(*endptr != '\0')
                 return XEVE_ERR_INVALID_ARGUMENT;
 
             *((int*)((char*)params + param_meta->offset)) = ival;
@@ -299,7 +296,7 @@ int xeve_param_set_val(XEVE_PARAM* params, const char* name,  const char* value)
             break;
         case DT_DOUBLE:
             dval = strtod(value, &endptr);
-            if (*endptr != '\0')
+            if(*endptr != '\0')
                 return XEVE_ERR_INVALID_ARGUMENT;
 
             *((double*)((char*)params + param_meta->offset)) = dval;
@@ -312,7 +309,7 @@ int xeve_param_set_val(XEVE_PARAM* params, const char* name,  const char* value)
             // If PARAM_STR_MAX_LEN is less than or equal to the length of val,
             // a null character (\0) is not appended to the copied string (char*)(args->opts[idx].opt_storage)
             // The line below prevents truncation of destination string to not-null terminated string
-            ((char*)((char*)params + param_meta->offset))[PARAM_STR_MAX_LEN-1] = 0;
+            ((char*)((char*)params + param_meta->offset))[PARAM_STR_MAX_LEN - 1] = 0;
 
             break;
         default:

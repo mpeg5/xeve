@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -130,15 +130,24 @@ typedef struct _DRA_CONTROL
 
 // clang-format on
 
-void xeve_init_dra(DRA_CONTROL *dra_mapping, int total_change_points, int *luma_change_points, int* qps, int bit_depth);
-int  xeve_analyze_input_pic(XEVE_CTX * ctx, DRA_CONTROL *dra_mapping, int bit_depth);
-int  xeve_generate_dra_array(XEVE_CTX * ctx, SIG_PARAM_DRA * dra_control_array, DRA_CONTROL * tmp_dra_control, int num_aps, int bit_depth);
+void xeve_init_dra(DRA_CONTROL *dra_mapping, int total_change_points, int *luma_change_points, int *qps, int bit_depth);
+int  xeve_analyze_input_pic(XEVE_CTX *ctx, DRA_CONTROL *dra_mapping, int bit_depth);
+int  xeve_generate_dra_array(XEVE_CTX      *ctx,
+                             SIG_PARAM_DRA *dra_control_array,
+                             DRA_CONTROL   *tmp_dra_control,
+                             int            num_aps,
+                             int            bit_depth);
 
 /* DRA APS buffer functions are listed below: */
 void xeve_reset_aps_gen_read_buffer(XEVE_APS_GEN *tmp_aps_gen_array);
-void xeve_apply_dra_from_array(XEVE_CTX * ctx, XEVE_IMGB * dst, XEVE_IMGB * src, SIG_PARAM_DRA * dra_control_array, int dra_id, int backward_map);
+void xeve_apply_dra_from_array(XEVE_CTX      *ctx,
+                               XEVE_IMGB     *dst,
+                               XEVE_IMGB     *src,
+                               SIG_PARAM_DRA *dra_control_array,
+                               int            dra_id,
+                               int            backward_map);
 
-int  xevem_set_active_dra_info(XEVE_CTX * ctx);
+int xevem_set_active_dra_info(XEVE_CTX *ctx);
 
-#endif 
+#endif
 /* _XEVE_DRA_H_ */

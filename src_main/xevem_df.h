@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -38,15 +38,70 @@
 
 #include "xevem_type.h"
 
-int  xevem_deblock(XEVE_CTX * ctx, XEVE_PIC * pic, int tile_idx, int filter_across_boundary, XEVE_CORE * core);
-void xevem_deblock_unit(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int is_hor_edge, XEVE_CORE * core, int boundary_filtering);
-void xevem_deblock_cu_hor(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D]
-                        , int w_scu, int log2_max_cuwh, XEVE_REFP(*refp)[REFP_NUM], int ats_inter_mode, TREE_CONS tree_cons, u8* map_tidx
-                        , int boundary_filtering, int tool_addb, u8* map_ats_inter, int bit_depth_luma, int bit_depth_chroma, int chroma_formad_idc, int* qp_chroma_dynamic[2]);
-void xevem_deblock_cu_ver(XEVE_PIC *pic, int x_pel, int y_pel, int cuw, int cuh, u32 *map_scu, s8(*map_refi)[REFP_NUM], s16(*map_mv)[REFP_NUM][MV_D]
-                        , int w_scu, int log2_max_cuwh, u32  *map_cu, XEVE_REFP(*refp)[REFP_NUM], int ats_inter_mode, TREE_CONS tree_cons, u8 *map_tidx
-                        , int boundary_filtering, int tool_addb, u8* map_ats_inter, int bit_depth_luma, int bit_depth_chroma, int chroma_formad_idc, int* qp_chroma_dynamic[2]);
-void xevem_deblock_tree(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int cud, int cup, int is_hor_edge
-                      , TREE_CONS tree_cons, XEVE_CORE * core, int boundary_filtering);
+int  xevem_deblock(XEVE_CTX *ctx, XEVE_PIC *pic, int tile_idx, int filter_across_boundary, XEVE_CORE *core);
+void xevem_deblock_unit(XEVE_CTX  *ctx,
+                        XEVE_PIC  *pic,
+                        int        x,
+                        int        y,
+                        int        cuw,
+                        int        cuh,
+                        int        is_hor_edge,
+                        XEVE_CORE *core,
+                        int        boundary_filtering);
+void xevem_deblock_cu_hor(XEVE_PIC *pic,
+                          int       x_pel,
+                          int       y_pel,
+                          int       cuw,
+                          int       cuh,
+                          u32      *map_scu,
+                          s8 (*map_refi)[REFP_NUM],
+                          s16 (*map_mv)[REFP_NUM][MV_D],
+                          int w_scu,
+                          int log2_max_cuwh,
+                          XEVE_REFP (*refp)[REFP_NUM],
+                          int       ats_inter_mode,
+                          TREE_CONS tree_cons,
+                          u8       *map_tidx,
+                          int       boundary_filtering,
+                          int       tool_addb,
+                          u8       *map_ats_inter,
+                          int       bit_depth_luma,
+                          int       bit_depth_chroma,
+                          int       chroma_formad_idc,
+                          int      *qp_chroma_dynamic[2]);
+void xevem_deblock_cu_ver(XEVE_PIC *pic,
+                          int       x_pel,
+                          int       y_pel,
+                          int       cuw,
+                          int       cuh,
+                          u32      *map_scu,
+                          s8 (*map_refi)[REFP_NUM],
+                          s16 (*map_mv)[REFP_NUM][MV_D],
+                          int  w_scu,
+                          int  log2_max_cuwh,
+                          u32 *map_cu,
+                          XEVE_REFP (*refp)[REFP_NUM],
+                          int       ats_inter_mode,
+                          TREE_CONS tree_cons,
+                          u8       *map_tidx,
+                          int       boundary_filtering,
+                          int       tool_addb,
+                          u8       *map_ats_inter,
+                          int       bit_depth_luma,
+                          int       bit_depth_chroma,
+                          int       chroma_formad_idc,
+                          int      *qp_chroma_dynamic[2]);
+void xevem_deblock_tree(XEVE_CTX  *ctx,
+                        XEVE_PIC  *pic,
+                        int        x,
+                        int        y,
+                        int        cuw,
+                        int        cuh,
+                        int        cud,
+                        int        cup,
+                        int        is_hor_edge,
+                        TREE_CONS  tree_cons,
+                        XEVE_CORE *core,
+                        int        boundary_filtering);
 
 #endif /* _XEVEM_DF_H_ */

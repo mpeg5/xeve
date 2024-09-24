@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -35,16 +35,16 @@
 #include "xeve_sad.h"
 
 #if ARM_NEON
-extern const XEVE_FN_SAD xeve_tbl_sad_16b_neon[8][8];
-extern const XEVE_FN_SSD xeve_tbl_ssd_16b_neon[8][8];
+extern const XEVE_FN_SAD  xeve_tbl_sad_16b_neon[8][8];
+extern const XEVE_FN_SSD  xeve_tbl_ssd_16b_neon[8][8];
 extern const XEVE_FN_DIFF xeve_tbl_diff_16b_neon[8][8];
 extern const XEVE_FN_SATD xeve_tbl_satd_16b_neon[1];
 
-int sad_16b_neon_4x2(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth);
-int sad_16b_neon_4x2n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth);
-int sad_16b_neon_4x4(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth);
-int sad_16b_neon_8x2n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth);
-int sad_16b_neon_16nx1n(int w, int h, void * src1, void * src2, int s_src1, int s_src2, int bit_depth);
+int sad_16b_neon_4x2(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);
+int sad_16b_neon_4x2n(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);
+int sad_16b_neon_4x4(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);
+int sad_16b_neon_8x2n(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);
+int sad_16b_neon_16nx1n(int w, int h, void* src1, void* src2, int s_src1, int s_src2, int bit_depth);
 
 #endif /* ARM_NEON */
 #endif /* _XEVE_SAD_NEON_H_ */

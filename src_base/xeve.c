@@ -32,10 +32,10 @@
 #include "xeve_type.h"
 #include "xeve_param_parse.h"
 
-XEVE xeve_create(XEVE_CDSC * cdsc, int * err)
+XEVE xeve_create(XEVE_CDSC *cdsc, int *err)
 {
-    XEVE_CTX  * ctx;
-    int          ret;
+    XEVE_CTX *ctx;
+    int       ret;
 
 #if ENC_DEC_TRACE
 #if TRACE_DBF
@@ -50,7 +50,7 @@ XEVE xeve_create(XEVE_CDSC * cdsc, int * err)
     ctx = NULL;
 
     /* memory allocation for ctx and core structure */
-    ctx = (XEVE_CTX*)xeve_ctx_alloc();
+    ctx = (XEVE_CTX *)xeve_ctx_alloc();
 
     /* set default value for encoding parameter */
     xeve_mcpy(&ctx->param, &(cdsc->param), sizeof(XEVE_PARAM));
@@ -67,32 +67,31 @@ XEVE xeve_create(XEVE_CDSC * cdsc, int * err)
     xeve_init_err_scale(ctx);
     xeve_set_chroma_qp_tbl_loc(ctx);
 
-    if(ctx->fn_ready != NULL)
-    {
+    if(ctx->fn_ready != NULL) {
         ret = ctx->fn_ready(ctx);
         xeve_assert_g(ret == XEVE_OK, ERR);
     }
 
     /* set default value for ctx */
-    ctx->magic = XEVE_MAGIC_CODE;
-    ctx->id = (XEVE)ctx;
+    ctx->magic            = XEVE_MAGIC_CODE;
+    ctx->id               = (XEVE)ctx;
     ctx->sh->aps_signaled = -1;
 
     return (ctx->id);
 ERR:
-    if(ctx)
-    {
+    if(ctx) {
         xeve_platform_deinit(ctx);
         xeve_delete_bs_buf(ctx);
         xeve_ctx_free(ctx);
     }
-    if(err) *err = ret;
+    if(err)
+        *err = ret;
     return NULL;
 }
 
 void xeve_delete(XEVE id)
 {
-    XEVE_CTX * ctx;
+    XEVE_CTX *ctx;
 
     XEVE_ID_TO_CTX_R(id, ctx);
 
@@ -100,8 +99,7 @@ void xeve_delete(XEVE id)
     fclose(fp_trace);
 #endif
 
-    if(ctx->fn_flush != NULL)
-    {
+    if(ctx->fn_flush != NULL) {
         ctx->fn_flush(ctx);
     }
 
@@ -110,28 +108,24 @@ void xeve_delete(XEVE id)
     xeve_ctx_free(ctx);
 }
 
-int xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat)
+int xeve_encode(XEVE id, XEVE_BITB *bitb, XEVE_STAT *stat)
 {
-    XEVE_CTX * ctx;
+    XEVE_CTX *ctx;
 
     XEVE_ID_TO_CTX_RV(id, ctx, XEVE_ERR_INVALID_ARGUMENT);
     xeve_assert_rv(ctx->fn_enc, XEVE_ERR_UNEXPECTED);
 
     /* bumping - check whether input pictures are remaining or not in pico_buf[] */
-    if(XEVE_OK_NO_MORE_FRM == xeve_check_more_frames(ctx))
-    {
+    if(XEVE_OK_NO_MORE_FRM == xeve_check_more_frames(ctx)) {
         return XEVE_OK_NO_MORE_FRM;
     }
-    if (!FORCE_OUT(ctx))
-    {
-        if (ctx->param.use_fcst)
-        {
+    if(!FORCE_OUT(ctx)) {
+        if(ctx->param.use_fcst) {
             xeve_forecast_fixed_gop(ctx);
         }
     }
     /* store input picture and return if needed */
-    if(XEVE_OK_OUT_NOT_AVAILABLE == xeve_check_frame_delay(ctx))
-    {
+    if(XEVE_OK_OUT_NOT_AVAILABLE == xeve_check_frame_delay(ctx)) {
         return XEVE_OK_OUT_NOT_AVAILABLE;
     }
 
@@ -141,9 +135,9 @@ int xeve_encode(XEVE id, XEVE_BITB * bitb, XEVE_STAT * stat)
     return ctx->fn_enc(ctx, bitb, stat);
 }
 
-int xeve_push(XEVE id, XEVE_IMGB * img)
+int xeve_push(XEVE id, XEVE_IMGB *img)
 {
-    XEVE_CTX * ctx;
+    XEVE_CTX *ctx;
 
     XEVE_ID_TO_CTX_RV(id, ctx, XEVE_ERR_INVALID_ARGUMENT);
     xeve_assert_rv(ctx->fn_push, XEVE_ERR_UNEXPECTED);
@@ -151,54 +145,49 @@ int xeve_push(XEVE id, XEVE_IMGB * img)
     return ctx->fn_push(ctx, img);
 }
 
-int xeve_config(XEVE id, int cfg, void * buf, int * size)
+int xeve_config(XEVE id, int cfg, void *buf, int *size)
 {
-    XEVE_CTX       * ctx;
-    int              t0;
-    XEVE_IMGB      * imgb;
+    XEVE_CTX  *ctx;
+    int        t0;
+    XEVE_IMGB *imgb;
 
     XEVE_ID_TO_CTX_RV(id, ctx, XEVE_ERR_INVALID_ARGUMENT);
 
-    switch(cfg)
-    {
+    switch(cfg) {
         /* set config **********************************************************/
         case XEVE_CFG_SET_FORCE_OUT:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            t0 = *((int *)buf);
+            t0                      = *((int *)buf);
             ctx->param.force_output = (t0) ? 1 : 0;
             /* store total input picture count at this time */
-            ctx->pic_ticnt = ctx->pic_icnt;
+            ctx->pic_ticnt          = ctx->pic_icnt;
             break;
 
         case XEVE_CFG_SET_FINTRA:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            t0 = *((int *)buf);
+            t0                = *((int *)buf);
             ctx->param.f_ifrm = t0;
             break;
         case XEVE_CFG_SET_QP:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
             t0 = *((int *)buf);
-            xeve_assert_rv(t0 >= MIN_QUANT && t0 <= MAX_QUANT, \
-                           XEVE_ERR_INVALID_ARGUMENT);
+            xeve_assert_rv(t0 >= MIN_QUANT && t0 <= MAX_QUANT, XEVE_ERR_INVALID_ARGUMENT);
             ctx->param.qp = t0;
             break;
         case XEVE_CFG_SET_FPS:
-            xeve_assert_rv(*size == sizeof(char*), XEVE_ERR_INVALID_ARGUMENT);
-            if (strpbrk((char*)buf, "/") != NULL)
-            {
-              sscanf((char*)buf, "%d/%d", &ctx->param.fps.num, &ctx->param.fps.den);
+            xeve_assert_rv(*size == sizeof(char *), XEVE_ERR_INVALID_ARGUMENT);
+            if(strpbrk((char *)buf, "/") != NULL) {
+                sscanf((char *)buf, "%d/%d", &ctx->param.fps.num, &ctx->param.fps.den);
             }
-            else if (strpbrk((char*)buf, ".") != NULL)
-            {
-              float tmp_fps = 0;
-              sscanf((char*)buf, "%f", &tmp_fps);
-              ctx->param.fps.num = tmp_fps * 10000;
-              ctx->param.fps.den = 10000;
+            else if(strpbrk((char *)buf, ".") != NULL) {
+                float tmp_fps = 0;
+                sscanf((char *)buf, "%f", &tmp_fps);
+                ctx->param.fps.num = tmp_fps * 10000;
+                ctx->param.fps.den = 10000;
             }
-            else
-            {
-              sscanf((char*)buf, "%d", &ctx->param.fps.num);
-              ctx->param.fps.den = 1;
+            else {
+                sscanf((char *)buf, "%d", &ctx->param.fps.num);
+                ctx->param.fps.den = 1;
             }
             break;
         case XEVE_CFG_SET_BPS:
@@ -227,17 +216,17 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             break;
         case XEVE_CFG_SET_USE_DEBLOCK:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            t0 = *((int *)buf);
+            t0                     = *((int *)buf);
             ctx->param.use_deblock = t0;
             break;
         case XEVE_CFG_SET_DEBLOCK_A_OFFSET:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            t0 = *((int *)buf);
+            t0                              = *((int *)buf);
             ctx->param.deblock_alpha_offset = t0;
             break;
         case XEVE_CFG_SET_DEBLOCK_B_OFFSET:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
-            t0 = *((int *)buf);
+            t0                             = *((int *)buf);
             ctx->param.deblock_beta_offset = t0;
             break;
         case XEVE_CFG_SET_SEI_CMD:
@@ -261,8 +250,8 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             *((int *)buf) = ctx->param.h;
             break;
         case XEVE_CFG_GET_FPS:
-            xeve_assert_rv(*size == sizeof(char*), XEVE_ERR_INVALID_ARGUMENT);
-            sprintf((char*)buf, "%d/%d", ctx->param.fps.num, ctx->param.fps.den);
+            xeve_assert_rv(*size == sizeof(char *), XEVE_ERR_INVALID_ARGUMENT);
+            sprintf((char *)buf, "%d/%d", ctx->param.fps.num, ctx->param.fps.den);
             break;
         case XEVE_CFG_GET_BPS:
             xeve_assert_rv(*size == sizeof(int), XEVE_ERR_INVALID_ARGUMENT);
@@ -273,19 +262,19 @@ int xeve_config(XEVE id, int cfg, void * buf, int * size)
             *((int *)buf) = ctx->param.keyint;
             break;
         case XEVE_CFG_GET_RECON:
-            xeve_assert_rv(*size == sizeof(XEVE_IMGB**), XEVE_ERR_INVALID_ARGUMENT);
+            xeve_assert_rv(*size == sizeof(XEVE_IMGB **), XEVE_ERR_INVALID_ARGUMENT);
             imgb = PIC_CURR(ctx)->imgb;
 
-            if (ctx->sps.picture_cropping_flag)
-            {
+            if(ctx->sps.picture_cropping_flag) {
                 int end_comp = ctx->sps.chroma_format_idc ? N_C : Y_C;
-                for (int i = 0; i < end_comp; i++)
-                {
+                for(int i = 0; i < end_comp; i++) {
                     int cs_offset = i == Y_C ? 2 : 1;
-                    imgb->x[i] = ctx->sps.picture_crop_left_offset * cs_offset;
-                    imgb->y[i] = ctx->sps.picture_crop_top_offset * cs_offset;
-                    imgb->h[i] = imgb->ah[i] - (ctx->sps.picture_crop_top_offset + ctx->sps.picture_crop_bottom_offset) * cs_offset;
-                    imgb->w[i] = imgb->aw[i] - (ctx->sps.picture_crop_left_offset + ctx->sps.picture_crop_right_offset) * cs_offset;
+                    imgb->x[i]    = ctx->sps.picture_crop_left_offset * cs_offset;
+                    imgb->y[i]    = ctx->sps.picture_crop_top_offset * cs_offset;
+                    imgb->h[i]    = imgb->ah[i] -
+                                 (ctx->sps.picture_crop_top_offset + ctx->sps.picture_crop_bottom_offset) * cs_offset;
+                    imgb->w[i] = imgb->aw[i] -
+                                 (ctx->sps.picture_crop_left_offset + ctx->sps.picture_crop_right_offset) * cs_offset;
                 }
             }
 
@@ -329,59 +318,118 @@ int xeve_param_default(XEVE_PARAM *param)
     return xeve_param_init(param);
 }
 
-int xeve_param_ppt(XEVE_PARAM* param, int profile, int preset, int tune)
+int xeve_param_ppt(XEVE_PARAM *param, int profile, int preset, int tune)
 {
-    if (preset == XEVE_PRESET_DEFAULT)
-    {
+    if(preset == XEVE_PRESET_DEFAULT) {
         preset = XEVE_PRESET_MEDIUM;
     }
     return xeve_param_apply_ppt_baseline(param, profile, preset, tune);
 }
 
-int xeve_param_check(const XEVE_PARAM* param)
+int xeve_param_check(const XEVE_PARAM *param)
 {
-    int ret = 0;
+    int ret            = 0;
     int min_block_size = 4;
 
     // Param check done to avoid main profile toolset inside baseline profile
-    if (param->tool_amvr    == 1) { xeve_trace("AMVR cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_mmvd    == 1) { xeve_trace("MMVD cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_affine  == 1) { xeve_trace("Affine cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_dmvr    == 1) { xeve_trace("DMVR cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_admvp   == 1) { xeve_trace("ADMVP cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_hmvp    == 1) { xeve_trace("HMVP cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_addb    == 1) { xeve_trace("ADDB cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_alf     == 1) { xeve_trace("ALF cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_htdf    == 1) { xeve_trace("HTDF cannot be on in base profile\n"); ret = -1; }
-    if (param->btt          == 1) { xeve_trace("BTT cannot be on in base profile\n"); ret = -1; }
-    if (param->suco         == 1) { xeve_trace("SUCO cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_eipd    == 1) { xeve_trace("EIPD cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_iqt     == 1) { xeve_trace("IQT cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_cm_init == 1) { xeve_trace("CM_INIT cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_adcc    == 1) { xeve_trace("ADCC cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_ats     == 1) { xeve_trace("ATS_INTRA cannot be on in base profile\n"); ret = -1; }
-    if (param->ibc_flag     == 1) { xeve_trace("IBC cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_rpl     == 1) { xeve_trace("RPL cannot be on in base profile\n"); ret = -1; }
-    if (param->tool_pocs    == 1) { xeve_trace("POCS cannot be on in base profile\n"); ret = -1; }
+    if(param->tool_amvr == 1) {
+        xeve_trace("AMVR cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_mmvd == 1) {
+        xeve_trace("MMVD cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_affine == 1) {
+        xeve_trace("Affine cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_dmvr == 1) {
+        xeve_trace("DMVR cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_admvp == 1) {
+        xeve_trace("ADMVP cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_hmvp == 1) {
+        xeve_trace("HMVP cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_addb == 1) {
+        xeve_trace("ADDB cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_alf == 1) {
+        xeve_trace("ALF cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_htdf == 1) {
+        xeve_trace("HTDF cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->btt == 1) {
+        xeve_trace("BTT cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->suco == 1) {
+        xeve_trace("SUCO cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_eipd == 1) {
+        xeve_trace("EIPD cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_iqt == 1) {
+        xeve_trace("IQT cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_cm_init == 1) {
+        xeve_trace("CM_INIT cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_adcc == 1) {
+        xeve_trace("ADCC cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_ats == 1) {
+        xeve_trace("ATS_INTRA cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->ibc_flag == 1) {
+        xeve_trace("IBC cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_rpl == 1) {
+        xeve_trace("RPL cannot be on in base profile\n");
+        ret = -1;
+    }
+    if(param->tool_pocs == 1) {
+        xeve_trace("POCS cannot be on in base profile\n");
+        ret = -1;
+    }
 
-    if (XEVE_CS_GET_FORMAT(param->cs) != XEVE_CF_YCBCR400)
-    {
+    if(XEVE_CS_GET_FORMAT(param->cs) != XEVE_CF_YCBCR400) {
         int pic_m = 2;
-        if ((param->w & (pic_m - 1)) != 0) { xeve_trace("Current encoder does not support odd picture width\n"); ret = -1; }
-        if ((param->h & (pic_m - 1)) != 0) { xeve_trace("Current encoder does not support odd picture height\n"); ret = -1; }
+        if((param->w & (pic_m - 1)) != 0) {
+            xeve_trace("Current encoder does not support odd picture width\n");
+            ret = -1;
+        }
+        if((param->h & (pic_m - 1)) != 0) {
+            xeve_trace("Current encoder does not support odd picture height\n");
+            ret = -1;
+        }
     }
 
     return ret;
 }
 
-int xeve_param_parse(XEVE_PARAM* param, const char* name, const char* value)
+int xeve_param_parse(XEVE_PARAM *param, const char *name, const char *value)
 {
-    if (!param || !name || !value)
-    {
+    if(!param || !name || !value) {
         return XEVE_ERR_INVALID_ARGUMENT;
     }
 
     int ret = xeve_param_set_val(param, name, value);
     return ret;
 }
-

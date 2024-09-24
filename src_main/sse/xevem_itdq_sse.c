@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -146,13 +146,11 @@ const XEVE_INV_TRANS xeve_itrans_map_tbl_sse[16][5] =
 };
 // clang-format on
 
-
 void xeve_itrans_ats_intra_DST7_B8_sse(s16 *coef, s16 *block, int shift, int line, int skip_line, int skip_line_2)
 {
     ITX_MATRIX(coef, block, 8, line, shift, xevem_tbl_inv_tr[DST7][1], skip_line);
 
-    if (skip_line)
-    {
+    if(skip_line) {
         xeve_mset(block, 0, (skip_line << 3) * sizeof(s16));
     }
 }
@@ -161,8 +159,7 @@ void xeve_itrans_ats_intra_DST7_B16_sse(s16 *coef, s16 *block, int shift, int li
 {
     ITX_MATRIX(coef, block, 16, line, shift, xevem_tbl_inv_tr[DST7][2], skip_line);
 
-    if (skip_line)
-    {
+    if(skip_line) {
         xeve_mset(block, 0, (skip_line << 4) * sizeof(s16));
     }
 }
@@ -171,8 +168,7 @@ void xeve_itrans_ats_intra_DST7_B32_sse(s16 *coef, s16 *block, int shift, int li
 {
     ITX_MATRIX(coef, block, 32, line, shift, xevem_tbl_inv_tr[DST7][3], skip_line);
 
-    if (skip_line)
-    {
+    if(skip_line) {
         xeve_mset(block, 0, (skip_line << 5) * sizeof(s16));
     }
 }
@@ -181,8 +177,7 @@ void xeve_itrans_ats_intra_DCT8_B8_sse(s16 *coef, s16 *block, int shift, int lin
 {
     ITX_MATRIX(coef, block, 8, line, shift, xevem_tbl_inv_tr[DCT8][1], skip_line);
 
-    if (skip_line)
-    {
+    if(skip_line) {
         xeve_mset(block, 0, (skip_line << 3) * sizeof(s16));
     }
 }
@@ -191,8 +186,7 @@ void xeve_itrans_ats_intra_DCT8_B16_sse(s16 *coef, s16 *block, int shift, int li
 {
     ITX_MATRIX(coef, block, 16, line, shift, xevem_tbl_inv_tr[DCT8][2], skip_line);
 
-    if (skip_line)
-    {
+    if(skip_line) {
         xeve_mset(block, 0, (skip_line << 4) * sizeof(s16));
     }
 }
@@ -201,8 +195,7 @@ void xeve_itrans_ats_intra_DCT8_B32_sse(s16 *coef, s16 *block, int shift, int li
 {
     ITX_MATRIX(coef, block, 32, line, shift, xevem_tbl_inv_tr[DCT8][3], skip_line);
 
-    if (skip_line)
-    {
+    if(skip_line) {
         xeve_mset(block, 0, (skip_line << 5) * sizeof(s16));
     }
 }

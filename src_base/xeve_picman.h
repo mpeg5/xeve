@@ -32,22 +32,39 @@
 #define _XEVE_PICMAN_H_
 
 /* macros for reference picture flag */
-#define IS_REF(pic)          (((pic)->is_ref) != 0)
-#define SET_REF_UNMARK(pic)  (((pic)->is_ref) = 0)
-#define SET_REF_MARK(pic)    (((pic)->is_ref) = 1)
-#define PRINT_DPB(pm)\
-    xeve_print("%s: current num_ref = %d, dpb_size = %d\n", __FUNCTION__, \
-    pm->cur_num_ref_pics, picman_get_num_allocated_pics(pm));
+#define IS_REF(pic)         (((pic)->is_ref) != 0)
+#define SET_REF_UNMARK(pic) (((pic)->is_ref) = 0)
+#define SET_REF_MARK(pic)   (((pic)->is_ref) = 1)
+#define PRINT_DPB(pm)                                       \
+    xeve_print("%s: current num_ref = %d, dpb_size = %d\n", \
+               __FUNCTION__,                                \
+               pm->cur_num_ref_pics,                        \
+               picman_get_num_allocated_pics(pm));
 
- /*Declaration for ref pic marking and ref pic list construction functions */
-int xeve_picman_refp_init(XEVE_PM *pm, int max_num_ref_pics, int slice_type, u32 poc, u8 layer_id, int last_intra, XEVE_REFP (*refp)[REFP_NUM]);
-void xeve_picman_update_pic_ref(XEVE_PM * pm);
-XEVE_PIC * xeve_picman_get_empty_pic(XEVE_PM *pm, int *err);
-int xeve_picman_put_pic(XEVE_PM *pm, XEVE_PIC *pic, int is_idr, u32 poc, u8 layer_id, int need_for_output, XEVE_REFP (*refp)[REFP_NUM], int ref_pic, int pnpf, int ref_pic_gap_length);
-XEVE_PIC * xeve_picman_out_pic(XEVE_PM *pm, int *err);
-int xeve_picman_deinit(XEVE_PM *pm);
-int xeve_picman_init(XEVE_PM *pm, int max_pb_size, int max_num_ref_pics, PICBUF_ALLOCATOR *pa);
-void xeve_set_refp(XEVE_REFP * refp, XEVE_PIC  * pic_ref);
-int xeve_picman_move_pic(XEVE_PM *pm, int from, int to);
+/*Declaration for ref pic marking and ref pic list construction functions */
+int       xeve_picman_refp_init(XEVE_PM *pm,
+                                int      max_num_ref_pics,
+                                int      slice_type,
+                                u32      poc,
+                                u8       layer_id,
+                                int      last_intra,
+                                XEVE_REFP (*refp)[REFP_NUM]);
+void      xeve_picman_update_pic_ref(XEVE_PM *pm);
+XEVE_PIC *xeve_picman_get_empty_pic(XEVE_PM *pm, int *err);
+int       xeve_picman_put_pic(XEVE_PM  *pm,
+                              XEVE_PIC *pic,
+                              int       is_idr,
+                              u32       poc,
+                              u8        layer_id,
+                              int       need_for_output,
+                              XEVE_REFP (*refp)[REFP_NUM],
+                              int ref_pic,
+                              int pnpf,
+                              int ref_pic_gap_length);
+XEVE_PIC *xeve_picman_out_pic(XEVE_PM *pm, int *err);
+int       xeve_picman_deinit(XEVE_PM *pm);
+int       xeve_picman_init(XEVE_PM *pm, int max_pb_size, int max_num_ref_pics, PICBUF_ALLOCATOR *pa);
+void      xeve_set_refp(XEVE_REFP *refp, XEVE_PIC *pic_ref);
+int       xeve_picman_move_pic(XEVE_PM *pm, int from, int to);
 
 #endif /* _XEVE_PICMAN_H_ */

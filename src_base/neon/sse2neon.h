@@ -7906,24 +7906,19 @@ SSE2NEON_GENERATE_CMP_EQUAL_ANY(SSE2NEON_CMP_EQUAL_ANY_)
 
 static int _sse2neon_aggregate_ranges_16x8(int la, int lb, __m128i mtx[16])
 {
-    int res = 0;
-    int m = (1 << la) - 1;
-    uint16x8_t vec =
-        vtstq_u16(vdupq_n_u16(m), vld1q_u16(_sse2neon_cmpestr_mask16b));
-    for (int j = 0; j < lb; j++) {
-        mtx[j] = vreinterpretq_m128i_u16(
-            vandq_u16(vec, vreinterpretq_u16_m128i(mtx[j])));
-        mtx[j] = vreinterpretq_m128i_u16(
-            vshrq_n_u16(vreinterpretq_u16_m128i(mtx[j]), 15));
-        __m128i tmp = vreinterpretq_m128i_u32(
-            vshrq_n_u32(vreinterpretq_u32_m128i(mtx[j]), 16));
-        uint32x4_t vec_res = vandq_u32(vreinterpretq_u32_m128i(mtx[j]),
-                                       vreinterpretq_u32_m128i(tmp));
+    int        res = 0;
+    int        m   = (1 << la) - 1;
+    uint16x8_t vec = vtstq_u16(vdupq_n_u16(m), vld1q_u16(_sse2neon_cmpestr_mask16b));
+    for(int j = 0; j < lb; j++) {
+        mtx[j]             = vreinterpretq_m128i_u16(vandq_u16(vec, vreinterpretq_u16_m128i(mtx[j])));
+        mtx[j]             = vreinterpretq_m128i_u16(vshrq_n_u16(vreinterpretq_u16_m128i(mtx[j]), 15));
+        __m128i    tmp     = vreinterpretq_m128i_u32(vshrq_n_u32(vreinterpretq_u32_m128i(mtx[j]), 16));
+        uint32x4_t vec_res = vandq_u32(vreinterpretq_u32_m128i(mtx[j]), vreinterpretq_u32_m128i(tmp));
 #if defined(__aarch64__) || defined(_M_ARM64)
         int t = vaddvq_u32(vec_res) ? 1 : 0;
 #else
         uint64x2_t sumh = vpaddlq_u32(vec_res);
-        int t = vgetq_lane_u64(sumh, 0) + vgetq_lane_u64(sumh, 1);
+        int        t    = vgetq_lane_u64(sumh, 0) + vgetq_lane_u64(sumh, 1);
 #endif
         res |= (t << j);
     }
@@ -7932,22 +7927,18 @@ static int _sse2neon_aggregate_ranges_16x8(int la, int lb, __m128i mtx[16])
 
 static int _sse2neon_aggregate_ranges_8x16(int la, int lb, __m128i mtx[16])
 {
-    int res = 0;
-    int m = (1 << la) - 1;
-    uint8x8_t vec_mask = vld1_u8(_sse2neon_cmpestr_mask8b);
-    uint8x8_t t_lo = vtst_u8(vdup_n_u8(m & 0xff), vec_mask);
-    uint8x8_t t_hi = vtst_u8(vdup_n_u8(m >> 8), vec_mask);
-    uint8x16_t vec = vcombine_u8(t_lo, t_hi);
-    for (int j = 0; j < lb; j++) {
-        mtx[j] = vreinterpretq_m128i_u8(
-            vandq_u8(vec, vreinterpretq_u8_m128i(mtx[j])));
-        mtx[j] = vreinterpretq_m128i_u8(
-            vshrq_n_u8(vreinterpretq_u8_m128i(mtx[j]), 7));
-        __m128i tmp = vreinterpretq_m128i_u16(
-            vshrq_n_u16(vreinterpretq_u16_m128i(mtx[j]), 8));
-        uint16x8_t vec_res = vandq_u16(vreinterpretq_u16_m128i(mtx[j]),
-                                       vreinterpretq_u16_m128i(tmp));
-        int t = _sse2neon_vaddvq_u16(vec_res) ? 1 : 0;
+    int        res      = 0;
+    int        m        = (1 << la) - 1;
+    uint8x8_t  vec_mask = vld1_u8(_sse2neon_cmpestr_mask8b);
+    uint8x8_t  t_lo     = vtst_u8(vdup_n_u8(m & 0xff), vec_mask);
+    uint8x8_t  t_hi     = vtst_u8(vdup_n_u8(m >> 8), vec_mask);
+    uint8x16_t vec      = vcombine_u8(t_lo, t_hi);
+    for(int j = 0; j < lb; j++) {
+        mtx[j]             = vreinterpretq_m128i_u8(vandq_u8(vec, vreinterpretq_u8_m128i(mtx[j])));
+        mtx[j]             = vreinterpretq_m128i_u8(vshrq_n_u8(vreinterpretq_u8_m128i(mtx[j]), 7));
+        __m128i    tmp     = vreinterpretq_m128i_u16(vshrq_n_u16(vreinterpretq_u16_m128i(mtx[j]), 8));
+        uint16x8_t vec_res = vandq_u16(vreinterpretq_u16_m128i(mtx[j]), vreinterpretq_u16_m128i(tmp));
+        int        t       = _sse2neon_vaddvq_u16(vec_res) ? 1 : 0;
         res |= (t << j);
     }
     return res;
@@ -7971,20 +7962,19 @@ SSE2NEON_GENERATE_CMP_RANGES(SSE2NEON_CMP_RANGES_)
 
 static int _sse2neon_cmp_byte_equal_each(__m128i a, int la, __m128i b, int lb)
 {
-    uint8x16_t mtx =
-        vceqq_u8(vreinterpretq_u8_m128i(a), vreinterpretq_u8_m128i(b));
-    int m0 = (la < lb) ? 0 : ((1 << la) - (1 << lb));
-    int m1 = 0x10000 - (1 << la);
-    int tb = 0x10000 - (1 << lb);
-    uint8x8_t vec_mask, vec0_lo, vec0_hi, vec1_lo, vec1_hi;
-    uint8x8_t tmp_lo, tmp_hi, res_lo, res_hi;
+    uint8x16_t mtx = vceqq_u8(vreinterpretq_u8_m128i(a), vreinterpretq_u8_m128i(b));
+    int        m0  = (la < lb) ? 0 : ((1 << la) - (1 << lb));
+    int        m1  = 0x10000 - (1 << la);
+    int        tb  = 0x10000 - (1 << lb);
+    uint8x8_t  vec_mask, vec0_lo, vec0_hi, vec1_lo, vec1_hi;
+    uint8x8_t  tmp_lo, tmp_hi, res_lo, res_hi;
     vec_mask = vld1_u8(_sse2neon_cmpestr_mask8b);
-    vec0_lo = vtst_u8(vdup_n_u8(m0), vec_mask);
-    vec0_hi = vtst_u8(vdup_n_u8(m0 >> 8), vec_mask);
-    vec1_lo = vtst_u8(vdup_n_u8(m1), vec_mask);
-    vec1_hi = vtst_u8(vdup_n_u8(m1 >> 8), vec_mask);
-    tmp_lo = vtst_u8(vdup_n_u8(tb), vec_mask);
-    tmp_hi = vtst_u8(vdup_n_u8(tb >> 8), vec_mask);
+    vec0_lo  = vtst_u8(vdup_n_u8(m0), vec_mask);
+    vec0_hi  = vtst_u8(vdup_n_u8(m0 >> 8), vec_mask);
+    vec1_lo  = vtst_u8(vdup_n_u8(m1), vec_mask);
+    vec1_hi  = vtst_u8(vdup_n_u8(m1 >> 8), vec_mask);
+    tmp_lo   = vtst_u8(vdup_n_u8(tb), vec_mask);
+    tmp_hi   = vtst_u8(vdup_n_u8(tb >> 8), vec_mask);
 
     res_lo = vbsl_u8(vec0_lo, vdup_n_u8(0), vget_low_u8(mtx));
     res_hi = vbsl_u8(vec0_hi, vdup_n_u8(0), vget_high_u8(mtx));
@@ -7999,56 +7989,52 @@ static int _sse2neon_cmp_byte_equal_each(__m128i a, int la, __m128i b, int lb)
 
 static int _sse2neon_cmp_word_equal_each(__m128i a, int la, __m128i b, int lb)
 {
-    uint16x8_t mtx =
-        vceqq_u16(vreinterpretq_u16_m128i(a), vreinterpretq_u16_m128i(b));
-    int m0 = (la < lb) ? 0 : ((1 << la) - (1 << lb));
-    int m1 = 0x100 - (1 << la);
-    int tb = 0x100 - (1 << lb);
+    uint16x8_t mtx      = vceqq_u16(vreinterpretq_u16_m128i(a), vreinterpretq_u16_m128i(b));
+    int        m0       = (la < lb) ? 0 : ((1 << la) - (1 << lb));
+    int        m1       = 0x100 - (1 << la);
+    int        tb       = 0x100 - (1 << lb);
     uint16x8_t vec_mask = vld1q_u16(_sse2neon_cmpestr_mask16b);
-    uint16x8_t vec0 = vtstq_u16(vdupq_n_u16(m0), vec_mask);
-    uint16x8_t vec1 = vtstq_u16(vdupq_n_u16(m1), vec_mask);
-    uint16x8_t tmp = vtstq_u16(vdupq_n_u16(tb), vec_mask);
-    mtx = vbslq_u16(vec0, vdupq_n_u16(0), mtx);
-    mtx = vbslq_u16(vec1, tmp, mtx);
-    mtx = vandq_u16(mtx, vec_mask);
+    uint16x8_t vec0     = vtstq_u16(vdupq_n_u16(m0), vec_mask);
+    uint16x8_t vec1     = vtstq_u16(vdupq_n_u16(m1), vec_mask);
+    uint16x8_t tmp      = vtstq_u16(vdupq_n_u16(tb), vec_mask);
+    mtx                 = vbslq_u16(vec0, vdupq_n_u16(0), mtx);
+    mtx                 = vbslq_u16(vec1, tmp, mtx);
+    mtx                 = vandq_u16(mtx, vec_mask);
     return _sse2neon_vaddvq_u16(mtx);
 }
 
 #define SSE2NEON_AGGREGATE_EQUAL_ORDER_IS_UBYTE 1
 #define SSE2NEON_AGGREGATE_EQUAL_ORDER_IS_UWORD 0
 
-#define SSE2NEON_AGGREGATE_EQUAL_ORDER_IMPL(size, number_of_lanes, data_type)  \
-    static int _sse2neon_aggregate_equal_ordered_##size##x##number_of_lanes(   \
-        int bound, int la, int lb, __m128i mtx[16])                            \
-    {                                                                          \
-        int res = 0;                                                           \
-        int m1 = SSE2NEON_IIF(data_type)(0x10000, 0x100) - (1 << la);          \
-        uint##size##x8_t vec_mask = SSE2NEON_IIF(data_type)(                   \
-            vld1_u##size(_sse2neon_cmpestr_mask##size##b),                     \
-            vld1q_u##size(_sse2neon_cmpestr_mask##size##b));                   \
-        uint##size##x##number_of_lanes##_t vec1 = SSE2NEON_IIF(data_type)(     \
-            vcombine_u##size(vtst_u##size(vdup_n_u##size(m1), vec_mask),       \
-                             vtst_u##size(vdup_n_u##size(m1 >> 8), vec_mask)), \
-            vtstq_u##size(vdupq_n_u##size(m1), vec_mask));                     \
-        uint##size##x##number_of_lanes##_t vec_minusone = vdupq_n_u##size(-1); \
-        uint##size##x##number_of_lanes##_t vec_zero = vdupq_n_u##size(0);      \
-        for (int j = 0; j < lb; j++) {                                         \
-            mtx[j] = vreinterpretq_m128i_u##size(vbslq_u##size(                \
-                vec1, vec_minusone, vreinterpretq_u##size##_m128i(mtx[j])));   \
-        }                                                                      \
-        for (int j = lb; j < bound; j++) {                                     \
-            mtx[j] = vreinterpretq_m128i_u##size(                              \
-                vbslq_u##size(vec1, vec_minusone, vec_zero));                  \
-        }                                                                      \
-        unsigned SSE2NEON_IIF(data_type)(char, short) *ptr =                   \
-            (unsigned SSE2NEON_IIF(data_type)(char, short) *) mtx;             \
-        for (int i = 0; i < bound; i++) {                                      \
-            int val = 1;                                                       \
-            for (int j = 0, k = i; j < bound - i && k < bound; j++, k++)       \
-                val &= ptr[k * bound + j];                                     \
-            res += val << i;                                                   \
-        }                                                                      \
-        return res;                                                            \
+#define SSE2NEON_AGGREGATE_EQUAL_ORDER_IMPL(size, number_of_lanes, data_type)                                          \
+    static int _sse2neon_aggregate_equal_ordered_##size##x##number_of_lanes(                                           \
+        int bound, int la, int lb, __m128i mtx[16])                                                                    \
+    {                                                                                                                  \
+        int              res      = 0;                                                                                 \
+        int              m1       = SSE2NEON_IIF(data_type)(0x10000, 0x100) - (1 << la);                               \
+        uint##size##x8_t vec_mask = SSE2NEON_IIF(data_type)(vld1_u##size(_sse2neon_cmpestr_mask##size##b),             \
+                                                            vld1q_u##size(_sse2neon_cmpestr_mask##size##b));           \
+        uint##size##x##number_of_lanes##_t vec1 =                                                                      \
+            SSE2NEON_IIF(data_type)(vcombine_u##size(vtst_u##size(vdup_n_u##size(m1), vec_mask),                       \
+                                                     vtst_u##size(vdup_n_u##size(m1 >> 8), vec_mask)),                 \
+                                    vtstq_u##size(vdupq_n_u##size(m1), vec_mask));                                     \
+        uint##size##x##number_of_lanes##_t vec_minusone = vdupq_n_u##size(-1);                                         \
+        uint##size##x##number_of_lanes##_t vec_zero     = vdupq_n_u##size(0);                                          \
+        for(int j = 0; j < lb; j++) {                                                                                  \
+            mtx[j] =                                                                                                   \
+                vreinterpretq_m128i_u##size(vbslq_u##size(vec1, vec_minusone, vreinterpretq_u##size##_m128i(mtx[j]))); \
+        }                                                                                                              \
+        for(int j = lb; j < bound; j++) {                                                                              \
+            mtx[j] = vreinterpretq_m128i_u##size(vbslq_u##size(vec1, vec_minusone, vec_zero));                         \
+        }                                                                                                              \
+        unsigned SSE2NEON_IIF(data_type)(char, short) *ptr = (unsigned SSE2NEON_IIF(data_type)(char, short) *)mtx;     \
+        for(int i = 0; i < bound; i++) {                                                                               \
+            int val = 1;                                                                                               \
+            for(int j = 0, k = i; j < bound - i && k < bound; j++, k++)                                                \
+                val &= ptr[k * bound + j];                                                                             \
+            res += val << i;                                                                                           \
+        }                                                                                                              \
+        return res;                                                                                                    \
     }
 
 /* clang-format off */
@@ -8102,15 +8088,15 @@ static cmpestr_func_t _sse2neon_cmpfunc_table[] = {
 
 FORCE_INLINE int _sse2neon_sido_negative(int res, int lb, int imm8, int bound)
 {
-    switch (imm8 & 0x30) {
-    case _SIDD_NEGATIVE_POLARITY:
-        res ^= 0xffffffff;
-        break;
-    case _SIDD_MASKED_NEGATIVE_POLARITY:
-        res ^= (1 << lb) - 1;
-        break;
-    default:
-        break;
+    switch(imm8 & 0x30) {
+        case _SIDD_NEGATIVE_POLARITY:
+            res ^= 0xffffffff;
+            break;
+        case _SIDD_MASKED_NEGATIVE_POLARITY:
+            res ^= (1 << lb) - 1;
+            break;
+        default:
+            break;
     }
 
     return res & ((bound == 8) ? 0xFF : 0xFFFF);
@@ -8120,7 +8106,7 @@ FORCE_INLINE int _sse2neon_clz(unsigned int x)
 {
 #ifdef _MSC_VER
     unsigned long cnt = 0;
-    if (_BitScanReverse(&cnt, x))
+    if(_BitScanReverse(&cnt, x))
         return 31 - cnt;
     return 32;
 #else
@@ -8132,7 +8118,7 @@ FORCE_INLINE int _sse2neon_ctz(unsigned int x)
 {
 #ifdef _MSC_VER
     unsigned long cnt = 0;
-    if (_BitScanForward(&cnt, x))
+    if(_BitScanForward(&cnt, x))
         return cnt;
     return 32;
 #else
@@ -8145,13 +8131,13 @@ FORCE_INLINE int _sse2neon_ctzll(unsigned long long x)
 #ifdef _MSC_VER
     unsigned long cnt;
 #if defined(SSE2NEON_HAS_BITSCAN64)
-    if (_BitScanForward64(&cnt, x))
-        return (int) (cnt);
+    if(_BitScanForward64(&cnt, x))
+        return (int)(cnt);
 #else
-    if (_BitScanForward(&cnt, (unsigned long) (x)))
-        return (int) cnt;
-    if (_BitScanForward(&cnt, (unsigned long) (x >> 32)))
-        return (int) (cnt + 32);
+    if(_BitScanForward(&cnt, (unsigned long)(x)))
+        return (int)cnt;
+    if(_BitScanForward(&cnt, (unsigned long)(x >> 32)))
+        return (int)(cnt + 32);
 #endif /* SSE2NEON_HAS_BITSCAN64 */
     return 64;
 #else /* assume GNU compatible compilers */
@@ -8159,18 +8145,17 @@ FORCE_INLINE int _sse2neon_ctzll(unsigned long long x)
 #endif
 }
 
-#define SSE2NEON_MIN(x, y) (x) < (y) ? (x) : (y)
+#define SSE2NEON_MIN(x, y)                  (x) < (y) ? (x) : (y)
 
-#define SSE2NEON_CMPSTR_SET_UPPER(var, imm) \
-    const int var = (imm & 0x01) ? 8 : 16
+#define SSE2NEON_CMPSTR_SET_UPPER(var, imm) const int var = (imm & 0x01) ? 8 : 16
 
 #define SSE2NEON_CMPESTRX_LEN_PAIR(a, b, la, lb) \
     int tmp1 = la ^ (la >> 31);                  \
-    la = tmp1 - (la >> 31);                      \
+    la       = tmp1 - (la >> 31);                \
     int tmp2 = lb ^ (lb >> 31);                  \
-    lb = tmp2 - (lb >> 31);                      \
-    la = SSE2NEON_MIN(la, bound);                \
-    lb = SSE2NEON_MIN(lb, bound)
+    lb       = tmp2 - (lb >> 31);                \
+    la       = SSE2NEON_MIN(la, bound);          \
+    lb       = SSE2NEON_MIN(lb, bound)
 
 // Compare all pairs of character in string a and b,
 // then aggregate the result.
@@ -8181,49 +8166,39 @@ FORCE_INLINE int _sse2neon_ctzll(unsigned long long x)
     SSE2NEON_CMPSTR_SET_UPPER(bound, imm8);                        \
     SSE2NEON_##IE##_LEN_PAIR(a, b, la, lb);                        \
     int r2 = (_sse2neon_cmpfunc_table[imm8 & 0x0f])(a, la, b, lb); \
-    r2 = _sse2neon_sido_negative(r2, lb, imm8, bound)
+    r2     = _sse2neon_sido_negative(r2, lb, imm8, bound)
 
-#define SSE2NEON_CMPSTR_GENERATE_INDEX(r2, bound, imm8)          \
-    return (r2 == 0) ? bound                                     \
-                     : ((imm8 & 0x40) ? (31 - _sse2neon_clz(r2)) \
-                                      : _sse2neon_ctz(r2))
+#define SSE2NEON_CMPSTR_GENERATE_INDEX(r2, bound, imm8) \
+    return (r2 == 0) ? bound : ((imm8 & 0x40) ? (31 - _sse2neon_clz(r2)) : _sse2neon_ctz(r2))
 
-#define SSE2NEON_CMPSTR_GENERATE_MASK(dst)                                     \
-    __m128i dst = vreinterpretq_m128i_u8(vdupq_n_u8(0));                       \
-    if (imm8 & 0x40) {                                                         \
-        if (bound == 8) {                                                      \
-            uint16x8_t tmp = vtstq_u16(vdupq_n_u16(r2),                        \
-                                       vld1q_u16(_sse2neon_cmpestr_mask16b));  \
-            dst = vreinterpretq_m128i_u16(vbslq_u16(                           \
-                tmp, vdupq_n_u16(-1), vreinterpretq_u16_m128i(dst)));          \
-        } else {                                                               \
-            uint8x16_t vec_r2 =                                                \
-                vcombine_u8(vdup_n_u8(r2), vdup_n_u8(r2 >> 8));                \
-            uint8x16_t tmp =                                                   \
-                vtstq_u8(vec_r2, vld1q_u8(_sse2neon_cmpestr_mask8b));          \
-            dst = vreinterpretq_m128i_u8(                                      \
-                vbslq_u8(tmp, vdupq_n_u8(-1), vreinterpretq_u8_m128i(dst)));   \
-        }                                                                      \
-    } else {                                                                   \
-        if (bound == 16) {                                                     \
-            dst = vreinterpretq_m128i_u16(                                     \
-                vsetq_lane_u16(r2 & 0xffff, vreinterpretq_u16_m128i(dst), 0)); \
-        } else {                                                               \
-            dst = vreinterpretq_m128i_u8(                                      \
-                vsetq_lane_u8(r2 & 0xff, vreinterpretq_u8_m128i(dst), 0));     \
-        }                                                                      \
-    }                                                                          \
+#define SSE2NEON_CMPSTR_GENERATE_MASK(dst)                                                                           \
+    __m128i dst = vreinterpretq_m128i_u8(vdupq_n_u8(0));                                                             \
+    if(imm8 & 0x40) {                                                                                                \
+        if(bound == 8) {                                                                                             \
+            uint16x8_t tmp = vtstq_u16(vdupq_n_u16(r2), vld1q_u16(_sse2neon_cmpestr_mask16b));                       \
+            dst            = vreinterpretq_m128i_u16(vbslq_u16(tmp, vdupq_n_u16(-1), vreinterpretq_u16_m128i(dst))); \
+        }                                                                                                            \
+        else {                                                                                                       \
+            uint8x16_t vec_r2 = vcombine_u8(vdup_n_u8(r2), vdup_n_u8(r2 >> 8));                                      \
+            uint8x16_t tmp    = vtstq_u8(vec_r2, vld1q_u8(_sse2neon_cmpestr_mask8b));                                \
+            dst               = vreinterpretq_m128i_u8(vbslq_u8(tmp, vdupq_n_u8(-1), vreinterpretq_u8_m128i(dst)));  \
+        }                                                                                                            \
+    }                                                                                                                \
+    else {                                                                                                           \
+        if(bound == 16) {                                                                                            \
+            dst = vreinterpretq_m128i_u16(vsetq_lane_u16(r2 & 0xffff, vreinterpretq_u16_m128i(dst), 0));             \
+        }                                                                                                            \
+        else {                                                                                                       \
+            dst = vreinterpretq_m128i_u8(vsetq_lane_u8(r2 & 0xff, vreinterpretq_u8_m128i(dst), 0));                  \
+        }                                                                                                            \
+    }                                                                                                                \
     return dst
 
 // Compare packed strings in a and b with lengths la and lb using the control
 // in imm8, and returns 1 if b did not contain a null character and the
 // resulting mask was zero, and 0 otherwise.
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_cmpestra
-FORCE_INLINE int _mm_cmpestra(__m128i a,
-                              int la,
-                              __m128i b,
-                              int lb,
-                              const int imm8)
+FORCE_INLINE int _mm_cmpestra(__m128i a, int la, __m128i b, int lb, const int imm8)
 {
     int lb_cpy = lb;
     SSE2NEON_COMP_AGG(a, b, la, lb, imm8, CMPESTRX);
@@ -8233,11 +8208,7 @@ FORCE_INLINE int _mm_cmpestra(__m128i a,
 // Compare packed strings in a and b with lengths la and lb using the control in
 // imm8, and returns 1 if the resulting mask was non-zero, and 0 otherwise.
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_cmpestrc
-FORCE_INLINE int _mm_cmpestrc(__m128i a,
-                              int la,
-                              __m128i b,
-                              int lb,
-                              const int imm8)
+FORCE_INLINE int _mm_cmpestrc(__m128i a, int la, __m128i b, int lb, const int imm8)
 {
     SSE2NEON_COMP_AGG(a, b, la, lb, imm8, CMPESTRX);
     return r2 != 0;
@@ -8246,11 +8217,7 @@ FORCE_INLINE int _mm_cmpestrc(__m128i a,
 // Compare packed strings in a and b with lengths la and lb using the control
 // in imm8, and store the generated index in dst.
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_cmpestri
-FORCE_INLINE int _mm_cmpestri(__m128i a,
-                              int la,
-                              __m128i b,
-                              int lb,
-                              const int imm8)
+FORCE_INLINE int _mm_cmpestri(__m128i a, int la, __m128i b, int lb, const int imm8)
 {
     SSE2NEON_COMP_AGG(a, b, la, lb, imm8, CMPESTRX);
     SSE2NEON_CMPSTR_GENERATE_INDEX(r2, bound, imm8);
@@ -8259,8 +8226,7 @@ FORCE_INLINE int _mm_cmpestri(__m128i a,
 // Compare packed strings in a and b with lengths la and lb using the control
 // in imm8, and store the generated mask in dst.
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_cmpestrm
-FORCE_INLINE __m128i
-_mm_cmpestrm(__m128i a, int la, __m128i b, int lb, const int imm8)
+FORCE_INLINE __m128i _mm_cmpestrm(__m128i a, int la, __m128i b, int lb, const int imm8)
 {
     SSE2NEON_COMP_AGG(a, b, la, lb, imm8, CMPESTRX);
     SSE2NEON_CMPSTR_GENERATE_MASK(dst);
@@ -8269,11 +8235,7 @@ _mm_cmpestrm(__m128i a, int la, __m128i b, int lb, const int imm8)
 // Compare packed strings in a and b with lengths la and lb using the control in
 // imm8, and returns bit 0 of the resulting bit mask.
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_cmpestro
-FORCE_INLINE int _mm_cmpestro(__m128i a,
-                              int la,
-                              __m128i b,
-                              int lb,
-                              const int imm8)
+FORCE_INLINE int _mm_cmpestro(__m128i a, int la, __m128i b, int lb, const int imm8)
 {
     SSE2NEON_COMP_AGG(a, b, la, lb, imm8, CMPESTRX);
     return r2 & 1;
@@ -8282,15 +8244,11 @@ FORCE_INLINE int _mm_cmpestro(__m128i a,
 // Compare packed strings in a and b with lengths la and lb using the control in
 // imm8, and returns 1 if any character in a was null, and 0 otherwise.
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_cmpestrs
-FORCE_INLINE int _mm_cmpestrs(__m128i a,
-                              int la,
-                              __m128i b,
-                              int lb,
-                              const int imm8)
+FORCE_INLINE int _mm_cmpestrs(__m128i a, int la, __m128i b, int lb, const int imm8)
 {
-    (void) a;
-    (void) b;
-    (void) lb;
+    (void)a;
+    (void)b;
+    (void)lb;
     SSE2NEON_CMPSTR_SET_UPPER(bound, imm8);
     return la <= (bound - 1);
 }
@@ -8298,44 +8256,37 @@ FORCE_INLINE int _mm_cmpestrs(__m128i a,
 // Compare packed strings in a and b with lengths la and lb using the control in
 // imm8, and returns 1 if any character in b was null, and 0 otherwise.
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_cmpestrz
-FORCE_INLINE int _mm_cmpestrz(__m128i a,
-                              int la,
-                              __m128i b,
-                              int lb,
-                              const int imm8)
+FORCE_INLINE int _mm_cmpestrz(__m128i a, int la, __m128i b, int lb, const int imm8)
 {
-    (void) a;
-    (void) b;
-    (void) la;
+    (void)a;
+    (void)b;
+    (void)la;
     SSE2NEON_CMPSTR_SET_UPPER(bound, imm8);
     return lb <= (bound - 1);
 }
 
-#define SSE2NEON_CMPISTRX_LENGTH(str, len, imm8)                         \
-    do {                                                                 \
-        if (imm8 & 0x01) {                                               \
-            uint16x8_t equal_mask_##str =                                \
-                vceqq_u16(vreinterpretq_u16_m128i(str), vdupq_n_u16(0)); \
-            uint8x8_t res_##str = vshrn_n_u16(equal_mask_##str, 4);      \
-            uint64_t matches_##str =                                     \
-                vget_lane_u64(vreinterpret_u64_u8(res_##str), 0);        \
-            len = _sse2neon_ctzll(matches_##str) >> 3;                   \
-        } else {                                                         \
-            uint16x8_t equal_mask_##str = vreinterpretq_u16_u8(          \
-                vceqq_u8(vreinterpretq_u8_m128i(str), vdupq_n_u8(0)));   \
-            uint8x8_t res_##str = vshrn_n_u16(equal_mask_##str, 4);      \
-            uint64_t matches_##str =                                     \
-                vget_lane_u64(vreinterpret_u64_u8(res_##str), 0);        \
-            len = _sse2neon_ctzll(matches_##str) >> 2;                   \
-        }                                                                \
-    } while (0)
+#define SSE2NEON_CMPISTRX_LENGTH(str, len, imm8)                                                                      \
+    do {                                                                                                              \
+        if(imm8 & 0x01) {                                                                                             \
+            uint16x8_t equal_mask_##str = vceqq_u16(vreinterpretq_u16_m128i(str), vdupq_n_u16(0));                    \
+            uint8x8_t  res_##str        = vshrn_n_u16(equal_mask_##str, 4);                                           \
+            uint64_t   matches_##str    = vget_lane_u64(vreinterpret_u64_u8(res_##str), 0);                           \
+            len                         = _sse2neon_ctzll(matches_##str) >> 3;                                        \
+        }                                                                                                             \
+        else {                                                                                                        \
+            uint16x8_t equal_mask_##str = vreinterpretq_u16_u8(vceqq_u8(vreinterpretq_u8_m128i(str), vdupq_n_u8(0))); \
+            uint8x8_t  res_##str        = vshrn_n_u16(equal_mask_##str, 4);                                           \
+            uint64_t   matches_##str    = vget_lane_u64(vreinterpret_u64_u8(res_##str), 0);                           \
+            len                         = _sse2neon_ctzll(matches_##str) >> 2;                                        \
+        }                                                                                                             \
+    } while(0)
 
 #define SSE2NEON_CMPISTRX_LEN_PAIR(a, b, la, lb) \
     int la, lb;                                  \
     do {                                         \
         SSE2NEON_CMPISTRX_LENGTH(a, la, imm8);   \
         SSE2NEON_CMPISTRX_LENGTH(b, lb, imm8);   \
-    } while (0)
+    } while(0)
 
 // Compare packed strings with implicit lengths in a and b using the control in
 // imm8, and returns 1 if b did not contain a null character and the resulting
@@ -8388,7 +8339,7 @@ FORCE_INLINE int _mm_cmpistro(__m128i a, __m128i b, const int imm8)
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_cmpistrs
 FORCE_INLINE int _mm_cmpistrs(__m128i a, __m128i b, const int imm8)
 {
-    (void) b;
+    (void)b;
     SSE2NEON_CMPSTR_SET_UPPER(bound, imm8);
     int la;
     SSE2NEON_CMPISTRX_LENGTH(a, la, imm8);
@@ -8400,7 +8351,7 @@ FORCE_INLINE int _mm_cmpistrs(__m128i a, __m128i b, const int imm8)
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_cmpistrz
 FORCE_INLINE int _mm_cmpistrz(__m128i a, __m128i b, const int imm8)
 {
-    (void) a;
+    (void)a;
     SSE2NEON_CMPSTR_SET_UPPER(bound, imm8);
     int lb;
     SSE2NEON_CMPISTRX_LENGTH(b, lb, imm8);
@@ -8412,12 +8363,9 @@ FORCE_INLINE int _mm_cmpistrz(__m128i a, __m128i b, const int imm8)
 FORCE_INLINE __m128i _mm_cmpgt_epi64(__m128i a, __m128i b)
 {
 #if defined(__aarch64__) || defined(_M_ARM64)
-    return vreinterpretq_m128i_u64(
-        vcgtq_s64(vreinterpretq_s64_m128i(a), vreinterpretq_s64_m128i(b)));
+    return vreinterpretq_m128i_u64(vcgtq_s64(vreinterpretq_s64_m128i(a), vreinterpretq_s64_m128i(b)));
 #else
-    return vreinterpretq_m128i_s64(vshrq_n_s64(
-        vqsubq_s64(vreinterpretq_s64_m128i(b), vreinterpretq_s64_m128i(a)),
-        63));
+    return vreinterpretq_m128i_s64(vshrq_n_s64(vqsubq_s64(vreinterpretq_s64_m128i(b), vreinterpretq_s64_m128i(a)), 63));
 #endif
 }
 
@@ -8427,11 +8375,8 @@ FORCE_INLINE __m128i _mm_cmpgt_epi64(__m128i a, __m128i b)
 FORCE_INLINE uint32_t _mm_crc32_u16(uint32_t crc, uint16_t v)
 {
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-    __asm__ __volatile__("crc32ch %w[c], %w[c], %w[v]\n\t"
-                         : [c] "+r"(crc)
-                         : [v] "r"(v));
-#elif ((__ARM_ARCH == 8) && defined(__ARM_FEATURE_CRC32)) || \
-    (defined(_M_ARM64) && !defined(__clang__))
+    __asm__ __volatile__("crc32ch %w[c], %w[c], %w[v]\n\t" : [c] "+r"(crc) : [v] "r"(v));
+#elif ((__ARM_ARCH == 8) && defined(__ARM_FEATURE_CRC32)) || (defined(_M_ARM64) && !defined(__clang__))
     crc = __crc32ch(crc, v);
 #else
     crc = _mm_crc32_u8(crc, v & 0xff);
@@ -8446,11 +8391,8 @@ FORCE_INLINE uint32_t _mm_crc32_u16(uint32_t crc, uint16_t v)
 FORCE_INLINE uint32_t _mm_crc32_u32(uint32_t crc, uint32_t v)
 {
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-    __asm__ __volatile__("crc32cw %w[c], %w[c], %w[v]\n\t"
-                         : [c] "+r"(crc)
-                         : [v] "r"(v));
-#elif ((__ARM_ARCH == 8) && defined(__ARM_FEATURE_CRC32)) || \
-    (defined(_M_ARM64) && !defined(__clang__))
+    __asm__ __volatile__("crc32cw %w[c], %w[c], %w[v]\n\t" : [c] "+r"(crc) : [v] "r"(v));
+#elif ((__ARM_ARCH == 8) && defined(__ARM_FEATURE_CRC32)) || (defined(_M_ARM64) && !defined(__clang__))
     crc = __crc32cw(crc, v);
 #else
     crc = _mm_crc32_u16(crc, v & 0xffff);
@@ -8465,14 +8407,12 @@ FORCE_INLINE uint32_t _mm_crc32_u32(uint32_t crc, uint32_t v)
 FORCE_INLINE uint64_t _mm_crc32_u64(uint64_t crc, uint64_t v)
 {
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-    __asm__ __volatile__("crc32cx %w[c], %w[c], %x[v]\n\t"
-                         : [c] "+r"(crc)
-                         : [v] "r"(v));
+    __asm__ __volatile__("crc32cx %w[c], %w[c], %x[v]\n\t" : [c] "+r"(crc) : [v] "r"(v));
 #elif (defined(_M_ARM64) && !defined(__clang__))
-    crc = __crc32cd((uint32_t) crc, v);
+    crc = __crc32cd((uint32_t)crc, v);
 #else
-    crc = _mm_crc32_u32((uint32_t) (crc), v & 0xffffffff);
-    crc = _mm_crc32_u32((uint32_t) (crc), (v >> 32) & 0xffffffff);
+    crc = _mm_crc32_u32((uint32_t)(crc), v & 0xffffffff);
+    crc = _mm_crc32_u32((uint32_t)(crc), (v >> 32) & 0xffffffff);
 #endif
     return crc;
 }
@@ -8483,16 +8423,13 @@ FORCE_INLINE uint64_t _mm_crc32_u64(uint64_t crc, uint64_t v)
 FORCE_INLINE uint32_t _mm_crc32_u8(uint32_t crc, uint8_t v)
 {
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-    __asm__ __volatile__("crc32cb %w[c], %w[c], %w[v]\n\t"
-                         : [c] "+r"(crc)
-                         : [v] "r"(v));
-#elif ((__ARM_ARCH == 8) && defined(__ARM_FEATURE_CRC32)) || \
-    (defined(_M_ARM64) && !defined(__clang__))
+    __asm__ __volatile__("crc32cb %w[c], %w[c], %w[v]\n\t" : [c] "+r"(crc) : [v] "r"(v));
+#elif ((__ARM_ARCH == 8) && defined(__ARM_FEATURE_CRC32)) || (defined(_M_ARM64) && !defined(__clang__))
     crc = __crc32cb(crc, v);
 #else
     crc ^= v;
-    for (int bit = 0; bit < 8; bit++) {
-        if (crc & 1)
+    for(int bit = 0; bit < 8; bit++) {
+        if(crc & 1)
             crc = (crc >> 1) ^ UINT32_C(0x82f63b78);
         else
             crc = (crc >> 1);
@@ -8589,17 +8526,16 @@ FORCE_INLINE uint32_t _mm_crc32_u8(uint32_t crc, uint8_t v)
 
 /* X Macro trick. See https://en.wikipedia.org/wiki/X_Macro */
 #define SSE2NEON_AES_H0(x) (x)
-static const uint8_t _sse2neon_sbox[256] = SSE2NEON_AES_SBOX(SSE2NEON_AES_H0);
+static const uint8_t _sse2neon_sbox[256]  = SSE2NEON_AES_SBOX(SSE2NEON_AES_H0);
 static const uint8_t _sse2neon_rsbox[256] = SSE2NEON_AES_RSBOX(SSE2NEON_AES_H0);
 #undef SSE2NEON_AES_H0
 
 /* x_time function and matrix multiply function */
 #if !defined(__aarch64__) && !defined(_M_ARM64)
 #define SSE2NEON_XT(x) (((x) << 1) ^ ((((x) >> 7) & 1) * 0x1b))
-#define SSE2NEON_MULTIPLY(x, y)                                  \
-    (((y & 1) * x) ^ ((y >> 1 & 1) * SSE2NEON_XT(x)) ^           \
-     ((y >> 2 & 1) * SSE2NEON_XT(SSE2NEON_XT(x))) ^              \
-     ((y >> 3 & 1) * SSE2NEON_XT(SSE2NEON_XT(SSE2NEON_XT(x)))) ^ \
+#define SSE2NEON_MULTIPLY(x, y)                                                                       \
+    (((y & 1) * x) ^ ((y >> 1 & 1) * SSE2NEON_XT(x)) ^ ((y >> 2 & 1) * SSE2NEON_XT(SSE2NEON_XT(x))) ^ \
+     ((y >> 3 & 1) * SSE2NEON_XT(SSE2NEON_XT(SSE2NEON_XT(x)))) ^                                      \
      ((y >> 4 & 1) * SSE2NEON_XT(SSE2NEON_XT(SSE2NEON_XT(SSE2NEON_XT(x))))))
 #endif
 
@@ -8612,12 +8548,40 @@ FORCE_INLINE __m128i _mm_aesenc_si128(__m128i a, __m128i RoundKey)
 {
 #if defined(__aarch64__) || defined(_M_ARM64)
     static const uint8_t shift_rows[] = {
-        0x0, 0x5, 0xa, 0xf, 0x4, 0x9, 0xe, 0x3,
-        0x8, 0xd, 0x2, 0x7, 0xc, 0x1, 0x6, 0xb,
+        0x0,
+        0x5,
+        0xa,
+        0xf,
+        0x4,
+        0x9,
+        0xe,
+        0x3,
+        0x8,
+        0xd,
+        0x2,
+        0x7,
+        0xc,
+        0x1,
+        0x6,
+        0xb,
     };
     static const uint8_t ror32by8[] = {
-        0x1, 0x2, 0x3, 0x0, 0x5, 0x6, 0x7, 0x4,
-        0x9, 0xa, 0xb, 0x8, 0xd, 0xe, 0xf, 0xc,
+        0x1,
+        0x2,
+        0x3,
+        0x0,
+        0x5,
+        0x6,
+        0x7,
+        0x4,
+        0x9,
+        0xa,
+        0xb,
+        0x8,
+        0xd,
+        0xe,
+        0xf,
+        0xc,
     };
 
     uint8x16_t v;
@@ -8639,29 +8603,24 @@ FORCE_INLINE __m128i _mm_aesenc_si128(__m128i a, __m128i RoundKey)
     v = vqtbx4q_u8(v, _sse2neon_vld1q_u8_x4(_sse2neon_sbox + 0xc0), w - 0xc0);
 
     /* mix columns */
-    w = (v << 1) ^ (uint8x16_t) (((int8x16_t) v >> 7) & 0x1b);
-    w ^= (uint8x16_t) vrev32q_u16((uint16x8_t) v);
+    w = (v << 1) ^ (uint8x16_t)(((int8x16_t)v >> 7) & 0x1b);
+    w ^= (uint8x16_t)vrev32q_u16((uint16x8_t)v);
     w ^= vqtbl1q_u8(v ^ w, vld1q_u8(ror32by8));
 
     /* add round key */
     return vreinterpretq_m128i_u8(w) ^ RoundKey;
 
 #else /* ARMv7-A implementation for a table-based AES */
-#define SSE2NEON_AES_B2W(b0, b1, b2, b3)                 \
-    (((uint32_t) (b3) << 24) | ((uint32_t) (b2) << 16) | \
-     ((uint32_t) (b1) << 8) | (uint32_t) (b0))
+#define SSE2NEON_AES_B2W(b0, b1, b2, b3) \
+    (((uint32_t)(b3) << 24) | ((uint32_t)(b2) << 16) | ((uint32_t)(b1) << 8) | (uint32_t)(b0))
 // muliplying 'x' by 2 in GF(2^8)
 #define SSE2NEON_AES_F2(x) ((x << 1) ^ (((x >> 7) & 1) * 0x011b /* WPOLY */))
 // muliplying 'x' by 3 in GF(2^8)
 #define SSE2NEON_AES_F3(x) (SSE2NEON_AES_F2(x) ^ x)
-#define SSE2NEON_AES_U0(p) \
-    SSE2NEON_AES_B2W(SSE2NEON_AES_F2(p), p, p, SSE2NEON_AES_F3(p))
-#define SSE2NEON_AES_U1(p) \
-    SSE2NEON_AES_B2W(SSE2NEON_AES_F3(p), SSE2NEON_AES_F2(p), p, p)
-#define SSE2NEON_AES_U2(p) \
-    SSE2NEON_AES_B2W(p, SSE2NEON_AES_F3(p), SSE2NEON_AES_F2(p), p)
-#define SSE2NEON_AES_U3(p) \
-    SSE2NEON_AES_B2W(p, p, SSE2NEON_AES_F3(p), SSE2NEON_AES_F2(p))
+#define SSE2NEON_AES_U0(p) SSE2NEON_AES_B2W(SSE2NEON_AES_F2(p), p, p, SSE2NEON_AES_F3(p))
+#define SSE2NEON_AES_U1(p) SSE2NEON_AES_B2W(SSE2NEON_AES_F3(p), SSE2NEON_AES_F2(p), p, p)
+#define SSE2NEON_AES_U2(p) SSE2NEON_AES_B2W(p, SSE2NEON_AES_F3(p), SSE2NEON_AES_F2(p), p)
+#define SSE2NEON_AES_U3(p) SSE2NEON_AES_B2W(p, p, SSE2NEON_AES_F3(p), SSE2NEON_AES_F2(p))
 
     // this generates a table containing every possible permutation of
     // shift_rows() and sub_bytes() with mix_columns().
@@ -8679,24 +8638,20 @@ FORCE_INLINE __m128i _mm_aesenc_si128(__m128i a, __m128i RoundKey)
 #undef SSE2NEON_AES_U2
 #undef SSE2NEON_AES_U3
 
-    uint32_t x0 = _mm_cvtsi128_si32(a);  // get a[31:0]
-    uint32_t x1 =
-        _mm_cvtsi128_si32(_mm_shuffle_epi32(a, 0x55));  // get a[63:32]
-    uint32_t x2 =
-        _mm_cvtsi128_si32(_mm_shuffle_epi32(a, 0xAA));  // get a[95:64]
-    uint32_t x3 =
-        _mm_cvtsi128_si32(_mm_shuffle_epi32(a, 0xFF));  // get a[127:96]
+    uint32_t x0 = _mm_cvtsi128_si32(a);                           // get a[31:0]
+    uint32_t x1 = _mm_cvtsi128_si32(_mm_shuffle_epi32(a, 0x55));  // get a[63:32]
+    uint32_t x2 = _mm_cvtsi128_si32(_mm_shuffle_epi32(a, 0xAA));  // get a[95:64]
+    uint32_t x3 = _mm_cvtsi128_si32(_mm_shuffle_epi32(a, 0xFF));  // get a[127:96]
 
     // finish the modulo addition step in mix_columns()
-    __m128i out = _mm_set_epi32(
-        (aes_table[0][x3 & 0xff] ^ aes_table[1][(x0 >> 8) & 0xff] ^
-         aes_table[2][(x1 >> 16) & 0xff] ^ aes_table[3][x2 >> 24]),
-        (aes_table[0][x2 & 0xff] ^ aes_table[1][(x3 >> 8) & 0xff] ^
-         aes_table[2][(x0 >> 16) & 0xff] ^ aes_table[3][x1 >> 24]),
-        (aes_table[0][x1 & 0xff] ^ aes_table[1][(x2 >> 8) & 0xff] ^
-         aes_table[2][(x3 >> 16) & 0xff] ^ aes_table[3][x0 >> 24]),
-        (aes_table[0][x0 & 0xff] ^ aes_table[1][(x1 >> 8) & 0xff] ^
-         aes_table[2][(x2 >> 16) & 0xff] ^ aes_table[3][x3 >> 24]));
+    __m128i out = _mm_set_epi32((aes_table[0][x3 & 0xff] ^ aes_table[1][(x0 >> 8) & 0xff] ^
+                                 aes_table[2][(x1 >> 16) & 0xff] ^ aes_table[3][x2 >> 24]),
+                                (aes_table[0][x2 & 0xff] ^ aes_table[1][(x3 >> 8) & 0xff] ^
+                                 aes_table[2][(x0 >> 16) & 0xff] ^ aes_table[3][x1 >> 24]),
+                                (aes_table[0][x1 & 0xff] ^ aes_table[1][(x2 >> 8) & 0xff] ^
+                                 aes_table[2][(x3 >> 16) & 0xff] ^ aes_table[3][x0 >> 24]),
+                                (aes_table[0][x0 & 0xff] ^ aes_table[1][(x1 >> 8) & 0xff] ^
+                                 aes_table[2][(x2 >> 16) & 0xff] ^ aes_table[3][x3 >> 24]));
 
     return _mm_xor_si128(out, RoundKey);
 #endif
@@ -8709,12 +8664,40 @@ FORCE_INLINE __m128i _mm_aesdec_si128(__m128i a, __m128i RoundKey)
 {
 #if defined(__aarch64__)
     static const uint8_t inv_shift_rows[] = {
-        0x0, 0xd, 0xa, 0x7, 0x4, 0x1, 0xe, 0xb,
-        0x8, 0x5, 0x2, 0xf, 0xc, 0x9, 0x6, 0x3,
+        0x0,
+        0xd,
+        0xa,
+        0x7,
+        0x4,
+        0x1,
+        0xe,
+        0xb,
+        0x8,
+        0x5,
+        0x2,
+        0xf,
+        0xc,
+        0x9,
+        0x6,
+        0x3,
     };
     static const uint8_t ror32by8[] = {
-        0x1, 0x2, 0x3, 0x0, 0x5, 0x6, 0x7, 0x4,
-        0x9, 0xa, 0xb, 0x8, 0xd, 0xe, 0xf, 0xc,
+        0x1,
+        0x2,
+        0x3,
+        0x0,
+        0x5,
+        0x6,
+        0x7,
+        0x4,
+        0x9,
+        0xa,
+        0xb,
+        0x8,
+        0xd,
+        0xe,
+        0xf,
+        0xc,
     };
 
     uint8x16_t v;
@@ -8731,14 +8714,13 @@ FORCE_INLINE __m128i _mm_aesdec_si128(__m128i a, __m128i RoundKey)
 
     // inverse mix columns
     // multiplying 'v' by 4 in GF(2^8)
-    w = (v << 1) ^ (uint8x16_t) (((int8x16_t) v >> 7) & 0x1b);
-    w = (w << 1) ^ (uint8x16_t) (((int8x16_t) w >> 7) & 0x1b);
+    w = (v << 1) ^ (uint8x16_t)(((int8x16_t)v >> 7) & 0x1b);
+    w = (w << 1) ^ (uint8x16_t)(((int8x16_t)w >> 7) & 0x1b);
     v ^= w;
-    v ^= (uint8x16_t) vrev32q_u16((uint16x8_t) w);
+    v ^= (uint8x16_t)vrev32q_u16((uint16x8_t)w);
 
-    w = (v << 1) ^ (uint8x16_t) (((int8x16_t) v >> 7) &
-                                 0x1b);  // muliplying 'v' by 2 in GF(2^8)
-    w ^= (uint8x16_t) vrev32q_u16((uint16x8_t) v);
+    w = (v << 1) ^ (uint8x16_t)(((int8x16_t)v >> 7) & 0x1b);  // muliplying 'v' by 2 in GF(2^8)
+    w ^= (uint8x16_t)vrev32q_u16((uint16x8_t)v);
     w ^= vqtbl1q_u8(v ^ w, vld1q_u8(ror32by8));
 
     // add round key
@@ -8746,30 +8728,30 @@ FORCE_INLINE __m128i _mm_aesdec_si128(__m128i a, __m128i RoundKey)
 
 #else /* ARMv7-A NEON implementation */
     /* FIXME: optimized for NEON */
-    uint8_t i, e, f, g, h, v[4][4];
-    uint8_t *_a = (uint8_t *) &a;
-    for (i = 0; i < 16; ++i) {
+    uint8_t  i, e, f, g, h, v[4][4];
+    uint8_t *_a = (uint8_t *)&a;
+    for(i = 0; i < 16; ++i) {
         v[((i / 4) + (i % 4)) % 4][i % 4] = _sse2neon_rsbox[_a[i]];
     }
 
     // inverse mix columns
-    for (i = 0; i < 4; ++i) {
+    for(i = 0; i < 4; ++i) {
         e = v[i][0];
         f = v[i][1];
         g = v[i][2];
         h = v[i][3];
 
-        v[i][0] = SSE2NEON_MULTIPLY(e, 0x0e) ^ SSE2NEON_MULTIPLY(f, 0x0b) ^
-                  SSE2NEON_MULTIPLY(g, 0x0d) ^ SSE2NEON_MULTIPLY(h, 0x09);
-        v[i][1] = SSE2NEON_MULTIPLY(e, 0x09) ^ SSE2NEON_MULTIPLY(f, 0x0e) ^
-                  SSE2NEON_MULTIPLY(g, 0x0b) ^ SSE2NEON_MULTIPLY(h, 0x0d);
-        v[i][2] = SSE2NEON_MULTIPLY(e, 0x0d) ^ SSE2NEON_MULTIPLY(f, 0x09) ^
-                  SSE2NEON_MULTIPLY(g, 0x0e) ^ SSE2NEON_MULTIPLY(h, 0x0b);
-        v[i][3] = SSE2NEON_MULTIPLY(e, 0x0b) ^ SSE2NEON_MULTIPLY(f, 0x0d) ^
-                  SSE2NEON_MULTIPLY(g, 0x09) ^ SSE2NEON_MULTIPLY(h, 0x0e);
+        v[i][0] = SSE2NEON_MULTIPLY(e, 0x0e) ^ SSE2NEON_MULTIPLY(f, 0x0b) ^ SSE2NEON_MULTIPLY(g, 0x0d) ^
+                  SSE2NEON_MULTIPLY(h, 0x09);
+        v[i][1] = SSE2NEON_MULTIPLY(e, 0x09) ^ SSE2NEON_MULTIPLY(f, 0x0e) ^ SSE2NEON_MULTIPLY(g, 0x0b) ^
+                  SSE2NEON_MULTIPLY(h, 0x0d);
+        v[i][2] = SSE2NEON_MULTIPLY(e, 0x0d) ^ SSE2NEON_MULTIPLY(f, 0x09) ^ SSE2NEON_MULTIPLY(g, 0x0e) ^
+                  SSE2NEON_MULTIPLY(h, 0x0b);
+        v[i][3] = SSE2NEON_MULTIPLY(e, 0x0b) ^ SSE2NEON_MULTIPLY(f, 0x0d) ^ SSE2NEON_MULTIPLY(g, 0x09) ^
+                  SSE2NEON_MULTIPLY(h, 0x0e);
     }
 
-    return vreinterpretq_m128i_u8(vld1q_u8((uint8_t *) v)) ^ RoundKey;
+    return vreinterpretq_m128i_u8(vld1q_u8((uint8_t *)v)) ^ RoundKey;
 #endif
 }
 
@@ -8780,8 +8762,22 @@ FORCE_INLINE __m128i _mm_aesenclast_si128(__m128i a, __m128i RoundKey)
 {
 #if defined(__aarch64__)
     static const uint8_t shift_rows[] = {
-        0x0, 0x5, 0xa, 0xf, 0x4, 0x9, 0xe, 0x3,
-        0x8, 0xd, 0x2, 0x7, 0xc, 0x1, 0x6, 0xb,
+        0x0,
+        0x5,
+        0xa,
+        0xf,
+        0x4,
+        0x9,
+        0xe,
+        0x3,
+        0x8,
+        0xd,
+        0x2,
+        0x7,
+        0xc,
+        0x1,
+        0x6,
+        0xb,
     };
 
     uint8x16_t v;
@@ -8830,8 +8826,22 @@ FORCE_INLINE __m128i _mm_aesdeclast_si128(__m128i a, __m128i RoundKey)
 {
 #if defined(__aarch64__)
     static const uint8_t inv_shift_rows[] = {
-        0x0, 0xd, 0xa, 0x7, 0x4, 0x1, 0xe, 0xb,
-        0x8, 0x5, 0x2, 0xf, 0xc, 0x9, 0x6, 0x3,
+        0x0,
+        0xd,
+        0xa,
+        0x7,
+        0x4,
+        0x1,
+        0xe,
+        0xb,
+        0x8,
+        0x5,
+        0x2,
+        0xf,
+        0xc,
+        0x9,
+        0x6,
+        0x3,
     };
 
     uint8x16_t v;
@@ -8851,13 +8861,13 @@ FORCE_INLINE __m128i _mm_aesdeclast_si128(__m128i a, __m128i RoundKey)
 
 #else /* ARMv7-A NEON implementation */
     /* FIXME: optimized for NEON */
-    uint8_t v[4][4];
-    uint8_t *_a = (uint8_t *) &a;
-    for (int i = 0; i < 16; ++i) {
+    uint8_t  v[4][4];
+    uint8_t *_a = (uint8_t *)&a;
+    for(int i = 0; i < 16; ++i) {
         v[((i / 4) + (i % 4)) % 4][i % 4] = _sse2neon_rsbox[_a[i]];
     }
 
-    return vreinterpretq_m128i_u8(vld1q_u8((uint8_t *) v)) ^ RoundKey;
+    return vreinterpretq_m128i_u8(vld1q_u8((uint8_t *)v)) ^ RoundKey;
 #endif
 }
 
@@ -8867,44 +8877,58 @@ FORCE_INLINE __m128i _mm_aesimc_si128(__m128i a)
 {
 #if defined(__aarch64__)
     static const uint8_t ror32by8[] = {
-        0x1, 0x2, 0x3, 0x0, 0x5, 0x6, 0x7, 0x4,
-        0x9, 0xa, 0xb, 0x8, 0xd, 0xe, 0xf, 0xc,
+        0x1,
+        0x2,
+        0x3,
+        0x0,
+        0x5,
+        0x6,
+        0x7,
+        0x4,
+        0x9,
+        0xa,
+        0xb,
+        0x8,
+        0xd,
+        0xe,
+        0xf,
+        0xc,
     };
     uint8x16_t v = vreinterpretq_u8_m128i(a);
     uint8x16_t w;
 
     // multiplying 'v' by 4 in GF(2^8)
-    w = (v << 1) ^ (uint8x16_t) (((int8x16_t) v >> 7) & 0x1b);
-    w = (w << 1) ^ (uint8x16_t) (((int8x16_t) w >> 7) & 0x1b);
+    w = (v << 1) ^ (uint8x16_t)(((int8x16_t)v >> 7) & 0x1b);
+    w = (w << 1) ^ (uint8x16_t)(((int8x16_t)w >> 7) & 0x1b);
     v ^= w;
-    v ^= (uint8x16_t) vrev32q_u16((uint16x8_t) w);
+    v ^= (uint8x16_t)vrev32q_u16((uint16x8_t)w);
 
     // multiplying 'v' by 2 in GF(2^8)
-    w = (v << 1) ^ (uint8x16_t) (((int8x16_t) v >> 7) & 0x1b);
-    w ^= (uint8x16_t) vrev32q_u16((uint16x8_t) v);
+    w = (v << 1) ^ (uint8x16_t)(((int8x16_t)v >> 7) & 0x1b);
+    w ^= (uint8x16_t)vrev32q_u16((uint16x8_t)v);
     w ^= vqtbl1q_u8(v ^ w, vld1q_u8(ror32by8));
     return vreinterpretq_m128i_u8(w);
 
 #else /* ARMv7-A NEON implementation */
     uint8_t i, e, f, g, h, v[4][4];
-    vst1q_u8((uint8_t *) v, vreinterpretq_u8_m128i(a));
-    for (i = 0; i < 4; ++i) {
+    vst1q_u8((uint8_t *)v, vreinterpretq_u8_m128i(a));
+    for(i = 0; i < 4; ++i) {
         e = v[i][0];
         f = v[i][1];
         g = v[i][2];
         h = v[i][3];
 
-        v[i][0] = SSE2NEON_MULTIPLY(e, 0x0e) ^ SSE2NEON_MULTIPLY(f, 0x0b) ^
-                  SSE2NEON_MULTIPLY(g, 0x0d) ^ SSE2NEON_MULTIPLY(h, 0x09);
-        v[i][1] = SSE2NEON_MULTIPLY(e, 0x09) ^ SSE2NEON_MULTIPLY(f, 0x0e) ^
-                  SSE2NEON_MULTIPLY(g, 0x0b) ^ SSE2NEON_MULTIPLY(h, 0x0d);
-        v[i][2] = SSE2NEON_MULTIPLY(e, 0x0d) ^ SSE2NEON_MULTIPLY(f, 0x09) ^
-                  SSE2NEON_MULTIPLY(g, 0x0e) ^ SSE2NEON_MULTIPLY(h, 0x0b);
-        v[i][3] = SSE2NEON_MULTIPLY(e, 0x0b) ^ SSE2NEON_MULTIPLY(f, 0x0d) ^
-                  SSE2NEON_MULTIPLY(g, 0x09) ^ SSE2NEON_MULTIPLY(h, 0x0e);
+        v[i][0] = SSE2NEON_MULTIPLY(e, 0x0e) ^ SSE2NEON_MULTIPLY(f, 0x0b) ^ SSE2NEON_MULTIPLY(g, 0x0d) ^
+                  SSE2NEON_MULTIPLY(h, 0x09);
+        v[i][1] = SSE2NEON_MULTIPLY(e, 0x09) ^ SSE2NEON_MULTIPLY(f, 0x0e) ^ SSE2NEON_MULTIPLY(g, 0x0b) ^
+                  SSE2NEON_MULTIPLY(h, 0x0d);
+        v[i][2] = SSE2NEON_MULTIPLY(e, 0x0d) ^ SSE2NEON_MULTIPLY(f, 0x09) ^ SSE2NEON_MULTIPLY(g, 0x0e) ^
+                  SSE2NEON_MULTIPLY(h, 0x0b);
+        v[i][3] = SSE2NEON_MULTIPLY(e, 0x0b) ^ SSE2NEON_MULTIPLY(f, 0x0d) ^ SSE2NEON_MULTIPLY(g, 0x09) ^
+                  SSE2NEON_MULTIPLY(h, 0x0e);
     }
 
-    return vreinterpretq_m128i_u8(vld1q_u8((uint8_t *) v));
+    return vreinterpretq_m128i_u8(vld1q_u8((uint8_t *)v));
 #endif
 }
 
@@ -8921,13 +8945,13 @@ FORCE_INLINE __m128i _mm_aeskeygenassist_si128(__m128i a, const int rcon)
 {
 #if defined(__aarch64__)
     uint8x16_t _a = vreinterpretq_u8_m128i(a);
-    uint8x16_t v = vqtbl4q_u8(_sse2neon_vld1q_u8_x4(_sse2neon_sbox), _a);
-    v = vqtbx4q_u8(v, _sse2neon_vld1q_u8_x4(_sse2neon_sbox + 0x40), _a - 0x40);
-    v = vqtbx4q_u8(v, _sse2neon_vld1q_u8_x4(_sse2neon_sbox + 0x80), _a - 0x80);
-    v = vqtbx4q_u8(v, _sse2neon_vld1q_u8_x4(_sse2neon_sbox + 0xc0), _a - 0xc0);
+    uint8x16_t v  = vqtbl4q_u8(_sse2neon_vld1q_u8_x4(_sse2neon_sbox), _a);
+    v             = vqtbx4q_u8(v, _sse2neon_vld1q_u8_x4(_sse2neon_sbox + 0x40), _a - 0x40);
+    v             = vqtbx4q_u8(v, _sse2neon_vld1q_u8_x4(_sse2neon_sbox + 0x80), _a - 0x80);
+    v             = vqtbx4q_u8(v, _sse2neon_vld1q_u8_x4(_sse2neon_sbox + 0xc0), _a - 0xc0);
 
-    uint32x4_t v_u32 = vreinterpretq_u32_u8(v);
-    uint32x4_t ror_v = vorrq_u32(vshrq_n_u32(v_u32, 8), vshlq_n_u32(v_u32, 24));
+    uint32x4_t v_u32     = vreinterpretq_u32_u8(v);
+    uint32x4_t ror_v     = vorrq_u32(vshrq_n_u32(v_u32, 8), vshlq_n_u32(v_u32, 24));
     uint32x4_t ror_xor_v = veorq_u32(ror_v, vdupq_n_u32(rcon));
 
     return vreinterpretq_m128i_u32(vtrn2q_u32(v_u32, ror_xor_v));
@@ -8935,12 +8959,11 @@ FORCE_INLINE __m128i _mm_aeskeygenassist_si128(__m128i a, const int rcon)
 #else /* ARMv7-A NEON implementation */
     uint32_t X1 = _mm_cvtsi128_si32(_mm_shuffle_epi32(a, 0x55));
     uint32_t X3 = _mm_cvtsi128_si32(_mm_shuffle_epi32(a, 0xFF));
-    for (int i = 0; i < 4; ++i) {
-        ((uint8_t *) &X1)[i] = _sse2neon_sbox[((uint8_t *) &X1)[i]];
-        ((uint8_t *) &X3)[i] = _sse2neon_sbox[((uint8_t *) &X3)[i]];
+    for(int i = 0; i < 4; ++i) {
+        ((uint8_t *)&X1)[i] = _sse2neon_sbox[((uint8_t *)&X1)[i]];
+        ((uint8_t *)&X3)[i] = _sse2neon_sbox[((uint8_t *)&X3)[i]];
     }
-    return _mm_set_epi32(((X3 >> 8) | (X3 << 24)) ^ rcon, X3,
-                         ((X1 >> 8) | (X1 << 24)) ^ rcon, X1);
+    return _mm_set_epi32(((X3 >> 8) | (X3 << 24)) ^ rcon, X3, ((X1 >> 8) | (X1 << 24)) ^ rcon, X1);
 #endif
 }
 #undef SSE2NEON_AES_SBOX
@@ -8960,9 +8983,8 @@ FORCE_INLINE __m128i _mm_aeskeygenassist_si128(__m128i a, const int rcon)
 // for more details.
 FORCE_INLINE __m128i _mm_aesenc_si128(__m128i a, __m128i b)
 {
-    return vreinterpretq_m128i_u8(veorq_u8(
-        vaesmcq_u8(vaeseq_u8(vreinterpretq_u8_m128i(a), vdupq_n_u8(0))),
-        vreinterpretq_u8_m128i(b)));
+    return vreinterpretq_m128i_u8(
+        veorq_u8(vaesmcq_u8(vaeseq_u8(vreinterpretq_u8_m128i(a), vdupq_n_u8(0))), vreinterpretq_u8_m128i(b)));
 }
 
 // Perform one round of an AES decryption flow on data (state) in a using the
@@ -8970,9 +8992,8 @@ FORCE_INLINE __m128i _mm_aesenc_si128(__m128i a, __m128i b)
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_aesdec_si128
 FORCE_INLINE __m128i _mm_aesdec_si128(__m128i a, __m128i RoundKey)
 {
-    return vreinterpretq_m128i_u8(veorq_u8(
-        vaesimcq_u8(vaesdq_u8(vreinterpretq_u8_m128i(a), vdupq_n_u8(0))),
-        vreinterpretq_u8_m128i(RoundKey)));
+    return vreinterpretq_m128i_u8(
+        veorq_u8(vaesimcq_u8(vaesdq_u8(vreinterpretq_u8_m128i(a), vdupq_n_u8(0))), vreinterpretq_u8_m128i(RoundKey)));
 }
 
 // Perform the last round of an AES encryption flow on data (state) in a using
@@ -8980,9 +9001,7 @@ FORCE_INLINE __m128i _mm_aesdec_si128(__m128i a, __m128i RoundKey)
 // https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm_aesenclast_si128
 FORCE_INLINE __m128i _mm_aesenclast_si128(__m128i a, __m128i RoundKey)
 {
-    return _mm_xor_si128(vreinterpretq_m128i_u8(vaeseq_u8(
-                             vreinterpretq_u8_m128i(a), vdupq_n_u8(0))),
-                         RoundKey);
+    return _mm_xor_si128(vreinterpretq_m128i_u8(vaeseq_u8(vreinterpretq_u8_m128i(a), vdupq_n_u8(0))), RoundKey);
 }
 
 // Perform the last round of an AES decryption flow on data (state) in a using
@@ -8991,8 +9010,7 @@ FORCE_INLINE __m128i _mm_aesenclast_si128(__m128i a, __m128i RoundKey)
 FORCE_INLINE __m128i _mm_aesdeclast_si128(__m128i a, __m128i RoundKey)
 {
     return vreinterpretq_m128i_u8(
-        veorq_u8(vaesdq_u8(vreinterpretq_u8_m128i(a), vdupq_n_u8(0)),
-                 vreinterpretq_u8_m128i(RoundKey)));
+        veorq_u8(vaesdq_u8(vreinterpretq_u8_m128i(a), vdupq_n_u8(0)), vreinterpretq_u8_m128i(RoundKey)));
 }
 
 // Perform the InvMixColumns transformation on a and store the result in dst.
@@ -9014,12 +9032,24 @@ FORCE_INLINE __m128i _mm_aeskeygenassist_si128(__m128i a, const int rcon)
 #ifndef _MSC_VER
     uint8x16_t dest = {
         // Undo ShiftRows step from AESE and extract X1 and X3
-        u8[0x4], u8[0x1], u8[0xE], u8[0xB],  // SubBytes(X1)
-        u8[0x1], u8[0xE], u8[0xB], u8[0x4],  // ROT(SubBytes(X1))
-        u8[0xC], u8[0x9], u8[0x6], u8[0x3],  // SubBytes(X3)
-        u8[0x9], u8[0x6], u8[0x3], u8[0xC],  // ROT(SubBytes(X3))
+        u8[0x4],
+        u8[0x1],
+        u8[0xE],
+        u8[0xB],  // SubBytes(X1)
+        u8[0x1],
+        u8[0xE],
+        u8[0xB],
+        u8[0x4],  // ROT(SubBytes(X1))
+        u8[0xC],
+        u8[0x9],
+        u8[0x6],
+        u8[0x3],  // SubBytes(X3)
+        u8[0x9],
+        u8[0x6],
+        u8[0x3],
+        u8[0xC],  // ROT(SubBytes(X3))
     };
-    uint32x4_t r = {0, (unsigned) rcon, 0, (unsigned) rcon};
+    uint32x4_t r = {0, (unsigned)rcon, 0, (unsigned)rcon};
     return vreinterpretq_m128i_u8(dest) ^ vreinterpretq_m128i_u32(r);
 #else
     // We have to do this hack because MSVC is strictly adhering to the CPP
@@ -9028,20 +9058,12 @@ FORCE_INLINE __m128i _mm_aeskeygenassist_si128(__m128i a, const int rcon)
 
     // As per the Windows ARM64 ABI, it is always little endian, so this works
     __n128 dest{
-        ((uint64_t) u8.n128_u8[0x4] << 0) | ((uint64_t) u8.n128_u8[0x1] << 8) |
-            ((uint64_t) u8.n128_u8[0xE] << 16) |
-            ((uint64_t) u8.n128_u8[0xB] << 24) |
-            ((uint64_t) u8.n128_u8[0x1] << 32) |
-            ((uint64_t) u8.n128_u8[0xE] << 40) |
-            ((uint64_t) u8.n128_u8[0xB] << 48) |
-            ((uint64_t) u8.n128_u8[0x4] << 56),
-        ((uint64_t) u8.n128_u8[0xC] << 0) | ((uint64_t) u8.n128_u8[0x9] << 8) |
-            ((uint64_t) u8.n128_u8[0x6] << 16) |
-            ((uint64_t) u8.n128_u8[0x3] << 24) |
-            ((uint64_t) u8.n128_u8[0x9] << 32) |
-            ((uint64_t) u8.n128_u8[0x6] << 40) |
-            ((uint64_t) u8.n128_u8[0x3] << 48) |
-            ((uint64_t) u8.n128_u8[0xC] << 56)};
+        ((uint64_t)u8.n128_u8[0x4] << 0) | ((uint64_t)u8.n128_u8[0x1] << 8) | ((uint64_t)u8.n128_u8[0xE] << 16) |
+            ((uint64_t)u8.n128_u8[0xB] << 24) | ((uint64_t)u8.n128_u8[0x1] << 32) | ((uint64_t)u8.n128_u8[0xE] << 40) |
+            ((uint64_t)u8.n128_u8[0xB] << 48) | ((uint64_t)u8.n128_u8[0x4] << 56),
+        ((uint64_t)u8.n128_u8[0xC] << 0) | ((uint64_t)u8.n128_u8[0x9] << 8) | ((uint64_t)u8.n128_u8[0x6] << 16) |
+            ((uint64_t)u8.n128_u8[0x3] << 24) | ((uint64_t)u8.n128_u8[0x9] << 32) | ((uint64_t)u8.n128_u8[0x6] << 40) |
+            ((uint64_t)u8.n128_u8[0x3] << 48) | ((uint64_t)u8.n128_u8[0xC] << 56)};
 
     dest.n128_u32[1] = dest.n128_u32[1] ^ rcon;
     dest.n128_u32[3] = dest.n128_u32[3] ^ rcon;
@@ -9060,21 +9082,17 @@ FORCE_INLINE __m128i _mm_clmulepi64_si128(__m128i _a, __m128i _b, const int imm)
 {
     uint64x2_t a = vreinterpretq_u64_m128i(_a);
     uint64x2_t b = vreinterpretq_u64_m128i(_b);
-    switch (imm & 0x11) {
-    case 0x00:
-        return vreinterpretq_m128i_u64(
-            _sse2neon_vmull_p64(vget_low_u64(a), vget_low_u64(b)));
-    case 0x01:
-        return vreinterpretq_m128i_u64(
-            _sse2neon_vmull_p64(vget_high_u64(a), vget_low_u64(b)));
-    case 0x10:
-        return vreinterpretq_m128i_u64(
-            _sse2neon_vmull_p64(vget_low_u64(a), vget_high_u64(b)));
-    case 0x11:
-        return vreinterpretq_m128i_u64(
-            _sse2neon_vmull_p64(vget_high_u64(a), vget_high_u64(b)));
-    default:
-        abort();
+    switch(imm & 0x11) {
+        case 0x00:
+            return vreinterpretq_m128i_u64(_sse2neon_vmull_p64(vget_low_u64(a), vget_low_u64(b)));
+        case 0x01:
+            return vreinterpretq_m128i_u64(_sse2neon_vmull_p64(vget_high_u64(a), vget_low_u64(b)));
+        case 0x10:
+            return vreinterpretq_m128i_u64(_sse2neon_vmull_p64(vget_low_u64(a), vget_high_u64(b)));
+        case 0x11:
+            return vreinterpretq_m128i_u64(_sse2neon_vmull_p64(vget_high_u64(a), vget_high_u64(b)));
+        default:
+            abort();
     }
 }
 
@@ -9109,16 +9127,16 @@ FORCE_INLINE int _mm_popcnt_u32(unsigned int a)
 #elif defined(_MSC_VER)
     return _CountOneBits(a);
 #else
-    return (int) vaddlv_u8(vcnt_u8(vcreate_u8((uint64_t) a)));
+    return (int)vaddlv_u8(vcnt_u8(vcreate_u8((uint64_t)a)));
 #endif
 #else
-    uint32_t count = 0;
-    uint8x8_t input_val, count8x8_val;
+    uint32_t   count = 0;
+    uint8x8_t  input_val, count8x8_val;
     uint16x4_t count16x4_val;
     uint32x2_t count32x2_val;
 
-    input_val = vld1_u8((uint8_t *) &a);
-    count8x8_val = vcnt_u8(input_val);
+    input_val     = vld1_u8((uint8_t *)&a);
+    count8x8_val  = vcnt_u8(input_val);
     count16x4_val = vpaddl_u8(count8x8_val);
     count32x2_val = vpaddl_u16(count16x4_val);
 
@@ -9138,17 +9156,17 @@ FORCE_INLINE int64_t _mm_popcnt_u64(uint64_t a)
 #elif defined(_MSC_VER)
     return _CountOneBits64(a);
 #else
-    return (int64_t) vaddlv_u8(vcnt_u8(vcreate_u8(a)));
+    return (int64_t)vaddlv_u8(vcnt_u8(vcreate_u8(a)));
 #endif
 #else
-    uint64_t count = 0;
-    uint8x8_t input_val, count8x8_val;
+    uint64_t   count = 0;
+    uint8x8_t  input_val, count8x8_val;
     uint16x4_t count16x4_val;
     uint32x2_t count32x2_val;
     uint64x1_t count64x1_val;
 
-    input_val = vld1_u8((uint8_t *) &a);
-    count8x8_val = vcnt_u8(input_val);
+    input_val     = vld1_u8((uint8_t *)&a);
+    count8x8_val  = vcnt_u8(input_val);
     count16x4_val = vpaddl_u8(count8x8_val);
     count32x2_val = vpaddl_u16(count16x4_val);
     count64x1_val = vpaddl_u32(count32x2_val);
@@ -9181,7 +9199,7 @@ FORCE_INLINE void _sse2neon_mm_set_denormals_zero_mode(unsigned int flag)
 #if defined(__aarch64__) || defined(_M_ARM64)
     _sse2neon_set_fpcr(r.value);
 #else
-    __asm__ __volatile__("vmsr FPSCR, %0" ::"r"(r));        /* write */
+    __asm__ __volatile__("vmsr FPSCR, %0" ::"r"(r)); /* write */
 #endif
 }
 
@@ -9210,19 +9228,19 @@ FORCE_INLINE uint64_t _rdtsc(void)
     // Read the user mode Performance Monitoring Unit (PMU)
     // User Enable Register (PMUSERENR) access permissions.
     __asm__ __volatile__("mrc p15, 0, %0, c9, c14, 0" : "=r"(pmuseren));
-    if (pmuseren & 1) {  // Allows reading PMUSERENR for user mode code.
+    if(pmuseren & 1) {  // Allows reading PMUSERENR for user mode code.
         __asm__ __volatile__("mrc p15, 0, %0, c9, c12, 1" : "=r"(pmcntenset));
-        if (pmcntenset & 0x80000000UL) {  // Is it counting?
+        if(pmcntenset & 0x80000000UL) {  // Is it counting?
             __asm__ __volatile__("mrc p15, 0, %0, c9, c13, 0" : "=r"(pmccntr));
             // The counter is set up to count every 64th cycle
-            return (uint64_t) (pmccntr) << 6;
+            return (uint64_t)(pmccntr) << 6;
         }
     }
 
     // Fallback to syscall as we can't enable PMUSERENR in user mode.
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    return (uint64_t) (tv.tv_sec) * 1000000 + tv.tv_usec;
+    return (uint64_t)(tv.tv_sec) * 1000000 + tv.tv_usec;
 #endif
 }
 

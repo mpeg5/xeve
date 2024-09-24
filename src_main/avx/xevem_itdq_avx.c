@@ -1,33 +1,32 @@
 /* Copyright (c) 2020, Samsung Electronics Co., Ltd.
    All Rights Reserved. */
-   /*
-      Redistribution and use in source and binary forms, with or without
-      modification, are permitted provided that the following conditions are met:
+/*
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
 
-      - Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
+   - Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
 
-      - Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
+   - Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
 
-      - Neither the name of the copyright owner, nor the names of its contributors
-      may be used to endorse or promote products derived from this software
-      without specific prior written permission.
+   - Neither the name of the copyright owner, nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
 
-      THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-      AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-      IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-      ARE DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-      LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-      CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-      SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-      INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-      CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-      ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-      POSSIBILITY OF SUCH DAMAGE.
-   */
-
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+   ARE DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+   CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   POSSIBILITY OF SUCH DAMAGE.
+*/
 
 #include "xevem_type.h"
 #include "xevem_itdq.h"
@@ -100,8 +99,7 @@ static inline void itx_pb2_avx(s16* src, s16* dst, int shift, int line)
     int j;
     int E, O;
     int add = shift == 0 ? 0 : 1 << (shift - 1);
-    for (j = 0; j < line; j++)
-    {
+    for(j = 0; j < line; j++) {
         /* E and O */
         E = src[0 * line + j] + src[1 * line + j];
         O = src[0 * line + j] - src[1 * line + j];
@@ -111,30 +109,30 @@ static inline void itx_pb2_avx(s16* src, s16* dst, int shift, int line)
     }
 }
 
-
 static void itx_pb4_avx(s16* src, s16* dst, int shift, int line)
 {
-    __m128i s0, s1, s2, s3;
-    __m128i ss0, ss1, ss2, ss3;
-    __m256i e0, e1, o0, o1, t0, t1;
-    __m256i v0, v1, v2, v3;
+    __m128i       s0, s1, s2, s3;
+    __m128i       ss0, ss1, ss2, ss3;
+    __m256i       e0, e1, o0, o1, t0, t1;
+    __m256i       v0, v1, v2, v3;
     const __m256i c16_p35_p84 = _mm256_setr_epi16(84, 35, 84, 35, 84, 35, 84, 35, 84, 35, 84, 35, 84, 35, 84, 35);
-    const __m256i c16_n84_p35 = _mm256_setr_epi16(35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84);
-    const __m256i c16_n64_p64 = _mm256_setr_epi16(64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64);
+    const __m256i c16_n84_p35 =
+        _mm256_setr_epi16(35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84);
+    const __m256i c16_n64_p64 =
+        _mm256_setr_epi16(64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64);
     const __m256i c16_p64_p64 = _mm256_setr_epi16(64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64);
-    __m256i off = _mm256_set1_epi32(1 << (shift - 1));
-    int j;
-    int i_src = line;
-    int i_src2 = line << 1;
-    int i_src3 = i_src + i_src2;
+    __m256i       off         = _mm256_set1_epi32(1 << (shift - 1));
+    int           j;
+    int           i_src  = line;
+    int           i_src2 = line << 1;
+    int           i_src3 = i_src + i_src2;
 
-    if (line >= 8)
-    {
-        for (j = 0; j < line; j += 8) {
-            s0 = _mm_loadu_si128((__m128i*)(src + j));
-            s1 = _mm_loadu_si128((__m128i*)(src + i_src + j));
-            s2 = _mm_loadu_si128((__m128i*)(src + i_src2 + j));
-            s3 = _mm_loadu_si128((__m128i*)(src + i_src3 + j));
+    if(line >= 8) {
+        for(j = 0; j < line; j += 8) {
+            s0  = _mm_loadu_si128((__m128i*)(src + j));
+            s1  = _mm_loadu_si128((__m128i*)(src + i_src + j));
+            s2  = _mm_loadu_si128((__m128i*)(src + i_src2 + j));
+            s3  = _mm_loadu_si128((__m128i*)(src + i_src3 + j));
             ss0 = _mm_unpacklo_epi16(s0, s2);
             ss1 = _mm_unpackhi_epi16(s0, s2);
             ss2 = _mm_unpacklo_epi16(s1, s3);
@@ -162,14 +160,13 @@ static void itx_pb4_avx(s16* src, s16* dst, int shift, int line)
             v2 = _mm256_srai_epi32(v2, shift);
             v3 = _mm256_srai_epi32(v3, shift);
 
-            v0 = _mm256_packs_epi32(v0, v2);    
-            v1 = _mm256_packs_epi32(v1, v3);    
+            v0 = _mm256_packs_epi32(v0, v2);
+            v1 = _mm256_packs_epi32(v1, v3);
 
-        
-            v2 = _mm256_unpacklo_epi16(v0, v1); 
-            v3 = _mm256_unpackhi_epi16(v0, v1); 
-            v0 = _mm256_unpacklo_epi32(v2, v3); 
-            v1 = _mm256_unpackhi_epi32(v2, v3); 
+            v2 = _mm256_unpacklo_epi16(v0, v1);
+            v3 = _mm256_unpackhi_epi16(v0, v1);
+            v0 = _mm256_unpacklo_epi32(v2, v3);
+            v1 = _mm256_unpackhi_epi32(v2, v3);
 
             _mm_storeu_si128((__m128i*)dst, _mm256_castsi256_si128(v0));
             _mm_storeu_si128((__m128i*)(dst + 8), _mm256_castsi256_si128(v1));
@@ -178,14 +175,12 @@ static void itx_pb4_avx(s16* src, s16* dst, int shift, int line)
             dst += 32;
         }
     }
-    else
-    {
+    else {
         int j;
         int E[2], O[2];
         int add = 1 << (shift - 1);
 
-        for (j = 0; j < line; j++)
-        {
+        for(j = 0; j < line; j++) {
             /* Utilizing symmetry properties to the maximum to minimize the number of multiplications */
             O[0] = xeve_tbl_tm4[1][0] * src[1 * line + j] + xeve_tbl_tm4[3][0] * src[3 * line + j];
             O[1] = xeve_tbl_tm4[1][1] * src[1 * line + j] + xeve_tbl_tm4[3][1] * src[3 * line + j];
@@ -199,38 +194,49 @@ static void itx_pb4_avx(s16* src, s16* dst, int shift, int line)
             dst[j * 4 + 3] = ITX_CLIP((E[0] - O[0] + add) >> shift);
         }
     }
-    
 }
 static void itx_pb8_avx(s16* src, s16* dst, int shift, int line)
 {
-    if (line > 4) {
-        const __m256i coeff_p89_p75 = _mm256_setr_epi16(89, 75, 89, 75, 89, 75, 89, 75, 89, 75, 89, 75, 89, 75, 89, 75); // 89 75
-        const __m256i coeff_p50_p18 = _mm256_setr_epi16(50, 18, 50, 18, 50, 18, 50, 18, 50, 18, 50, 18, 50, 18, 50, 18); // 50, 18
-        const __m256i coeff_p75_n18 = _mm256_setr_epi16(75, -18, 75, -18, 75, -18, 75, -18, 75, -18, 75, -18, 75, -18, 75, -18); // 75, -18
-        const __m256i coeff_n89_n50 = _mm256_setr_epi16(-89, -50, -89, -50, -89, -50, -89, -50, -89, -50, -89, -50, -89, -50, -89, -50); // -89, -50
-        const __m256i coeff_p50_n89 = _mm256_setr_epi16(50, -89, 50, -89, 50, -89, 50, -89, 50, -89, 50, -89, 50, -89, 50, -89); // 50,-89
-        const __m256i coeff_p18_p75 = _mm256_setr_epi16(18, 75, 18, 75, 18, 75, 18, 75, 18, 75, 18, 75, 18, 75, 18, 75); // 18, 75
-        const __m256i coeff_p18_n50 = _mm256_setr_epi16(18, -50, 18, -50, 18, -50, 18, -50, 18, -50, 18, -50, 18, -50, 18, -50); // 18,-50
-        const __m256i coeff_p75_n89 = _mm256_setr_epi16(75, -89, 75, -89, 75, -89, 75, -89, 75, -89, 75, -89, 75, -89, 75, -89); // 75,-89
-        const __m256i coeff_p64_p64 = _mm256_setr_epi16(64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64); // 64, 64
-        const __m256i coeff_p64_n64 = _mm256_setr_epi16(64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64); // 64, -64
-        const __m256i coeff_p84_n35 = _mm256_setr_epi16(84, 35, 84, 35, 84, 35, 84, 35, 84, 35, 84, 35, 84, 35, 84, 35); // 84, 35
-        const __m256i coeff_p35_n84 = _mm256_setr_epi16(35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84); // 35, -84
+    if(line > 4) {
+        const __m256i coeff_p89_p75 =
+            _mm256_setr_epi16(89, 75, 89, 75, 89, 75, 89, 75, 89, 75, 89, 75, 89, 75, 89, 75);  // 89 75
+        const __m256i coeff_p50_p18 =
+            _mm256_setr_epi16(50, 18, 50, 18, 50, 18, 50, 18, 50, 18, 50, 18, 50, 18, 50, 18);  // 50, 18
+        const __m256i coeff_p75_n18 =
+            _mm256_setr_epi16(75, -18, 75, -18, 75, -18, 75, -18, 75, -18, 75, -18, 75, -18, 75, -18);  // 75, -18
+        const __m256i coeff_n89_n50 = _mm256_setr_epi16(
+            -89, -50, -89, -50, -89, -50, -89, -50, -89, -50, -89, -50, -89, -50, -89, -50);  // -89, -50
+        const __m256i coeff_p50_n89 =
+            _mm256_setr_epi16(50, -89, 50, -89, 50, -89, 50, -89, 50, -89, 50, -89, 50, -89, 50, -89);  // 50,-89
+        const __m256i coeff_p18_p75 =
+            _mm256_setr_epi16(18, 75, 18, 75, 18, 75, 18, 75, 18, 75, 18, 75, 18, 75, 18, 75);  // 18, 75
+        const __m256i coeff_p18_n50 =
+            _mm256_setr_epi16(18, -50, 18, -50, 18, -50, 18, -50, 18, -50, 18, -50, 18, -50, 18, -50);  // 18,-50
+        const __m256i coeff_p75_n89 =
+            _mm256_setr_epi16(75, -89, 75, -89, 75, -89, 75, -89, 75, -89, 75, -89, 75, -89, 75, -89);  // 75,-89
+        const __m256i coeff_p64_p64 =
+            _mm256_setr_epi16(64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64);  // 64, 64
+        const __m256i coeff_p64_n64 =
+            _mm256_setr_epi16(64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64, 64, -64);  // 64, -64
+        const __m256i coeff_p84_n35 =
+            _mm256_setr_epi16(84, 35, 84, 35, 84, 35, 84, 35, 84, 35, 84, 35, 84, 35, 84, 35);  // 84, 35
+        const __m256i coeff_p35_n84 =
+            _mm256_setr_epi16(35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84, 35, -84);  // 35, -84
         __m128i s0, s1, s2, s3, s4, s5, s6, s7;
         __m128i ss0, ss1, ss2, ss3;
         __m256i e0, e1, e2, e3, o0, o1, o2, o3, ee0, ee1, eo0, eo1;
         __m256i t0, t1, t2, t3;
         __m256i d0, d1, d2, d3, d4, d5, d6, d7;
         __m256i offset = _mm256_set1_epi32(1 << (shift - 1));
-        int j;
-        int i_src = line;
-        int i_src2 = line << 1;
-        int i_src3 = i_src + i_src2;
-        int i_src4 = i_src << 2;
-        int i_src5 = i_src2 + i_src3;
-        int i_src6 = i_src3 << 1;
-        int i_src7 = i_src3 + i_src4;
-        for (j = 0; j < line; j += 8) {
+        int     j;
+        int     i_src  = line;
+        int     i_src2 = line << 1;
+        int     i_src3 = i_src + i_src2;
+        int     i_src4 = i_src << 2;
+        int     i_src5 = i_src2 + i_src3;
+        int     i_src6 = i_src3 << 1;
+        int     i_src7 = i_src3 + i_src4;
+        for(j = 0; j < line; j += 8) {
             // O[0] -- O[3]
             s1 = _mm_loadu_si128((__m128i*)(src + i_src + j));
             s3 = _mm_loadu_si128((__m128i*)(src + i_src3 + j));
@@ -321,25 +327,25 @@ static void itx_pb8_avx(s16* src, s16* dst, int shift, int line)
             dst += 64;
         }
     }
-    else if(line == 4){
-        const __m128i coeff_p89_p75 = _mm_setr_epi16(89, 75, 89, 75, 89, 75, 89, 75); // 89 75
-        const __m128i coeff_p50_p18  = _mm_setr_epi16(50, 18, 50, 18, 50, 18, 50, 18); // 50, 18
-        const __m128i coeff_p75_n18  = _mm_setr_epi16(75, -18, 75, -18, 75, -18, 75, -18); // 75, -18
-        const __m128i coeff_n89_n50 = _mm_setr_epi16(-89, -50, -89, -50, -89, -50, -89, -50); // -89, -50
-        const __m128i coeff_p50_n89 = _mm_setr_epi16(50, -89, 50, -89, 50, -89, 50, -89); // 50,-89
-        const __m128i coeff_p18_p75  = _mm_setr_epi16(18, 75, 18, 75, 18, 75, 18, 75); // 18, 75
-        const __m128i coeff_p18_n50  = _mm_setr_epi16(18, -50, 18, -50, 18, -50, 18, -50); // 18,-50
-        const __m128i coeff_p75_n89 = _mm_setr_epi16(75, -89, 75, -89, 75, -89, 75, -89); // 75,-89
-        const __m128i coeff_p64_p64 = _mm_setr_epi16(64, 64, 64, 64, 64, 64, 64, 64); // 64, 64
-        const __m128i coeff_p64_n64 = _mm_setr_epi16(64, -64, 64, -64, 64, -64, 64, -64); // 64, -64
-        const __m128i coeff_p84_n35 = _mm_setr_epi16(84, 35, 84, 35, 84, 35, 84, 35); // 84, 35
-        const __m128i coeff_p35_n84 = _mm_setr_epi16(35, -84, 35, -84, 35, -84, 35, -84); // 35, -84
+    else if(line == 4) {
+        const __m128i coeff_p89_p75 = _mm_setr_epi16(89, 75, 89, 75, 89, 75, 89, 75);          // 89 75
+        const __m128i coeff_p50_p18 = _mm_setr_epi16(50, 18, 50, 18, 50, 18, 50, 18);          // 50, 18
+        const __m128i coeff_p75_n18 = _mm_setr_epi16(75, -18, 75, -18, 75, -18, 75, -18);      // 75, -18
+        const __m128i coeff_n89_n50 = _mm_setr_epi16(-89, -50, -89, -50, -89, -50, -89, -50);  // -89, -50
+        const __m128i coeff_p50_n89 = _mm_setr_epi16(50, -89, 50, -89, 50, -89, 50, -89);      // 50,-89
+        const __m128i coeff_p18_p75 = _mm_setr_epi16(18, 75, 18, 75, 18, 75, 18, 75);          // 18, 75
+        const __m128i coeff_p18_n50 = _mm_setr_epi16(18, -50, 18, -50, 18, -50, 18, -50);      // 18,-50
+        const __m128i coeff_p75_n89 = _mm_setr_epi16(75, -89, 75, -89, 75, -89, 75, -89);      // 75,-89
+        const __m128i coeff_p64_p64 = _mm_setr_epi16(64, 64, 64, 64, 64, 64, 64, 64);          // 64, 64
+        const __m128i coeff_p64_n64 = _mm_setr_epi16(64, -64, 64, -64, 64, -64, 64, -64);      // 64, -64
+        const __m128i coeff_p84_n35 = _mm_setr_epi16(84, 35, 84, 35, 84, 35, 84, 35);          // 84, 35
+        const __m128i coeff_p35_n84 = _mm_setr_epi16(35, -84, 35, -84, 35, -84, 35, -84);      // 35, -84
 
         __m128i s0, s1, s2, s3, s4, s5, s6, s7;
         __m128i e0, e1, e2, e3, o0, o1, o2, o3, ee0, ee1, eo0, eo1;
         __m128i t0, t1, t2, t3;
         __m128i offset = _mm_set1_epi32(1 << (shift - 1));
-        __m128i zero = _mm_setzero_si128();
+        __m128i zero   = _mm_setzero_si128();
 
         // O[0] -- O[3]
         s1 = _mm_loadl_epi64((__m128i*)(src + 4));
@@ -372,17 +378,17 @@ static void itx_pb8_avx(s16* src, s16* dst, int shift, int line)
         s4 = _mm_loadl_epi64((__m128i*)(src + 16));
         s6 = _mm_loadl_epi64((__m128i*)(src + 24));
 
-        t0 = _mm_unpacklo_epi16(s0, s4);
+        t0  = _mm_unpacklo_epi16(s0, s4);
         ee0 = _mm_madd_epi16(t0, coeff_p64_p64);
         ee1 = _mm_madd_epi16(t0, coeff_p64_n64);
 
-        t0 = _mm_unpacklo_epi16(s2, s6);
+        t0  = _mm_unpacklo_epi16(s2, s6);
         eo0 = _mm_madd_epi16(t0, coeff_p84_n35);
         eo1 = _mm_madd_epi16(t0, coeff_p35_n84);
-        e0 = _mm_add_epi32(ee0, eo0);
-        e3 = _mm_sub_epi32(ee0, eo0);
-        e0 = _mm_add_epi32(e0, offset);
-        e3 = _mm_add_epi32(e3, offset);
+        e0  = _mm_add_epi32(ee0, eo0);
+        e3  = _mm_sub_epi32(ee0, eo0);
+        e0  = _mm_add_epi32(e0, offset);
+        e3  = _mm_add_epi32(e3, offset);
 
         e1 = _mm_add_epi32(ee1, eo1);
         e2 = _mm_sub_epi32(ee1, eo1);
@@ -417,19 +423,17 @@ static void itx_pb8_avx(s16* src, s16* dst, int shift, int line)
         _mm_storeu_si128((__m128i*)(dst + 16), s2);
         _mm_storeu_si128((__m128i*)(dst + 24), s3);
     }
-    else
-    {
+    else {
         int j, k;
         int E[4], O[4];
         int EE[2], EO[2];
         int add = 1 << (shift - 1);
 
-        for (j = 0; j < line; j++)
-        {
+        for(j = 0; j < line; j++) {
             /* Utilizing symmetry properties to the maximum to minimize the number of multiplications */
-            for (k = 0; k < 4; k++)
-            {
-                O[k] = xeve_tbl_tm8[1][k] * src[1 * line + j] + xeve_tbl_tm8[3][k] * src[3 * line + j] + xeve_tbl_tm8[5][k] * src[5 * line + j] + xeve_tbl_tm8[7][k] * src[7 * line + j];
+            for(k = 0; k < 4; k++) {
+                O[k] = xeve_tbl_tm8[1][k] * src[1 * line + j] + xeve_tbl_tm8[3][k] * src[3 * line + j] +
+                       xeve_tbl_tm8[5][k] * src[5 * line + j] + xeve_tbl_tm8[7][k] * src[7 * line + j];
             }
 
             EO[0] = xeve_tbl_tm8[2][0] * src[2 * line + j] + xeve_tbl_tm8[6][0] * src[6 * line + j];
@@ -443,9 +447,8 @@ static void itx_pb8_avx(s16* src, s16* dst, int shift, int line)
             E[1] = EE[1] + EO[1];
             E[2] = EE[1] - EO[1];
 
-            for (k = 0; k < 4; k++)
-            {
-                dst[j * 8 + k] = ITX_CLIP((E[k] + O[k] + add) >> shift);
+            for(k = 0; k < 4; k++) {
+                dst[j * 8 + k]     = ITX_CLIP((E[k] + O[k] + add) >> shift);
                 dst[j * 8 + k + 4] = ITX_CLIP((E[3 - k] - O[3 - k] + add) >> shift);
             }
         }
@@ -453,25 +456,25 @@ static void itx_pb8_avx(s16* src, s16* dst, int shift, int line)
 }
 static void itx_pb16_avx(s16* src, s16* dst, int shift, int line)
 {
-    const __m256i p87_p90 = _mm256_set_epi16(set_vals(90, 87)); // 5701722
-    const __m256i p70_p80 = _mm256_set_epi16(set_vals(80, 70)); // 4587600
-    const __m256i p43_p57 = _mm256_set_epi16(set_vals(57, 43)); // 2818105
-    const __m256i p09_p26 = _mm256_set_epi16(set_vals(26, 9)); // 589850
-    const __m256i p57_p87 = _mm256_set_epi16(set_vals(87, 57)); // 3735639
-    const __m256i n43_p09 = _mm256_set_epi16(set_vals(9, -43)); // -2818039
-    const __m256i n90_n80 = _mm256_set_epi16(set_vals(-80, -90)); // -5832784
-    const __m256i n26_n70 = _mm256_set_epi16(set_vals(-70, -26)); // -1638470
-    const __m256i p09_p80 = _mm256_set_epi16(set_vals(80, 9)); // 589904
-    const __m256i n87_n70 = _mm256_set_epi16(set_vals(-70, -87)); // -5636166
-    const __m256i p57_n26 = _mm256_set_epi16(set_vals(-26, 57)); // 3801062
-    const __m256i p43_p90 = _mm256_set_epi16(set_vals(90, 43)); // 2818138
-    const __m256i n43_p70 = _mm256_set_epi16(set_vals(70, -43)); // -2817978
-    const __m256i p09_n87 = _mm256_set_epi16(set_vals(-87, 9)); // 655273
-    const __m256i p26_p90 = _mm256_set_epi16(set_vals(90, 26)); // 1704026
-    const __m256i n57_n80 = _mm256_set_epi16(set_vals(-80, -57)); // -3670096
-    const __m256i n80_p57 = _mm256_set_epi16(set_vals(57, -80)); // -5242823
-    const __m256i p90_n26 = _mm256_set_epi16(set_vals(-26, 90)); // 5963750
-    const __m256i n87_n09 = _mm256_set_epi16(set_vals(-9, -87)); // -5636105
+    const __m256i p87_p90 = _mm256_set_epi16(set_vals(90, 87));    // 5701722
+    const __m256i p70_p80 = _mm256_set_epi16(set_vals(80, 70));    // 4587600
+    const __m256i p43_p57 = _mm256_set_epi16(set_vals(57, 43));    // 2818105
+    const __m256i p09_p26 = _mm256_set_epi16(set_vals(26, 9));     // 589850
+    const __m256i p57_p87 = _mm256_set_epi16(set_vals(87, 57));    // 3735639
+    const __m256i n43_p09 = _mm256_set_epi16(set_vals(9, -43));    // -2818039
+    const __m256i n90_n80 = _mm256_set_epi16(set_vals(-80, -90));  // -5832784
+    const __m256i n26_n70 = _mm256_set_epi16(set_vals(-70, -26));  // -1638470
+    const __m256i p09_p80 = _mm256_set_epi16(set_vals(80, 9));     // 589904
+    const __m256i n87_n70 = _mm256_set_epi16(set_vals(-70, -87));  // -5636166
+    const __m256i p57_n26 = _mm256_set_epi16(set_vals(-26, 57));   // 3801062
+    const __m256i p43_p90 = _mm256_set_epi16(set_vals(90, 43));    // 2818138
+    const __m256i n43_p70 = _mm256_set_epi16(set_vals(70, -43));   // -2817978
+    const __m256i p09_n87 = _mm256_set_epi16(set_vals(-87, 9));    // 655273
+    const __m256i p26_p90 = _mm256_set_epi16(set_vals(90, 26));    // 1704026
+    const __m256i n57_n80 = _mm256_set_epi16(set_vals(-80, -57));  // -3670096
+    const __m256i n80_p57 = _mm256_set_epi16(set_vals(57, -80));   // -5242823
+    const __m256i p90_n26 = _mm256_set_epi16(set_vals(-26, 90));   // 5963750
+    const __m256i n87_n09 = _mm256_set_epi16(set_vals(-9, -87));   // -5636105
     const __m256i p70_p43 = _mm256_set_epi16(set_vals(43, 70));
     const __m256i n90_p43 = _mm256_set_epi16(set_vals(43, -90));
     const __m256i p26_p57 = _mm256_set_epi16(set_vals(57, 26));
@@ -498,8 +501,7 @@ static void itx_pb16_avx(s16* src, s16* dst, int shift, int line)
     const __m256i p64_p64 = _mm256_set_epi16(set_vals(64, 64));
     const __m256i n64_p64 = _mm256_set_epi16(set_vals(64, -64));
 
-
-    int i;
+    int     i;
     __m256i c32_off = _mm256_set1_epi32(1 << (shift - 1));
     __m128i in00, in01, in02, in03, in04, in05, in06, in07;
     __m128i in08, in09, in10, in11, in12, in13, in14, in15;
@@ -512,17 +514,16 @@ static void itx_pb16_avx(s16* src, s16* dst, int shift, int line)
     __m256i EEE0, EEE1;
     __m256i T00, T01;
 
-    if (line >= 8)
-    {
-        for (i = 0; i < line; i += 8) {
-            in01 = _mm_loadu_si128((const __m128i*) & src[1 * line + i]);   // [17 16 15 14 13 12 11 10]
-            in03 = _mm_loadu_si128((const __m128i*) & src[3 * line + i]);   // [37 36 35 34 33 32 31 30]
-            in05 = _mm_loadu_si128((const __m128i*) & src[5 * line + i]);   // [57 56 55 54 53 52 51 50]
-            in07 = _mm_loadu_si128((const __m128i*) & src[7 * line + i]);   // [77 76 75 74 73 72 71 70]
-            in09 = _mm_loadu_si128((const __m128i*) & src[9 * line + i]);
-            in11 = _mm_loadu_si128((const __m128i*) & src[11 * line + i]);
-            in13 = _mm_loadu_si128((const __m128i*) & src[13 * line + i]);
-            in15 = _mm_loadu_si128((const __m128i*) & src[15 * line + i]);
+    if(line >= 8) {
+        for(i = 0; i < line; i += 8) {
+            in01 = _mm_loadu_si128((const __m128i*)&src[1 * line + i]);  // [17 16 15 14 13 12 11 10]
+            in03 = _mm_loadu_si128((const __m128i*)&src[3 * line + i]);  // [37 36 35 34 33 32 31 30]
+            in05 = _mm_loadu_si128((const __m128i*)&src[5 * line + i]);  // [57 56 55 54 53 52 51 50]
+            in07 = _mm_loadu_si128((const __m128i*)&src[7 * line + i]);  // [77 76 75 74 73 72 71 70]
+            in09 = _mm_loadu_si128((const __m128i*)&src[9 * line + i]);
+            in11 = _mm_loadu_si128((const __m128i*)&src[11 * line + i]);
+            in13 = _mm_loadu_si128((const __m128i*)&src[13 * line + i]);
+            in15 = _mm_loadu_si128((const __m128i*)&src[15 * line + i]);
 
             ss0 = _mm_unpacklo_epi16(in01, in03);
             ss1 = _mm_unpacklo_epi16(in05, in07);
@@ -537,7 +538,7 @@ static void itx_pb16_avx(s16* src, s16* dst, int shift, int line)
             T_00_01 = _mm256_set_m128i(ss5, ss1);
             T_00_02 = _mm256_set_m128i(ss6, ss2);
             T_00_03 = _mm256_set_m128i(ss7, ss3);
-#define COMPUTE_ROW(c0103, c0507, c0911, c1315, row) \
+#define COMPUTE_ROW(c0103, c0507, c0911, c1315, row)                                              \
     T00 = _mm256_add_epi32(_mm256_madd_epi16(T_00_00, c0103), _mm256_madd_epi16(T_00_01, c0507)); \
     T01 = _mm256_add_epi32(_mm256_madd_epi16(T_00_02, c0911), _mm256_madd_epi16(T_00_03, c1315)); \
     row = _mm256_add_epi32(T00, T01);
@@ -553,14 +554,14 @@ static void itx_pb16_avx(s16* src, s16* dst, int shift, int line)
 
 #undef COMPUTE_ROW
 
-            in00 = _mm_loadu_si128((const __m128i*) & src[0 * line + i]);   // [07 06 05 04 03 02 01 00]
-            in02 = _mm_loadu_si128((const __m128i*) & src[2 * line + i]);   // [27 26 25 24 23 22 21 20]
-            in04 = _mm_loadu_si128((const __m128i*) & src[4 * line + i]);   // [47 46 45 44 43 42 41 40]
-            in06 = _mm_loadu_si128((const __m128i*) & src[6 * line + i]);   // [67 66 65 64 63 62 61 60]
-            in08 = _mm_loadu_si128((const __m128i*) & src[8 * line + i]);
-            in10 = _mm_loadu_si128((const __m128i*) & src[10 * line + i]);
-            in12 = _mm_loadu_si128((const __m128i*) & src[12 * line + i]);
-            in14 = _mm_loadu_si128((const __m128i*) & src[14 * line + i]);
+            in00 = _mm_loadu_si128((const __m128i*)&src[0 * line + i]);  // [07 06 05 04 03 02 01 00]
+            in02 = _mm_loadu_si128((const __m128i*)&src[2 * line + i]);  // [27 26 25 24 23 22 21 20]
+            in04 = _mm_loadu_si128((const __m128i*)&src[4 * line + i]);  // [47 46 45 44 43 42 41 40]
+            in06 = _mm_loadu_si128((const __m128i*)&src[6 * line + i]);  // [67 66 65 64 63 62 61 60]
+            in08 = _mm_loadu_si128((const __m128i*)&src[8 * line + i]);
+            in10 = _mm_loadu_si128((const __m128i*)&src[10 * line + i]);
+            in12 = _mm_loadu_si128((const __m128i*)&src[12 * line + i]);
+            in14 = _mm_loadu_si128((const __m128i*)&src[14 * line + i]);
 
             ss0 = _mm_unpacklo_epi16(in02, in06);
             ss1 = _mm_unpacklo_epi16(in10, in14);
@@ -576,10 +577,10 @@ static void itx_pb16_avx(s16* src, s16* dst, int shift, int line)
             T_00_06 = _mm256_set_m128i(ss6, ss2);
             T_00_07 = _mm256_set_m128i(ss7, ss3);
 
-            EO0 = _mm256_add_epi32(_mm256_madd_epi16(T_00_04, p75_p89), _mm256_madd_epi16(T_00_05, p18_p50)); // EO0
-            EO1 = _mm256_add_epi32(_mm256_madd_epi16(T_00_04, n18_p75), _mm256_madd_epi16(T_00_05, n50_n89)); // EO1
-            EO2 = _mm256_add_epi32(_mm256_madd_epi16(T_00_04, n89_p50), _mm256_madd_epi16(T_00_05, p75_p18)); // EO2
-            EO3 = _mm256_add_epi32(_mm256_madd_epi16(T_00_04, n50_p18), _mm256_madd_epi16(T_00_05, n89_p75)); // EO3
+            EO0 = _mm256_add_epi32(_mm256_madd_epi16(T_00_04, p75_p89), _mm256_madd_epi16(T_00_05, p18_p50));  // EO0
+            EO1 = _mm256_add_epi32(_mm256_madd_epi16(T_00_04, n18_p75), _mm256_madd_epi16(T_00_05, n50_n89));  // EO1
+            EO2 = _mm256_add_epi32(_mm256_madd_epi16(T_00_04, n89_p50), _mm256_madd_epi16(T_00_05, p75_p18));  // EO2
+            EO3 = _mm256_add_epi32(_mm256_madd_epi16(T_00_04, n50_p18), _mm256_madd_epi16(T_00_05, n89_p75));  // EO3
 
             EEO0 = _mm256_madd_epi16(T_00_06, p35_p84);
             EEO1 = _mm256_madd_epi16(T_00_06, n84_p35);
@@ -587,86 +588,106 @@ static void itx_pb16_avx(s16* src, s16* dst, int shift, int line)
             EEE1 = _mm256_madd_epi16(T_00_07, n64_p64);
 
             {
-                const __m256i EE0 = _mm256_add_epi32(EEE0, EEO0);       // EE0 = EEE0 + EEO0
-                const __m256i EE1 = _mm256_add_epi32(EEE1, EEO1);       // EE1 = EEE1 + EEO1
-                const __m256i EE3 = _mm256_sub_epi32(EEE0, EEO0);       // EE2 = EEE0 - EEO0
-                const __m256i EE2 = _mm256_sub_epi32(EEE1, EEO1);       // EE3 = EEE1 - EEO1
+                const __m256i EE0 = _mm256_add_epi32(EEE0, EEO0);  // EE0 = EEE0 + EEO0
+                const __m256i EE1 = _mm256_add_epi32(EEE1, EEO1);  // EE1 = EEE1 + EEO1
+                const __m256i EE3 = _mm256_sub_epi32(EEE0, EEO0);  // EE2 = EEE0 - EEO0
+                const __m256i EE2 = _mm256_sub_epi32(EEE1, EEO1);  // EE3 = EEE1 - EEO1
 
-                const __m256i E0 = _mm256_add_epi32(EE0, EO0);          // E0 = EE0 + EO0
-                const __m256i E1 = _mm256_add_epi32(EE1, EO1);          // E1 = EE1 + EO1
-                const __m256i E2 = _mm256_add_epi32(EE2, EO2);          // E2 = EE2 + EO2
-                const __m256i E3 = _mm256_add_epi32(EE3, EO3);          // E3 = EE3 + EO3
-                const __m256i E7 = _mm256_sub_epi32(EE0, EO0);          // E0 = EE0 - EO0
-                const __m256i E6 = _mm256_sub_epi32(EE1, EO1);          // E1 = EE1 - EO1
-                const __m256i E5 = _mm256_sub_epi32(EE2, EO2);          // E2 = EE2 - EO2
-                const __m256i E4 = _mm256_sub_epi32(EE3, EO3);          // E3 = EE3 - EO3
+                const __m256i E0 = _mm256_add_epi32(EE0, EO0);  // E0 = EE0 + EO0
+                const __m256i E1 = _mm256_add_epi32(EE1, EO1);  // E1 = EE1 + EO1
+                const __m256i E2 = _mm256_add_epi32(EE2, EO2);  // E2 = EE2 + EO2
+                const __m256i E3 = _mm256_add_epi32(EE3, EO3);  // E3 = EE3 + EO3
+                const __m256i E7 = _mm256_sub_epi32(EE0, EO0);  // E0 = EE0 - EO0
+                const __m256i E6 = _mm256_sub_epi32(EE1, EO1);  // E1 = EE1 - EO1
+                const __m256i E5 = _mm256_sub_epi32(EE2, EO2);  // E2 = EE2 - EO2
+                const __m256i E4 = _mm256_sub_epi32(EE3, EO3);  // E3 = EE3 - EO3
 
-                const __m256i T10 = _mm256_add_epi32(E0, c32_off);      // E0 + off
-                const __m256i T11 = _mm256_add_epi32(E1, c32_off);      // E1 + off
-                const __m256i T12 = _mm256_add_epi32(E2, c32_off);      // E2 + off
-                const __m256i T13 = _mm256_add_epi32(E3, c32_off);      // E3 + off
-                const __m256i T14 = _mm256_add_epi32(E4, c32_off);      // E4 + off
-                const __m256i T15 = _mm256_add_epi32(E5, c32_off);      // E5 + off
-                const __m256i T16 = _mm256_add_epi32(E6, c32_off);      // E6 + off
-                const __m256i T17 = _mm256_add_epi32(E7, c32_off);      // E7 + off
+                const __m256i T10 = _mm256_add_epi32(E0, c32_off);  // E0 + off
+                const __m256i T11 = _mm256_add_epi32(E1, c32_off);  // E1 + off
+                const __m256i T12 = _mm256_add_epi32(E2, c32_off);  // E2 + off
+                const __m256i T13 = _mm256_add_epi32(E3, c32_off);  // E3 + off
+                const __m256i T14 = _mm256_add_epi32(E4, c32_off);  // E4 + off
+                const __m256i T15 = _mm256_add_epi32(E5, c32_off);  // E5 + off
+                const __m256i T16 = _mm256_add_epi32(E6, c32_off);  // E6 + off
+                const __m256i T17 = _mm256_add_epi32(E7, c32_off);  // E7 + off
 
-                __m256i T20 = _mm256_add_epi32(T10, O0);                // E0 + O0 + off
-                __m256i T21 = _mm256_add_epi32(T11, O1);                // E1 + O1 + off
-                __m256i T22 = _mm256_add_epi32(T12, O2);                // E2 + O2 + off
-                __m256i T23 = _mm256_add_epi32(T13, O3);                // E3 + O3 + off
-                __m256i T24 = _mm256_add_epi32(T14, O4);                // E4
-                __m256i T25 = _mm256_add_epi32(T15, O5);                // E5
-                __m256i T26 = _mm256_add_epi32(T16, O6);                // E6
-                __m256i T27 = _mm256_add_epi32(T17, O7);                // E7
-                __m256i T2F = _mm256_sub_epi32(T10, O0);                // E0 - O0 + off
-                __m256i T2E = _mm256_sub_epi32(T11, O1);                // E1 - O1 + off
-                __m256i T2D = _mm256_sub_epi32(T12, O2);                // E2 - O2 + off
-                __m256i T2C = _mm256_sub_epi32(T13, O3);                // E3 - O3 + off
-                __m256i T2B = _mm256_sub_epi32(T14, O4);                // E4
-                __m256i T2A = _mm256_sub_epi32(T15, O5);                // E5
-                __m256i T29 = _mm256_sub_epi32(T16, O6);                // E6
-                __m256i T28 = _mm256_sub_epi32(T17, O7);                // E7
+                __m256i T20 = _mm256_add_epi32(T10, O0);  // E0 + O0 + off
+                __m256i T21 = _mm256_add_epi32(T11, O1);  // E1 + O1 + off
+                __m256i T22 = _mm256_add_epi32(T12, O2);  // E2 + O2 + off
+                __m256i T23 = _mm256_add_epi32(T13, O3);  // E3 + O3 + off
+                __m256i T24 = _mm256_add_epi32(T14, O4);  // E4
+                __m256i T25 = _mm256_add_epi32(T15, O5);  // E5
+                __m256i T26 = _mm256_add_epi32(T16, O6);  // E6
+                __m256i T27 = _mm256_add_epi32(T17, O7);  // E7
+                __m256i T2F = _mm256_sub_epi32(T10, O0);  // E0 - O0 + off
+                __m256i T2E = _mm256_sub_epi32(T11, O1);  // E1 - O1 + off
+                __m256i T2D = _mm256_sub_epi32(T12, O2);  // E2 - O2 + off
+                __m256i T2C = _mm256_sub_epi32(T13, O3);  // E3 - O3 + off
+                __m256i T2B = _mm256_sub_epi32(T14, O4);  // E4
+                __m256i T2A = _mm256_sub_epi32(T15, O5);  // E5
+                __m256i T29 = _mm256_sub_epi32(T16, O6);  // E6
+                __m256i T28 = _mm256_sub_epi32(T17, O7);  // E7
 
-                T20 = _mm256_srai_epi32(T20, shift);                    // [30 20 10 00]
-                T21 = _mm256_srai_epi32(T21, shift);                    // [31 21 11 01]
-                T22 = _mm256_srai_epi32(T22, shift);                    // [32 22 12 02]
-                T23 = _mm256_srai_epi32(T23, shift);                    // [33 23 13 03]
-                T24 = _mm256_srai_epi32(T24, shift);                    // [33 24 14 04]
-                T25 = _mm256_srai_epi32(T25, shift);                    // [35 25 15 05]
-                T26 = _mm256_srai_epi32(T26, shift);                    // [36 26 16 06]
-                T27 = _mm256_srai_epi32(T27, shift);                    // [37 27 17 07]
-                T28 = _mm256_srai_epi32(T28, shift);                    // [30 20 10 00] x8
-                T29 = _mm256_srai_epi32(T29, shift);                    // [31 21 11 01] x9
-                T2A = _mm256_srai_epi32(T2A, shift);                    // [32 22 12 02] xA
-                T2B = _mm256_srai_epi32(T2B, shift);                    // [33 23 13 03] xB
-                T2C = _mm256_srai_epi32(T2C, shift);                    // [33 24 14 04] xC
-                T2D = _mm256_srai_epi32(T2D, shift);                    // [35 25 15 05] xD
-                T2E = _mm256_srai_epi32(T2E, shift);                    // [36 26 16 06] xE
-                T2F = _mm256_srai_epi32(T2F, shift);                    // [37 27 17 07] xF
+                T20 = _mm256_srai_epi32(T20, shift);  // [30 20 10 00]
+                T21 = _mm256_srai_epi32(T21, shift);  // [31 21 11 01]
+                T22 = _mm256_srai_epi32(T22, shift);  // [32 22 12 02]
+                T23 = _mm256_srai_epi32(T23, shift);  // [33 23 13 03]
+                T24 = _mm256_srai_epi32(T24, shift);  // [33 24 14 04]
+                T25 = _mm256_srai_epi32(T25, shift);  // [35 25 15 05]
+                T26 = _mm256_srai_epi32(T26, shift);  // [36 26 16 06]
+                T27 = _mm256_srai_epi32(T27, shift);  // [37 27 17 07]
+                T28 = _mm256_srai_epi32(T28, shift);  // [30 20 10 00] x8
+                T29 = _mm256_srai_epi32(T29, shift);  // [31 21 11 01] x9
+                T2A = _mm256_srai_epi32(T2A, shift);  // [32 22 12 02] xA
+                T2B = _mm256_srai_epi32(T2B, shift);  // [33 23 13 03] xB
+                T2C = _mm256_srai_epi32(T2C, shift);  // [33 24 14 04] xC
+                T2D = _mm256_srai_epi32(T2D, shift);  // [35 25 15 05] xD
+                T2E = _mm256_srai_epi32(T2E, shift);  // [36 26 16 06] xE
+                T2F = _mm256_srai_epi32(T2F, shift);  // [37 27 17 07] xF
 
                 // transpose 16x8 --> 8x16
-                TRANSPOSE_16x8_32BIT_16BIT(T20, T21, T22, T23, T24, T25, T26, T27,
-                    T28, T29, T2A, T2B, T2C, T2D, T2E, T2F, res00, res01, res02, res03, res04, res05, res06, res07);
+                TRANSPOSE_16x8_32BIT_16BIT(T20,
+                                           T21,
+                                           T22,
+                                           T23,
+                                           T24,
+                                           T25,
+                                           T26,
+                                           T27,
+                                           T28,
+                                           T29,
+                                           T2A,
+                                           T2B,
+                                           T2C,
+                                           T2D,
+                                           T2E,
+                                           T2F,
+                                           res00,
+                                           res01,
+                                           res02,
+                                           res03,
+                                           res04,
+                                           res05,
+                                           res06,
+                                           res07);
             }
 
-            _mm256_storeu_si256((__m256i*) & dst[16 * 0], res00);
-            _mm256_storeu_si256((__m256i*) & dst[16 * 1], res01);
-            _mm256_storeu_si256((__m256i*) & dst[16 * 2], res02);
-            _mm256_storeu_si256((__m256i*) & dst[16 * 3], res03);
-            _mm256_storeu_si256((__m256i*) & dst[16 * 4], res04);
-            _mm256_storeu_si256((__m256i*) & dst[16 * 5], res05);
-            _mm256_storeu_si256((__m256i*) & dst[16 * 6], res06);
-            _mm256_storeu_si256((__m256i*) & dst[16 * 7], res07);
+            _mm256_storeu_si256((__m256i*)&dst[16 * 0], res00);
+            _mm256_storeu_si256((__m256i*)&dst[16 * 1], res01);
+            _mm256_storeu_si256((__m256i*)&dst[16 * 2], res02);
+            _mm256_storeu_si256((__m256i*)&dst[16 * 3], res03);
+            _mm256_storeu_si256((__m256i*)&dst[16 * 4], res04);
+            _mm256_storeu_si256((__m256i*)&dst[16 * 5], res05);
+            _mm256_storeu_si256((__m256i*)&dst[16 * 6], res06);
+            _mm256_storeu_si256((__m256i*)&dst[16 * 7], res07);
 
-            dst += 16 * 8; // 8 rows
+            dst += 16 * 8;  // 8 rows
         }
     }
-    else 
-    {
+    else {
         itx_pb16(src, dst, shift, line);
     }
 }
-
 
 static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
 {
@@ -848,30 +869,30 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
     __m128i in00, in01, in02, in03, in04, in05, in06, in07, in08, in09, in10, in11, in12, in13, in14, in15;
     __m128i in16, in17, in18, in19, in20, in21, in22, in23, in24, in25, in26, in27, in28, in29, in30, in31;
     __m128i ss00, ss01, ss02, ss03, ss04, ss05, ss06, ss07, ss08, ss09, ss10, ss11, ss12, ss13, ss14, ss15;
-    __m256i res00, res01, res02, res03, res04, res05, res06, res07, res08, res09, res10, res11, res12, res13, res14, res15;
+    __m256i res00, res01, res02, res03, res04, res05, res06, res07, res08, res09, res10, res11, res12, res13, res14,
+        res15;
     __m256i O00, O01, O02, O03, O04, O05, O06, O07, O08, O09, O10, O11, O12, O13, O14, O15;
     __m256i EO0, EO1, EO2, EO3, EO4, EO5, EO6, EO7;
     __m256i T00, T01, T02, T03;
-    int i;
-    if (line >= 8)
-    {
-        for (i = 0; i < line; i += 8) {
-            in01 = _mm_loadu_si128((const __m128i*) & src[1 * line + i]);
-            in03 = _mm_loadu_si128((const __m128i*) & src[3 * line + i]);
-            in05 = _mm_loadu_si128((const __m128i*) & src[5 * line + i]);
-            in07 = _mm_loadu_si128((const __m128i*) & src[7 * line + i]);
-            in09 = _mm_loadu_si128((const __m128i*) & src[9 * line + i]);
-            in11 = _mm_loadu_si128((const __m128i*) & src[11 * line + i]);
-            in13 = _mm_loadu_si128((const __m128i*) & src[13 * line + i]);
-            in15 = _mm_loadu_si128((const __m128i*) & src[15 * line + i]);
-            in17 = _mm_loadu_si128((const __m128i*) & src[17 * line + i]);
-            in19 = _mm_loadu_si128((const __m128i*) & src[19 * line + i]);
-            in21 = _mm_loadu_si128((const __m128i*) & src[21 * line + i]);
-            in23 = _mm_loadu_si128((const __m128i*) & src[23 * line + i]);
-            in25 = _mm_loadu_si128((const __m128i*) & src[25 * line + i]);
-            in27 = _mm_loadu_si128((const __m128i*) & src[27 * line + i]);
-            in29 = _mm_loadu_si128((const __m128i*) & src[29 * line + i]);
-            in31 = _mm_loadu_si128((const __m128i*) & src[31 * line + i]);
+    int     i;
+    if(line >= 8) {
+        for(i = 0; i < line; i += 8) {
+            in01 = _mm_loadu_si128((const __m128i*)&src[1 * line + i]);
+            in03 = _mm_loadu_si128((const __m128i*)&src[3 * line + i]);
+            in05 = _mm_loadu_si128((const __m128i*)&src[5 * line + i]);
+            in07 = _mm_loadu_si128((const __m128i*)&src[7 * line + i]);
+            in09 = _mm_loadu_si128((const __m128i*)&src[9 * line + i]);
+            in11 = _mm_loadu_si128((const __m128i*)&src[11 * line + i]);
+            in13 = _mm_loadu_si128((const __m128i*)&src[13 * line + i]);
+            in15 = _mm_loadu_si128((const __m128i*)&src[15 * line + i]);
+            in17 = _mm_loadu_si128((const __m128i*)&src[17 * line + i]);
+            in19 = _mm_loadu_si128((const __m128i*)&src[19 * line + i]);
+            in21 = _mm_loadu_si128((const __m128i*)&src[21 * line + i]);
+            in23 = _mm_loadu_si128((const __m128i*)&src[23 * line + i]);
+            in25 = _mm_loadu_si128((const __m128i*)&src[25 * line + i]);
+            in27 = _mm_loadu_si128((const __m128i*)&src[27 * line + i]);
+            in29 = _mm_loadu_si128((const __m128i*)&src[29 * line + i]);
+            in31 = _mm_loadu_si128((const __m128i*)&src[31 * line + i]);
 
             ss00 = _mm_unpacklo_epi16(in01, in03);
             ss01 = _mm_unpacklo_epi16(in05, in07);
@@ -892,16 +913,16 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
             ss15 = _mm_unpackhi_epi16(in29, in31);
 
             {
-                const __m256i T_00_00 = _mm256_set_m128i(ss08, ss00);       // [33 13 32 12 31 11 30 10]
-                const __m256i T_00_01 = _mm256_set_m128i(ss09, ss01);       // [ ]
-                const __m256i T_00_02 = _mm256_set_m128i(ss10, ss02);       // [ ]
-                const __m256i T_00_03 = _mm256_set_m128i(ss11, ss03);       // [ ]
-                const __m256i T_00_04 = _mm256_set_m128i(ss12, ss04);       // [ ]
-                const __m256i T_00_05 = _mm256_set_m128i(ss13, ss05);       // [ ]
-                const __m256i T_00_06 = _mm256_set_m128i(ss14, ss06);       // [ ]
-                const __m256i T_00_07 = _mm256_set_m128i(ss15, ss07);       //
+                const __m256i T_00_00 = _mm256_set_m128i(ss08, ss00);  // [33 13 32 12 31 11 30 10]
+                const __m256i T_00_01 = _mm256_set_m128i(ss09, ss01);  // [ ]
+                const __m256i T_00_02 = _mm256_set_m128i(ss10, ss02);  // [ ]
+                const __m256i T_00_03 = _mm256_set_m128i(ss11, ss03);  // [ ]
+                const __m256i T_00_04 = _mm256_set_m128i(ss12, ss04);  // [ ]
+                const __m256i T_00_05 = _mm256_set_m128i(ss13, ss05);  // [ ]
+                const __m256i T_00_06 = _mm256_set_m128i(ss14, ss06);  // [ ]
+                const __m256i T_00_07 = _mm256_set_m128i(ss15, ss07);  //
 
-// clang-format off
+                // clang-format off
 #define COMPUTE_ROW(c0103, c0507, c0911, c1315, c1719, c2123, c2527, c2931, row) \
     T00 = _mm256_add_epi32(_mm256_madd_epi16(T_00_00, c0103), _mm256_madd_epi16(T_00_01, c0507)); \
     T01 = _mm256_add_epi32(_mm256_madd_epi16(T_00_02, c0911), _mm256_madd_epi16(T_00_03, c1315)); \
@@ -926,25 +947,25 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
                     COMPUTE_ROW(n39_p13, n78_p61, n90_p88, n73_p85, n30_p54, p22_p04, p67_n47, p90_n82, O14)
                     COMPUTE_ROW(n13_p04, n30_p22, n47_p39, n61_p54, n73_p67, n82_p78, n88_p85, n90_p90, O15)
 #undef COMPUTE_ROW
-// clang-format on
+                // clang-format on
             }
 
-            in00 = _mm_loadu_si128((const __m128i*) & src[0 * line + i]);
-            in02 = _mm_loadu_si128((const __m128i*) & src[2 * line + i]);
-            in04 = _mm_loadu_si128((const __m128i*) & src[4 * line + i]);
-            in06 = _mm_loadu_si128((const __m128i*) & src[6 * line + i]);
-            in08 = _mm_loadu_si128((const __m128i*) & src[8 * line + i]);
-            in10 = _mm_loadu_si128((const __m128i*) & src[10 * line + i]);
-            in12 = _mm_loadu_si128((const __m128i*) & src[12 * line + i]);
-            in14 = _mm_loadu_si128((const __m128i*) & src[14 * line + i]);
-            in16 = _mm_loadu_si128((const __m128i*) & src[16 * line + i]);
-            in18 = _mm_loadu_si128((const __m128i*) & src[18 * line + i]);
-            in20 = _mm_loadu_si128((const __m128i*) & src[20 * line + i]);
-            in22 = _mm_loadu_si128((const __m128i*) & src[22 * line + i]);
-            in24 = _mm_loadu_si128((const __m128i*) & src[24 * line + i]);
-            in26 = _mm_loadu_si128((const __m128i*) & src[26 * line + i]);
-            in28 = _mm_loadu_si128((const __m128i*) & src[28 * line + i]);
-            in30 = _mm_loadu_si128((const __m128i*) & src[30 * line + i]);
+            in00 = _mm_loadu_si128((const __m128i*)&src[0 * line + i]);
+            in02 = _mm_loadu_si128((const __m128i*)&src[2 * line + i]);
+            in04 = _mm_loadu_si128((const __m128i*)&src[4 * line + i]);
+            in06 = _mm_loadu_si128((const __m128i*)&src[6 * line + i]);
+            in08 = _mm_loadu_si128((const __m128i*)&src[8 * line + i]);
+            in10 = _mm_loadu_si128((const __m128i*)&src[10 * line + i]);
+            in12 = _mm_loadu_si128((const __m128i*)&src[12 * line + i]);
+            in14 = _mm_loadu_si128((const __m128i*)&src[14 * line + i]);
+            in16 = _mm_loadu_si128((const __m128i*)&src[16 * line + i]);
+            in18 = _mm_loadu_si128((const __m128i*)&src[18 * line + i]);
+            in20 = _mm_loadu_si128((const __m128i*)&src[20 * line + i]);
+            in22 = _mm_loadu_si128((const __m128i*)&src[22 * line + i]);
+            in24 = _mm_loadu_si128((const __m128i*)&src[24 * line + i]);
+            in26 = _mm_loadu_si128((const __m128i*)&src[26 * line + i]);
+            in28 = _mm_loadu_si128((const __m128i*)&src[28 * line + i]);
+            in30 = _mm_loadu_si128((const __m128i*)&src[30 * line + i]);
 
             ss00 = _mm_unpacklo_epi16(in02, in06);
             ss01 = _mm_unpacklo_epi16(in10, in14);
@@ -974,7 +995,7 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
                 const __m256i T_00_14 = _mm256_set_m128i(ss14, ss06);
                 const __m256i T_00_15 = _mm256_set_m128i(ss15, ss07);
 
-// clang-format off
+                // clang-format off
 #define COMPUTE_ROW(c0206, c1014, c1822, c2630, row) \
     T00 = _mm256_add_epi32(_mm256_madd_epi16(T_00_08, c0206), _mm256_madd_epi16(T_00_09, c1014)); \
     T01 = _mm256_add_epi32(_mm256_madd_epi16(T_00_10, c1822), _mm256_madd_epi16(T_00_11, c2630)); \
@@ -989,12 +1010,16 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
                     COMPUTE_ROW(n26_p09, n57_p43, n80_p70, n90_p87, EO7)
 
 #undef COMPUTE_ROW
-// clang-format on
+                // clang-format on
                 {
-                    const __m256i EEO0 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p75_p89), _mm256_madd_epi16(T_00_13, p18_p50));
-                    const __m256i EEO1 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n18_p75), _mm256_madd_epi16(T_00_13, n50_n89));
-                    const __m256i EEO2 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n89_p50), _mm256_madd_epi16(T_00_13, p75_p18));
-                    const __m256i EEO3 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n50_p18), _mm256_madd_epi16(T_00_13, n89_p75));
+                    const __m256i EEO0 =
+                        _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p75_p89), _mm256_madd_epi16(T_00_13, p18_p50));
+                    const __m256i EEO1 =
+                        _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n18_p75), _mm256_madd_epi16(T_00_13, n50_n89));
+                    const __m256i EEO2 =
+                        _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n89_p50), _mm256_madd_epi16(T_00_13, p75_p18));
+                    const __m256i EEO3 =
+                        _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n50_p18), _mm256_madd_epi16(T_00_13, n89_p75));
 
                     const __m256i EEEO0 = _mm256_madd_epi16(T_00_14, p35_p84);
                     const __m256i EEEO1 = _mm256_madd_epi16(T_00_14, n84_p35);
@@ -1002,157 +1027,199 @@ static void itx_pb32_avx(s16* src, s16* dst, int shift, int line)
                     const __m256i EEEE0 = _mm256_madd_epi16(T_00_15, p64_p64);
                     const __m256i EEEE1 = _mm256_madd_epi16(T_00_15, n64_p64);
 
-                    const __m256i EEE0 = _mm256_add_epi32(EEEE0, EEEO0);          // EEE0 = EEEE0 + EEEO0
-                    const __m256i EEE1 = _mm256_add_epi32(EEEE1, EEEO1);          // EEE1 = EEEE1 + EEEO1
-                    const __m256i EEE3 = _mm256_sub_epi32(EEEE0, EEEO0);          // EEE2 = EEEE0 - EEEO0
-                    const __m256i EEE2 = _mm256_sub_epi32(EEEE1, EEEO1);          // EEE3 = EEEE1 - EEEO1
+                    const __m256i EEE0 = _mm256_add_epi32(EEEE0, EEEO0);  // EEE0 = EEEE0 + EEEO0
+                    const __m256i EEE1 = _mm256_add_epi32(EEEE1, EEEO1);  // EEE1 = EEEE1 + EEEO1
+                    const __m256i EEE3 = _mm256_sub_epi32(EEEE0, EEEO0);  // EEE2 = EEEE0 - EEEO0
+                    const __m256i EEE2 = _mm256_sub_epi32(EEEE1, EEEO1);  // EEE3 = EEEE1 - EEEO1
 
-                    const __m256i EE0 = _mm256_add_epi32(EEE0, EEO0);          // EE0 = EEE0 + EEO0
-                    const __m256i EE1 = _mm256_add_epi32(EEE1, EEO1);          // EE1 = EEE1 + EEO1
-                    const __m256i EE2 = _mm256_add_epi32(EEE2, EEO2);          // EE2 = EEE0 + EEO0
-                    const __m256i EE3 = _mm256_add_epi32(EEE3, EEO3);          // EE3 = EEE1 + EEO1
-                    const __m256i EE7 = _mm256_sub_epi32(EEE0, EEO0);          // EE7 = EEE0 - EEO0
-                    const __m256i EE6 = _mm256_sub_epi32(EEE1, EEO1);          // EE6 = EEE1 - EEO1
-                    const __m256i EE5 = _mm256_sub_epi32(EEE2, EEO2);          // EE5 = EEE0 - EEO0
-                    const __m256i EE4 = _mm256_sub_epi32(EEE3, EEO3);          // EE4 = EEE1 - EEO1
+                    const __m256i EE0 = _mm256_add_epi32(EEE0, EEO0);  // EE0 = EEE0 + EEO0
+                    const __m256i EE1 = _mm256_add_epi32(EEE1, EEO1);  // EE1 = EEE1 + EEO1
+                    const __m256i EE2 = _mm256_add_epi32(EEE2, EEO2);  // EE2 = EEE0 + EEO0
+                    const __m256i EE3 = _mm256_add_epi32(EEE3, EEO3);  // EE3 = EEE1 + EEO1
+                    const __m256i EE7 = _mm256_sub_epi32(EEE0, EEO0);  // EE7 = EEE0 - EEO0
+                    const __m256i EE6 = _mm256_sub_epi32(EEE1, EEO1);  // EE6 = EEE1 - EEO1
+                    const __m256i EE5 = _mm256_sub_epi32(EEE2, EEO2);  // EE5 = EEE0 - EEO0
+                    const __m256i EE4 = _mm256_sub_epi32(EEE3, EEO3);  // EE4 = EEE1 - EEO1
 
-                    const __m256i E0 = _mm256_add_epi32(EE0, EO0);          // E0 = EE0 + EO0
-                    const __m256i E1 = _mm256_add_epi32(EE1, EO1);          // E1 = EE1 + EO1
-                    const __m256i E2 = _mm256_add_epi32(EE2, EO2);          // E2 = EE2 + EO2
-                    const __m256i E3 = _mm256_add_epi32(EE3, EO3);          // E3 = EE3 + EO3
-                    const __m256i E4 = _mm256_add_epi32(EE4, EO4);          // E4 =
-                    const __m256i E5 = _mm256_add_epi32(EE5, EO5);          // E5 =
-                    const __m256i E6 = _mm256_add_epi32(EE6, EO6);          // E6 =
-                    const __m256i E7 = _mm256_add_epi32(EE7, EO7);          // E7 =
-                    const __m256i EF = _mm256_sub_epi32(EE0, EO0);          // EF = EE0 - EO0
-                    const __m256i EE = _mm256_sub_epi32(EE1, EO1);          // EE = EE1 - EO1
-                    const __m256i ED = _mm256_sub_epi32(EE2, EO2);          // ED = EE2 - EO2
-                    const __m256i EC = _mm256_sub_epi32(EE3, EO3);          // EC = EE3 - EO3
-                    const __m256i EB = _mm256_sub_epi32(EE4, EO4);          // EB =
-                    const __m256i EA = _mm256_sub_epi32(EE5, EO5);          // EA =
-                    const __m256i E9 = _mm256_sub_epi32(EE6, EO6);          // E9 =
-                    const __m256i E8 = _mm256_sub_epi32(EE7, EO7);          // E8 =
+                    const __m256i E0 = _mm256_add_epi32(EE0, EO0);  // E0 = EE0 + EO0
+                    const __m256i E1 = _mm256_add_epi32(EE1, EO1);  // E1 = EE1 + EO1
+                    const __m256i E2 = _mm256_add_epi32(EE2, EO2);  // E2 = EE2 + EO2
+                    const __m256i E3 = _mm256_add_epi32(EE3, EO3);  // E3 = EE3 + EO3
+                    const __m256i E4 = _mm256_add_epi32(EE4, EO4);  // E4 =
+                    const __m256i E5 = _mm256_add_epi32(EE5, EO5);  // E5 =
+                    const __m256i E6 = _mm256_add_epi32(EE6, EO6);  // E6 =
+                    const __m256i E7 = _mm256_add_epi32(EE7, EO7);  // E7 =
+                    const __m256i EF = _mm256_sub_epi32(EE0, EO0);  // EF = EE0 - EO0
+                    const __m256i EE = _mm256_sub_epi32(EE1, EO1);  // EE = EE1 - EO1
+                    const __m256i ED = _mm256_sub_epi32(EE2, EO2);  // ED = EE2 - EO2
+                    const __m256i EC = _mm256_sub_epi32(EE3, EO3);  // EC = EE3 - EO3
+                    const __m256i EB = _mm256_sub_epi32(EE4, EO4);  // EB =
+                    const __m256i EA = _mm256_sub_epi32(EE5, EO5);  // EA =
+                    const __m256i E9 = _mm256_sub_epi32(EE6, EO6);  // E9 =
+                    const __m256i E8 = _mm256_sub_epi32(EE7, EO7);  // E8 =
 
-                    const __m256i T10 = _mm256_add_epi32(E0, c32_off);         // E0 + off
-                    const __m256i T11 = _mm256_add_epi32(E1, c32_off);         // E1 + off
-                    const __m256i T12 = _mm256_add_epi32(E2, c32_off);         // E2 + off
-                    const __m256i T13 = _mm256_add_epi32(E3, c32_off);         // E3 + off
-                    const __m256i T14 = _mm256_add_epi32(E4, c32_off);         // E4 + off
-                    const __m256i T15 = _mm256_add_epi32(E5, c32_off);         // E5 + off
-                    const __m256i T16 = _mm256_add_epi32(E6, c32_off);         // E6 + off
-                    const __m256i T17 = _mm256_add_epi32(E7, c32_off);         // E7 + off
-                    const __m256i T18 = _mm256_add_epi32(E8, c32_off);         // E8 + off
-                    const __m256i T19 = _mm256_add_epi32(E9, c32_off);         // E9 + off
-                    const __m256i T1A = _mm256_add_epi32(EA, c32_off);         // E10 + off
-                    const __m256i T1B = _mm256_add_epi32(EB, c32_off);         // E11 + off
-                    const __m256i T1C = _mm256_add_epi32(EC, c32_off);         // E12 + off
-                    const __m256i T1D = _mm256_add_epi32(ED, c32_off);         // E13 + off
-                    const __m256i T1E = _mm256_add_epi32(EE, c32_off);         // E14 + off
-                    const __m256i T1F = _mm256_add_epi32(EF, c32_off);         // E15 + off
+                    const __m256i T10 = _mm256_add_epi32(E0, c32_off);  // E0 + off
+                    const __m256i T11 = _mm256_add_epi32(E1, c32_off);  // E1 + off
+                    const __m256i T12 = _mm256_add_epi32(E2, c32_off);  // E2 + off
+                    const __m256i T13 = _mm256_add_epi32(E3, c32_off);  // E3 + off
+                    const __m256i T14 = _mm256_add_epi32(E4, c32_off);  // E4 + off
+                    const __m256i T15 = _mm256_add_epi32(E5, c32_off);  // E5 + off
+                    const __m256i T16 = _mm256_add_epi32(E6, c32_off);  // E6 + off
+                    const __m256i T17 = _mm256_add_epi32(E7, c32_off);  // E7 + off
+                    const __m256i T18 = _mm256_add_epi32(E8, c32_off);  // E8 + off
+                    const __m256i T19 = _mm256_add_epi32(E9, c32_off);  // E9 + off
+                    const __m256i T1A = _mm256_add_epi32(EA, c32_off);  // E10 + off
+                    const __m256i T1B = _mm256_add_epi32(EB, c32_off);  // E11 + off
+                    const __m256i T1C = _mm256_add_epi32(EC, c32_off);  // E12 + off
+                    const __m256i T1D = _mm256_add_epi32(ED, c32_off);  // E13 + off
+                    const __m256i T1E = _mm256_add_epi32(EE, c32_off);  // E14 + off
+                    const __m256i T1F = _mm256_add_epi32(EF, c32_off);  // E15 + off
 
-                    __m256i T2_00 = _mm256_add_epi32(T10, O00);          // E0 + O0 + off
-                    __m256i T2_01 = _mm256_add_epi32(T11, O01);          // E1 + O1 + off
-                    __m256i T2_02 = _mm256_add_epi32(T12, O02);          // E2 + O2 + off
-                    __m256i T2_03 = _mm256_add_epi32(T13, O03);          // E3 + O3 + off
-                    __m256i T2_04 = _mm256_add_epi32(T14, O04);          // E4
-                    __m256i T2_05 = _mm256_add_epi32(T15, O05);          // E5
-                    __m256i T2_06 = _mm256_add_epi32(T16, O06);          // E6
-                    __m256i T2_07 = _mm256_add_epi32(T17, O07);          // E7
-                    __m256i T2_08 = _mm256_add_epi32(T18, O08);          // E8
-                    __m256i T2_09 = _mm256_add_epi32(T19, O09);          // E9
-                    __m256i T2_10 = _mm256_add_epi32(T1A, O10);          // E10
-                    __m256i T2_11 = _mm256_add_epi32(T1B, O11);          // E11
-                    __m256i T2_12 = _mm256_add_epi32(T1C, O12);          // E12
-                    __m256i T2_13 = _mm256_add_epi32(T1D, O13);          // E13
-                    __m256i T2_14 = _mm256_add_epi32(T1E, O14);          // E14
-                    __m256i T2_15 = _mm256_add_epi32(T1F, O15);          // E15
-                    __m256i T2_31 = _mm256_sub_epi32(T10, O00);          // E0 - O0 + off
-                    __m256i T2_30 = _mm256_sub_epi32(T11, O01);          // E1 - O1 + off
-                    __m256i T2_29 = _mm256_sub_epi32(T12, O02);          // E2 - O2 + off
-                    __m256i T2_28 = _mm256_sub_epi32(T13, O03);          // E3 - O3 + off
-                    __m256i T2_27 = _mm256_sub_epi32(T14, O04);          // E4
-                    __m256i T2_26 = _mm256_sub_epi32(T15, O05);          // E5
-                    __m256i T2_25 = _mm256_sub_epi32(T16, O06);          // E6
-                    __m256i T2_24 = _mm256_sub_epi32(T17, O07);          // E7
-                    __m256i T2_23 = _mm256_sub_epi32(T18, O08);          //
-                    __m256i T2_22 = _mm256_sub_epi32(T19, O09);          //
-                    __m256i T2_21 = _mm256_sub_epi32(T1A, O10);          //
-                    __m256i T2_20 = _mm256_sub_epi32(T1B, O11);          //
-                    __m256i T2_19 = _mm256_sub_epi32(T1C, O12);          //
-                    __m256i T2_18 = _mm256_sub_epi32(T1D, O13);          //
-                    __m256i T2_17 = _mm256_sub_epi32(T1E, O14);          //
-                    __m256i T2_16 = _mm256_sub_epi32(T1F, O15);          //
+                    __m256i T2_00 = _mm256_add_epi32(T10, O00);  // E0 + O0 + off
+                    __m256i T2_01 = _mm256_add_epi32(T11, O01);  // E1 + O1 + off
+                    __m256i T2_02 = _mm256_add_epi32(T12, O02);  // E2 + O2 + off
+                    __m256i T2_03 = _mm256_add_epi32(T13, O03);  // E3 + O3 + off
+                    __m256i T2_04 = _mm256_add_epi32(T14, O04);  // E4
+                    __m256i T2_05 = _mm256_add_epi32(T15, O05);  // E5
+                    __m256i T2_06 = _mm256_add_epi32(T16, O06);  // E6
+                    __m256i T2_07 = _mm256_add_epi32(T17, O07);  // E7
+                    __m256i T2_08 = _mm256_add_epi32(T18, O08);  // E8
+                    __m256i T2_09 = _mm256_add_epi32(T19, O09);  // E9
+                    __m256i T2_10 = _mm256_add_epi32(T1A, O10);  // E10
+                    __m256i T2_11 = _mm256_add_epi32(T1B, O11);  // E11
+                    __m256i T2_12 = _mm256_add_epi32(T1C, O12);  // E12
+                    __m256i T2_13 = _mm256_add_epi32(T1D, O13);  // E13
+                    __m256i T2_14 = _mm256_add_epi32(T1E, O14);  // E14
+                    __m256i T2_15 = _mm256_add_epi32(T1F, O15);  // E15
+                    __m256i T2_31 = _mm256_sub_epi32(T10, O00);  // E0 - O0 + off
+                    __m256i T2_30 = _mm256_sub_epi32(T11, O01);  // E1 - O1 + off
+                    __m256i T2_29 = _mm256_sub_epi32(T12, O02);  // E2 - O2 + off
+                    __m256i T2_28 = _mm256_sub_epi32(T13, O03);  // E3 - O3 + off
+                    __m256i T2_27 = _mm256_sub_epi32(T14, O04);  // E4
+                    __m256i T2_26 = _mm256_sub_epi32(T15, O05);  // E5
+                    __m256i T2_25 = _mm256_sub_epi32(T16, O06);  // E6
+                    __m256i T2_24 = _mm256_sub_epi32(T17, O07);  // E7
+                    __m256i T2_23 = _mm256_sub_epi32(T18, O08);  //
+                    __m256i T2_22 = _mm256_sub_epi32(T19, O09);  //
+                    __m256i T2_21 = _mm256_sub_epi32(T1A, O10);  //
+                    __m256i T2_20 = _mm256_sub_epi32(T1B, O11);  //
+                    __m256i T2_19 = _mm256_sub_epi32(T1C, O12);  //
+                    __m256i T2_18 = _mm256_sub_epi32(T1D, O13);  //
+                    __m256i T2_17 = _mm256_sub_epi32(T1E, O14);  //
+                    __m256i T2_16 = _mm256_sub_epi32(T1F, O15);  //
 
-                    T2_00 = _mm256_srai_epi32(T2_00, shift);             // [30 20 10 00]
-                    T2_01 = _mm256_srai_epi32(T2_01, shift);             // [31 21 11 01]
-                    T2_02 = _mm256_srai_epi32(T2_02, shift);             // [32 22 12 02]
-                    T2_03 = _mm256_srai_epi32(T2_03, shift);             // [33 23 13 03]
-                    T2_04 = _mm256_srai_epi32(T2_04, shift);             // [33 24 14 04]
-                    T2_05 = _mm256_srai_epi32(T2_05, shift);             // [35 25 15 05]
-                    T2_06 = _mm256_srai_epi32(T2_06, shift);             // [36 26 16 06]
-                    T2_07 = _mm256_srai_epi32(T2_07, shift);             // [37 27 17 07]
-                    T2_08 = _mm256_srai_epi32(T2_08, shift);             // [30 20 10 00] x8
-                    T2_09 = _mm256_srai_epi32(T2_09, shift);             // [31 21 11 01] x9
-                    T2_10 = _mm256_srai_epi32(T2_10, shift);             // [32 22 12 02] xA
-                    T2_11 = _mm256_srai_epi32(T2_11, shift);             // [33 23 13 03] xB
-                    T2_12 = _mm256_srai_epi32(T2_12, shift);             // [33 24 14 04] xC
-                    T2_13 = _mm256_srai_epi32(T2_13, shift);             // [35 25 15 05] xD
-                    T2_14 = _mm256_srai_epi32(T2_14, shift);             // [36 26 16 06] xE
-                    T2_15 = _mm256_srai_epi32(T2_15, shift);             // [37 27 17 07] xF
-                    T2_16 = _mm256_srai_epi32(T2_16, shift);             // [30 20 10 00]
-                    T2_17 = _mm256_srai_epi32(T2_17, shift);             // [31 21 11 01]
-                    T2_18 = _mm256_srai_epi32(T2_18, shift);             // [32 22 12 02]
-                    T2_19 = _mm256_srai_epi32(T2_19, shift);             // [33 23 13 03]
-                    T2_20 = _mm256_srai_epi32(T2_20, shift);             // [33 24 14 04]
-                    T2_21 = _mm256_srai_epi32(T2_21, shift);             // [35 25 15 05]
-                    T2_22 = _mm256_srai_epi32(T2_22, shift);             // [36 26 16 06]
-                    T2_23 = _mm256_srai_epi32(T2_23, shift);             // [37 27 17 07]
-                    T2_24 = _mm256_srai_epi32(T2_24, shift);             // [30 20 10 00] x8
-                    T2_25 = _mm256_srai_epi32(T2_25, shift);             // [31 21 11 01] x9
-                    T2_26 = _mm256_srai_epi32(T2_26, shift);             // [32 22 12 02] xA
-                    T2_27 = _mm256_srai_epi32(T2_27, shift);             // [33 23 13 03] xB
-                    T2_28 = _mm256_srai_epi32(T2_28, shift);             // [33 24 14 04] xC
-                    T2_29 = _mm256_srai_epi32(T2_29, shift);             // [35 25 15 05] xD
-                    T2_30 = _mm256_srai_epi32(T2_30, shift);             // [36 26 16 06] xE
-                    T2_31 = _mm256_srai_epi32(T2_31, shift);             // [37 27 17 07] xF
+                    T2_00 = _mm256_srai_epi32(T2_00, shift);  // [30 20 10 00]
+                    T2_01 = _mm256_srai_epi32(T2_01, shift);  // [31 21 11 01]
+                    T2_02 = _mm256_srai_epi32(T2_02, shift);  // [32 22 12 02]
+                    T2_03 = _mm256_srai_epi32(T2_03, shift);  // [33 23 13 03]
+                    T2_04 = _mm256_srai_epi32(T2_04, shift);  // [33 24 14 04]
+                    T2_05 = _mm256_srai_epi32(T2_05, shift);  // [35 25 15 05]
+                    T2_06 = _mm256_srai_epi32(T2_06, shift);  // [36 26 16 06]
+                    T2_07 = _mm256_srai_epi32(T2_07, shift);  // [37 27 17 07]
+                    T2_08 = _mm256_srai_epi32(T2_08, shift);  // [30 20 10 00] x8
+                    T2_09 = _mm256_srai_epi32(T2_09, shift);  // [31 21 11 01] x9
+                    T2_10 = _mm256_srai_epi32(T2_10, shift);  // [32 22 12 02] xA
+                    T2_11 = _mm256_srai_epi32(T2_11, shift);  // [33 23 13 03] xB
+                    T2_12 = _mm256_srai_epi32(T2_12, shift);  // [33 24 14 04] xC
+                    T2_13 = _mm256_srai_epi32(T2_13, shift);  // [35 25 15 05] xD
+                    T2_14 = _mm256_srai_epi32(T2_14, shift);  // [36 26 16 06] xE
+                    T2_15 = _mm256_srai_epi32(T2_15, shift);  // [37 27 17 07] xF
+                    T2_16 = _mm256_srai_epi32(T2_16, shift);  // [30 20 10 00]
+                    T2_17 = _mm256_srai_epi32(T2_17, shift);  // [31 21 11 01]
+                    T2_18 = _mm256_srai_epi32(T2_18, shift);  // [32 22 12 02]
+                    T2_19 = _mm256_srai_epi32(T2_19, shift);  // [33 23 13 03]
+                    T2_20 = _mm256_srai_epi32(T2_20, shift);  // [33 24 14 04]
+                    T2_21 = _mm256_srai_epi32(T2_21, shift);  // [35 25 15 05]
+                    T2_22 = _mm256_srai_epi32(T2_22, shift);  // [36 26 16 06]
+                    T2_23 = _mm256_srai_epi32(T2_23, shift);  // [37 27 17 07]
+                    T2_24 = _mm256_srai_epi32(T2_24, shift);  // [30 20 10 00] x8
+                    T2_25 = _mm256_srai_epi32(T2_25, shift);  // [31 21 11 01] x9
+                    T2_26 = _mm256_srai_epi32(T2_26, shift);  // [32 22 12 02] xA
+                    T2_27 = _mm256_srai_epi32(T2_27, shift);  // [33 23 13 03] xB
+                    T2_28 = _mm256_srai_epi32(T2_28, shift);  // [33 24 14 04] xC
+                    T2_29 = _mm256_srai_epi32(T2_29, shift);  // [35 25 15 05] xD
+                    T2_30 = _mm256_srai_epi32(T2_30, shift);  // [36 26 16 06] xE
+                    T2_31 = _mm256_srai_epi32(T2_31, shift);  // [37 27 17 07] xF
 
-                    //transpose 32x8 -> 8x32.
-                    TRANSPOSE_16x8_32BIT_16BIT(T2_00, T2_01, T2_02, T2_03, T2_04, T2_05, T2_06, T2_07,
-                        T2_08, T2_09, T2_10, T2_11, T2_12, T2_13, T2_14, T2_15, res00, res02, res04, res06, res08, res10, res12, res14);
-                    TRANSPOSE_16x8_32BIT_16BIT(T2_16, T2_17, T2_18, T2_19, T2_20, T2_21, T2_22, T2_23,
-                        T2_24, T2_25, T2_26, T2_27, T2_28, T2_29, T2_30, T2_31, res01, res03, res05, res07, res09, res11, res13, res15);
-
+                    // transpose 32x8 -> 8x32.
+                    TRANSPOSE_16x8_32BIT_16BIT(T2_00,
+                                               T2_01,
+                                               T2_02,
+                                               T2_03,
+                                               T2_04,
+                                               T2_05,
+                                               T2_06,
+                                               T2_07,
+                                               T2_08,
+                                               T2_09,
+                                               T2_10,
+                                               T2_11,
+                                               T2_12,
+                                               T2_13,
+                                               T2_14,
+                                               T2_15,
+                                               res00,
+                                               res02,
+                                               res04,
+                                               res06,
+                                               res08,
+                                               res10,
+                                               res12,
+                                               res14);
+                    TRANSPOSE_16x8_32BIT_16BIT(T2_16,
+                                               T2_17,
+                                               T2_18,
+                                               T2_19,
+                                               T2_20,
+                                               T2_21,
+                                               T2_22,
+                                               T2_23,
+                                               T2_24,
+                                               T2_25,
+                                               T2_26,
+                                               T2_27,
+                                               T2_28,
+                                               T2_29,
+                                               T2_30,
+                                               T2_31,
+                                               res01,
+                                               res03,
+                                               res05,
+                                               res07,
+                                               res09,
+                                               res11,
+                                               res13,
+                                               res15);
                 }
             }
-            _mm256_storeu_si256((__m256i*) & dst[0 * 16], res00);
-            _mm256_storeu_si256((__m256i*) & dst[1 * 16], res01);
-            _mm256_storeu_si256((__m256i*) & dst[2 * 16], res02);
-            _mm256_storeu_si256((__m256i*) & dst[3 * 16], res03);
-            _mm256_storeu_si256((__m256i*) & dst[4 * 16], res04);
-            _mm256_storeu_si256((__m256i*) & dst[5 * 16], res05);
-            _mm256_storeu_si256((__m256i*) & dst[6 * 16], res06);
-            _mm256_storeu_si256((__m256i*) & dst[7 * 16], res07);
-            _mm256_storeu_si256((__m256i*) & dst[8 * 16], res08);
-            _mm256_storeu_si256((__m256i*) & dst[9 * 16], res09);
-            _mm256_storeu_si256((__m256i*) & dst[10 * 16], res10);
-            _mm256_storeu_si256((__m256i*) & dst[11 * 16], res11);
-            _mm256_storeu_si256((__m256i*) & dst[12 * 16], res12);
-            _mm256_storeu_si256((__m256i*) & dst[13 * 16], res13);
-            _mm256_storeu_si256((__m256i*) & dst[14 * 16], res14);
-            _mm256_storeu_si256((__m256i*) & dst[15 * 16], res15);
+            _mm256_storeu_si256((__m256i*)&dst[0 * 16], res00);
+            _mm256_storeu_si256((__m256i*)&dst[1 * 16], res01);
+            _mm256_storeu_si256((__m256i*)&dst[2 * 16], res02);
+            _mm256_storeu_si256((__m256i*)&dst[3 * 16], res03);
+            _mm256_storeu_si256((__m256i*)&dst[4 * 16], res04);
+            _mm256_storeu_si256((__m256i*)&dst[5 * 16], res05);
+            _mm256_storeu_si256((__m256i*)&dst[6 * 16], res06);
+            _mm256_storeu_si256((__m256i*)&dst[7 * 16], res07);
+            _mm256_storeu_si256((__m256i*)&dst[8 * 16], res08);
+            _mm256_storeu_si256((__m256i*)&dst[9 * 16], res09);
+            _mm256_storeu_si256((__m256i*)&dst[10 * 16], res10);
+            _mm256_storeu_si256((__m256i*)&dst[11 * 16], res11);
+            _mm256_storeu_si256((__m256i*)&dst[12 * 16], res12);
+            _mm256_storeu_si256((__m256i*)&dst[13 * 16], res13);
+            _mm256_storeu_si256((__m256i*)&dst[14 * 16], res14);
+            _mm256_storeu_si256((__m256i*)&dst[15 * 16], res15);
 
             dst += 8 * 32;  // 8rows
         }
     }
-    else
-    {
+    else {
         itx_pb32(src, dst, shift, line);
     }
 }
 
 static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
 {
-    int i_src = line;
+    int           i_src   = line;
     // O[32] coeffs
     const __m256i n69_p62 = _mm256_set1_epi32(-4521922);
     const __m256i p74_n56 = _mm256_set1_epi32(4915144);
@@ -1503,30 +1570,31 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
     __m128i in00, in01, in02, in03, in04, in05, in06, in07, in08, in09, in10, in11, in12, in13, in14, in15;
     __m128i in16, in17, in18, in19, in20, in21, in22, in23, in24, in25, in26, in27, in28, in29, in30, in31;
     __m128i ss00, ss01, ss02, ss03, ss04, ss05, ss06, ss07, ss08, ss09, ss10, ss11, ss12, ss13, ss14, ss15;
-    __m256i res00, res01, res02, res03, res04, res05, res06, res07, res08, res09, res10, res11, res12, res13, res14, res15;
-    __m256i res16, res17, res18, res19, res20, res21, res22, res23, res24, res25, res26, res27, res28, res29, res30, res31;
+    __m256i res00, res01, res02, res03, res04, res05, res06, res07, res08, res09, res10, res11, res12, res13, res14,
+        res15;
+    __m256i res16, res17, res18, res19, res20, res21, res22, res23, res24, res25, res26, res27, res28, res29, res30,
+        res31;
 
     int i;
 
-    if (line >= 8)
-    {
-        for (i = 0; i < line; i += 8) {
-            in01 = _mm_loadu_si128((const __m128i*) & src[1 * i_src + i]);
-            in03 = _mm_loadu_si128((const __m128i*) & src[3 * i_src + i]);
-            in05 = _mm_loadu_si128((const __m128i*) & src[5 * i_src + i]);
-            in07 = _mm_loadu_si128((const __m128i*) & src[7 * i_src + i]);
-            in09 = _mm_loadu_si128((const __m128i*) & src[9 * i_src + i]);
-            in11 = _mm_loadu_si128((const __m128i*) & src[11 * i_src + i]);
-            in13 = _mm_loadu_si128((const __m128i*) & src[13 * i_src + i]);
-            in15 = _mm_loadu_si128((const __m128i*) & src[15 * i_src + i]);
-            in17 = _mm_loadu_si128((const __m128i*) & src[17 * i_src + i]);
-            in19 = _mm_loadu_si128((const __m128i*) & src[19 * i_src + i]);
-            in21 = _mm_loadu_si128((const __m128i*) & src[21 * i_src + i]);
-            in23 = _mm_loadu_si128((const __m128i*) & src[23 * i_src + i]);
-            in25 = _mm_loadu_si128((const __m128i*) & src[25 * i_src + i]);
-            in27 = _mm_loadu_si128((const __m128i*) & src[27 * i_src + i]);
-            in29 = _mm_loadu_si128((const __m128i*) & src[29 * i_src + i]);
-            in31 = _mm_loadu_si128((const __m128i*) & src[31 * i_src + i]);
+    if(line >= 8) {
+        for(i = 0; i < line; i += 8) {
+            in01 = _mm_loadu_si128((const __m128i*)&src[1 * i_src + i]);
+            in03 = _mm_loadu_si128((const __m128i*)&src[3 * i_src + i]);
+            in05 = _mm_loadu_si128((const __m128i*)&src[5 * i_src + i]);
+            in07 = _mm_loadu_si128((const __m128i*)&src[7 * i_src + i]);
+            in09 = _mm_loadu_si128((const __m128i*)&src[9 * i_src + i]);
+            in11 = _mm_loadu_si128((const __m128i*)&src[11 * i_src + i]);
+            in13 = _mm_loadu_si128((const __m128i*)&src[13 * i_src + i]);
+            in15 = _mm_loadu_si128((const __m128i*)&src[15 * i_src + i]);
+            in17 = _mm_loadu_si128((const __m128i*)&src[17 * i_src + i]);
+            in19 = _mm_loadu_si128((const __m128i*)&src[19 * i_src + i]);
+            in21 = _mm_loadu_si128((const __m128i*)&src[21 * i_src + i]);
+            in23 = _mm_loadu_si128((const __m128i*)&src[23 * i_src + i]);
+            in25 = _mm_loadu_si128((const __m128i*)&src[25 * i_src + i]);
+            in27 = _mm_loadu_si128((const __m128i*)&src[27 * i_src + i]);
+            in29 = _mm_loadu_si128((const __m128i*)&src[29 * i_src + i]);
+            in31 = _mm_loadu_si128((const __m128i*)&src[31 * i_src + i]);
 
             ss00 = _mm_unpacklo_epi16(in01, in03);
             ss01 = _mm_unpacklo_epi16(in05, in07);
@@ -1546,9 +1614,8 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
             ss14 = _mm_unpackhi_epi16(in25, in27);
             ss15 = _mm_unpackhi_epi16(in29, in31);
 
-
             {
-                const __m256i T_00_00 = _mm256_set_m128i(ss08, ss00);       // [33 13 32 12 31 11 30 10]
+                const __m256i T_00_00 = _mm256_set_m128i(ss08, ss00);  // [33 13 32 12 31 11 30 10]
                 const __m256i T_00_01 = _mm256_set_m128i(ss09, ss01);
                 const __m256i T_00_02 = _mm256_set_m128i(ss10, ss02);
                 const __m256i T_00_03 = _mm256_set_m128i(ss11, ss03);
@@ -1562,7 +1629,7 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                 __m256i EO00, EO01, EO02, EO03, EO04, EO05, EO06, EO07, EO08, EO09, EO10, EO11, EO12, EO13, EO14, EO15;
                 {
                     __m256i T1, T2, T3, T4;
-// clang-format off
+                    // clang-format off
 #define COMPUTE_ROW(c0103, c0507, c0911, c1315, c1719, c2123, c2527, c2931, row) \
     T1 = _mm256_add_epi32(_mm256_madd_epi16(T_00_00, c0103), _mm256_madd_epi16(T_00_01, c0507)); \
     T2 = _mm256_add_epi32(_mm256_madd_epi16(T_00_02, c0911), _mm256_madd_epi16(T_00_03, c1315)); \
@@ -1607,25 +1674,25 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
 
 
 #undef COMPUTE_ROW
-// clang-format on
+                    // clang-format on
                 }
 
-                in00 = _mm_loadu_si128((const __m128i*) & src[0 * i_src + i]);
-                in02 = _mm_loadu_si128((const __m128i*) & src[2 * i_src + i]);
-                in04 = _mm_loadu_si128((const __m128i*) & src[4 * i_src + i]);
-                in06 = _mm_loadu_si128((const __m128i*) & src[6 * i_src + i]);
-                in08 = _mm_loadu_si128((const __m128i*) & src[8 * i_src + i]);
-                in10 = _mm_loadu_si128((const __m128i*) & src[10 * i_src + i]);
-                in12 = _mm_loadu_si128((const __m128i*) & src[12 * i_src + i]);
-                in14 = _mm_loadu_si128((const __m128i*) & src[14 * i_src + i]);
-                in16 = _mm_loadu_si128((const __m128i*) & src[16 * i_src + i]);
-                in18 = _mm_loadu_si128((const __m128i*) & src[18 * i_src + i]);
-                in20 = _mm_loadu_si128((const __m128i*) & src[20 * i_src + i]);
-                in22 = _mm_loadu_si128((const __m128i*) & src[22 * i_src + i]);
-                in24 = _mm_loadu_si128((const __m128i*) & src[24 * i_src + i]);
-                in26 = _mm_loadu_si128((const __m128i*) & src[26 * i_src + i]);
-                in28 = _mm_loadu_si128((const __m128i*) & src[28 * i_src + i]);
-                in30 = _mm_loadu_si128((const __m128i*) & src[30 * i_src + i]);
+                in00 = _mm_loadu_si128((const __m128i*)&src[0 * i_src + i]);
+                in02 = _mm_loadu_si128((const __m128i*)&src[2 * i_src + i]);
+                in04 = _mm_loadu_si128((const __m128i*)&src[4 * i_src + i]);
+                in06 = _mm_loadu_si128((const __m128i*)&src[6 * i_src + i]);
+                in08 = _mm_loadu_si128((const __m128i*)&src[8 * i_src + i]);
+                in10 = _mm_loadu_si128((const __m128i*)&src[10 * i_src + i]);
+                in12 = _mm_loadu_si128((const __m128i*)&src[12 * i_src + i]);
+                in14 = _mm_loadu_si128((const __m128i*)&src[14 * i_src + i]);
+                in16 = _mm_loadu_si128((const __m128i*)&src[16 * i_src + i]);
+                in18 = _mm_loadu_si128((const __m128i*)&src[18 * i_src + i]);
+                in20 = _mm_loadu_si128((const __m128i*)&src[20 * i_src + i]);
+                in22 = _mm_loadu_si128((const __m128i*)&src[22 * i_src + i]);
+                in24 = _mm_loadu_si128((const __m128i*)&src[24 * i_src + i]);
+                in26 = _mm_loadu_si128((const __m128i*)&src[26 * i_src + i]);
+                in28 = _mm_loadu_si128((const __m128i*)&src[28 * i_src + i]);
+                in30 = _mm_loadu_si128((const __m128i*)&src[30 * i_src + i]);
 
                 ss00 = _mm_unpacklo_epi16(in02, in06);
                 ss01 = _mm_unpacklo_epi16(in10, in14);
@@ -1646,7 +1713,7 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                 ss15 = _mm_unpackhi_epi16(in00, in16);
 
                 {
-                    __m256i T1, T2;
+                    __m256i       T1, T2;
                     const __m256i T_00_08 = _mm256_set_m128i(ss08, ss00);
                     const __m256i T_00_09 = _mm256_set_m128i(ss09, ss01);
                     const __m256i T_00_10 = _mm256_set_m128i(ss10, ss02);
@@ -1655,7 +1722,7 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                     const __m256i T_00_13 = _mm256_set_m128i(ss13, ss05);
                     const __m256i T_00_14 = _mm256_set_m128i(ss14, ss06);
                     const __m256i T_00_15 = _mm256_set_m128i(ss15, ss07);
-// clang-format off
+                    // clang-format off
 #define COMPUTE_ROW(c0206, c1014, c1822, c2630, row) \
     T1 = _mm256_add_epi32(_mm256_madd_epi16(T_00_08, c0206), _mm256_madd_epi16(T_00_09, c1014)); \
     T2 = _mm256_add_epi32(_mm256_madd_epi16(T_00_10, c1822), _mm256_madd_epi16(T_00_11, c2630)); \
@@ -1681,17 +1748,25 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
 
 
 #undef COMPUTE_ROW
-// clang-format on
+                    // clang-format on
                     {
                         // EEO[8]
-                        const __m256i EEO0 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p87_p90), _mm256_madd_epi16(T_00_13, p70_p80));
-                        const __m256i EEO1 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p57_p87), _mm256_madd_epi16(T_00_13, n43_p09));
-                        const __m256i EEO2 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p09_p80), _mm256_madd_epi16(T_00_13, n87_n70));
-                        const __m256i EEO3 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n43_p70), _mm256_madd_epi16(T_00_13, p09_n87));
-                        const __m256i EEO4 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n80_p57), _mm256_madd_epi16(T_00_13, p90_n26));
-                        const __m256i EEO5 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n90_p43), _mm256_madd_epi16(T_00_13, p26_p57));
-                        const __m256i EEO6 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n70_p26), _mm256_madd_epi16(T_00_13, n80_p90));
-                        const __m256i EEO7 = _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n26_p09), _mm256_madd_epi16(T_00_13, n57_p43));
+                        const __m256i EEO0 =
+                            _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p87_p90), _mm256_madd_epi16(T_00_13, p70_p80));
+                        const __m256i EEO1 =
+                            _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p57_p87), _mm256_madd_epi16(T_00_13, n43_p09));
+                        const __m256i EEO2 =
+                            _mm256_add_epi32(_mm256_madd_epi16(T_00_12, p09_p80), _mm256_madd_epi16(T_00_13, n87_n70));
+                        const __m256i EEO3 =
+                            _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n43_p70), _mm256_madd_epi16(T_00_13, p09_n87));
+                        const __m256i EEO4 =
+                            _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n80_p57), _mm256_madd_epi16(T_00_13, p90_n26));
+                        const __m256i EEO5 =
+                            _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n90_p43), _mm256_madd_epi16(T_00_13, p26_p57));
+                        const __m256i EEO6 =
+                            _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n70_p26), _mm256_madd_epi16(T_00_13, n80_p90));
+                        const __m256i EEO7 =
+                            _mm256_add_epi32(_mm256_madd_epi16(T_00_12, n26_p09), _mm256_madd_epi16(T_00_13, n57_p43));
 
                         // EEEO[4]
                         const __m256i EEEO0 = _mm256_madd_epi16(T_00_14, p75_p89);
@@ -1704,41 +1779,41 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                         const __m256i EEEE2 = _mm256_madd_epi16(T_00_15, n35_p64);
                         const __m256i EEEE3 = _mm256_madd_epi16(T_00_15, n84_p64);
 
-                        const __m256i EEE0 = _mm256_add_epi32(EEEE0, EEEO0);          // EEE0 = EEEE0 + EEEO0
-                        const __m256i EEE1 = _mm256_add_epi32(EEEE1, EEEO1);          // EEE1 = EEEE1 + EEEO1
-                        const __m256i EEE2 = _mm256_add_epi32(EEEE2, EEEO2);          // EEE2 = EEEE2 + EEEO2
-                        const __m256i EEE3 = _mm256_add_epi32(EEEE3, EEEO3);          // EEE3 = EEEE3 + EEEO3
-                        const __m256i EEE7 = _mm256_sub_epi32(EEEE0, EEEO0);          // EEE7 = EEEE0 - EEEO0
-                        const __m256i EEE6 = _mm256_sub_epi32(EEEE1, EEEO1);          // EEE6 = EEEE1 - EEEO1
-                        const __m256i EEE5 = _mm256_sub_epi32(EEEE2, EEEO2);          // EEE7 = EEEE2 - EEEO2
-                        const __m256i EEE4 = _mm256_sub_epi32(EEEE3, EEEO3);          // EEE6 = EEEE3 - EEEO3
+                        const __m256i EEE0 = _mm256_add_epi32(EEEE0, EEEO0);  // EEE0 = EEEE0 + EEEO0
+                        const __m256i EEE1 = _mm256_add_epi32(EEEE1, EEEO1);  // EEE1 = EEEE1 + EEEO1
+                        const __m256i EEE2 = _mm256_add_epi32(EEEE2, EEEO2);  // EEE2 = EEEE2 + EEEO2
+                        const __m256i EEE3 = _mm256_add_epi32(EEEE3, EEEO3);  // EEE3 = EEEE3 + EEEO3
+                        const __m256i EEE7 = _mm256_sub_epi32(EEEE0, EEEO0);  // EEE7 = EEEE0 - EEEO0
+                        const __m256i EEE6 = _mm256_sub_epi32(EEEE1, EEEO1);  // EEE6 = EEEE1 - EEEO1
+                        const __m256i EEE5 = _mm256_sub_epi32(EEEE2, EEEO2);  // EEE7 = EEEE2 - EEEO2
+                        const __m256i EEE4 = _mm256_sub_epi32(EEEE3, EEEO3);  // EEE6 = EEEE3 - EEEO3
 
-                        const __m256i EE00 = _mm256_add_epi32(EEE0, EEO0);          // EE0 = EEE0 + EEO0
-                        const __m256i EE01 = _mm256_add_epi32(EEE1, EEO1);          // EE1 = EEE1 + EEO1
-                        const __m256i EE02 = _mm256_add_epi32(EEE2, EEO2);          // EE2 = EEE2 + EEO2
-                        const __m256i EE03 = _mm256_add_epi32(EEE3, EEO3);          // EE3 = EEE3 + EEO3
-                        const __m256i EE04 = _mm256_add_epi32(EEE4, EEO4);          // EE4 = EEE4 + EEO4
-                        const __m256i EE05 = _mm256_add_epi32(EEE5, EEO5);          // EE5 = EEE5 + EEO5
-                        const __m256i EE06 = _mm256_add_epi32(EEE6, EEO6);          // EE6 = EEE6 + EEO6
-                        const __m256i EE07 = _mm256_add_epi32(EEE7, EEO7);          // EE7 = EEE7 + EEO7
-                        const __m256i EE15 = _mm256_sub_epi32(EEE0, EEO0);          // EE15 = EEE0 - EEO0
+                        const __m256i EE00 = _mm256_add_epi32(EEE0, EEO0);  // EE0 = EEE0 + EEO0
+                        const __m256i EE01 = _mm256_add_epi32(EEE1, EEO1);  // EE1 = EEE1 + EEO1
+                        const __m256i EE02 = _mm256_add_epi32(EEE2, EEO2);  // EE2 = EEE2 + EEO2
+                        const __m256i EE03 = _mm256_add_epi32(EEE3, EEO3);  // EE3 = EEE3 + EEO3
+                        const __m256i EE04 = _mm256_add_epi32(EEE4, EEO4);  // EE4 = EEE4 + EEO4
+                        const __m256i EE05 = _mm256_add_epi32(EEE5, EEO5);  // EE5 = EEE5 + EEO5
+                        const __m256i EE06 = _mm256_add_epi32(EEE6, EEO6);  // EE6 = EEE6 + EEO6
+                        const __m256i EE07 = _mm256_add_epi32(EEE7, EEO7);  // EE7 = EEE7 + EEO7
+                        const __m256i EE15 = _mm256_sub_epi32(EEE0, EEO0);  // EE15 = EEE0 - EEO0
                         const __m256i EE14 = _mm256_sub_epi32(EEE1, EEO1);
                         const __m256i EE13 = _mm256_sub_epi32(EEE2, EEO2);
                         const __m256i EE12 = _mm256_sub_epi32(EEE3, EEO3);
-                        const __m256i EE11 = _mm256_sub_epi32(EEE4, EEO4);          // EE11 = EEE4 - EEO4
+                        const __m256i EE11 = _mm256_sub_epi32(EEE4, EEO4);  // EE11 = EEE4 - EEO4
                         const __m256i EE10 = _mm256_sub_epi32(EEE5, EEO5);
                         const __m256i EE09 = _mm256_sub_epi32(EEE6, EEO6);
                         const __m256i EE08 = _mm256_sub_epi32(EEE7, EEO7);
 
-                        const __m256i E00 = _mm256_add_epi32(EE00, EO00);          // E00 = EE00 + EO00
-                        const __m256i E01 = _mm256_add_epi32(EE01, EO01);          // E01 = EE01 + EO01
-                        const __m256i E02 = _mm256_add_epi32(EE02, EO02);          // E02 = EE02 + EO02
-                        const __m256i E03 = _mm256_add_epi32(EE03, EO03);          // E03 = EE03 + EO03
+                        const __m256i E00 = _mm256_add_epi32(EE00, EO00);  // E00 = EE00 + EO00
+                        const __m256i E01 = _mm256_add_epi32(EE01, EO01);  // E01 = EE01 + EO01
+                        const __m256i E02 = _mm256_add_epi32(EE02, EO02);  // E02 = EE02 + EO02
+                        const __m256i E03 = _mm256_add_epi32(EE03, EO03);  // E03 = EE03 + EO03
                         const __m256i E04 = _mm256_add_epi32(EE04, EO04);
                         const __m256i E05 = _mm256_add_epi32(EE05, EO05);
                         const __m256i E06 = _mm256_add_epi32(EE06, EO06);
                         const __m256i E07 = _mm256_add_epi32(EE07, EO07);
-                        const __m256i E08 = _mm256_add_epi32(EE08, EO08);          // E08 = EE08 + EO08
+                        const __m256i E08 = _mm256_add_epi32(EE08, EO08);  // E08 = EE08 + EO08
                         const __m256i E09 = _mm256_add_epi32(EE09, EO09);
                         const __m256i E10 = _mm256_add_epi32(EE10, EO10);
                         const __m256i E11 = _mm256_add_epi32(EE11, EO11);
@@ -1746,15 +1821,15 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                         const __m256i E13 = _mm256_add_epi32(EE13, EO13);
                         const __m256i E14 = _mm256_add_epi32(EE14, EO14);
                         const __m256i E15 = _mm256_add_epi32(EE15, EO15);
-                        const __m256i E31 = _mm256_sub_epi32(EE00, EO00);          // E31 = EE00 - EO00
-                        const __m256i E30 = _mm256_sub_epi32(EE01, EO01);          // E30 = EE01 - EO01
-                        const __m256i E29 = _mm256_sub_epi32(EE02, EO02);          // E29 = EE02 - EO02
-                        const __m256i E28 = _mm256_sub_epi32(EE03, EO03);          // E28 = EE03 - EO03
+                        const __m256i E31 = _mm256_sub_epi32(EE00, EO00);  // E31 = EE00 - EO00
+                        const __m256i E30 = _mm256_sub_epi32(EE01, EO01);  // E30 = EE01 - EO01
+                        const __m256i E29 = _mm256_sub_epi32(EE02, EO02);  // E29 = EE02 - EO02
+                        const __m256i E28 = _mm256_sub_epi32(EE03, EO03);  // E28 = EE03 - EO03
                         const __m256i E27 = _mm256_sub_epi32(EE04, EO04);
                         const __m256i E26 = _mm256_sub_epi32(EE05, EO05);
                         const __m256i E25 = _mm256_sub_epi32(EE06, EO06);
                         const __m256i E24 = _mm256_sub_epi32(EE07, EO07);
-                        const __m256i E23 = _mm256_sub_epi32(EE08, EO08);          // E23 = EE08 - EO08
+                        const __m256i E23 = _mm256_sub_epi32(EE08, EO08);  // E23 = EE08 - EO08
                         const __m256i E22 = _mm256_sub_epi32(EE09, EO09);
                         const __m256i E21 = _mm256_sub_epi32(EE10, EO10);
                         const __m256i E20 = _mm256_sub_epi32(EE11, EO11);
@@ -1763,22 +1838,22 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                         const __m256i E17 = _mm256_sub_epi32(EE14, EO14);
                         const __m256i E16 = _mm256_sub_epi32(EE15, EO15);
 
-                        const __m256i T1_00 = _mm256_add_epi32(E00, c32_off);         // E0 + off
-                        const __m256i T1_01 = _mm256_add_epi32(E01, c32_off);         // E1 + off
-                        const __m256i T1_02 = _mm256_add_epi32(E02, c32_off);         // E2 + off
-                        const __m256i T1_03 = _mm256_add_epi32(E03, c32_off);         // E3 + off
-                        const __m256i T1_04 = _mm256_add_epi32(E04, c32_off);         // E4 + off
-                        const __m256i T1_05 = _mm256_add_epi32(E05, c32_off);         // E5 + off
-                        const __m256i T1_06 = _mm256_add_epi32(E06, c32_off);         // E6 + off
-                        const __m256i T1_07 = _mm256_add_epi32(E07, c32_off);         // E7 + off
-                        const __m256i T1_08 = _mm256_add_epi32(E08, c32_off);         // E8 + off
-                        const __m256i T1_09 = _mm256_add_epi32(E09, c32_off);         // E9 + off
-                        const __m256i T1_10 = _mm256_add_epi32(E10, c32_off);         // E10 + off
-                        const __m256i T1_11 = _mm256_add_epi32(E11, c32_off);         // E11 + off
-                        const __m256i T1_12 = _mm256_add_epi32(E12, c32_off);         // E12 + off
-                        const __m256i T1_13 = _mm256_add_epi32(E13, c32_off);         // E13 + off
-                        const __m256i T1_14 = _mm256_add_epi32(E14, c32_off);         // E14 + off
-                        const __m256i T1_15 = _mm256_add_epi32(E15, c32_off);         // E15 + off
+                        const __m256i T1_00 = _mm256_add_epi32(E00, c32_off);  // E0 + off
+                        const __m256i T1_01 = _mm256_add_epi32(E01, c32_off);  // E1 + off
+                        const __m256i T1_02 = _mm256_add_epi32(E02, c32_off);  // E2 + off
+                        const __m256i T1_03 = _mm256_add_epi32(E03, c32_off);  // E3 + off
+                        const __m256i T1_04 = _mm256_add_epi32(E04, c32_off);  // E4 + off
+                        const __m256i T1_05 = _mm256_add_epi32(E05, c32_off);  // E5 + off
+                        const __m256i T1_06 = _mm256_add_epi32(E06, c32_off);  // E6 + off
+                        const __m256i T1_07 = _mm256_add_epi32(E07, c32_off);  // E7 + off
+                        const __m256i T1_08 = _mm256_add_epi32(E08, c32_off);  // E8 + off
+                        const __m256i T1_09 = _mm256_add_epi32(E09, c32_off);  // E9 + off
+                        const __m256i T1_10 = _mm256_add_epi32(E10, c32_off);  // E10 + off
+                        const __m256i T1_11 = _mm256_add_epi32(E11, c32_off);  // E11 + off
+                        const __m256i T1_12 = _mm256_add_epi32(E12, c32_off);  // E12 + off
+                        const __m256i T1_13 = _mm256_add_epi32(E13, c32_off);  // E13 + off
+                        const __m256i T1_14 = _mm256_add_epi32(E14, c32_off);  // E14 + off
+                        const __m256i T1_15 = _mm256_add_epi32(E15, c32_off);  // E15 + off
                         const __m256i T1_16 = _mm256_add_epi32(E16, c32_off);
                         const __m256i T1_17 = _mm256_add_epi32(E17, c32_off);
                         const __m256i T1_18 = _mm256_add_epi32(E18, c32_off);
@@ -1796,39 +1871,39 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                         const __m256i T1_30 = _mm256_add_epi32(E30, c32_off);
                         const __m256i T1_31 = _mm256_add_epi32(E31, c32_off);
 
-                        __m256i T2_00 = _mm256_add_epi32(T1_00, O00);          // E0 + O0 + off
+                        __m256i T2_00 = _mm256_add_epi32(T1_00, O00);  // E0 + O0 + off
                         __m256i T2_01 = _mm256_add_epi32(T1_01, O01);
-                        __m256i T2_02 = _mm256_add_epi32(T1_02, O02);          // E1 + O1 + off
+                        __m256i T2_02 = _mm256_add_epi32(T1_02, O02);  // E1 + O1 + off
                         __m256i T2_03 = _mm256_add_epi32(T1_03, O03);
-                        __m256i T2_04 = _mm256_add_epi32(T1_04, O04);          // E2 + O2 + off
+                        __m256i T2_04 = _mm256_add_epi32(T1_04, O04);  // E2 + O2 + off
                         __m256i T2_05 = _mm256_add_epi32(T1_05, O05);
-                        __m256i T2_06 = _mm256_add_epi32(T1_06, O06);          // E3 + O3 + off
+                        __m256i T2_06 = _mm256_add_epi32(T1_06, O06);  // E3 + O3 + off
                         __m256i T2_07 = _mm256_add_epi32(T1_07, O07);
-                        __m256i T2_08 = _mm256_add_epi32(T1_08, O08);          // E4
+                        __m256i T2_08 = _mm256_add_epi32(T1_08, O08);  // E4
                         __m256i T2_09 = _mm256_add_epi32(T1_09, O09);
-                        __m256i T2_10 = _mm256_add_epi32(T1_10, O10);          // E5
+                        __m256i T2_10 = _mm256_add_epi32(T1_10, O10);  // E5
                         __m256i T2_11 = _mm256_add_epi32(T1_11, O11);
-                        __m256i T2_12 = _mm256_add_epi32(T1_12, O12);          // E6
+                        __m256i T2_12 = _mm256_add_epi32(T1_12, O12);  // E6
                         __m256i T2_13 = _mm256_add_epi32(T1_13, O13);
-                        __m256i T2_14 = _mm256_add_epi32(T1_14, O14);          // E7
+                        __m256i T2_14 = _mm256_add_epi32(T1_14, O14);  // E7
                         __m256i T2_15 = _mm256_add_epi32(T1_15, O15);
-                        __m256i T2_16 = _mm256_add_epi32(T1_16, O16);          // E8
+                        __m256i T2_16 = _mm256_add_epi32(T1_16, O16);  // E8
                         __m256i T2_17 = _mm256_add_epi32(T1_17, O17);
-                        __m256i T2_18 = _mm256_add_epi32(T1_18, O18);          // E9
+                        __m256i T2_18 = _mm256_add_epi32(T1_18, O18);  // E9
                         __m256i T2_19 = _mm256_add_epi32(T1_19, O19);
-                        __m256i T2_20 = _mm256_add_epi32(T1_20, O20);          // E10
+                        __m256i T2_20 = _mm256_add_epi32(T1_20, O20);  // E10
                         __m256i T2_21 = _mm256_add_epi32(T1_21, O21);
-                        __m256i T2_22 = _mm256_add_epi32(T1_22, O22);          // E11
+                        __m256i T2_22 = _mm256_add_epi32(T1_22, O22);  // E11
                         __m256i T2_23 = _mm256_add_epi32(T1_23, O23);
-                        __m256i T2_24 = _mm256_add_epi32(T1_24, O24);          // E12
+                        __m256i T2_24 = _mm256_add_epi32(T1_24, O24);  // E12
                         __m256i T2_25 = _mm256_add_epi32(T1_25, O25);
-                        __m256i T2_26 = _mm256_add_epi32(T1_26, O26);          // E13
+                        __m256i T2_26 = _mm256_add_epi32(T1_26, O26);  // E13
                         __m256i T2_27 = _mm256_add_epi32(T1_27, O27);
-                        __m256i T2_28 = _mm256_add_epi32(T1_28, O28);          // E14
+                        __m256i T2_28 = _mm256_add_epi32(T1_28, O28);  // E14
                         __m256i T2_29 = _mm256_add_epi32(T1_29, O29);
-                        __m256i T2_30 = _mm256_add_epi32(T1_30, O30);          // E15
+                        __m256i T2_30 = _mm256_add_epi32(T1_30, O30);  // E15
                         __m256i T2_31 = _mm256_add_epi32(T1_31, O31);
-                        __m256i T2_63 = _mm256_sub_epi32(T1_00, O00);          // E00 - O00 + off
+                        __m256i T2_63 = _mm256_sub_epi32(T1_00, O00);  // E00 - O00 + off
                         __m256i T2_62 = _mm256_sub_epi32(T1_01, O01);
                         __m256i T2_61 = _mm256_sub_epi32(T1_02, O02);
                         __m256i T2_60 = _mm256_sub_epi32(T1_03, O03);
@@ -1861,38 +1936,38 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                         __m256i T2_33 = _mm256_sub_epi32(T1_30, O30);
                         __m256i T2_32 = _mm256_sub_epi32(T1_31, O31);
 
-                        T2_00 = _mm256_srai_epi32(T2_00, shift);             // [30 20 10 00]
-                        T2_01 = _mm256_srai_epi32(T2_01, shift);             // [70 60 50 40]
-                        T2_02 = _mm256_srai_epi32(T2_02, shift);             // [31 21 11 01]
-                        T2_03 = _mm256_srai_epi32(T2_03, shift);             // [71 61 51 41]
-                        T2_04 = _mm256_srai_epi32(T2_04, shift);             // [32 22 12 02]
-                        T2_05 = _mm256_srai_epi32(T2_05, shift);             // [72 62 52 42]
-                        T2_06 = _mm256_srai_epi32(T2_06, shift);             // [33 23 13 03]
-                        T2_07 = _mm256_srai_epi32(T2_07, shift);             // [73 63 53 43]
-                        T2_08 = _mm256_srai_epi32(T2_08, shift);             // [33 24 14 04]
-                        T2_09 = _mm256_srai_epi32(T2_09, shift);             // [74 64 54 44]
-                        T2_10 = _mm256_srai_epi32(T2_10, shift);             // [35 25 15 05]
-                        T2_11 = _mm256_srai_epi32(T2_11, shift);             // [75 65 55 45]
-                        T2_12 = _mm256_srai_epi32(T2_12, shift);             // [36 26 16 06]
-                        T2_13 = _mm256_srai_epi32(T2_13, shift);             // [76 66 56 46]
-                        T2_14 = _mm256_srai_epi32(T2_14, shift);             // [37 27 17 07]
-                        T2_15 = _mm256_srai_epi32(T2_15, shift);             // [77 67 57 47]
-                        T2_16 = _mm256_srai_epi32(T2_16, shift);             // [30 20 10 00] x8
-                        T2_17 = _mm256_srai_epi32(T2_17, shift);             // [70 60 50 40]
-                        T2_18 = _mm256_srai_epi32(T2_18, shift);             // [31 21 11 01] x9
-                        T2_19 = _mm256_srai_epi32(T2_19, shift);             // [71 61 51 41]
-                        T2_20 = _mm256_srai_epi32(T2_20, shift);             // [32 22 12 02] xA
-                        T2_21 = _mm256_srai_epi32(T2_21, shift);             // [72 62 52 42]
-                        T2_22 = _mm256_srai_epi32(T2_22, shift);             // [33 23 13 03] xB
-                        T2_23 = _mm256_srai_epi32(T2_23, shift);             // [73 63 53 43]
-                        T2_24 = _mm256_srai_epi32(T2_24, shift);             // [33 24 14 04] xC
-                        T2_25 = _mm256_srai_epi32(T2_25, shift);             // [74 64 54 44]
-                        T2_26 = _mm256_srai_epi32(T2_26, shift);             // [35 25 15 05] xD
-                        T2_27 = _mm256_srai_epi32(T2_27, shift);             // [75 65 55 45]
-                        T2_28 = _mm256_srai_epi32(T2_28, shift);             // [36 26 16 06] xE
-                        T2_29 = _mm256_srai_epi32(T2_29, shift);             // [76 66 56 46]
-                        T2_30 = _mm256_srai_epi32(T2_30, shift);             // [37 27 17 07] xF
-                        T2_31 = _mm256_srai_epi32(T2_31, shift);             // [77 67 57 47]
+                        T2_00 = _mm256_srai_epi32(T2_00, shift);  // [30 20 10 00]
+                        T2_01 = _mm256_srai_epi32(T2_01, shift);  // [70 60 50 40]
+                        T2_02 = _mm256_srai_epi32(T2_02, shift);  // [31 21 11 01]
+                        T2_03 = _mm256_srai_epi32(T2_03, shift);  // [71 61 51 41]
+                        T2_04 = _mm256_srai_epi32(T2_04, shift);  // [32 22 12 02]
+                        T2_05 = _mm256_srai_epi32(T2_05, shift);  // [72 62 52 42]
+                        T2_06 = _mm256_srai_epi32(T2_06, shift);  // [33 23 13 03]
+                        T2_07 = _mm256_srai_epi32(T2_07, shift);  // [73 63 53 43]
+                        T2_08 = _mm256_srai_epi32(T2_08, shift);  // [33 24 14 04]
+                        T2_09 = _mm256_srai_epi32(T2_09, shift);  // [74 64 54 44]
+                        T2_10 = _mm256_srai_epi32(T2_10, shift);  // [35 25 15 05]
+                        T2_11 = _mm256_srai_epi32(T2_11, shift);  // [75 65 55 45]
+                        T2_12 = _mm256_srai_epi32(T2_12, shift);  // [36 26 16 06]
+                        T2_13 = _mm256_srai_epi32(T2_13, shift);  // [76 66 56 46]
+                        T2_14 = _mm256_srai_epi32(T2_14, shift);  // [37 27 17 07]
+                        T2_15 = _mm256_srai_epi32(T2_15, shift);  // [77 67 57 47]
+                        T2_16 = _mm256_srai_epi32(T2_16, shift);  // [30 20 10 00] x8
+                        T2_17 = _mm256_srai_epi32(T2_17, shift);  // [70 60 50 40]
+                        T2_18 = _mm256_srai_epi32(T2_18, shift);  // [31 21 11 01] x9
+                        T2_19 = _mm256_srai_epi32(T2_19, shift);  // [71 61 51 41]
+                        T2_20 = _mm256_srai_epi32(T2_20, shift);  // [32 22 12 02] xA
+                        T2_21 = _mm256_srai_epi32(T2_21, shift);  // [72 62 52 42]
+                        T2_22 = _mm256_srai_epi32(T2_22, shift);  // [33 23 13 03] xB
+                        T2_23 = _mm256_srai_epi32(T2_23, shift);  // [73 63 53 43]
+                        T2_24 = _mm256_srai_epi32(T2_24, shift);  // [33 24 14 04] xC
+                        T2_25 = _mm256_srai_epi32(T2_25, shift);  // [74 64 54 44]
+                        T2_26 = _mm256_srai_epi32(T2_26, shift);  // [35 25 15 05] xD
+                        T2_27 = _mm256_srai_epi32(T2_27, shift);  // [75 65 55 45]
+                        T2_28 = _mm256_srai_epi32(T2_28, shift);  // [36 26 16 06] xE
+                        T2_29 = _mm256_srai_epi32(T2_29, shift);  // [76 66 56 46]
+                        T2_30 = _mm256_srai_epi32(T2_30, shift);  // [37 27 17 07] xF
+                        T2_31 = _mm256_srai_epi32(T2_31, shift);  // [77 67 57 47]
                         T2_63 = _mm256_srai_epi32(T2_63, shift);
                         T2_62 = _mm256_srai_epi32(T2_62, shift);
                         T2_61 = _mm256_srai_epi32(T2_61, shift);
@@ -1926,55 +2001,146 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
                         T2_33 = _mm256_srai_epi32(T2_33, shift);
                         T2_32 = _mm256_srai_epi32(T2_32, shift);
 
-                        //transpose matrix H x W: 64x8 --> 8x64
-                        TRANSPOSE_16x8_32BIT_16BIT(T2_00, T2_01, T2_02, T2_03, T2_04, T2_05, T2_06, T2_07, T2_08, T2_09, T2_10, T2_11, T2_12, T2_13, T2_14, T2_15, res00, res04, res08, res12, res16, res20, res24, res28);
-                        TRANSPOSE_16x8_32BIT_16BIT(T2_16, T2_17, T2_18, T2_19, T2_20, T2_21, T2_22, T2_23, T2_24, T2_25, T2_26, T2_27, T2_28, T2_29, T2_30, T2_31, res01, res05, res09, res13, res17, res21, res25, res29);
-                        TRANSPOSE_16x8_32BIT_16BIT(T2_32, T2_33, T2_34, T2_35, T2_36, T2_37, T2_38, T2_39, T2_40, T2_41, T2_42, T2_43, T2_44, T2_45, T2_46, T2_47, res02, res06, res10, res14, res18, res22, res26, res30);
-                        TRANSPOSE_16x8_32BIT_16BIT(T2_48, T2_49, T2_50, T2_51, T2_52, T2_53, T2_54, T2_55, T2_56, T2_57, T2_58, T2_59, T2_60, T2_61, T2_62, T2_63, res03, res07, res11, res15, res19, res23, res27, res31);
-
+                        // transpose matrix H x W: 64x8 --> 8x64
+                        TRANSPOSE_16x8_32BIT_16BIT(T2_00,
+                                                   T2_01,
+                                                   T2_02,
+                                                   T2_03,
+                                                   T2_04,
+                                                   T2_05,
+                                                   T2_06,
+                                                   T2_07,
+                                                   T2_08,
+                                                   T2_09,
+                                                   T2_10,
+                                                   T2_11,
+                                                   T2_12,
+                                                   T2_13,
+                                                   T2_14,
+                                                   T2_15,
+                                                   res00,
+                                                   res04,
+                                                   res08,
+                                                   res12,
+                                                   res16,
+                                                   res20,
+                                                   res24,
+                                                   res28);
+                        TRANSPOSE_16x8_32BIT_16BIT(T2_16,
+                                                   T2_17,
+                                                   T2_18,
+                                                   T2_19,
+                                                   T2_20,
+                                                   T2_21,
+                                                   T2_22,
+                                                   T2_23,
+                                                   T2_24,
+                                                   T2_25,
+                                                   T2_26,
+                                                   T2_27,
+                                                   T2_28,
+                                                   T2_29,
+                                                   T2_30,
+                                                   T2_31,
+                                                   res01,
+                                                   res05,
+                                                   res09,
+                                                   res13,
+                                                   res17,
+                                                   res21,
+                                                   res25,
+                                                   res29);
+                        TRANSPOSE_16x8_32BIT_16BIT(T2_32,
+                                                   T2_33,
+                                                   T2_34,
+                                                   T2_35,
+                                                   T2_36,
+                                                   T2_37,
+                                                   T2_38,
+                                                   T2_39,
+                                                   T2_40,
+                                                   T2_41,
+                                                   T2_42,
+                                                   T2_43,
+                                                   T2_44,
+                                                   T2_45,
+                                                   T2_46,
+                                                   T2_47,
+                                                   res02,
+                                                   res06,
+                                                   res10,
+                                                   res14,
+                                                   res18,
+                                                   res22,
+                                                   res26,
+                                                   res30);
+                        TRANSPOSE_16x8_32BIT_16BIT(T2_48,
+                                                   T2_49,
+                                                   T2_50,
+                                                   T2_51,
+                                                   T2_52,
+                                                   T2_53,
+                                                   T2_54,
+                                                   T2_55,
+                                                   T2_56,
+                                                   T2_57,
+                                                   T2_58,
+                                                   T2_59,
+                                                   T2_60,
+                                                   T2_61,
+                                                   T2_62,
+                                                   T2_63,
+                                                   res03,
+                                                   res07,
+                                                   res11,
+                                                   res15,
+                                                   res19,
+                                                   res23,
+                                                   res27,
+                                                   res31);
                     }
 
-                    _mm256_storeu_si256((__m256i*) & dst[0 * 16], res00);
-                    _mm256_storeu_si256((__m256i*) & dst[1 * 16], res01);
-                    _mm256_storeu_si256((__m256i*) & dst[2 * 16], res02);
-                    _mm256_storeu_si256((__m256i*) & dst[3 * 16], res03);
-                    _mm256_storeu_si256((__m256i*) & dst[4 * 16], res04);
-                    _mm256_storeu_si256((__m256i*) & dst[5 * 16], res05);
-                    _mm256_storeu_si256((__m256i*) & dst[6 * 16], res06);
-                    _mm256_storeu_si256((__m256i*) & dst[7 * 16], res07);
+                    _mm256_storeu_si256((__m256i*)&dst[0 * 16], res00);
+                    _mm256_storeu_si256((__m256i*)&dst[1 * 16], res01);
+                    _mm256_storeu_si256((__m256i*)&dst[2 * 16], res02);
+                    _mm256_storeu_si256((__m256i*)&dst[3 * 16], res03);
+                    _mm256_storeu_si256((__m256i*)&dst[4 * 16], res04);
+                    _mm256_storeu_si256((__m256i*)&dst[5 * 16], res05);
+                    _mm256_storeu_si256((__m256i*)&dst[6 * 16], res06);
+                    _mm256_storeu_si256((__m256i*)&dst[7 * 16], res07);
 
                     dst += 8 * 16;
 
-                    _mm256_storeu_si256((__m256i*) & dst[0 * 16], res08);
-                    _mm256_storeu_si256((__m256i*) & dst[1 * 16], res09);
-                    _mm256_storeu_si256((__m256i*) & dst[2 * 16], res10);
-                    _mm256_storeu_si256((__m256i*) & dst[3 * 16], res11);
-                    _mm256_storeu_si256((__m256i*) & dst[4 * 16], res12);
-                    _mm256_storeu_si256((__m256i*) & dst[5 * 16], res13);
-                    _mm256_storeu_si256((__m256i*) & dst[6 * 16], res14);
-                    _mm256_storeu_si256((__m256i*) & dst[7 * 16], res15);
+                    _mm256_storeu_si256((__m256i*)&dst[0 * 16], res08);
+                    _mm256_storeu_si256((__m256i*)&dst[1 * 16], res09);
+                    _mm256_storeu_si256((__m256i*)&dst[2 * 16], res10);
+                    _mm256_storeu_si256((__m256i*)&dst[3 * 16], res11);
+                    _mm256_storeu_si256((__m256i*)&dst[4 * 16], res12);
+                    _mm256_storeu_si256((__m256i*)&dst[5 * 16], res13);
+                    _mm256_storeu_si256((__m256i*)&dst[6 * 16], res14);
+                    _mm256_storeu_si256((__m256i*)&dst[7 * 16], res15);
 
                     dst += 8 * 16;
 
-                    _mm256_storeu_si256((__m256i*) & dst[0 * 16], res16);
-                    _mm256_storeu_si256((__m256i*) & dst[1 * 16], res17);
-                    _mm256_storeu_si256((__m256i*) & dst[2 * 16], res18);
-                    _mm256_storeu_si256((__m256i*) & dst[3 * 16], res19);
-                    _mm256_storeu_si256((__m256i*) & dst[4 * 16], res20);
-                    _mm256_storeu_si256((__m256i*) & dst[5 * 16], res21);
-                    _mm256_storeu_si256((__m256i*) & dst[6 * 16], res22);
-                    _mm256_storeu_si256((__m256i*) & dst[7 * 16], res23);
+                    _mm256_storeu_si256((__m256i*)&dst[0 * 16], res16);
+                    _mm256_storeu_si256((__m256i*)&dst[1 * 16], res17);
+                    _mm256_storeu_si256((__m256i*)&dst[2 * 16], res18);
+                    _mm256_storeu_si256((__m256i*)&dst[3 * 16], res19);
+                    _mm256_storeu_si256((__m256i*)&dst[4 * 16], res20);
+                    _mm256_storeu_si256((__m256i*)&dst[5 * 16], res21);
+                    _mm256_storeu_si256((__m256i*)&dst[6 * 16], res22);
+                    _mm256_storeu_si256((__m256i*)&dst[7 * 16], res23);
 
                     dst += 8 * 16;
 
-                    _mm256_storeu_si256((__m256i*) & dst[0 * 16], res24);
-                    _mm256_storeu_si256((__m256i*) & dst[1 * 16], res25);
-                    _mm256_storeu_si256((__m256i*) & dst[2 * 16], res26);
-                    _mm256_storeu_si256((__m256i*) & dst[3 * 16], res27);
-                    _mm256_storeu_si256((__m256i*) & dst[4 * 16], res28);
-                    _mm256_storeu_si256((__m256i*) & dst[5 * 16], res29);
-                    _mm256_storeu_si256((__m256i*) & dst[6 * 16], res30);
-                    _mm256_storeu_si256((__m256i*) & dst[7 * 16], res31);
+                    _mm256_storeu_si256((__m256i*)&dst[0 * 16], res24);
+                    _mm256_storeu_si256((__m256i*)&dst[1 * 16], res25);
+                    _mm256_storeu_si256((__m256i*)&dst[2 * 16], res26);
+                    _mm256_storeu_si256((__m256i*)&dst[3 * 16], res27);
+                    _mm256_storeu_si256((__m256i*)&dst[4 * 16], res28);
+                    _mm256_storeu_si256((__m256i*)&dst[5 * 16], res29);
+                    _mm256_storeu_si256((__m256i*)&dst[6 * 16], res30);
+                    _mm256_storeu_si256((__m256i*)&dst[7 * 16], res31);
 
                     dst += 8 * 16;
                 }
@@ -1982,18 +2148,9 @@ static void itx_pb64_avx(s16* src, s16* dst, int shift, int line)
         }
     }
     else {
-         itx_pb64(src, dst, shift, line);
+        itx_pb64(src, dst, shift, line);
     }
-
 }
 
-
 const XEVE_ITX xeve_tbl_itx_avx[MAX_TR_LOG2] =
-{
-    itx_pb2_avx,
-    itx_pb4_avx,
-    itx_pb8_avx,
-    itx_pb16_avx,
-    itx_pb32_avx,
-    itx_pb64_avx
-};
+    {itx_pb2_avx, itx_pb4_avx, itx_pb8_avx, itx_pb16_avx, itx_pb32_avx, itx_pb64_avx};

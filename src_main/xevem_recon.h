@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,30 @@
 #ifndef _XEVEM_RECON_H_
 #define _XEVEM_RECON_H_
 
-void xeve_recon_w_ats(s16 *coef, pel *pred, int is_coef, int cuw, int cuh, int s_rec, pel *rec, u8 ats_inter_info, int bit_depth);
+void xeve_recon_w_ats(s16 *coef,
+                      pel *pred,
+                      int  is_coef,
+                      int  cuw,
+                      int  cuh,
+                      int  s_rec,
+                      pel *rec,
+                      u8   ats_inter_info,
+                      int  bit_depth);
 
-void xeve_htdf(s16* rec, int qp, int w, int h, int s, BOOL intra_block_flag, pel* rec_pic, int s_pic, int avail_cu
-             , int scup, int w_scu, int h_scu, u32 * map_scu, int constrained_intra_pred, int bit_depth);
+void xeve_htdf(s16 *rec,
+               int  qp,
+               int  w,
+               int  h,
+               int  s,
+               BOOL intra_block_flag,
+               pel *rec_pic,
+               int  s_pic,
+               int  avail_cu,
+               int  scup,
+               int  w_scu,
+               int  h_scu,
+               u32 *map_scu,
+               int  constrained_intra_pred,
+               int  bit_depth);
 
 #endif /* _XEVEM_RECON_H_ */
