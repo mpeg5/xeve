@@ -882,8 +882,6 @@ struct _XEVE_CTX
     /* cu data for current LCU */
     XEVE_CU_DATA     * map_cu_data;
     /* map for encoded motion vectors in SCU */
-    s16             (* map_mv)[REFP_NUM][MV_D];
-    /* map for encoded motion vectors in SCU */
     s16             (* map_unrefined_mv)[REFP_NUM][MV_D];
     /* map for reference indices */
     s8              (* map_refi)[REFP_NUM];
@@ -953,12 +951,10 @@ struct _XEVE_CTX
     /* intra prediction functions */
     int   (*fn_pintra_init_mt)(XEVE_CTX * ctx, int tile_idx);
     int   (*fn_pintra_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
-    double(*fn_pintra_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
     int   (*fn_pintra_set_complexity)(XEVE_CTX * ctx, int complexity);
     /* inter prediction functions */
     int   (*fn_pinter_init_mt)(XEVE_CTX * ctx, int tile_idx);
     int   (*fn_pinter_init_lcu)(XEVE_CTX * ctx, XEVE_CORE * core);
-    double(*fn_pinter_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
     int   (*fn_pinter_set_complexity)(XEVE_CTX * ctx, int complexity);
     int   (*fn_loop_filter)(XEVE_CTX * ctx, XEVE_CORE * core);
     /* entropy coding functions */
@@ -982,6 +978,9 @@ struct _XEVE_CTX
     void  (*fn_deblock_tree)(XEVE_CTX * ctx, XEVE_PIC * pic, int x, int y, int cuw, int cuh, int cud, int cup, int is_hor_edge, TREE_CONS tree_cons, XEVE_CORE * core, int boundary_filtering);
     void  (*fn_pic_flt)(XEVE_CTX * ctx, XEVE_IMGB * img);
     const XEVE_ITXB(*fn_itxb)[MAX_TR_LOG2];
+    /* intra/inter analyze functions*/
+    double(*fn_pintra_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
+    double(*fn_pinter_analyze_cu)(XEVE_CTX *ctx, XEVE_CORE *core, int x, int y, int log2_cuw, int log2_cuh, XEVE_MODE *mi, s16 coef[N_C][MAX_CU_DIM], pel *rec[N_C], int s_rec[N_C]);
     /* platform specific data, if needed */
     void             * pf;
 
@@ -996,6 +995,8 @@ struct _XEVE_CTX
     u8                 tile_to_slice_map[XEVE_MAX_NUM_TILES_COL * XEVE_MAX_NUM_TILES_ROW];
     u8                 tiles_in_slice[XEVE_MAX_NUM_TILES_COL * XEVE_MAX_NUM_TILES_ROW];
     u8                 tile_order[XEVE_MAX_NUM_TILES_COL * XEVE_MAX_NUM_TILES_ROW];
+   /* map for encoded motion vectors in SCU */
+    s16             (* map_mv)[REFP_NUM][MV_D];
 
 };
 

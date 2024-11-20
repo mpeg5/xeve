@@ -39,6 +39,10 @@ int xeve_pintra_init_mt(XEVE_CTX * ctx, int tile_idx)
     pi = &ctx->pintra[tile_idx];
 
     pic          = pi->pic_o = PIC_ORIG(ctx);
+    
+    xeve_mset(&pi->slice_type, 0, sizeof(int));
+    pi->slice_type = ctx->slice_type;
+    
     pi->o[Y_C]   = pic->y;
     pi->o[U_C]   = pic->u;
     pi->o[V_C]   = pic->v;
@@ -56,7 +60,6 @@ int xeve_pintra_init_mt(XEVE_CTX * ctx, int tile_idx)
     pi->s_m[U_C] = pic->s_c;
     pi->s_m[V_C] = pic->s_c;
 
-    pi->slice_type = ctx->slice_type;
 
     return XEVE_OK;
 }
