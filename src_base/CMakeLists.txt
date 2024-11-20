@@ -86,9 +86,6 @@ elseif( UNIX OR MINGW )
   if("${ARM}" STREQUAL "FALSE")
     set_property( SOURCE ${SSE} APPEND PROPERTY COMPILE_FLAGS "-msse4.1" )
     set_property( SOURCE ${AVX} APPEND PROPERTY COMPILE_FLAGS " -mavx2" )
-	
-    set_property( SOURCE  ${LIB_BASE_SRC}  APPEND PROPERTY COMPILE_FLAGS " -mno-avx2 -mno-avx" )
-	
   endif()
   set_target_properties(${LIB_NAME_BASE}_dynamic PROPERTIES FOLDER lib
                                                             LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
