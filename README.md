@@ -31,11 +31,11 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 
 - Build Instructions for **Baseline Profile**
   ```
-  $mkdir build
-  $cd build
-  $cmake .. -DSET_PROF=BASE
-  $make
-  $sudo make install
+  mkdir build
+  cd build
+  cmake .. -DSET_PROF=BASE
+  make
+  sudo make install
   ```
   - Output Location
     - Executable application (xeveb_app) can be found under build/bin/.
@@ -43,11 +43,11 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 
 - Build Instructions for **Main Profile**
   ```
-  $mkdir build
-  $cd build
-  $cmake ..
-  $make
-  $sudo make install
+  mkdir build
+  cd build
+  cmake ..
+  make
+  sudo make install
   ```
   - Output Location
     - Executable application (xeve_app) can be found under build/bin/.
@@ -64,36 +64,36 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 - Build Instructions for **Baseline Profile**
   - MinGW-64
     ```
-    $mkdir build
-    $cd build
-    $cmake .. -G "MinGW Makefiles" -DSET_PROF=BASE
-    $make
-    $sudo make install
+    mkdir build
+    cd build
+    cmake .. -G "MinGW Makefiles" -DSET_PROF=BASE
+    make
+    sudo make install
     ```
   - Microsoft Visual Studio
     ```
-    $mkdir build
-    $cd build
-    $cmake .. -G "Visual Studio 15 2017 Win64" -DSET_PROF=BASE
-    $make
+    mkdir build
+    cd build
+    cmake .. -G "Visual Studio 15 2017 Win64" -DSET_PROF=BASE
+    make
     ```
     You can change '-G' option with proper version of Visual Studio.
 
 - Build Instructions for **Main Profile**
   - MinGW-64
     ```
-    $mkdir build
-    $cd build
-    $cmake .. -G "MinGW Makefiles"
-    $make
-    $sudo make install
+    mkdir build
+    cd build
+    cmake .. -G "MinGW Makefiles"
+    make
+    sudo make install
     ```
   - Microsoft Visual Studio
     ```
-    $mkdir build
-    $cd build
-    $cmake .. -G "Visual Studio 15 2017 Win64"
-    $make
+    mkdir build
+    cd build
+    cmake .. -G "Visual Studio 15 2017 Win64"
+    make
     ```
     You can change '-G' option with proper version of Visual Studio.
   
@@ -107,11 +107,11 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 
 - Build Instructions for **Baseline Profile**
   ```
-  $mkdir build-arm
-  $cd build-arm
-  $cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM=TRUE -DSET_PROF=BASE 
-  $make
-  $sudo make install
+  mkdir build-arm
+  cd build-arm
+  cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM=TRUE -DSET_PROF=BASE 
+  make
+  sudo make install
   ```
   - Output Location
     - Executable application (xeveb_app) can be found under build-arm/bin/.
@@ -119,11 +119,11 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 
 - Build Instructions for **Main Profile**
   ```
-  $mkdir build-arm
-  $cd build-arm
-  $cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM=TRUE
-  $make
-  $sudo make install
+  mkdir build-arm
+  cd build-arm
+  cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DARM=TRUE
+  make
+  sudo make install
   ```
   - Output Location
     - Executable application (xeve_app) can be found under build-arm/bin/.
@@ -138,7 +138,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   - Follow build instruction and build the project
   - Generate **DEB packages**
     ```
-    $make package
+    make package
     ```
     or
     ```
@@ -196,7 +196,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     - MinGW-64
       - Go to the build directory and issue the following command
       ```
-      $make package
+      make package
       ```
   - Output:
     - Baseline Profile:
@@ -261,8 +261,8 @@ Options:
 ```
 
 ### Example
-	$xeve_app -i RaceHorses_416x240_30.yuv -w 416 -h 240 -z 30 -o xeve.evc
-	$xeve_app -i RaceHorses_416x240_30.y4m -o xeve.evc
+	xeve_app -i RaceHorses_416x240_30.yuv -w 416 -h 240 -z 30 -o xeve.evc
+	xeve_app -i RaceHorses_416x240_30.y4m -o xeve.evc
 
 ## Programming Guide
 The following code is a pseudo code for understanding how to use the library
