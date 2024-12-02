@@ -1518,6 +1518,9 @@ static int pinter_init_mt(XEVE_CTX *ctx, int thread_idx)
     int           size;
 
     pic            = pi->pic_o = PIC_ORIG(ctx);
+    pi->refp       = ctx->refp;
+    pi->slice_type = ctx->slice_type;
+
     pi->o[Y_C]     = pic->y;
     pi->o[U_C]     = pic->u;
     pi->o[V_C]     = pic->v;
@@ -1527,6 +1530,12 @@ static int pinter_init_mt(XEVE_CTX *ctx, int thread_idx)
     pi->s_o[V_C]   = pic->s_c;
 
     pic            = pi->pic_m = PIC_MODE(ctx);
+    pi->map_mv     = ctx->map_mv;
+
+    pi->w_scu      = ctx->w_scu;
+    size = sizeof(pel) * MAX_CU_DIM;
+    xeve_mset(pi->pred_buf, 0, size);
+
     pi->m[Y_C]     = pic->y;
     pi->m[U_C]     = pic->u;
     pi->m[V_C]     = pic->v;
@@ -1534,17 +1543,7 @@ static int pinter_init_mt(XEVE_CTX *ctx, int thread_idx)
     pi->s_m[Y_C]   = pic->s_l;
     pi->s_m[U_C]   = pic->s_c;
     pi->s_m[V_C]   = pic->s_c;
-
-    pi->refp       = ctx->refp;
-    pi->slice_type = ctx->slice_type;
-
-    pi->map_mv     = ctx->map_mv;
-
-    pi->w_scu      = ctx->w_scu;
-
-    size = sizeof(pel) * MAX_CU_DIM;
-    xeve_mset(pi->pred_buf, 0, size);
-
+ 
     size = sizeof(s8) * PRED_NUM * REFP_NUM;
     xeve_mset(pi->refi, 0, size);
 
