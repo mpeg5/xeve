@@ -45,8 +45,8 @@ void xeve_itx_pb2b(void *src, void *dst, int shift, int line, int step)
         \
         if(step == 0)\
         {\
-            *((type_dst *)dst + j * 2 + 0) = ITX_CLIP_32((xeve_tbl_tm2[0][0] * E + add) >> shift); \
-            *((type_dst *)dst + j * 2 + 1) = ITX_CLIP_32((xeve_tbl_tm2[1][0] * O + add) >> shift); \
+            *((type_dst *)dst + j * 2 + 0) = (s32)(xeve_tbl_tm2[0][0] * E); \
+            *((type_dst *)dst + j * 2 + 1) = (s32)(xeve_tbl_tm2[1][0] * O); \
         }\
         else\
         {\
@@ -83,10 +83,10 @@ void xeve_itx_pb4b(void *src, void *dst, int shift, int line, int step)
         /* Combining even and odd terms at each hierarchy levels to calculate the final spatial domain vector */\
         if (step == 0)\
         {\
-            *((type_dst * )dst + j * 4 + 0) = ITX_CLIP_32((E[0] + O[0] + add) >> shift);\
-            *((type_dst * )dst + j * 4 + 1) = ITX_CLIP_32((E[1] + O[1] + add) >> shift);\
-            *((type_dst * )dst + j * 4 + 2) = ITX_CLIP_32((E[1] - O[1] + add) >> shift);\
-            *((type_dst * )dst + j * 4 + 3) = ITX_CLIP_32((E[0] - O[0] + add) >> shift);\
+            *((type_dst * )dst + j * 4 + 0) = (s32)(E[0] + O[0]);\
+            *((type_dst * )dst + j * 4 + 1) = (s32)(E[1] + O[1]);\
+            *((type_dst * )dst + j * 4 + 2) = (s32)(E[1] - O[1]);\
+            *((type_dst * )dst + j * 4 + 3) = (s32)(E[0] - O[0]);\
         }\
         else\
         {\
@@ -141,8 +141,8 @@ void xeve_itx_pb8b(void *src, void *dst, int shift, int line, int step)
         {\
             for (k = 0; k < 4; k++)\
             {\
-                *((type_dst * )dst + j * 8 + k    ) = ITX_CLIP_32((E[k] + O[k] + add) >> shift);\
-                *((type_dst * )dst + j * 8 + k + 4) = ITX_CLIP_32((E[3 - k] - O[3 - k] + add) >> shift);\
+                *((type_dst * )dst + j * 8 + k    ) = (s32)(E[k] + O[k]);\
+                *((type_dst * )dst + j * 8 + k + 4) = (s32)(E[3 - k] - O[3 - k]);\
             }\
         }\
         else\
@@ -213,8 +213,8 @@ void xeve_itx_pb16b(void *src, void *dst, int shift, int line, int step)
         {\
             for (k = 0; k < 8; k++)\
             {\
-                *((type_dst * )dst + j * 16 + k    ) = ITX_CLIP_32((E[k] + O[k] + add) >> shift); \
-                *((type_dst * )dst + j * 16 + k + 8) = ITX_CLIP_32((E[7 - k] - O[7 - k] + add) >> shift); \
+                *((type_dst * )dst + j * 16 + k    ) = (s32)(E[k] + O[k]); \
+                *((type_dst * )dst + j * 16 + k + 8) = (s32)(E[7 - k] - O[7 - k]); \
             }\
         }\
         else\
@@ -314,8 +314,8 @@ void xeve_itx_pb32b(void *src, void *dst, int shift, int line, int step)
         {\
             for (k = 0; k < 16; k++)\
             {\
-                *((type_dst * )dst + j * 32 + k     ) = ITX_CLIP_32((E[k] + O[k] + add) >> shift);\
-                *((type_dst * )dst + j * 32 + k + 16) = ITX_CLIP_32((E[15 - k] - O[15 - k] + add) >> shift);\
+                *((type_dst * )dst + j * 32 + k     ) = (s32)(E[k] + O[k]);\
+                *((type_dst * )dst + j * 32 + k + 16) = (s32)(E[15 - k] - O[15 - k]);\
             }\
         }\
         else\
@@ -429,8 +429,8 @@ void xeve_itx_pb64b(void *src, void *dst, int shift, int line, int step)
         {\
             for (k = 0; k < 32; k++)\
             {\
-                *((type_dst * )dst + k     ) = ITX_CLIP_32((E[k] + O[k] + add) >> shift);\
-                *((type_dst * )dst + k + 32) = ITX_CLIP_32((E[31 - k] - O[31 - k] + add) >> shift);\
+                *((type_dst * )dst + k     ) = (s32)(E[k] + O[k]);\
+                *((type_dst * )dst + k + 32) = (s32)(E[31 - k] - O[31 - k]);\
             }\
         }\
         else\

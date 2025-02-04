@@ -62,7 +62,7 @@ static const u8 compare_mvs(const int mv0[2], const int mv1[2])
     return (XEVE_ABS(mv0[0] - mv1[0]) < 4) && (XEVE_ABS(mv0[1] - mv1[1]) < 4);
 }
 
-static const u8 get_index(const u8 qp, const u8 offset)
+static const u8 get_index(const s8 qp, const s8 offset)
 {
     return XEVE_CLIP3(0, MAX_QP, qp + offset);
 }
