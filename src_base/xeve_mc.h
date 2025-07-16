@@ -3,18 +3,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -105,9 +105,47 @@ extern XEVE_AVG_NO_CLIP xeve_func_average_no_clip;
 
 // clang-format on
 
-void xeve_mc(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16(*mv)[MV_D], XEVE_REFP(*refp)[REFP_NUM], pel pred[REFP_NUM][N_C][MAX_CU_DIM], int bit_depth_luma, int bit_depth_chroma, int chroma_format_idc);
-void xeve_mv_clip(int x, int y, int pic_w, int pic_h, int w, int h, s8 refi[REFP_NUM], s16 mv[REFP_NUM][MV_D], s16(*mv_t)[MV_D]);
+void xeve_mc(int x,
+             int y,
+             int pic_w,
+             int pic_h,
+             int w,
+             int h,
+             s8  refi[REFP_NUM],
+             s16 (*mv)[MV_D],
+             XEVE_REFP (*refp)[REFP_NUM],
+             pel pred[REFP_NUM][N_C][MAX_CU_DIM],
+             int bit_depth_luma,
+             int bit_depth_chroma,
+             int chroma_format_idc);
+void xeve_mv_clip(int x,
+                  int y,
+                  int pic_w,
+                  int pic_h,
+                  int w,
+                  int h,
+                  s8  refi[REFP_NUM],
+                  s16 mv[REFP_NUM][MV_D],
+                  s16 (*mv_t)[MV_D]);
 void xeve_average_16b_no_clip(s16 *src, s16 *ref, s16 *dst, int s_src, int s_ref, int s_dst, int wd, int ht);
-void xeve_mc_l_00(pel *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, pel *pred, int w, int h, int bit_depth, const s16(*mc_l_coeff)[8]);
-void xeve_mc_c_00(s16 *ref, int gmv_x, int gmv_y, int s_ref, int s_pred, s16 *pred, int w, int h, int bit_depth, const s16(*mc_c_coeff)[4]);
+void xeve_mc_l_00(pel *ref,
+                  int  gmv_x,
+                  int  gmv_y,
+                  int  s_ref,
+                  int  s_pred,
+                  pel *pred,
+                  int  w,
+                  int  h,
+                  int  bit_depth,
+                  const s16 (*mc_l_coeff)[8]);
+void xeve_mc_c_00(s16 *ref,
+                  int  gmv_x,
+                  int  gmv_y,
+                  int  s_ref,
+                  int  s_pred,
+                  s16 *pred,
+                  int  w,
+                  int  h,
+                  int  bit_depth,
+                  const s16 (*mc_c_coeff)[4]);
 #endif /* _XEVE_MC_H_ */

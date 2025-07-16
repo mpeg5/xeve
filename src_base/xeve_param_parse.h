@@ -39,23 +39,21 @@ extern "C"
 
 #include <xeve.h>
 
-/**
- * @brief Set value for a given param
- *
- * @param params pointer to XEVE_PARAM struct
- * @param name param's name
- * @param value param's value
- * @retval XEVE_ERR
- * @retval XEVE_ERR_INVALID_ARGUMENT if the param of a given name not exists
- * @retval XEVE_OK Ok
- */
-int xeve_param_set_val( XEVE_PARAM* params, const char* name,  const char* value );
+    /**
+     * @brief Set value for a given param
+     *
+     * @param params pointer to XEVE_PARAM struct
+     * @param name param's name
+     * @param value param's value
+     * @retval XEVE_ERR
+     * @retval XEVE_ERR_INVALID_ARGUMENT if the param of a given name not exists
+     * @retval XEVE_OK Ok
+     */
+    int xeve_param_set_val(XEVE_PARAM* params, const char* name, const char* value);
 
 #ifdef __cplusplus
-extern "C"
-{
+    extern "C"
+    {
 #endif
 
 #endif /*_XEVE_PARAM_PARSE_H_ */
-
-

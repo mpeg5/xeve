@@ -33,11 +33,11 @@
 
 #if X86_SSE
 extern const XEVE_ITXB xeve_tbl_itxb_sse[MAX_TR_LOG2];
-void xeve_itx_pb4b_sse (void * src, void * dst, int shift, int line, int step);
-void xeve_itx_pb8b_sse (void * src, void * dst, int shift, int line, int step);
-void xeve_itx_pb16b_sse(void * src, void * dst, int shift, int line, int step);
-void xeve_itx_pb32b_sse(void * src, void * dst, int shift, int line, int step);
-void xeve_itx_pb64b_sse(void * src, void * dst, int shift, int line, int step);
+void                   xeve_itx_pb4b_sse(void* src, void* dst, int shift, int line, int step);
+void                   xeve_itx_pb8b_sse(void* src, void* dst, int shift, int line, int step);
+void                   xeve_itx_pb16b_sse(void* src, void* dst, int shift, int line, int step);
+void                   xeve_itx_pb32b_sse(void* src, void* dst, int shift, int line, int step);
+void                   xeve_itx_pb64b_sse(void* src, void* dst, int shift, int line, int step);
 #endif /* X86_SSE */
 
 #endif /* _XEVD_ITDQ_SSE_H_  */

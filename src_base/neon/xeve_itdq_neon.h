@@ -33,11 +33,11 @@
 
 #if ARM_NEON
 extern const XEVE_ITXB xeve_tbl_itxb_neon[MAX_TR_LOG2];
-void xeve_itx_pb4b_neon (void * src, void * dst, int shift, int line, int step);
-void xeve_itx_pb8b_neon (void * src, void * dst, int shift, int line, int step);
-void xeve_itx_pb16b_neon(void * src, void * dst, int shift, int line, int step);
-void xeve_itx_pb32b_neon(void * src, void * dst, int shift, int line, int step);
-void xeve_itx_pb64b_neon(void * src, void * dst, int shift, int line, int step);
+void                   xeve_itx_pb4b_neon(void* src, void* dst, int shift, int line, int step);
+void                   xeve_itx_pb8b_neon(void* src, void* dst, int shift, int line, int step);
+void                   xeve_itx_pb16b_neon(void* src, void* dst, int shift, int line, int step);
+void                   xeve_itx_pb32b_neon(void* src, void* dst, int shift, int line, int step);
+void                   xeve_itx_pb64b_neon(void* src, void* dst, int shift, int line, int step);
 #endif /* ARM_NEON */
 
 #endif

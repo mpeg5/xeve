@@ -8,18 +8,18 @@
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
-   
+
    - Redistributions of source code must retain the above copyright notice,
    this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-   
+
    - Neither the name of the copyright owner, nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,35 +36,34 @@
 #include "xevem_ibc_hash.h"
 #include "xeve_pred.h"
 
-XEVE_IBC_HASH * xeve_ibc_hash_create(XEVE_CTX * ctx, int pic_width, int pic_height)
+XEVE_IBC_HASH *xeve_ibc_hash_create(XEVE_CTX *ctx, int pic_width, int pic_height)
 {
-    XEVE_IBC_HASH * ibc_hash = (XEVE_IBC_HASH*)xeve_malloc(sizeof(XEVE_IBC_HASH));
+    XEVE_IBC_HASH *ibc_hash = (XEVE_IBC_HASH *)xeve_malloc(sizeof(XEVE_IBC_HASH));
     xeve_ibc_hash_init(ctx, ibc_hash, pic_width, pic_height);
 
     return (XEVE_IBC_HASH *)ibc_hash;
 }
 
-int xeve_ibc_hash_init(XEVE_CTX * ctx, XEVE_IBC_HASH * ibc_hash, const int pic_width, const int pic_height)
+int xeve_ibc_hash_init(XEVE_CTX *ctx, XEVE_IBC_HASH *ibc_hash, const int pic_width, const int pic_height)
 {
     int ret;
     ibc_hash->search_range_4small_blk = ctx->param.ibc_hash_search_range_4smallblk;
 
     ibc_hash->max_hash_cand = ctx->param.ibc_hash_search_max_cand;
-    ibc_hash->cand_pos = (POS_NODE*)xeve_malloc(sizeof(POS_NODE) * ibc_hash->max_hash_cand);
+    ibc_hash->cand_pos      = (POS_NODE *)xeve_malloc(sizeof(POS_NODE) * ibc_hash->max_hash_cand);
 
-    ibc_hash->pic_width = pic_width;
+    ibc_hash->pic_width  = pic_width;
     ibc_hash->pic_height = pic_height;
 
-    ibc_hash->map_pos_to_hash = (POS_NODE**)xeve_malloc(sizeof(POS_NODE*) * pic_height);
-    ibc_hash->map_pos_to_hash[0] = (POS_NODE*)xeve_malloc(sizeof(POS_NODE) * pic_width  *  pic_height);
+    ibc_hash->map_pos_to_hash    = (POS_NODE **)xeve_malloc(sizeof(POS_NODE *) * pic_height);
+    ibc_hash->map_pos_to_hash[0] = (POS_NODE *)xeve_malloc(sizeof(POS_NODE) * pic_width * pic_height);
     xeve_assert_gv(ibc_hash->map_pos_to_hash[0], ret, XEVE_ERR_OUT_OF_MEMORY, ERR);
-    xeve_mset(ibc_hash->map_pos_to_hash[0], 0, sizeof(POS_NODE) * pic_width  *  pic_height);
-    for (int n = 1; n < pic_height; n++)
-    {
+    xeve_mset(ibc_hash->map_pos_to_hash[0], 0, sizeof(POS_NODE) * pic_width * pic_height);
+    for(int n = 1; n < pic_height; n++) {
         ibc_hash->map_pos_to_hash[n] = ibc_hash->map_pos_to_hash[n - 1] + pic_width;
     }
 
-    ibc_hash->hash_table_size = pic_width * pic_height;//1 << 16;
+    ibc_hash->hash_table_size = pic_width * pic_height;  // 1 << 16;
     ibc_hash->map_hash_to_pos = (HASH_KEY_NODE *)xeve_malloc(sizeof(HASH_KEY_NODE) * ibc_hash->hash_table_size);
     xeve_mset(ibc_hash->map_hash_to_pos, 0, sizeof(HASH_KEY_NODE) * ibc_hash->hash_table_size);
     ibc_hash->map_hash_to_pos_used = (u8 *)xeve_malloc(sizeof(u8) * ibc_hash->hash_table_size);
@@ -75,27 +74,22 @@ ERR:
     return XEVE_ERR;
 }
 
-void xeve_ibc_hash_destroy(XEVE_IBC_HASH * ibc_hash)
+void xeve_ibc_hash_destroy(XEVE_IBC_HASH *ibc_hash)
 {
-    if (ibc_hash->map_pos_to_hash != NULL)
-    {
-        if (ibc_hash->map_pos_to_hash[0] != NULL)
-        {
+    if(ibc_hash->map_pos_to_hash != NULL) {
+        if(ibc_hash->map_pos_to_hash[0] != NULL) {
             xeve_mfree(ibc_hash->map_pos_to_hash[0]);
         }
         xeve_mfree(ibc_hash->map_pos_to_hash);
     }
     ibc_hash->map_pos_to_hash = NULL;
 
-    if (ibc_hash->map_hash_to_pos != NULL)
-    {
-        HASH_KEY_NODE * tmp, *cur;
+    if(ibc_hash->map_hash_to_pos != NULL) {
+        HASH_KEY_NODE *tmp, *cur;
 
-        for (u32 i = 0; i < ibc_hash->hash_table_size; i++)
-        {
+        for(u32 i = 0; i < ibc_hash->hash_table_size; i++) {
             tmp = ibc_hash->map_hash_to_pos[i].next;
-            while (tmp != NULL)
-            {
+            while(tmp != NULL) {
                 cur = tmp;
                 tmp = tmp->next;
                 xeve_mfree(cur);
@@ -104,26 +98,22 @@ void xeve_ibc_hash_destroy(XEVE_IBC_HASH * ibc_hash)
         xeve_mfree(ibc_hash->map_hash_to_pos);
     }
 
-    if (ibc_hash->map_hash_to_pos_used != NULL)
-    {
+    if(ibc_hash->map_hash_to_pos_used != NULL) {
         xeve_mfree(ibc_hash->map_hash_to_pos_used);
     }
 
     xeve_mfree(ibc_hash);
 }
 
-void xeve_ibc_hash_clear(XEVE_IBC_HASH * ibc_hash)
+void xeve_ibc_hash_clear(XEVE_IBC_HASH *ibc_hash)
 {
     xeve_mset(ibc_hash->map_pos_to_hash[0], 0, sizeof(POS_NODE) * ibc_hash->pic_width * ibc_hash->pic_height);
-    if (ibc_hash->map_hash_to_pos != NULL)
-    {
-        HASH_KEY_NODE * tmp, *cur;
+    if(ibc_hash->map_hash_to_pos != NULL) {
+        HASH_KEY_NODE *tmp, *cur;
 
-        for (u32 i = 0; i < ibc_hash->hash_table_size; i++)
-        {
+        for(u32 i = 0; i < ibc_hash->hash_table_size; i++) {
             tmp = ibc_hash->map_hash_to_pos[i].next;
-            while (tmp != NULL)
-            {
+            while(tmp != NULL) {
                 cur = tmp;
                 tmp = tmp->next;
                 xeve_mfree(cur);
@@ -134,83 +124,75 @@ void xeve_ibc_hash_clear(XEVE_IBC_HASH * ibc_hash)
     xeve_mset(ibc_hash->map_hash_to_pos_used, 0, sizeof(u8) * ibc_hash->hash_table_size);
 }
 
-void xeve_ibc_hash_insert(XEVE_IBC_HASH * ibc_hash, u32 key, u16 x, u16 y)
+void xeve_ibc_hash_insert(XEVE_IBC_HASH *ibc_hash, u32 key, u16 x, u16 y)
 {
-    HASH_KEY_NODE ** tmp_key_node = NULL;
-    u32 tmp_key = key % ibc_hash->hash_table_size;
+    HASH_KEY_NODE **tmp_key_node = NULL;
+    u32             tmp_key      = key % ibc_hash->hash_table_size;
 
-    HASH_KEY_NODE * tmp_node = ibc_hash->map_hash_to_pos + tmp_key;
-    tmp_key_node = &tmp_node;
+    HASH_KEY_NODE *tmp_node = ibc_hash->map_hash_to_pos + tmp_key;
+    tmp_key_node            = &tmp_node;
 
-    if (ibc_hash->map_hash_to_pos_used[tmp_key])
-    {
-        while (*tmp_key_node != NULL && (*tmp_key_node)->key != key)
-        {
+    if(ibc_hash->map_hash_to_pos_used[tmp_key]) {
+        while(*tmp_key_node != NULL && (*tmp_key_node)->key != key) {
             tmp_key_node = &(*tmp_key_node)->next;
         }
 
-        if (*tmp_key_node == NULL)
-        {
-            *tmp_key_node = (HASH_KEY_NODE*)xeve_malloc(sizeof(HASH_KEY_NODE));
-            (*tmp_key_node)->key = key;
+        if(*tmp_key_node == NULL) {
+            *tmp_key_node         = (HASH_KEY_NODE *)xeve_malloc(sizeof(HASH_KEY_NODE));
+            (*tmp_key_node)->key  = key;
             (*tmp_key_node)->next = NULL;
-            (*tmp_key_node)->pos = NULL;
+            (*tmp_key_node)->pos  = NULL;
             (*tmp_key_node)->size = 0;
         }
     }
-    else
-    {
+    else {
         ibc_hash->map_hash_to_pos_used[tmp_key] = 1;
-        (*tmp_key_node)->key = key;
+        (*tmp_key_node)->key                    = key;
     }
 
     (*tmp_key_node)->size++;
 
-    POS_NODE ** tmp_pos_node = &(*tmp_key_node)->pos;
-    if ((*tmp_key_node)->pos == NULL)
-    {
-        (*tmp_key_node)->pos = &ibc_hash->map_pos_to_hash[y][x];
+    POS_NODE **tmp_pos_node = &(*tmp_key_node)->pos;
+    if((*tmp_key_node)->pos == NULL) {
+        (*tmp_key_node)->pos     = &ibc_hash->map_pos_to_hash[y][x];
         (*tmp_key_node)->pos_end = &ibc_hash->map_pos_to_hash[y][x];
     }
-    else
-    {
+    else {
         (*tmp_key_node)->pos_end->next = &ibc_hash->map_pos_to_hash[y][x];
-        (*tmp_key_node)->pos_end = (*tmp_key_node)->pos_end->next;
+        (*tmp_key_node)->pos_end       = (*tmp_key_node)->pos_end->next;
     }
 }
 
-void xeve_ibc_hash_build(XEVE_IBC_HASH * ibc_hash, const XEVE_PIC* pic)
+void xeve_ibc_hash_build(XEVE_IBC_HASH *ibc_hash, const XEVE_PIC *pic)
 {
-    int y_stride = 0;
-    int c_stride = 0;
-    int width = 0;
-    int height = 0;
-    const int chroma_scaling_x = 1;
-    const int chroma_scaling_y = 1;
-    const int chroma_min_w = MIN_CU_SIZE >> chroma_scaling_x;
-    const int chroma_min_h = MIN_CU_SIZE >> chroma_scaling_y;
-    const pel* pic_y = NULL;
-    const pel* pic_u = NULL;
-    const pel* pic_v = NULL;
+    int        y_stride         = 0;
+    int        c_stride         = 0;
+    int        width            = 0;
+    int        height           = 0;
+    const int  chroma_scaling_x = 1;
+    const int  chroma_scaling_y = 1;
+    const int  chroma_min_w     = MIN_CU_SIZE >> chroma_scaling_x;
+    const int  chroma_min_h     = MIN_CU_SIZE >> chroma_scaling_y;
+    const pel *pic_y            = NULL;
+    const pel *pic_u            = NULL;
+    const pel *pic_v            = NULL;
 
-    width = pic->w_l;
+    width  = pic->w_l;
     height = pic->h_l;
 
     y_stride = pic->s_l;
     c_stride = pic->s_c;
 
     POSITION pos;
-    for (pos.y = 0; pos.y + MIN_CU_SIZE <= height; pos.y++)
-    {
+    for(pos.y = 0; pos.y + MIN_CU_SIZE <= height; pos.y++) {
         // row pointer
         pic_y = pic->y + pos.y * y_stride;
 
         int chroma_y = pos.y >> chroma_scaling_y;
-        pic_u = pic->u + chroma_y * c_stride;
-        pic_v = pic->v + chroma_y * c_stride;
+        pic_u        = pic->u + chroma_y * c_stride;
+        pic_v        = pic->v + chroma_y * c_stride;
 
-        for (pos.x = 0; pos.x + MIN_CU_SIZE <= width; pos.x++)
-        {
+        for(pos.x = 0; pos.x + MIN_CU_SIZE <= width; pos.x++) {
             // 0x1FF is just an initial value
             unsigned int hash_value = 0x1FF;
 
@@ -219,80 +201,75 @@ void xeve_ibc_hash_build(XEVE_IBC_HASH * ibc_hash, const XEVE_PIC* pic)
 
             // chroma part
             int chroma_x = pos.x >> chroma_scaling_x;
-            hash_value = xeve_ibc_hash_calc_block_key(&pic_u[chroma_x], c_stride, chroma_min_w, chroma_min_h, hash_value);
-            hash_value = xeve_ibc_hash_calc_block_key(&pic_v[chroma_x], c_stride, chroma_min_w, chroma_min_h, hash_value);
+            hash_value =
+                xeve_ibc_hash_calc_block_key(&pic_u[chroma_x], c_stride, chroma_min_w, chroma_min_h, hash_value);
+            hash_value =
+                xeve_ibc_hash_calc_block_key(&pic_v[chroma_x], c_stride, chroma_min_w, chroma_min_h, hash_value);
 
             // hash table
             ibc_hash->map_pos_to_hash[pos.y][pos.x].key = hash_value;
-            ibc_hash->map_pos_to_hash[pos.y][pos.x].x = pos.x;
-            ibc_hash->map_pos_to_hash[pos.y][pos.x].y = pos.y;
+            ibc_hash->map_pos_to_hash[pos.y][pos.x].x   = pos.x;
+            ibc_hash->map_pos_to_hash[pos.y][pos.x].y   = pos.y;
             xeve_ibc_hash_insert(ibc_hash, hash_value, pos.x, pos.y);
         }
     }
 }
 
-void xeve_ibc_hash_rebuild(XEVE_IBC_HASH * ibc_hash, const XEVE_PIC* pic)
+void xeve_ibc_hash_rebuild(XEVE_IBC_HASH *ibc_hash, const XEVE_PIC *pic)
 {
     xeve_ibc_hash_clear(ibc_hash);
     xeve_ibc_hash_build(ibc_hash, pic);
 }
 
-BOOL xeve_ibc_hash_match(XEVE_CTX *ctx, XEVE_IBC_HASH * ibc_hash, int cu_x, int cu_y, int log2_cuw, int log2_cuh)
+BOOL xeve_ibc_hash_match(XEVE_CTX *ctx, XEVE_IBC_HASH *ibc_hash, int cu_x, int cu_y, int log2_cuw, int log2_cuh)
 {
     int cuw = (1 << log2_cuw);
     int cuh = (1 << log2_cuh);
 
-    u32 target_block_hash = ibc_hash->map_pos_to_hash[cu_y][cu_x].key;
-    HASH_KEY_NODE * temp_key_node = xeve_ibc_hash_get_key_node(ibc_hash, target_block_hash);
+    u32            target_block_hash = ibc_hash->map_pos_to_hash[cu_y][cu_x].key;
+    HASH_KEY_NODE *temp_key_node     = xeve_ibc_hash_get_key_node(ibc_hash, target_block_hash);
 
     ibc_hash->cand_num = 0;
     xeve_mset(ibc_hash->cand_pos, 0, sizeof(POS_NODE) * ibc_hash->max_hash_cand);
 
-    if (temp_key_node->size > 1)
-    {
-        POS_NODE * temp_pos_node = temp_key_node->pos;
+    if(temp_key_node->size > 1) {
+        POS_NODE *temp_pos_node = temp_key_node->pos;
 
-        while (temp_pos_node)
-        {
-            int offset_BR_x = temp_pos_node->x + cuw - 1;
-            int offset_BR_y = temp_pos_node->y + cuh - 1;
+        while(temp_pos_node) {
+            int offset_BR_x  = temp_pos_node->x + cuw - 1;
+            int offset_BR_y  = temp_pos_node->y + cuh - 1;
             int offset_x_scu = PEL2SCU(offset_BR_x);
             int offset_y_scu = PEL2SCU(offset_BR_y);
-            int offset_scup = (offset_y_scu * ctx->w_scu) + offset_x_scu;
+            int offset_scup  = (offset_y_scu * ctx->w_scu) + offset_x_scu;
 
             int avail_cu = MCU_GET_COD(ctx->map_scu[offset_scup]);
 
             BOOL whole_block_match = TRUE;
-            if (cuw > MIN_CU_SIZE || cuh > MIN_CU_SIZE)
-            {
-                if (!avail_cu || offset_BR_x >= ibc_hash->pic_width || offset_BR_y >= ibc_hash->pic_height)
-                {
+            if(cuw > MIN_CU_SIZE || cuh > MIN_CU_SIZE) {
+                if(!avail_cu || offset_BR_x >= ibc_hash->pic_width || offset_BR_y >= ibc_hash->pic_height) {
                     temp_pos_node = temp_pos_node->next;
                     continue;
                 }
-                for (int y = 0; y < cuh && whole_block_match; y += MIN_CU_SIZE)
-                {
-                    for (int x = 0; x < cuw && whole_block_match; x += MIN_CU_SIZE)
-                    {
-                        whole_block_match &= (ibc_hash->map_pos_to_hash[cu_y + y][cu_x + x].key == ibc_hash->map_pos_to_hash[temp_pos_node->y + y][temp_pos_node->x + x].key);
+                for(int y = 0; y < cuh && whole_block_match; y += MIN_CU_SIZE) {
+                    for(int x = 0; x < cuw && whole_block_match; x += MIN_CU_SIZE) {
+                        whole_block_match &=
+                            (ibc_hash->map_pos_to_hash[cu_y + y][cu_x + x].key ==
+                             ibc_hash->map_pos_to_hash[temp_pos_node->y + y][temp_pos_node->x + x].key);
                     }
                 }
             }
-            else
-            {
-                if (abs(temp_pos_node->x - cu_x) > ibc_hash->search_range_4small_blk || abs(temp_pos_node->y - cu_y) > ibc_hash->search_range_4small_blk || !avail_cu)
-                {
+            else {
+                if(abs(temp_pos_node->x - cu_x) > ibc_hash->search_range_4small_blk ||
+                   abs(temp_pos_node->y - cu_y) > ibc_hash->search_range_4small_blk || !avail_cu) {
                     temp_pos_node = temp_pos_node->next;
                     continue;
                 }
             }
-            if (whole_block_match)
-            {
+            if(whole_block_match) {
                 ibc_hash->cand_pos[ibc_hash->cand_num].x = temp_pos_node->x;
                 ibc_hash->cand_pos[ibc_hash->cand_num].y = temp_pos_node->y;
                 ibc_hash->cand_num++;
-                if (ibc_hash->cand_num > ibc_hash->max_hash_cand)
-                {
+                if(ibc_hash->cand_num > ibc_hash->max_hash_cand) {
                     break;
                 }
             }
@@ -303,15 +280,22 @@ BOOL xeve_ibc_hash_match(XEVE_CTX *ctx, XEVE_IBC_HASH * ibc_hash, int cu_x, int 
     return ibc_hash->cand_num > 0;
 }
 
-u32 xeve_ibc_hash_search(XEVE_CTX *ctx, XEVE_IBC_HASH* p, int cu_x, int cu_y, int log2_cuw
-                         , int log2_cuh, s16 mvp[MV_D], s16 mv[MV_D], XEVE_CORE * core)
+u32 xeve_ibc_hash_search(XEVE_CTX      *ctx,
+                         XEVE_IBC_HASH *p,
+                         int            cu_x,
+                         int            cu_y,
+                         int            log2_cuw,
+                         int            log2_cuh,
+                         s16            mvp[MV_D],
+                         s16            mv[MV_D],
+                         XEVE_CORE     *core)
 {
-    u32 cost = 0;
+    u32 cost     = 0;
     u32 min_cost = XEVE_UINT32_MAX;
 
-    XEVEM_CTX * mctx = (XEVEM_CTX *)ctx;
-    XEVE_PIBC *pi = &mctx->pibc[core->thread_cnt];
-    XEVE_IBC_HASH* ibc_hash = (XEVE_IBC_HASH*)p;
+    XEVEM_CTX     *mctx     = (XEVEM_CTX *)ctx;
+    XEVE_PIBC     *pi       = &mctx->pibc[core->thread_cnt];
+    XEVE_IBC_HASH *ibc_hash = (XEVE_IBC_HASH *)p;
 
     mvp[MV_X] = 0;
     mvp[MV_Y] = 0;
@@ -319,19 +303,17 @@ u32 xeve_ibc_hash_search(XEVE_CTX *ctx, XEVE_IBC_HASH* p, int cu_x, int cu_y, in
     mv[MV_X] = 0;
     mv[MV_Y] = 0;
 
-    if (xeve_ibc_hash_match(ctx, ibc_hash, cu_x, cu_y, log2_cuw, log2_cuh))
-    {
-        const u32 max_cu_w = (1 << ctx->log2_max_cuwh);
-        const int pic_width = ctx->w;
+    if(xeve_ibc_hash_match(ctx, ibc_hash, cu_x, cu_y, log2_cuw, log2_cuh)) {
+        const u32 max_cu_w   = (1 << ctx->log2_max_cuwh);
+        const int pic_width  = ctx->w;
         const int pic_height = ctx->h;
-        int roi_width = (1 << log2_cuw);
-        int roi_height = (1 << log2_cuh);
+        int       roi_width  = (1 << log2_cuw);
+        int       roi_height = (1 << log2_cuh);
 
-        for (u32 idx = 0; idx < ibc_hash->max_hash_cand; idx++)
-        {
+        for(u32 idx = 0; idx < ibc_hash->max_hash_cand; idx++) {
             int ref_pos_LT_x_scu = PEL2SCU(ibc_hash->cand_pos[idx].x);
             int ref_pos_LT_y_scu = PEL2SCU(ibc_hash->cand_pos[idx].y);
-            int ref_pos_LT_scup = (ref_pos_LT_y_scu * ctx->w_scu) + ref_pos_LT_x_scu;
+            int ref_pos_LT_scup  = (ref_pos_LT_y_scu * ctx->w_scu) + ref_pos_LT_x_scu;
 
             int avail_LT_cu = MCU_GET_COD(ctx->map_scu[ref_pos_LT_scup]);
 
@@ -340,28 +322,37 @@ u32 xeve_ibc_hash_search(XEVE_CTX *ctx, XEVE_IBC_HASH* p, int cu_x, int cu_y, in
 
             int ref_pos_BR_x_scu = PEL2SCU(ref_bottom_right_x);
             int ref_pos_BR_y_scu = PEL2SCU(ref_bottom_right_y);
-            int ref_pos_BR_scup = (ref_pos_BR_y_scu * ctx->w_scu) + ref_pos_BR_x_scu;
+            int ref_pos_BR_scup  = (ref_pos_BR_y_scu * ctx->w_scu) + ref_pos_BR_x_scu;
 
             int avail_BR_cu = MCU_GET_COD(ctx->map_scu[ref_pos_BR_scup]);
 
-            if (avail_LT_cu && avail_BR_cu)
-            {
+            if(avail_LT_cu && avail_BR_cu) {
                 s16 cand_mv[MV_D];
                 cand_mv[MV_X] = ibc_hash->cand_pos[idx].x - cu_x;
                 cand_mv[MV_Y] = ibc_hash->cand_pos[idx].y - cu_y;
 
-                if (!is_bv_valid(ctx, cu_x, cu_y, roi_width, roi_height, log2_cuw, log2_cuh, pic_width, pic_height, cand_mv[0], cand_mv[1], max_cu_w, core))
-                {
+                if(!is_bv_valid(ctx,
+                                cu_x,
+                                cu_y,
+                                roi_width,
+                                roi_height,
+                                log2_cuw,
+                                log2_cuh,
+                                pic_width,
+                                pic_height,
+                                cand_mv[0],
+                                cand_mv[1],
+                                max_cu_w,
+                                core)) {
                     continue;
                 }
 
                 int mv_bits = get_bv_cost_bits(cand_mv[MV_X], cand_mv[MV_Y]);
-                cost = GET_BV_COST(ctx, mv_bits);
+                cost        = GET_BV_COST(ctx, mv_bits);
 
-                if (cost < min_cost)
-                {
-                    mv[0] = cand_mv[0];
-                    mv[1] = cand_mv[1];
+                if(cost < min_cost) {
+                    mv[0]    = cand_mv[0];
+                    mv[1]    = cand_mv[1];
                     min_cost = cost;
                 }
             }
@@ -371,29 +362,27 @@ u32 xeve_ibc_hash_search(XEVE_CTX *ctx, XEVE_IBC_HASH* p, int cu_x, int cu_y, in
     return min_cost;
 }
 
-int xeve_ibc_hash_hit_ratio(XEVE_CTX * ctx, XEVE_IBC_HASH * ibc_hash, int cu_x, int cu_y, int log2_cuw, int log2_cuh)
+int xeve_ibc_hash_hit_ratio(XEVE_CTX *ctx, XEVE_IBC_HASH *ibc_hash, int cu_x, int cu_y, int log2_cuw, int log2_cuh)
 {
-    HASH_KEY_NODE * temp_key_node;
-    int pic_width = ctx->w;
-    int pic_height = ctx->h;
-    int roi_width = (1 << log2_cuw);
-    int roi_height = (1 << log2_cuh);    
-    int max_x = XEVE_MIN((int)(cu_x + roi_width), pic_width);
-    int max_y = XEVE_MIN((int)(cu_y + roi_height), pic_height);
-    int hit = 0, total = 0;
+    HASH_KEY_NODE *temp_key_node;
+    int            pic_width  = ctx->w;
+    int            pic_height = ctx->h;
+    int            roi_width  = (1 << log2_cuw);
+    int            roi_height = (1 << log2_cuh);
+    int            max_x      = XEVE_MIN((int)(cu_x + roi_width), pic_width);
+    int            max_y      = XEVE_MIN((int)(cu_y + roi_height), pic_height);
+    int            hit = 0, total = 0;
 
-    for (int y = cu_y; y < max_y; y += MIN_CU_SIZE)
-    {
-        for (int x = cu_x; x < max_x; x += MIN_CU_SIZE)
-        {
+    for(int y = cu_y; y < max_y; y += MIN_CU_SIZE) {
+        for(int x = cu_x; x < max_x; x += MIN_CU_SIZE) {
             const u32 hash = ibc_hash->map_pos_to_hash[y][x].key;
-            temp_key_node = xeve_ibc_hash_get_key_node(ibc_hash, hash);
+            temp_key_node  = xeve_ibc_hash_get_key_node(ibc_hash, hash);
             hit += (temp_key_node->size > 1);
             total++;
         }
     }
-    if (total)
-    return 100 * hit / total;
+    if(total)
+        return 100 * hit / total;
     else
         return 0;
 }
@@ -470,24 +459,25 @@ static const u32 crc32_table[256] = {
 
 u32 xeve_ibc_hash_crc32_16bit(u32 crc, const pel pel)
 {
-    const void *buf = &pel;
-    const u8 *p = (const u8 *)buf;
-    u8 size = 2;
+    const void *buf  = &pel;
+    const u8   *p    = (const u8 *)buf;
+    u8          size = 2;
 
-    while (size--)
-    {
+    while(size--) {
         crc = crc32_table[(crc ^ *p++) & 0xff] ^ (crc >> 8);
     }
 
     return crc;
 }
 
-unsigned int xeve_ibc_hash_calc_block_key(const pel* pel, const int stride, const int width, const int height, unsigned int crc)
+unsigned int xeve_ibc_hash_calc_block_key(const pel   *pel,
+                                          const int    stride,
+                                          const int    width,
+                                          const int    height,
+                                          unsigned int crc)
 {
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
-        {
+    for(int y = 0; y < height; y++) {
+        for(int x = 0; x < width; x++) {
             crc = xeve_ibc_hash_crc32_16bit(crc, pel[x]);
         }
         pel += stride;
@@ -495,12 +485,11 @@ unsigned int xeve_ibc_hash_calc_block_key(const pel* pel, const int stride, cons
     return crc;
 }
 
-HASH_KEY_NODE * xeve_ibc_hash_get_key_node(XEVE_IBC_HASH * ibc_hash, u32 key)
+HASH_KEY_NODE *xeve_ibc_hash_get_key_node(XEVE_IBC_HASH *ibc_hash, u32 key)
 {
-    u32 tmp_key = key % ibc_hash->hash_table_size;
-    HASH_KEY_NODE * tmp_key_node = &ibc_hash->map_hash_to_pos[tmp_key];
-    while (tmp_key_node->key != key)
-    {
+    u32            tmp_key      = key % ibc_hash->hash_table_size;
+    HASH_KEY_NODE *tmp_key_node = &ibc_hash->map_hash_to_pos[tmp_key];
+    while(tmp_key_node->key != key) {
         tmp_key_node = tmp_key_node->next;
     }
 
