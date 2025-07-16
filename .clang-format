@@ -16,12 +16,12 @@ Language: Cpp
 # Alignment settings
 AlignConsecutiveDeclarations:
   Enabled: true
-  AcrossEmptyLines: true
+  AcrossEmptyLines: false
   AcrossComments: true
 
 AlignConsecutiveAssignments:
   Enabled: true
-  AcrossEmptyLines: true
+  AcrossEmptyLines: false
   AcrossComments: true
 
 AlignConsecutiveMacros:
