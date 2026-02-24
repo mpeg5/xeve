@@ -263,6 +263,7 @@ int xevem_eco_aps_gen(XEVE_BSW *bs, XEVE_APS_GEN *aps, int bit_depth)
     assert(aps_extension_flag == 0);
 
     u32 t0 = 0;
+    xeve_bsw_write1(bs, 1);
     while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
         xeve_bsw_write1(bs, t0);
     }
@@ -423,6 +424,7 @@ int xevem_eco_sps(XEVE_BSW *bs, XEVE_SPS *sps)
     }
 
     u32 t0 = 0;
+    xeve_bsw_write1(bs, 1);
     while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
         xeve_bsw_write1(bs, t0);
     }
@@ -486,6 +488,7 @@ int xevem_eco_pps(XEVE_BSW *bs, XEVE_SPS *sps, XEVE_PPS *pps)
         xeve_bsw_write_ue(bs, pps->cu_qp_delta_area - 6);
     }
     u32 t0 = 0;
+    xeve_bsw_write1(bs, 1);
     while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
         xeve_bsw_write1(bs, t0);
     }

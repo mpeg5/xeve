@@ -202,6 +202,7 @@ int xeve_eco_sps(XEVE_BSW *bs, XEVE_SPS *sps)
     }
 
     u32 t0 = 0;
+    xeve_bsw_write1(bs, 1);
     while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
         xeve_bsw_write1(bs, t0);
     }
@@ -235,6 +236,7 @@ int xeve_eco_pps(XEVE_BSW *bs, XEVE_SPS *sps, XEVE_PPS *pps)
         xeve_bsw_write_ue(bs, pps->cu_qp_delta_area - 6);
     }
     u32 t0 = 0;
+    xeve_bsw_write1(bs, 1);
     while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
         xeve_bsw_write1(bs, t0);
     }
@@ -368,6 +370,7 @@ int xeve_eco_emitsei(XEVE_CTX *ctx, XEVE_BSW *bs)
         write_sei_userdata_unregistered(&sei_userdata_unregistered, bs);
     }
 
+    xeve_bsw_write1(bs, 1);
     while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
         xeve_bsw_write1(bs, 0);
     }
@@ -382,6 +385,7 @@ int xeve_eco_sei(XEVE_CTX *ctx, XEVE_BSW *bs)
         xeve_eco_signature(ctx, bs);
     }
 
+    xeve_bsw_write1(bs, 1);
     while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
         xeve_bsw_write1(bs, 0);
     }
