@@ -546,9 +546,17 @@ int xeve_pic(XEVE_CTX* ctx, XEVE_BITB* bitb, XEVE_STAT* stat)
             bin_counts_in_units += tmp_sbac->bin_counter;
             total_tiles_in_slice--;
 
+            // byte_alignment() should be here for all tiles but the last
+            // when the slice has more than one tile.
+
             sh->entry_point_offset_minus1[k - 1] =
                 (u32)((bs)->cur - bs_beg.cur - 4 + (4 - (bs->leftbits >> 3)) + (bs_beg.leftbits >> 3) - 1);
         }  // End to tile encoding loop in a slice
+
+        xeve_bsw_write1(bs, 1);
+        while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
+            xeve_bsw_write1(bs, 0);
+        }
 
         num_bytes_in_units = (int)(bs->cur - cur_tmp) - 4;
 
