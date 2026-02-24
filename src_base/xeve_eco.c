@@ -281,6 +281,7 @@ int xeve_eco_sh(XEVE_BSW *bs, XEVE_SPS *sps, XEVE_PPS *pps, XEVE_SH *sh, int nut
 
     /* byte align */
     u32 t0 = 0;
+    xeve_bsw_write1(bs, 1);
     while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
         xeve_bsw_write1(bs, t0);
     }
