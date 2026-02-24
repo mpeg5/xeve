@@ -331,7 +331,7 @@ static void write_sei_userdata_unregistered(XEVE_SEI_PAYLOAD *sei_userdata, XEVE
         xeve_bsw_write(bs, 0xff, 8);
     xeve_bsw_write(bs, payload_type, 8);
 
-    u32 payload_size = (ISO_IEC_11578_LEN + sei_userdata->payload_size) << 3;
+    u32 payload_size = ISO_IEC_11578_LEN + sei_userdata->payload_size;
     for(; payload_size >= 0xff; payload_size -= 0xff)
         xeve_bsw_write(bs, 0xff, 8);
     xeve_bsw_write(bs, payload_size, 8);
