@@ -2953,7 +2953,7 @@ XEVEM_CTX *xevem_ctx_alloc(void)
 {
     XEVEM_CTX *ctx;
 
-    ctx = (XEVEM_CTX *)xeve_malloc_fast(sizeof(XEVEM_CTX));
+    ctx = (XEVEM_CTX *)xeve_malloc_align32(sizeof(XEVEM_CTX));
     xeve_assert_rv(ctx, NULL);
     xeve_mset_x64a(ctx, 0, sizeof(XEVEM_CTX));
     return ctx;

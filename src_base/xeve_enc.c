@@ -178,7 +178,7 @@ XEVE_CTX* xeve_ctx_alloc(void)
 {
     XEVE_CTX* ctx;
 
-    ctx = (XEVE_CTX*)xeve_malloc_fast(sizeof(XEVE_CTX));
+    ctx = (XEVE_CTX*)xeve_malloc_align32(sizeof(XEVE_CTX));
     xeve_assert_rv(ctx, NULL);
     xeve_mset_x64a(ctx, 0, sizeof(XEVE_CTX));
     return ctx;
@@ -186,7 +186,7 @@ XEVE_CTX* xeve_ctx_alloc(void)
 
 void xeve_ctx_free(XEVE_CTX* ctx)
 {
-    xeve_mfree_fast(ctx);
+    xeve_mfree_align32(ctx);
 }
 
 XEVE_CORE* xeve_core_alloc(int chroma_format_idc)

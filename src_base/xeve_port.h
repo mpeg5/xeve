@@ -85,6 +85,22 @@ typedef s32                     double_pel;
 #define xeve_mfree(m)              if(m){free(m);}
 #define xeve_mfree_fast(m)         if(m){xeve_mfree(m);}
 
+/* for structs with 32-byte aligned members, which malloc() does not guarantee */
+static __inline void * xeve_malloc_align32(size_t size)
+{
+    void  * raw = malloc(size + 32 + sizeof(void *));
+    void ** ptr;
+    if(raw == NULL) return NULL;
+    ptr = (void **)(((uintptr_t)raw + sizeof(void *) + 31) & ~((uintptr_t)31));
+    ptr[-1] = raw;
+    return ptr;
+}
+
+static __inline void xeve_mfree_align32(void * ptr)
+{
+    if(ptr) free(((void **)ptr)[-1]);
+}
+
 #define xeve_mcpy(dst,src,size)    memcpy((dst), (src), (size))
 #define xeve_mset(dst,v,size)      memset((dst), (v), (size))
 #define xeve_mset_x64a(dst,v,size) memset((dst), (v), (size))
