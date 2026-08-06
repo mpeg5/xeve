@@ -168,7 +168,7 @@ typedef struct _XEVEM_CTX
 #include "xevem_tbl.h"
 #include "xevem_tq.h"
 #include "xevem_util.h"
-#ifndef ARM
+#if defined(X86)
 #include "xevem_tq_avx.h"
 #include "xevem_itdq_avx.h"
 #include "xevem_itdq_sse.h"
