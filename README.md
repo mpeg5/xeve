@@ -39,7 +39,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   ```
   - Output Location
     - Executable application (xeveb_app) can be found under build/bin/.
-    - Library files (libxeveb.so and libxexeb.a) can be found under build/lib/.
+    - Library files (libxeveb.so and libxeveb.a) can be found under build/lib/.
 
 - Build Instructions for **Main Profile**
   ```
@@ -51,7 +51,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   ```
   - Output Location
     - Executable application (xeve_app) can be found under build/bin/.
-    - Library files (libxeve.so and libxexe.a) can be found under build/lib/.
+    - Library files (libxeve.so and libxeve.a) can be found under build/lib/.
   
   Application and libraries built with Main Profile can also support Baseline Profile operation.
 
@@ -68,7 +68,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     cd build
     cmake .. -G "MinGW Makefiles" -DSET_PROF=BASE
     make
-    sudo make install
+    make install
     ```
   - Microsoft Visual Studio
     ```
@@ -86,7 +86,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
     cd build
     cmake .. -G "MinGW Makefiles"
     make
-    sudo make install
+    make install
     ```
   - Microsoft Visual Studio
     ```
@@ -100,6 +100,11 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   Application and libraries built with Main Profile can also support Baseline Profile operation.
 
 ### ARM (64-bit)
+On an aarch64 host no special option is needed: the architecture is detected
+automatically, so the Linux instructions above apply as-is. Architectures
+without SIMD support build automatically with a plain C fallback.
+The instructions below are for cross-compiling on an x86 host.
+
 - Build Requirements
   - CMake 3.12 or later (download from [https://cmake.org/](https://cmake.org/))
   - gcc-aarch64-linux-gnu 
@@ -115,7 +120,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   ```
   - Output Location
     - Executable application (xeveb_app) can be found under build-arm/bin/.
-    - Library files (libxeveb.so and libxexeb.a) can be found under build-arm/lib/.
+    - Library files (libxeveb.so and libxeveb.a) can be found under build-arm/lib/.
 
 - Build Instructions for **Main Profile**
   ```
@@ -127,7 +132,7 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
   ```
   - Output Location
     - Executable application (xeve_app) can be found under build-arm/bin/.
-    - Library files (libxeve.so and libxexe.a) can be found under build-arm/lib/.
+    - Library files (libxeve.so and libxeve.a) can be found under build-arm/lib/.
   
   Application and libraries built with Main Profile can also support Baseline Profile operation.
 
@@ -232,8 +237,8 @@ Options:
     : pixel height of input video
   -q, --qp [INTEGER] (optional) [32]
     : QP value (0~51)
-  -z, --fps [INTEGER]
-    : frame rate (frame per second)
+  -z, --fps [STRING]
+    : frame rate (Hz), e.g. 30, 29.97 or 30000/1001
   -I, --keyint [INTEGER] (optional) [0]
     : I-picture period
   -b, --bframes [INTEGER] (optional) [15]
@@ -295,7 +300,7 @@ XEVE_IMGB image; /* input picture */
 
 while (!end_of_sequence)
 {
-    end_of_seqeunce = read_image(&image); /* read new image */
+    end_of_sequence = read_image(&image); /* read new image */
 
     xeve_push(id, &image); /* input new image to encoder */
     ret = xeve_encode(id, &bitb, &stat); /* actual encode image to bitstream */
