@@ -1417,5 +1417,5 @@ ERR:
         free(bs_buf); /* release bitstream buffer */
     if(args)
         args->release(args);
-    return ret;
+    return XEVE_SUCCEEDED(ret) ? 0 : -1;
 }
