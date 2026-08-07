@@ -628,6 +628,24 @@ int xeve_enc(XEVE_CTX* ctx, XEVE_BITB* bitb, XEVE_STAT* stat)
     ret = ctx->fn_enc_header(ctx);
     xeve_assert_rv(ret == XEVE_OK, ret);
 
+    /* embed SEI payloads attached to the current picture, one NAL each */
+    for(int i = 0; i < ctx->pico->sei.num_payloads; i++) {
+        XEVE_BSW* bs = &ctx->bs[0];
+        XEVE_NALU sei_nalu;
+
+        u8* size_field = bs->cur;
+        u8* cur_tmp    = bs->cur;
+
+        xeve_set_nalu(&sei_nalu, XEVE_SEI_NUT, ctx->nalu.nuh_temporal_id);
+        xeve_eco_nalu(bs, &sei_nalu);
+
+        ret = xeve_eco_sei_payload(&ctx->pico->sei.payloads[i], bs);
+        xeve_assert_rv(ret == XEVE_OK, ret);
+
+        xeve_bsw_deinit(bs);
+        xeve_eco_nal_unit_len(size_field, (int)(bs->cur - cur_tmp) - 4);
+    }
+
     /* encode one picture */
     ret = ctx->fn_enc_pic(ctx, bitb, stat);
     xeve_assert_rv(ret == XEVE_OK, ret);
@@ -636,6 +654,45 @@ int xeve_enc(XEVE_CTX* ctx, XEVE_BITB* bitb, XEVE_STAT* stat)
     ctx->fn_enc_pic_finish(ctx, bitb, stat);
     xeve_assert_rv(ret == XEVE_OK, ret);
 
+    return XEVE_OK;
+}
+
+static void pico_sei_free(XEVE_PICO* pico)
+{
+    if(pico == NULL) {
+        return;
+    }
+    for(int i = 0; i < pico->sei.num_payloads; i++) {
+        xeve_mfree(pico->sei.payloads[i].payload);
+    }
+    xeve_mfree(pico->sei.payloads);
+    pico->sei.payloads     = NULL;
+    pico->sei.num_payloads = 0;
+}
+
+static int pico_sei_copy(XEVE_PICO* pico, const XEVE_SEI* sei)
+{
+    if(sei->num_payloads <= 0 || sei->payloads == NULL) {
+        return XEVE_OK;
+    }
+
+    pico->sei.payloads = (XEVE_SEI_PAYLOAD*)xeve_malloc(sizeof(XEVE_SEI_PAYLOAD) * sei->num_payloads);
+    xeve_assert_rv(pico->sei.payloads, XEVE_ERR_OUT_OF_MEMORY);
+
+    for(int i = 0; i < sei->num_payloads; i++) {
+        XEVE_SEI_PAYLOAD* pl = &pico->sei.payloads[i];
+
+        pl->payload_type = sei->payloads[i].payload_type;
+        pl->payload_size = sei->payloads[i].payload_size;
+        pl->payload      = (unsigned char*)xeve_malloc(pl->payload_size);
+        if(pl->payload == NULL) {
+            pico->sei.num_payloads = i;
+            pico_sei_free(pico);
+            return XEVE_ERR_OUT_OF_MEMORY;
+        }
+        xeve_mcpy(pl->payload, sei->payloads[i].payload, pl->payload_size);
+        pico->sei.num_payloads = i + 1;
+    }
     return XEVE_OK;
 }
 
@@ -662,6 +719,12 @@ int xeve_push_frm(XEVE_CTX* ctx, XEVE_IMGB* img)
     pico           = ctx->pico_buf[ctx->pico_idx];
     pico->pic_icnt = ctx->pic_icnt;
     pico->is_used  = 1;
+
+    pico_sei_free(pico);
+    if(img->ndata[XEVE_IMGB_SEI_SLOT] == XEVE_SEI_MAGIC && img->pdata[XEVE_IMGB_SEI_SLOT] != NULL) {
+        ret = pico_sei_copy(pico, (const XEVE_SEI*)img->pdata[XEVE_IMGB_SEI_SLOT]);
+        xeve_assert_rv(ret == XEVE_OK, ret);
+    }
     pic            = &pico->pic;
     ctx->pico      = pico;
 
@@ -1847,6 +1910,7 @@ ERR:
                 xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
         }
 
+        pico_sei_free(ctx->pico_buf[i]);
         xeve_mfree_fast(ctx->pico_buf[i]);
     }
 
@@ -1922,6 +1986,7 @@ void xeve_flush(XEVE_CTX* ctx)
             xeve_mfree_fast(ctx->pico_buf[i]->sinfo.transfer_cost);
             xeve_picbuf_rc_free(ctx->pico_buf[i]->spic);
         }
+        pico_sei_free(ctx->pico_buf[i]);
         xeve_mfree_fast(ctx->pico_buf[i]);
     }
     xeve_mfree_fast(ctx->map_tidx);
