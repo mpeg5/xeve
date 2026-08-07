@@ -925,8 +925,8 @@ int main(int argc, const char **argv)
         0,
     };
     int          encod_frames = 0;
-    IMGB_LIST    ilist_org[MAX_BUMP_FRM_CNT];
-    IMGB_LIST    ilist_rec[MAX_BUMP_FRM_CNT];
+    IMGB_LIST    ilist_org[MAX_BUMP_FRM_CNT] = {{0}};
+    IMGB_LIST    ilist_rec[MAX_BUMP_FRM_CNT] = {{0}};
     IMGB_LIST   *ilist_t      = NULL;
     static int   is_first_enc = 1;
     int          is_y4m       = 0;
