@@ -1422,8 +1422,14 @@ void xeve_set_sps(XEVE_CTX* ctx, XEVE_SPS* sps)
     sps->sps_max_dec_pic_buffering_minus1 = (int)pow(2.0, sps->log2_sub_gop_length) + sps->max_num_ref_pics - 1;
     sps->log2_ref_pic_gap_length          = (int)(log2(ctx->param.ref_pic_gap_length) + .5);
     sps->long_term_ref_pics_flag          = 0;
-    sps->vui_parameters_present_flag      = 0;
     xeve_set_vui(ctx, &(sps->vui_parameters));
+    sps->vui_parameters_present_flag =
+        sps->vui_parameters.aspect_ratio_info_present_flag || sps->vui_parameters.overscan_info_present_flag ||
+        sps->vui_parameters.video_signal_type_present_flag || sps->vui_parameters.chroma_loc_info_present_flag ||
+        sps->vui_parameters.neutral_chroma_indication_flag || sps->vui_parameters.field_seq_flag ||
+        sps->vui_parameters.timing_info_present_flag || sps->vui_parameters.nal_hrd_parameters_present_flag ||
+        sps->vui_parameters.vcl_hrd_parameters_present_flag || sps->vui_parameters.pic_struct_present_flag ||
+        sps->vui_parameters.bitstream_restriction_flag;
 
     if(ctx->chroma_qp_table_struct.chroma_qp_table_present_flag) {
         xeve_copy_chroma_qp_mapping_params(&(sps->chroma_qp_table_struct), &(ctx->chroma_qp_table_struct));
@@ -2310,7 +2316,7 @@ int xeve_param_init(XEVE_PARAM* param)
     param->sei_cmd_info = 1;
 
     param->sar                 = 0;
-    param->videoformat         = 2;
+    param->videoformat         = 5; /* unspecified */
     param->range               = 0;
     param->colorprim           = 2;
     param->transfer            = 2;
@@ -2320,6 +2326,13 @@ int xeve_param_init(XEVE_PARAM* param)
     param->max_dec_pic_buffering = 21;
     param->num_reorder_pics      = 21;
     param->level_idc             = 40;
+
+    /* VUI bitstream restriction defaults, matching the values the app treats as "not set" */
+    param->motion_vectors_over_pic_boundaries_flag = 1;
+    param->max_bytes_per_pic_denom                 = 2;
+    param->max_bits_per_mb_denom                   = 1;
+    param->log2_max_mv_length_horizontal           = 16;
+    param->log2_max_mv_length_vertical             = 16;
     return XEVE_OK;
 }
 
