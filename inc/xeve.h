@@ -164,6 +164,39 @@ extern "C"
 #define XEVE_SEI_NUT                    (28)
 
 /*****************************************************************************
+ * SEI payloads (ISO/IEC 23094-1 Annex D)
+ *****************************************************************************/
+typedef enum _XEVE_SEI_PAYLOAD_TYPE {
+    XEVE_SEI_BUFFERING_PERIOD                = 0,
+    XEVE_SEI_PICTURE_TIMING                  = 1,
+    XEVE_SEI_USER_DATA_REGISTERED_ITU_T_T35  = 4,
+    XEVE_SEI_USER_DATA_UNREGISTERED          = 5,
+    XEVE_SEI_RECOVERY_POINT                  = 6,
+    XEVE_SEI_MASTERING_DISPLAY_INFO          = 137,
+    XEVE_SEI_CONTENT_LIGHT_LEVEL_INFO        = 144,
+    XEVE_SEI_AMBIENT_VIEWING_ENVIRONMENT     = 148,
+} XEVE_SEI_PAYLOAD_TYPE;
+
+typedef struct _XEVE_SEI_PAYLOAD {
+    int                     payload_size;
+    XEVE_SEI_PAYLOAD_TYPE   payload_type;
+    unsigned char         * payload;
+} XEVE_SEI_PAYLOAD;
+
+typedef struct _XEVE_SEI {
+    int                num_payloads;
+    XEVE_SEI_PAYLOAD * payloads;
+} XEVE_SEI;
+
+/* To embed SEI payloads into the access unit of a picture, set
+   imgb->pdata[XEVE_IMGB_SEI_SLOT] to an XEVE_SEI pointer and
+   imgb->ndata[XEVE_IMGB_SEI_SLOT] to XEVE_SEI_MAGIC before calling
+   xeve_push(). The payloads are copied inside the call, so the caller
+   may release them right after xeve_push() returns. */
+#define XEVE_IMGB_SEI_SLOT              (3)
+#define XEVE_SEI_MAGIC                  (0x58534549) /* 'XSEI' */
+
+/*****************************************************************************
  * slice type
  *****************************************************************************/
 #define XEVE_ST_UNKNOWN                 (-1)

@@ -54,6 +54,7 @@ int  xeve_eco_sps(XEVE_BSW *bs, XEVE_SPS *sps);
 int  xeve_eco_pps(XEVE_BSW *bs, XEVE_SPS *sps, XEVE_PPS *pps);
 int  xeve_eco_sh(XEVE_BSW *bs, XEVE_SPS *sps, XEVE_PPS *pps, XEVE_SH *sh, int nut);
 int  xeve_eco_sei(XEVE_CTX *ctx, XEVE_BSW *bs);
+int  xeve_eco_sei_payload(XEVE_SEI_PAYLOAD *pl, XEVE_BSW *bs);
 int  xeve_eco_emitsei(XEVE_CTX *ctx, XEVE_BSW *bs);
 int  xeve_eco_vui(XEVE_BSW *bs, XEVE_VUI *vui);
 int  xeve_eco_signature(XEVE_CTX *ctx, XEVE_BSW *bs);

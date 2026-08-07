@@ -310,6 +310,30 @@ while (!end_of_sequence)
 xeve_delete(id);
 ```
 
+### Embedding SEI payloads
+SEI payloads (e.g. HDR metadata such as mastering display colour volume,
+content light level or ITU-T T.35 messages) can be attached per picture.
+Attach them to the input picture before `xeve_push()`; the payload bytes are
+copied inside the call and are written into the access unit of that picture,
+so the association survives frame reordering.
+```c
+unsigned char t35_data[] = { 0xB5, /* ... payload bytes ... */ };
+
+XEVE_SEI_PAYLOAD payload;
+payload.payload_type = XEVE_SEI_USER_DATA_REGISTERED_ITU_T_T35;
+payload.payload_size = sizeof(t35_data);
+payload.payload      = t35_data;
+
+XEVE_SEI sei;
+sei.num_payloads = 1;
+sei.payloads     = &payload;
+
+image.pdata[XEVE_IMGB_SEI_SLOT] = &sei;
+image.ndata[XEVE_IMGB_SEI_SLOT] = XEVE_SEI_MAGIC;
+
+xeve_push(id, &image); /* sei can be released after this returns */
+```
+
 ## How to contribute
 Contributions are welcome through GitHub pull requests.
 

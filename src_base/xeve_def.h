@@ -1205,30 +1205,7 @@ typedef struct _XEVE_APS
     XEVE_ALF_SLICE_PARAM alf_aps_param;   // alf data
 } XEVE_APS;
 
-typedef enum _XEVE_SEI_PAYLOAD_TYPE
-{
-    BUFFERING_PERIOD = 0,
-    PICTURE_TIMING = 1,
-    USER_DATA_REGISTERED_ITU_T_T35 = 4,
-    USER_DATA_UNREGISTERED = 5,
-    RECOVERY_POINT = 6,
-    MASTERING_DISPLAY_INFO = 137,
-    CONTENT_LIGHT_LEVEL_INFO = 144,
-    AMBIENT_VIEWING_ENVIRONMENT = 148,
-} XEVE_SEI_PAYLOAD_TYPE;
-
-typedef struct _XEVE_SEI_PAYLOAD
-{
-    int payload_size;
-    XEVE_SEI_PAYLOAD_TYPE payload_type;
-    u8* payload;
-} XEVE_SEI_PAYLOAD;
-
-typedef struct _XEVE_SEI
-{
-    int num_payloads;
-    XEVE_SEI_PAYLOAD *payloads;
-} XEVE_SEI;
+/* XEVE_SEI_PAYLOAD_TYPE, XEVE_SEI_PAYLOAD and XEVE_SEI are declared in xeve.h */
 
 typedef struct _XEVE_BUFFERING_PERIOD
 {

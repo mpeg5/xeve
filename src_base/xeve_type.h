@@ -260,6 +260,8 @@ typedef struct _XEVE_PICO
     XEVE_SPIC_INFO      sinfo;
     /* address of sub-picture org */
     XEVE_PIC          * spic;
+    /* SEI payloads to be embedded into this picture's access unit (deep copy) */
+    XEVE_SEI            sei;
 
 } XEVE_PICO;
 

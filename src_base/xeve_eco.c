@@ -364,7 +364,7 @@ int xeve_eco_emitsei(XEVE_CTX *ctx, XEVE_BSW *bs)
             &ctx->param, sei_msg_ptr, ctx->sps.picture_crop_right_offset, ctx->sps.picture_crop_bottom_offset);
 
         XEVE_SEI_PAYLOAD sei_userdata_unregistered;
-        sei_userdata_unregistered.payload_type = USER_DATA_UNREGISTERED;
+        sei_userdata_unregistered.payload_type = XEVE_SEI_USER_DATA_UNREGISTERED;
         sei_userdata_unregistered.payload_size = (u32)strlen(sei_embed_msg);
         sei_userdata_unregistered.payload      = (u8 *)sei_embed_msg;
         write_sei_userdata_unregistered(&sei_userdata_unregistered, bs);
@@ -377,6 +377,34 @@ int xeve_eco_emitsei(XEVE_CTX *ctx, XEVE_BSW *bs)
 
     return XEVE_OK;
 }
+int xeve_eco_sei_payload(XEVE_SEI_PAYLOAD *pl, XEVE_BSW *bs)
+{
+    xeve_assert_rv(XEVE_BSW_IS_BYTE_ALIGN(bs), XEVE_ERR_UNKNOWN);
+
+    {
+        u32 payload_type = pl->payload_type;
+        for(; payload_type >= 0xff; payload_type -= 0xff)
+            xeve_bsw_write(bs, 0xff, 8);
+        xeve_bsw_write(bs, payload_type, 8);
+
+        u32 payload_size = pl->payload_size;
+        for(; payload_size >= 0xff; payload_size -= 0xff)
+            xeve_bsw_write(bs, 0xff, 8);
+        xeve_bsw_write(bs, payload_size, 8);
+
+        for(int j = 0; j < pl->payload_size; j++) {
+            xeve_bsw_write(bs, pl->payload[j], 8);
+        }
+    }
+
+    xeve_bsw_write1(bs, 1);
+    while(!XEVE_BSW_IS_BYTE_ALIGN(bs)) {
+        xeve_bsw_write1(bs, 0);
+    }
+
+    return XEVE_OK;
+}
+
 int xeve_eco_sei(XEVE_CTX *ctx, XEVE_BSW *bs)
 {
     xeve_assert_rv(XEVE_BSW_IS_BYTE_ALIGN(bs), XEVE_ERR_UNKNOWN);
