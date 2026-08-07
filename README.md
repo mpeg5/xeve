@@ -310,5 +310,14 @@ while (!end_of_sequence)
 xeve_delete(id);
 ```
 
+## How to contribute
+Contributions are welcome through GitHub pull requests.
+
+* Fork the repository and create a topic branch from `master`.
+* Keep each PR focused; put unrelated fixes into separate PRs.
+* Make sure both profiles still build before submitting (`-DSET_PROF=MAIN` and `-DSET_PROF=BASE`).
+* Sign off your commits (`git commit -s`).
+* **Please enable "Allow edits from maintainers" when opening a pull request.** This lets maintainers push small fixes (build tweaks, rebases, style cleanups) directly to your branch instead of going through another round of review comments, which can significantly shorten the review cycle.
+
 ## License
 See [COPYING](COPYING) file for details.
