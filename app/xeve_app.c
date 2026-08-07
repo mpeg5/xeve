@@ -599,6 +599,9 @@ static int parse_str_to_int(const char *arg, const char *const *names)
     for(int i = 0; names[i]; i++)
         if(!strcmp(arg, names[i]))
             return i;
+    /* allow plain numeric values as well */
+    if(arg[0] != '\0' && strspn(arg, "0123456789") == strlen(arg))
+        return atoi(arg);
     return -1;
 }
 
@@ -680,6 +683,19 @@ static int update_vui_param(ARGS_PARSER *args, XEVE_PARAM *param)
         if(XEVE_ERR == param->matrix_coefficients)
             return param->matrix_coefficients;
     }
+
+    /* options whose long key differs from the param member name are only
+       stored in args by the parser, so copy them into param here */
+    param->num_units_in_tick                       = args->num_units_in_tick;
+    param->pic_struct_present_flag                 = args->pic_struct_present_flag;
+    param->motion_vectors_over_pic_boundaries_flag = args->motion_vectors_over_pic_boundaries_flag;
+    param->max_bits_per_mb_denom                   = args->max_bits_per_mb_denom;
+    param->log2_max_mv_length_horizontal           = args->log2_max_mv_length_horizontal;
+    param->log2_max_mv_length_vertical             = args->log2_max_mv_length_vertical;
+    param->chroma_sample_loc_type_top_field        = args->chroma_sample_loc_type_top_field;
+    param->chroma_sample_loc_type_bottom_field     = args->chroma_sample_loc_type_bottom_field;
+    param->neutral_chroma_indication_flag          = args->neutral_chroma_indication_flag;
+    param->field_seq_flag                          = args->field_seq_flag;
     return 0;
 }
 
@@ -797,8 +813,8 @@ static int vui_param_check(XEVE_PARAM *param)
         logerr("Num units in tick is out of range");
     }
     else if(param->num_units_in_tick == 0) {
-        /*If num_units_in_tick is not present, set to fps, to propagate the coded fps */
-        param->num_units_in_tick        = param->fps.num / param->fps.den;
+        /*If num_units_in_tick is not present, set to fps denominator, to propagate the coded fps */
+        param->num_units_in_tick        = param->fps.den;
         param->timing_info_present_flag = param->timing_info_present_flag || 0;
     }
     else {
@@ -810,8 +826,8 @@ static int vui_param_check(XEVE_PARAM *param)
         logerr("Time Scale is out of range");
     }
     else if(param->time_scale == 0) {
-        /*If time_scale is not present, set to 1, to propagate the coded fps */
-        param->time_scale               = 1;
+        /*If time_scale is not present, set to fps numerator, to propagate the coded fps */
+        param->time_scale               = param->fps.num;
         param->timing_info_present_flag = param->timing_info_present_flag || 0;
     }
     else {
@@ -925,8 +941,8 @@ int main(int argc, const char **argv)
         0,
     };
     int          encod_frames = 0;
-    IMGB_LIST    ilist_org[MAX_BUMP_FRM_CNT];
-    IMGB_LIST    ilist_rec[MAX_BUMP_FRM_CNT];
+    IMGB_LIST    ilist_org[MAX_BUMP_FRM_CNT] = {{0}};
+    IMGB_LIST    ilist_rec[MAX_BUMP_FRM_CNT] = {{0}};
     IMGB_LIST   *ilist_t      = NULL;
     static int   is_first_enc = 1;
     int          is_y4m       = 0;
