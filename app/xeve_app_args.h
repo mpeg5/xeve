@@ -168,7 +168,7 @@ static const ARGS_OPT args_opt_table[] = \
     },
     {
         ARGS_NO_KEY,  "info", ARGS_VAL_TYPE_INTEGER, 0, NULL,
-        "embed SEI messages identifying encoder parameters and command line arguments"
+        "embed SEI messages identifying encoder parameters and command line arguments\n"
         "      - 0: off\n"
         "      - 1: emit sei info"
     },
@@ -535,7 +535,7 @@ static const ARGS_OPT args_opt_table[] = \
     },
     {
         ARGS_NO_KEY,  "videoformat", ARGS_VAL_TYPE_STRING, 0, NULL,
-        " 0-component, 1-pal, 2-ntsc, 3-secam, 4-mac. 5-unspecified"
+        "0-component, 1-pal, 2-ntsc, 3-secam, 4-mac, 5-unspecified"
     },
     {
         ARGS_NO_KEY,  "range", ARGS_VAL_TYPE_STRING, 0, NULL,
@@ -551,7 +551,7 @@ static const ARGS_OPT args_opt_table[] = \
         ARGS_NO_KEY,  "transfer", ARGS_VAL_TYPE_STRING, 0, NULL,
         "1- transfer characteristics from bt709, 2-unspecified, 3-reserved, 4-bt470m, 5-bt470bg, 6-smpte170m,\
          7-smpte240m, 8-linear, 9-log100, 10-log316, 11-iec61966-2-4, 12-bt1361e, 13-iec61966-2-1,\
-         14-bt2020-10, 15-bt2020-12, 16-smpte2084, 17-smpte428, 198-arib-std-b67. Default 2-unspecified"
+         14-bt2020-10, 15-bt2020-12, 16-smpte2084, 17-smpte428, 18-arib-std-b67. Default 2-unspecified"
     },
     {
         ARGS_NO_KEY,  "matrix-coefficients", ARGS_VAL_TYPE_STRING, 0, NULL,
