@@ -489,7 +489,7 @@ static int y4m_parse_tags(Y4M_INFO *y4m, char *tags)
     }
 
     if(!(found_w == 1 && found_h == 1)) {
-        logerr("Mandatory arugments are not found in y4m header");
+        logerr("Mandatory arguments are not found in y4m header");
         return -1;
     }
     /* Setting default colorspace to yuv420 and input_bd to 8 if header info. is NA */
@@ -755,7 +755,7 @@ static int vui_param_check(XEVE_PARAM *param)
 
     if(param->colorprim < 0 || (param->colorprim > 12 && param->colorprim != 22)) {
         ret = 1;
-        logerr("Colorprimaries value is out of range\n");
+        logerr("Color primaries value is out of range\n");
     }
     else if(param->colorprim == 2) {
         param->colour_description_present_flag = 0;
@@ -766,7 +766,7 @@ static int vui_param_check(XEVE_PARAM *param)
 
     if(param->transfer < 0 || param->transfer > 13) {
         ret = 1;
-        logerr("Transfer Characteristics value is out of range\n");
+        logerr("Transfer characteristics value is out of range\n");
     }
     else if(param->transfer == 2) {
         param->colour_description_present_flag = param->colour_description_present_flag || 0;
@@ -788,7 +788,7 @@ static int vui_param_check(XEVE_PARAM *param)
 
     if(param->chroma_sample_loc_type_top_field < 0 || param->chroma_sample_loc_type_top_field > 5) {
         ret = 1;
-        logerr("Chroma sample location top filed is out of range");
+        logerr("Chroma sample location top field is out of range");
     }
     else if(param->chroma_sample_loc_type_top_field == 0) {
         param->chroma_loc_info_present_flag = param->chroma_loc_info_present_flag || 0;
@@ -799,7 +799,7 @@ static int vui_param_check(XEVE_PARAM *param)
 
     if(param->chroma_sample_loc_type_bottom_field < 0 || param->chroma_sample_loc_type_bottom_field > 5) {
         ret = 1;
-        logerr("Chroma sample location bottom filed is out of range");
+        logerr("Chroma sample location bottom field is out of range");
     }
     else if(param->chroma_sample_loc_type_bottom_field == 0) {
         param->chroma_loc_info_present_flag = param->chroma_loc_info_present_flag || 0;
