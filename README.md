@@ -22,6 +22,10 @@ MPEG-5 EVC Main Profile can show 2-times better coding gain over HEVC/H.265 code
 
 (CC) Blender Foundation | [mango.blender.org](https://mango.blender.org)
 
+## Related projects
+
+- [ffevc](https://github.com/mpeg5/ffevc) — FFmpeg plus up-to-date EVC integration. xeve is used through FFmpeg's `libxeve` encoder wrapper, which carries the newest EVC patches on top of a current FFmpeg base.
+
 ## How to build
 
 ### Linux (64-bit)
