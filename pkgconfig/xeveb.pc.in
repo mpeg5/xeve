@@ -11,6 +11,6 @@ Version: @PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@
 
 Requires:
 Libs: -L${libdir} -lxeveb
-Libs.private: -lm
+Libs.private: -L${libdir}/@LIB_NAME_BASE@ -lm
 
 Cflags: -I${includedir}
